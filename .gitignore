@@ -1,0 +1,31 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+
+# Local agent/session artifacts
+.codex/
+.codex_audio_chunks/
+.codex_frames/
+.codex_transcripts/
+.codex_whisper_chunks/
+.codex_whisper_out/
+.codex_tmp_*
+
+# Build/runtime artifacts
+target/
+dist/
+build/
+node_modules/
+.next/
+coverage/
+
+# Presentation generator diagnostics and superseded drafts
+outputs/*.inspect.ndjson
+outputs/*_v0.*
+outputs/*_v1_*
+outputs/*_v2_*
+
+# IDE
+.idea/
+*.iml
