@@ -26,6 +26,7 @@ Branches:
 ## Key Documents
 
 - [VEDAL Portal: закрытый контур и CRM](docs/architecture/vedal_portal_owner_brief.md) — целевая архитектура, при расхождениях главнее остальных документов
+- [Документация по продукции](docs/products/README.md) — датащиты VEDAL R1/R2, A-2000, Т-100
 - [Frontend handoff](HANDOFF.md)
 - [Frontend handoff package](docs/frontend/README.md)
 - [Project brief](docs/strategy/project_brief.md)
