@@ -1,5 +1,4 @@
 import Image from "next/image";
-import Header from "@/components/Header";
 import UraniaCard from "@/components/UraniaCard";
 import UraniaFloatingButton from "@/components/UraniaFloatingButton";
 import { AWAITING, hero } from "@/content/site";
@@ -13,8 +12,6 @@ const URANIA_SLOT_ID = "urania";
 export default function Home() {
   return (
     <>
-      <Header />
-
       <main className={styles.hero}>
         <section className={styles.copy}>
           <h1 className={styles.headline}>{hero.headline}</h1>
