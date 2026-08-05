@@ -10,15 +10,17 @@ export const site = {
   phone: "8 800 600 3449",
 };
 
-// docs/frontend/sitemap.md → Global Navigation
+// Вкладки действующего сайта vedal-med.ru, переданы заказчиком.
+// Отличия от docs/frontend/sitemap.md: нет «Главная» (её роль выполняет логотип)
+// и «Партнёры», добавлена «Разработка и технологии», «Пресс-центр» назван «Новости».
 export const nav = [
-  { label: "Главная", href: "/" },
+  { label: "О компании", href: "/about/" },
   { label: "Продукция", href: "/products/" },
+  { label: "Сервис", href: "/service/" },
+  { label: "Разработка и технологии", href: "/technology/" },
   { label: "Производство", href: "/production/" },
   { label: "Документы", href: "/documents/" },
-  { label: "Пресс-центр", href: "/press/" },
-  { label: "Партнёры", href: "/partners/" },
-  { label: "Сервис", href: "/service/" },
+  { label: "Новости", href: "/news/" },
   { label: "Контакты", href: "/contacts/" },
 ];
 
