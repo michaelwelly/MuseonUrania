@@ -40,10 +40,12 @@ export const hero = {
     "Сервисные запросы",
     "Подбор категории оборудования",
   ],
-  // Нужно утверждённое фото производства/продукции (page_briefs.md → Awaiting NN).
-  // Сгенерированный urania-web-integration-mockup-v1.png — только референс
-  // направления, в UI не идёт (urania_assistant_spec.md, urania_visual_assets.md).
-  image: null,
+  // Фото производственного участка из архива заказчика (кадр 164).
+  // Сжато до 1600px, оригинал 2000×1331 остаётся у заказчика.
+  image: {
+    src: "/photos/vedal-production-line.jpg",
+    alt: "Производственный участок VEDAL: инкубатор и открытые реанимационные системы",
+  },
 };
 
 // MVP-аватар утверждён в docs/strategy/urania_visual_assets.md.

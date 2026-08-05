@@ -68,17 +68,35 @@
 }
 
 .visual {
+  position: relative;
+  overflow: hidden;
+  min-height: 560px;
   padding: 48px 64px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 28px;
   background: var(--soft);
   border-left: 1px solid var(--line);
 }
 
-/* Место под утверждённое фото производства/продукции.
-   Держит размер, чтобы макет не прыгал, когда фото приедет. */
+/* Фото заливает колонку, карточка ассистента лежит поверх — так было
+   в prototypes/urania-web-interface.html. В потоке фото сжималось до
+   полосы 2.3:1, потому что высоту забирала карточка.
+   Кадрирование отдано CSS: исходник не режем, фрагмент правится
+   через object-position. */
+.heroImage {
+  position: absolute;
+  inset: 0;
+}
+
+.heroImage img {
+  object-fit: cover;
+  /* Сдвиг вправо уводит технику влево, из-под карточки ассистента. */
+  object-position: 100% 50%;
+}
+
+/* Запасной вариант, если фото снимут: держит размер, чтобы макет не прыгал. */
 .imageSlot {
   flex: 1;
   min-height: 200px;
@@ -102,6 +120,7 @@
 }
 
 .assistantSlot {
+  position: relative;
   display: flex;
   justify-content: flex-end;
 }
@@ -116,6 +135,7 @@
   }
 
   .visual {
+    min-height: 480px;
     padding: 24px;
     border-left: 0;
     border-top: 1px solid var(--line);

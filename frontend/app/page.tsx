@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Header from "@/components/Header";
 import UraniaCard from "@/components/UraniaCard";
 import UraniaFloatingButton from "@/components/UraniaFloatingButton";
@@ -46,7 +47,17 @@ export default function Home() {
         </section>
 
         <section className={styles.visual} aria-label="Визуальный блок и ассистент">
-          {hero.image ?? (
+          {hero.image ? (
+            <div className={styles.heroImage}>
+              <Image
+                src={hero.image.src}
+                alt={hero.image.alt}
+                fill
+                sizes="(max-width: 1100px) 100vw, 55vw"
+                priority
+              />
+            </div>
+          ) : (
             <p className={styles.imageSlot}>
               Фото производства или продукции VEDAL
               <span className={styles.awaiting}>{AWAITING}</span>
