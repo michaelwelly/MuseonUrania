@@ -1,3 +1,6 @@
+/* Стили формы живут в components/LeadForm.module.css — она общая
+   с /contacts/, дублировать их здесь нельзя. */
+
 .page {
   display: flex;
   flex-direction: column;
@@ -65,128 +68,6 @@
   grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.6fr);
   gap: 48px;
   align-items: start;
-}
-
-.form {
-  margin-top: 24px;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  /* Без этого select с длинными названиями изделий раздувает колонку
-     по своему самому широкому пункту и выносит форму за край экрана. */
-  min-width: 0;
-}
-
-.wide {
-  grid-column: 1 / -1;
-}
-
-.label {
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.required {
-  color: var(--green);
-}
-
-.input,
-.select,
-.textarea {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  min-height: 48px;
-  padding: 12px 14px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: #fff;
-  color: var(--ink);
-  font: inherit;
-  font-size: 15px;
-}
-
-.textarea {
-  min-height: 120px;
-  resize: vertical;
-}
-
-.input:focus,
-.select:focus,
-.textarea:focus {
-  border-color: var(--green);
-  outline: none;
-}
-
-.invalid {
-  border-color: #c0392b;
-}
-
-.error {
-  font-size: 13px;
-  color: #c0392b;
-}
-
-.consent {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  font-size: 15px;
-  line-height: 1.45;
-}
-
-.consent input {
-  width: 20px;
-  height: 20px;
-  margin-top: 1px;
-  flex-shrink: 0;
-  accent-color: var(--green);
-}
-
-.consentNote {
-  margin-top: 6px;
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.submit {
-  height: 56px;
-  padding: 0 28px;
-  border: 0;
-  border-radius: 6px;
-  background: var(--green);
-  color: #fff;
-  font: inherit;
-  font-size: 17px;
-  font-weight: 800;
-  cursor: pointer;
-  justify-self: start;
-}
-
-.submit:hover {
-  background: var(--green-dark);
-}
-
-/* Пока бэкенда нет, отправка честно говорит, что не отправляет,
-   и показывает рабочие контакты. Заменить на вызов API. */
-.pending {
-  grid-column: 1 / -1;
-  padding: 18px 20px;
-  border-left: 3px solid var(--green);
-  background: var(--soft);
-  font-size: 15px;
-  line-height: 1.55;
-}
-
-.pending a {
-  font-weight: 700;
-  color: var(--green);
 }
 
 .aside {
@@ -280,13 +161,7 @@
 }
 
 @media (max-width: 560px) {
-  .form {
-    grid-template-columns: 1fr;
-  }
-
-  .submit,
   .button {
     width: 100%;
-    justify-self: stretch;
   }
 }

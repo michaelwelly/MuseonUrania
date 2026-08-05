@@ -4,13 +4,13 @@ import { useState } from "react";
 import { serviceForm } from "@/content/service";
 import { products } from "@/content/products";
 import { site } from "@/content/site";
-import styles from "./page.module.css";
+import styles from "./LeadForm.module.css";
 
 type Errors = Partial<Record<"name" | "phone" | "email" | "message" | "consent", string>>;
 
 // Проверка полей до отправки — валидация на границе доверия нужна независимо
 // от того, куда запрос уйдёт потом.
-function validate(data: FormData): Errors {
+export function validate(data: FormData): Errors {
   const errors: Errors = {};
   const get = (k: string) => String(data.get(k) ?? "").trim();
 
@@ -23,7 +23,14 @@ function validate(data: FormData): Errors {
   return errors;
 }
 
-export default function ServiceForm() {
+type Props = {
+  /** Список тем обращения. Если не передан, селектор темы не показывается. */
+  topics?: readonly string[];
+  analytics: string;
+  submitLabel?: string;
+};
+
+export default function LeadForm({ topics, analytics, submitLabel }: Props) {
   const [errors, setErrors] = useState<Errors>({});
   const [tried, setTried] = useState(false);
 
@@ -42,6 +49,21 @@ export default function ServiceForm() {
 
   return (
     <form className={styles.form} onSubmit={onSubmit} noValidate>
+      {topics && (
+        <div className={`${styles.field} ${styles.wide}`}>
+          <label className={styles.label} htmlFor="topic">
+            Тема обращения
+          </label>
+          <select id="topic" name="topic" className={styles.select} defaultValue={topics[0]}>
+            {topics.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div className={styles.field}>
         <label className={styles.label} htmlFor="name">
           {serviceForm.fields.name} <span className={styles.required}>*</span>
@@ -136,8 +158,8 @@ export default function ServiceForm() {
         <p className={styles.consentNote}>{serviceForm.consentNote}</p>
       </div>
 
-      <button type="submit" className={styles.submit} data-analytics="service_form_submit">
-        {serviceForm.submit}
+      <button type="submit" className={styles.submit} data-analytics={analytics}>
+        {submitLabel ?? serviceForm.submit}
       </button>
 
       {showPending && (

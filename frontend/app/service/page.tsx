@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { site, urania } from "@/content/site";
 import { serviceHero, serviceForm, serviceNotice } from "@/content/service";
-import ServiceForm from "./form";
+import LeadForm from "@/components/LeadForm";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
@@ -37,7 +37,7 @@ export default function ServicePage() {
         <div className={styles.split}>
           <div>
             <h2 className={styles.h2}>{serviceForm.title}</h2>
-            <ServiceForm />
+            <LeadForm analytics="service_form_submit" />
           </div>
 
           <div className={styles.aside}>
