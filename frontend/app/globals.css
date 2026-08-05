@@ -3,7 +3,10 @@
    (docs/strategy/content_and_seo_plan.md → Content Inventory To Request). */
 
 :root {
-  --green: #008f5b;
+  /* Снят пипеткой с логотипа public/brand/vedal-logo.png.
+     В прототипе стоял подобранный на глаз #008f5b — заменён на фирменный. */
+  --green: #149c3c;
+  --green-dark: #0f7c30;
   --teal: #00695f;
   --ink: #12202a;
   --muted: #5e6b73;

@@ -5,10 +5,14 @@ export const AWAITING = "ожидает уточнения";
 
 export const site = {
   brand: "VEDAL",
-  // Взят из prototypes/urania-web-interface.html. Требует подтверждения НН
-  // (docs/frontend/page_briefs.md, раздел «Контакты»).
+  // Подтверждён бланком датащитов, см. docs/products/README.md.
   phone: "8 800 600 3449",
+  phoneHours: "Пн–Пт 9:00–18:00",
+  logo: { src: "/brand/vedal-logo.png", width: 461, height: 386 },
 };
+
+// CTA шапки по макету заказчика. В hero остаётся «Запросить КП».
+export const headerCta = { label: "Связаться с нами", href: "/contacts/" };
 
 // Вкладки действующего сайта vedal-med.ru, переданы заказчиком.
 // Отличия от docs/frontend/sitemap.md: нет «Главная» (её роль выполняет логотип)
