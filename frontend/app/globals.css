@@ -1,0 +1,63 @@
+/* Токены и базовые стили из prototypes/urania-web-interface.html.
+   Фирменные шрифты/цвета ждут бренд-материалов от НН
+   (docs/strategy/content_and_seo_plan.md → Content Inventory To Request). */
+
+:root {
+  /* Снят пипеткой с логотипа public/brand/vedal-logo.png.
+     В прототипе стоял подобранный на глаз #008f5b — заменён на фирменный. */
+  --green: #149c3c;
+  --green-dark: #0f7c30;
+  --teal: #00695f;
+  --ink: #12202a;
+  --muted: #5e6b73;
+  --line: #dde5e2;
+  --soft: #f4f8f6;
+  --page: #fff;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  /* Колонка на всю высоту, чтобы первый экран растягивался без magic-number
+     под высоту шапки. */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: Arial, Helvetica, sans-serif;
+  color: var(--ink);
+  background: var(--page);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Шапка и контент вместе занимают минимум высоту экрана, поэтому футер
+   всегда начинается за сгибом. Считать «100vh минус высота шапки» нельзя:
+   шапка меняет высоту на трёх брейкпоинтах, и число разъезжается. */
+.frame {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+.frame > main {
+  flex: 1;
+}
+
+:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}

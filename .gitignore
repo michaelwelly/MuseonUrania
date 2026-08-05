@@ -29,3 +29,8 @@ outputs/*_v2_*
 # IDE
 .idea/
 *.iml
+
+# Генерируется тулингом, в репозиторий не идёт
+AGENTS.md
+CLAUDE.md
+next-env.d.ts

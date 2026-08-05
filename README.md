@@ -12,8 +12,21 @@ The goal is to turn the current public presence of `vedal-med.ru` into a product
 4. Design cloud infrastructure with S3-compatible media/document storage, CRM, analytics, private employee contour, and AI-ready data pipelines.
 5. Prepare multilingual public content in Russian, English, Chinese, and later Hindi.
 
+## Repository Layout
+
+Monorepo: `frontend/` (public site + Urania UI), `backend/` (API, forms/CRM handoff), `docs/`, `assets/`, `prototypes/`, `outputs/`.
+
+Branches:
+
+- `main`: released, finished work only.
+- `dev`: integration branch, everything is reviewed here first.
+- `front`: frontend work, merges into `dev`.
+- `back`: backend work, merges into `dev`.
+
 ## Key Documents
 
+- [VEDAL Portal: закрытый контур и CRM](docs/architecture/vedal_portal_owner_brief.md) — целевая архитектура, при расхождениях главнее остальных документов
+- [Документация по продукции](docs/products/README.md) — датащиты VEDAL R1/R2, A-2000, Т-100
 - [Frontend handoff](HANDOFF.md)
 - [Frontend handoff package](docs/frontend/README.md)
 - [Project brief](docs/strategy/project_brief.md)
