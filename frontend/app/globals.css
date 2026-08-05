@@ -44,6 +44,19 @@ a {
   text-decoration: none;
 }
 
+/* Шапка и контент вместе занимают минимум высоту экрана, поэтому футер
+   всегда начинается за сгибом. Считать «100vh минус высота шапки» нельзя:
+   шапка меняет высоту на трёх брейкпоинтах, и число разъезжается. */
+.frame {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+.frame > main {
+  flex: 1;
+}
+
 :focus-visible {
   outline: 2px solid var(--teal);
   outline-offset: 2px;

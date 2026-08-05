@@ -16,8 +16,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ru">
       <body>
-        <Header />
-        {children}
+        <div className="frame">
+          <Header />
+          {children}
+        </div>
         <Footer />
       </body>
     </html>
