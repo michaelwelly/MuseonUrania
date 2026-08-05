@@ -71,6 +71,22 @@ export const products = [
   },
 ];
 
+// Роли взяты из docs/strategy/functional_requirements.md → Internal Employee
+// Contour (группы доступа: sales, service, production, engineering, management,
+// marketing). Численности нет: в брифе собственника 50 человек, в
+// functional_requirements — 60, расхождение не разрешено.
+export const team = {
+  title: "Команда",
+  paragraphs: [
+    "Разработка, производство, сервис и продажи работают внутри одной компании — от инженерного решения до поддержки поставленного оборудования.",
+    `Численность и структура подразделений — ${AWAITING}.`,
+  ],
+  image: {
+    src: "/photos/team.jpg",
+    alt: "Сотрудники VEDAL в производственном цехе",
+  },
+};
+
 // docs/frontend/page_briefs.md → Documents; статус регистрации в датащитах отсутствует
 export const quality = {
   title: "Документы и статус регистрации",

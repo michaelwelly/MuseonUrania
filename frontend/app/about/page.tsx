@@ -6,6 +6,7 @@ import {
   directions,
   production,
   products,
+  team,
   quality,
   partners,
   legal,
@@ -22,7 +23,7 @@ export default function AboutPage() {
   return (
     <main className={styles.page}>
       <section className={styles.section}>
-        <div className={`${styles.narrow} ${styles.hero}`}>
+        <div className={`${styles.container} ${styles.hero}`}>
           <div>
             <p className={styles.eyebrow}>{aboutHero.eyebrow}</p>
             <h1 className={styles.h1}>{aboutHero.headline}</h1>
@@ -40,8 +41,8 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className={`${styles.section} ${styles.soft}`}>
-        <div className={styles.narrow}>
+      <section className={styles.section}>
+        <div className={styles.container}>
           <h2 className={styles.h2}>Направления</h2>
           <ul className={styles.grid}>
             {directions.map((d) => (
@@ -55,7 +56,7 @@ export default function AboutPage() {
       </section>
 
       <section className={styles.section}>
-        <div className={`${styles.narrow} ${styles.split}`}>
+        <div className={`${styles.container} ${styles.split}`}>
           <div>
             <h2 className={styles.h2}>{production.title}</h2>
             {production.paragraphs.map((p) => (
@@ -75,8 +76,8 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className={`${styles.section} ${styles.soft}`}>
-        <div className={styles.narrow}>
+      <section className={styles.section}>
+        <div className={styles.container}>
           <h2 className={styles.h2}>Продукция</h2>
           <ul className={styles.grid}>
             {products.map((p) => (
@@ -91,15 +92,36 @@ export default function AboutPage() {
       </section>
 
       <section className={styles.section}>
-        <div className={styles.narrow}>
+        <div className={`${styles.container} ${styles.split} ${styles.splitFirst}`}>
+          <div>
+            <h2 className={styles.h2}>{team.title}</h2>
+            {team.paragraphs.map((p) => (
+              <p key={p} className={styles.paragraph}>
+                {p}
+              </p>
+            ))}
+          </div>
+          <div className={styles.splitImage}>
+            <Image
+              src={team.image.src}
+              alt={team.image.alt}
+              fill
+              sizes="(max-width: 1000px) 100vw, 50vw"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <div className={styles.container}>
           <h2 className={styles.h2}>{quality.title}</h2>
           <p className={styles.paragraph}>{quality.text}</p>
           <p className={styles.note}>{quality.note}</p>
         </div>
       </section>
 
-      <section className={`${styles.section} ${styles.soft}`}>
-        <div className={styles.narrow}>
+      <section className={styles.section}>
+        <div className={styles.container}>
           <h2 className={styles.h2}>Партнёры</h2>
           <ul className={styles.grid}>
             {partners.map((p) => (
@@ -113,7 +135,7 @@ export default function AboutPage() {
       </section>
 
       <section className={styles.section}>
-        <div className={`${styles.narrow} ${styles.split} ${styles.splitFirst}`}>
+        <div className={`${styles.container} ${styles.split} ${styles.splitFirst}`}>
           <div>
             <h2 className={styles.h2}>{legal.title}</h2>
             <table className={styles.table}>
@@ -138,8 +160,8 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className={`${styles.section} ${styles.soft}`}>
-        <div className={`${styles.narrow} ${styles.cta}`}>
+      <section className={styles.section}>
+        <div className={`${styles.container} ${styles.cta}`}>
           <div>
             <h2 className={styles.h2}>{aboutCta.title}</h2>
             <p className={styles.lead}>{aboutCta.text}</p>

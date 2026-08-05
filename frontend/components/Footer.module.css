@@ -1,0 +1,121 @@
+.footer {
+  margin-top: auto;
+  background: var(--ink);
+  color: #fff;
+}
+
+.top {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(0, 1.4fr) minmax(280px, 1fr);
+  gap: 48px;
+  padding: 56px 48px;
+}
+
+/* Логотип — JPEG на белом фоне, прозрачности нет. На тёмном футере
+   заворачиваем его в белую плашку, чтобы белый прямоугольник читался
+   как осознанная подложка. Убрать, когда придёт SVG. */
+.brand {
+  display: inline-flex;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.brand img {
+  display: block;
+  width: auto;
+  height: 48px;
+}
+
+.tagline {
+  margin-top: 16px;
+  max-width: 34ch;
+  font-size: 14px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.colTitle {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.links {
+  margin-top: 18px;
+  list-style: none;
+  columns: 2;
+  column-gap: 32px;
+}
+
+.links li {
+  break-inside: avoid;
+  margin-bottom: 10px;
+}
+
+.links a {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.links a:hover {
+  color: #fff;
+}
+
+.contacts {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.phone {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.hours,
+.address {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.contacts a:hover {
+  color: var(--green);
+}
+
+.bottom {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+  padding: 20px 48px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.disclaimer {
+  margin-left: auto;
+  max-width: 60ch;
+}
+
+@media (max-width: 900px) {
+  .top {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    padding: 40px 24px;
+  }
+
+  .bottom {
+    padding: 18px 24px;
+  }
+
+  .disclaimer {
+    margin-left: 0;
+  }
+}

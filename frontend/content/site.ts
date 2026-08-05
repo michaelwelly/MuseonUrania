@@ -7,7 +7,15 @@ export const site = {
   brand: "VEDAL",
   // Подтверждён бланком датащитов, см. docs/products/README.md.
   phone: "8 800 600 3449",
+  phoneExtra: "+7 922 204 75 30",
   phoneHours: "Пн–Пт 9:00–18:00",
+  // Реквизиты с бланка датащитов, см. docs/products/README.md
+  email: "sales@vedal-med.ru",
+  legalName: "ООО «ВЕДАЛ»",
+  legalNameFull: "Общество с ограниченной ответственностью «ВЕДАЛ»",
+  address: "620135, Свердловская область, г. Екатеринбург, ул. Совхозная, стр. 20В",
+  inn: "5406826069",
+  kpp: "540601001",
   logo: { src: "/brand/vedal-logo.png", width: 461, height: 386 },
 };
 
