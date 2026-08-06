@@ -67,6 +67,7 @@
   margin-top: 38px;
 }
 
+/* Появление первого экрана — крючки data-anim в page.tsx, правила в motion.css. */
 .heroVisual {
   position: relative;
   background: var(--img-bg);

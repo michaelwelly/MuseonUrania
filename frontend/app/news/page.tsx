@@ -24,9 +24,11 @@ export default function NewsPage() {
       <NewsFeed />
 
       <section className={styles.press}>
-        <div>
+        <div data-reveal="0">
           <p className={styles.eyebrow}>{press.eyebrow}</p>
-          <h2 className={styles.h2}>{press.title}</h2>
+          <h2 className={styles.h2} data-words="30">
+            {press.title}
+          </h2>
           <p className={styles.pressText}>{press.text}</p>
 
           <div className={styles.contact}>

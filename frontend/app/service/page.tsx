@@ -20,10 +20,14 @@ export default function ServicePage() {
           <p className={styles.crumbs}>
             <Link href="/">Главная</Link> / Сервис
           </p>
-          <h1 className={styles.h1}>{serviceHero.title}</h1>
-          <p className={styles.lead}>{serviceHero.lead}</p>
+          <h1 className={styles.h1} data-words="34" data-wdelay="110">
+            {serviceHero.title}
+          </h1>
+          <p className={styles.lead} data-words="13" data-wdelay="400">
+            {serviceHero.lead}
+          </p>
         </div>
-        <div className={styles.photo}>
+        <div className={styles.photo} data-anim="clip">
           <Image
             src={serviceHero.image.src}
             alt={serviceHero.image.alt}
@@ -35,8 +39,8 @@ export default function ServicePage() {
       </section>
 
       <ul className={styles.steps}>
-        {steps.map((s) => (
-          <li key={s.n} className={styles.step}>
+        {steps.map((s, i) => (
+          <li key={s.n} className={styles.step} data-reveal={i}>
             <p className={styles.num}>{s.n}</p>
             <h2 className={styles.stepTitle}>{s.title}</h2>
             <p className={styles.stepText}>{s.text}</p>
@@ -45,12 +49,14 @@ export default function ServicePage() {
       </ul>
 
       <section className={styles.body}>
-        <div className={styles.card}>
-          <h2 className={styles.formTitle}>{serviceForm.title}</h2>
+        <div className={styles.card} data-reveal="0">
+          <h2 className={styles.formTitle} data-words="30">
+            {serviceForm.title}
+          </h2>
           <LeadForm analytics="service_form_submit" hint={serviceForm.hint} />
         </div>
 
-        <div className={styles.aside}>
+        <div className={styles.aside} data-reveal="1">
           <div className={styles.engineer}>
             <p className={styles.asideLabel}>Ваш инженер</p>
             <div className={styles.person}>

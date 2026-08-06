@@ -14,6 +14,7 @@ export default function NewsSubscribe() {
   return (
     <form
       className={styles.subscribe}
+      data-reveal="1"
       noValidate
       onSubmit={(e) => {
         e.preventDefault();

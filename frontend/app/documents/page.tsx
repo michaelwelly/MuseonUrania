@@ -37,9 +37,11 @@ export default function DocumentsPage() {
       <DocumentsTable />
 
       <section className={styles.order}>
-        <div>
+        <div data-reveal="0">
           <p className={styles.eyebrow}>{order.eyebrow}</p>
-          <h2 className={styles.h2}>{order.title}</h2>
+          <h2 className={styles.h2} data-words="30">
+            {order.title}
+          </h2>
           <p className={styles.orderText}>{order.text}</p>
 
           <ul className={styles.legend}>
@@ -60,8 +62,10 @@ export default function DocumentsPage() {
           <p className={styles.note}>{order.note}</p>
         </div>
 
-        <div className={styles.request}>
-          <h2 className={styles.requestTitle}>{request.title}</h2>
+        <div className={styles.request} data-reveal="1">
+          <h2 className={styles.requestTitle} data-words="30">
+            {request.title}
+          </h2>
           <p className={styles.requestText}>{request.text}</p>
 
           <div className={styles.contact}>

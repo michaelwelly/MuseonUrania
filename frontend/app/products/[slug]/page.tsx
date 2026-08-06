@@ -43,7 +43,10 @@ export default async function ProductPage(props: PageProps<"/products/[slug]">) 
       </p>
 
       <section className={styles.main}>
-        <div className={`${styles.photo} ${product.image ? "" : styles.photoEmpty}`}>
+        <div
+          className={`${styles.photo} ${product.image ? "" : styles.photoEmpty}`}
+          data-anim="clip"
+        >
           {product.image ? (
             <Image
               src={product.image.src}
@@ -69,7 +72,9 @@ export default async function ProductPage(props: PageProps<"/products/[slug]">) 
             <span className={styles.cats}>{product.categories.join(" · ")}</span>
           </div>
 
-          <h1 className={styles.title}>{product.name}</h1>
+          <h1 className={styles.title} data-words="34" data-wdelay="110">
+            {product.name}
+          </h1>
           <p className={styles.kind}>{product.kind}</p>
           <p className={styles.detail}>{product.detail ?? product.summary}</p>
 
@@ -108,10 +113,12 @@ export default async function ProductPage(props: PageProps<"/products/[slug]">) 
       <ProductTabs product={product} />
 
       <section className={styles.related}>
-        <h2 className={styles.relatedTitle}>Похожие модели</h2>
+        <h2 className={styles.relatedTitle} data-words="34">
+          Похожие модели
+        </h2>
         <ul className={styles.relatedGrid}>
-          {related.map((p) => (
-            <li key={p.slug}>
+          {related.map((p, i) => (
+            <li key={p.slug} data-reveal={i}>
               <Link className={styles.card} href={`/products/${p.slug}/`}>
                 <div className={styles.cardPhoto}>
                   {p.image && (

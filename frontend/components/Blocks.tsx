@@ -5,8 +5,8 @@ import styles from "./Blocks.module.css";
 export function StatsBand({ items }: { items: { value: string; label: string }[] }) {
   return (
     <ul className={styles.stats} aria-label="Ключевые цифры">
-      {items.map((s) => (
-        <li key={s.label} className={styles.stat}>
+      {items.map((s, i) => (
+        <li key={s.label} className={styles.stat} data-reveal={i}>
           <p className={styles.statValue}>{s.value}</p>
           <p className={styles.statLabel}>{s.label}</p>
         </li>
@@ -33,11 +33,13 @@ export function DarkCta({
 }) {
   return (
     <section className={`${styles.cta} ${tone === "deep" ? styles.ctaDeep : styles.ctaDeep2}`}>
-      <div>
-        <h2 className={styles.ctaTitle}>{title}</h2>
+      <div data-reveal="0">
+        <h2 className={styles.ctaTitle} data-words="30">
+          {title}
+        </h2>
         <p className={styles.ctaText}>{text}</p>
       </div>
-      <div className={styles.ctaActions}>
+      <div className={styles.ctaActions} data-reveal="1">
         <Link
           className={`${styles.btn} ${styles.btnPrimary}`}
           href={primary.href}

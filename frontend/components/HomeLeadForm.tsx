@@ -73,7 +73,7 @@ export default function HomeLeadForm() {
       </div>
 
       {showPending && (
-        <p className={styles.pending} role="status">
+        <p className={styles.pending} role="status" data-anim="rise">
           Отправка заявок подключается вместе с CRM. Пока позвоните{" "}
           <a href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a> или напишите на{" "}
           <a href={`mailto:${site.email}`}>{site.email}</a>.

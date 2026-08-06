@@ -35,8 +35,8 @@ export default function ContactsPage() {
       />
 
       <ul className={styles.blocks}>
-        {contactBlocks.map((b) => (
-          <li key={b.title} className={styles.block}>
+        {contactBlocks.map((b, i) => (
+          <li key={b.title} className={styles.block} data-reveal={i}>
             <p className={styles.blockTitle}>{b.title}</p>
             <address className={styles.contacts}>
               {b.main.href ? (
@@ -57,9 +57,11 @@ export default function ContactsPage() {
       </ul>
 
       <section className={styles.route}>
-        <div className={styles.routePanel}>
+        <div className={styles.routePanel} data-reveal="0">
           <p className={styles.eyebrow}>{route.eyebrow}</p>
-          <h2 className={styles.routeTitle}>{route.title}</h2>
+          <h2 className={styles.routeTitle} data-words="30">
+            {route.title}
+          </h2>
           <ul className={styles.routeRows}>
             {route.rows.map((r) => (
               <li key={r.label} className={styles.routeRow}>
@@ -72,26 +74,28 @@ export default function ContactsPage() {
             {route.cta}
           </Link>
         </div>
-        <div className={styles.mapSlot}>
+        <div className={styles.mapSlot} data-reveal="1">
           <VedalMap />
         </div>
       </section>
 
       <section className={styles.staff}>
-        <div className={styles.staffHead}>
+        <div className={styles.staffHead} data-reveal="0">
           <div>
             <p className={styles.eyebrow} style={{ color: "var(--green)" }}>
               {staffSection.eyebrow}
             </p>
-            <h2 className={styles.h2}>{staffSection.title}</h2>
+            <h2 className={styles.h2} data-words="30">
+              {staffSection.title}
+            </h2>
           </div>
           {/* Требование хендоффа: примечание видно до замены на реальные данные. */}
           <p className={styles.staffNote}>{DEMO_NOTE}</p>
         </div>
 
         <ul className={styles.staffGrid}>
-          {staff.map((p) => (
-            <li key={p.email} className={styles.person}>
+          {staff.map((p, i) => (
+            <li key={p.email} className={styles.person} data-reveal={i}>
               <div className={styles.personTop}>
                 <div className={styles.avatar}>
                   <Image src="/urania/urania-avatar-middle-v1.png" alt="" fill sizes="60px" />
@@ -116,8 +120,10 @@ export default function ContactsPage() {
       </section>
 
       <section className={styles.bottom}>
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Оставить обращение</h2>
+        <div className={styles.card} data-reveal="0">
+          <h2 className={styles.cardTitle} data-words="30">
+            Оставить обращение
+          </h2>
           <LeadForm
             topics={topics}
             analytics="quote_form_submit"
@@ -126,7 +132,7 @@ export default function ContactsPage() {
           />
         </div>
 
-        <div className={styles.aside}>
+        <div className={styles.aside} data-reveal="1">
           <div className={styles.legalCard}>
             <h2 className={styles.legalTitle}>Реквизиты</h2>
             {legalRows.map((row) => (
@@ -147,8 +153,10 @@ export default function ContactsPage() {
         </div>
       </section>
 
-      <section className={styles.notice}>
-        <h2 className={styles.noticeTitle}>{contactsNotice.title}</h2>
+      <section className={styles.notice} data-reveal="0">
+        <h2 className={styles.noticeTitle} data-words="30">
+          {contactsNotice.title}
+        </h2>
         <p className={styles.noticeText}>{contactsNotice.text}</p>
       </section>
     </main>

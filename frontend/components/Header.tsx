@@ -35,7 +35,8 @@ export default function Header() {
     <header className={styles.header}>
       <div className={styles.topbar}>
         <span className={styles.topbarNote}>
-          <span className={styles.dot} aria-hidden="true" />
+          {/* Пульс «на связи» — тот же ритм, что у статуса Урании. */}
+          <span className={styles.dot} data-anim="dot" aria-hidden="true" />
           {topbar.note}
         </span>
         <span className={styles.topbarShort}>{topbar.noteShort}</span>

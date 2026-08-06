@@ -19,7 +19,10 @@ export default function Catalog() {
 
   return (
     <>
-      <div className={styles.filters}>
+      {/* Ревил на контейнерах, а не на карточках: сетка перерисовывается при
+          смене фильтра, и карточка с ещё не снятым inline-стилем осталась бы
+          невидимой до следующего скролла. */}
+      <div className={styles.filters} data-reveal="0">
         <div className={styles.chips}>
           <button
             type="button"
@@ -60,7 +63,7 @@ export default function Catalog() {
         </div>
       </div>
 
-      <ul className={styles.grid}>
+      <ul className={styles.grid} data-reveal="1">
         {shown.length === 0 && <li className={styles.empty}>В этой категории пока нет позиций.</li>}
 
         {shown.map((p) => (

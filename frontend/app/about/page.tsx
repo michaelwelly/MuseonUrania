@@ -27,7 +27,7 @@ export default function AboutPage() {
         lead={aboutHero.lead}
       />
 
-      <div className={styles.banner}>
+      <div className={styles.banner} data-reveal="0">
         <Image
           src={aboutHero.image.src}
           alt={aboutHero.image.alt}
@@ -40,11 +40,13 @@ export default function AboutPage() {
       <StatsBand items={aboutStats} />
 
       <section className={styles.cycle}>
-        <div>
+        <div data-reveal="0">
           <p className={styles.eyebrow}>{cycle.eyebrow}</p>
-          <h2 className={styles.cycleTitle}>{cycle.title}</h2>
+          <h2 className={styles.cycleTitle} data-words="30">
+            {cycle.title}
+          </h2>
         </div>
-        <div>
+        <div data-reveal="1">
           {cycle.paragraphs.map((p) => (
             <p key={p} className={styles.paragraph}>
               {p}
@@ -63,10 +65,12 @@ export default function AboutPage() {
       </section>
 
       <section className={styles.directions}>
-        <h2 className={styles.h2}>Направления</h2>
+        <h2 className={styles.h2} data-words="34">
+          Направления
+        </h2>
         <ul className={styles.grid5}>
-          {directions.map((d) => (
-            <li key={d.n} className={styles.dirCell}>
+          {directions.map((d, i) => (
+            <li key={d.n} className={styles.dirCell} data-reveal={i}>
               <p className={styles.num}>{d.n}</p>
               <h3 className={styles.cellTitle}>{d.title}</h3>
               <p className={styles.cellText}>{d.text}</p>
@@ -76,9 +80,11 @@ export default function AboutPage() {
       </section>
 
       <section className={styles.partners}>
-        <div className={styles.partnersCopy}>
+        <div className={styles.partnersCopy} data-reveal="0">
           <p className={`${styles.eyebrow} ${styles.eyebrowDark}`}>{partners.eyebrow}</p>
-          <h2 className={styles.partnersTitle}>{partners.title}</h2>
+          <h2 className={styles.partnersTitle} data-words="30">
+            {partners.title}
+          </h2>
           <ul className={styles.partnerList}>
             {partners.items.map((p) => (
               <li key={p.name} className={styles.partner}>
@@ -88,7 +94,7 @@ export default function AboutPage() {
             ))}
           </ul>
         </div>
-        <div className={styles.photo}>
+        <div className={styles.photo} data-reveal="1">
           <Image
             src={partners.image.src}
             alt={partners.image.alt}
@@ -99,8 +105,10 @@ export default function AboutPage() {
       </section>
 
       <section className={styles.legal}>
-        <div>
-          <h2 className={styles.legalTitle}>{legal.title}</h2>
+        <div data-reveal="0">
+          <h2 className={styles.legalTitle} data-words="30">
+            {legal.title}
+          </h2>
           <div className={styles.table}>
             {legal.rows.map((row) => (
               <div key={row.label} className={styles.row}>
@@ -110,7 +118,7 @@ export default function AboutPage() {
             ))}
           </div>
         </div>
-        <div className={styles.legalPhoto}>
+        <div className={styles.legalPhoto} data-reveal="1">
           <Image
             src={legal.image.src}
             alt={legal.image.alt}

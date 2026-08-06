@@ -168,7 +168,7 @@ export default function LeadForm({ topics, analytics, submitLabel, hint, message
       </div>
 
       {showPending && (
-        <p className={styles.pending} role="status">
+        <p className={styles.pending} role="status" data-anim="rise">
           Отправка заявок подключается вместе с CRM. Пока напишите на{" "}
           <a href={`mailto:${site.email}`}>{site.email}</a> или позвоните{" "}
           <a href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a> — запрос примет

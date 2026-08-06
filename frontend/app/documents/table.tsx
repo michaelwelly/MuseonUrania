@@ -40,7 +40,8 @@ export default function DocumentsTable() {
         </span>
       </div>
 
-      <div className={styles.tableWrap}>
+      {/* Ревил на обёртке, а не на строках: список перерисовывается фильтром. */}
+      <div className={styles.tableWrap} data-reveal="0">
         <div className={styles.table}>
           <div className={styles.head}>
             <span>Документ</span>

@@ -25,8 +25,16 @@ export default function PageHero({ crumbs, title, lead, stats, aside }: Props) {
             </span>
           ))}
         </p>
-        <h1 className={styles.title}>{title}</h1>
-        {lead && <p className={styles.lead}>{lead}</p>}
+        {/* Первый экран проявляется по словам, а не блоком: data-words —
+            шаг между словами, data-wdelay — старт. */}
+        <h1 className={styles.title} data-words="34" data-wdelay="110">
+          {title}
+        </h1>
+        {lead && (
+          <p className={styles.lead} data-words="13" data-wdelay="400">
+            {lead}
+          </p>
+        )}
       </div>
 
       {(stats || aside) && (

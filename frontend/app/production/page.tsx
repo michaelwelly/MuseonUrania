@@ -27,9 +27,13 @@ export default function ProductionPage() {
           <p className={styles.crumbs}>
             <Link href="/">Главная</Link> / Производство
           </p>
-          <h1 className={styles.h1}>{productionHero.title}</h1>
-          <p className={styles.lead}>{productionHero.lead}</p>
-          <div className={styles.heroActions}>
+          <h1 className={styles.h1} data-words="34" data-wdelay="110">
+            {productionHero.title}
+          </h1>
+          <p className={styles.lead} data-words="13" data-wdelay="400">
+            {productionHero.lead}
+          </p>
+          <div className={styles.heroActions} data-anim="cascade">
             <Link className={`${styles.btn} ${styles.btnPrimary}`} href="/contacts/">
               Записаться на визит
             </Link>
@@ -38,7 +42,7 @@ export default function ProductionPage() {
             </a>
           </div>
         </div>
-        <div className={styles.photo}>
+        <div className={styles.photo} data-anim="clip ken">
           <Image
             src={productionHero.image.src}
             alt={productionHero.image.alt}
@@ -50,11 +54,13 @@ export default function ProductionPage() {
       </section>
 
       <section className={styles.facility}>
-        <div>
+        <div data-reveal="0">
           <p className={styles.eyebrow}>{facility.eyebrow}</p>
-          <h2 className={styles.h2}>{facility.title}</h2>
+          <h2 className={styles.h2} data-words="30">
+            {facility.title}
+          </h2>
         </div>
-        <div>
+        <div data-reveal="1">
           {facility.paragraphs.map((p) => (
             <p key={p} className={styles.paragraph}>
               {p}
@@ -72,8 +78,8 @@ export default function ProductionPage() {
       </section>
 
       <ul className={styles.gallery}>
-        {gallery.map((shot) => (
-          <li key={shot.src}>
+        {gallery.map((shot, i) => (
+          <li key={shot.src} data-reveal={i}>
             <div className={styles.shot}>
               <Image
                 src={shot.src}
@@ -87,16 +93,18 @@ export default function ProductionPage() {
       </ul>
 
       <section className={styles.quality}>
-        <div>
+        <div data-reveal="0">
           <p className={styles.eyebrow}>{quality.eyebrow}</p>
-          <h2 className={styles.qualityTitle}>{quality.title}</h2>
+          <h2 className={styles.qualityTitle} data-words="30">
+            {quality.title}
+          </h2>
           <p className={styles.qualityText}>{quality.text}</p>
           <Link className={`${styles.btn} ${styles.btnDark} ${styles.qualityCta}`} href="/documents/">
             Раздел «Документы»
             <Arrow />
           </Link>
         </div>
-        <ul className={styles.qualityList}>
+        <ul className={styles.qualityList} data-reveal="1">
           {quality.items.map((item) => (
             <li key={item.n} className={styles.qualityRow}>
               <span className={styles.num}>{item.n}</span>
@@ -114,9 +122,11 @@ export default function ProductionPage() {
       </section>
 
       <section className={styles.address} id="map">
-        <div className={styles.addressCopy}>
+        <div className={styles.addressCopy} data-reveal="0">
           <p className={styles.eyebrow}>{address.eyebrow}</p>
-          <h2 className={styles.addressTitle}>{address.title}</h2>
+          <h2 className={styles.addressTitle} data-words="30">
+            {address.title}
+          </h2>
           <address className={styles.addressLines}>
             {address.lines.map((line) => (
               <span key={line}>{line}</span>
@@ -133,7 +143,7 @@ export default function ProductionPage() {
             Построить маршрут
           </Link>
         </div>
-        <div className={styles.mapSlot}>
+        <div className={styles.mapSlot} data-reveal="1">
           <VedalMap />
         </div>
       </section>

@@ -36,7 +36,7 @@ export default function NewsFeed() {
       </div>
 
       {shown.length === 0 ? (
-        <div className={styles.empty}>
+        <div className={styles.empty} data-reveal="0">
           <p className={styles.emptyTitle}>Публикаций пока нет</p>
           <p className={styles.emptyText}>
             Раздел готов к наполнению. Первым материалом планируется релиз по Иннопрому — ждём
@@ -49,7 +49,7 @@ export default function NewsFeed() {
           </ul>
         </div>
       ) : (
-        <ul className={styles.feed}>
+        <ul className={styles.feed} data-reveal="0">
           {shown.map((item) => (
             <li key={item.title}>
               <article className={styles.card}>
