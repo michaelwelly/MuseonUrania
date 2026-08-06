@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import UraniaWidget from "@/components/UraniaWidget";
 import { fontVariables } from "./fonts";
 import "./globals.css";
 
@@ -22,6 +23,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           {children}
         </div>
         <Footer />
+        {/* Плавающий чат — на всех страницах */}
+        <UraniaWidget />
       </body>
     </html>
   );

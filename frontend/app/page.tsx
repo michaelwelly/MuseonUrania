@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import UraniaChat from "@/components/UraniaChat";
 import HomeLeadForm from "@/components/HomeLeadForm";
 import { StatsBand } from "@/components/Blocks";
 import { site } from "@/content/site";
@@ -62,10 +61,6 @@ export default function Home() {
             sizes="(max-width: 1100px) 100vw, 588px"
             priority
           />
-          {/* id — цель ссылок «Спросить Уранию» с других страниц. */}
-          <div className={styles.chatSlot} id="urania">
-            <UraniaChat />
-          </div>
         </div>
       </section>
 

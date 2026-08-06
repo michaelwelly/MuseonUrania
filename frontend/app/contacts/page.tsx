@@ -140,7 +140,7 @@ export default function ContactsPage() {
           <div className={styles.uraniaCard}>
             <h2 className={styles.uraniaTitle}>{uraniaCard.title}</h2>
             <p className={styles.uraniaText}>{uraniaCard.text}</p>
-            <Link className={styles.uraniaCta} href="/#urania">
+            <Link className={styles.uraniaCta} href="#urania">
               {uraniaCard.cta}
             </Link>
           </div>

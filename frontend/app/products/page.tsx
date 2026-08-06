@@ -37,7 +37,7 @@ export default function ProductsPage() {
           href: "/contacts/",
           analytics: "product_quote_click",
         }}
-        secondary={{ label: "Спросить Уранию", href: "/#urania" }}
+        secondary={{ label: "Спросить Уранию", href: "#urania" }}
       />
     </main>
   );

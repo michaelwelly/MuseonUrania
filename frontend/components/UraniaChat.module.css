@@ -3,6 +3,7 @@
 .chat {
   display: flex;
   flex-direction: column;
+  min-height: 0;
   overflow: hidden;
   background: #fff;
   border: 1px solid var(--line);
@@ -100,12 +101,16 @@
 /* --- лента --- */
 .feed {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 20px 18px;
   background: var(--soft);
-  overflow: hidden;
+  /* В панели фиксированной высоты лента может не поместиться — даём прокрутку.
+     В ленте всё равно только последние сообщения, но клавиатура на мобильном
+     сжимает окно сильнее расчётного. */
+  overflow-y: auto;
 }
 
 .msg {

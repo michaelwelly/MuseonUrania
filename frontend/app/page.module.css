@@ -76,15 +76,6 @@
   object-fit: cover;
 }
 
-/* Карточка чата наезжает на стык колонок. */
-.chatSlot {
-  position: absolute;
-  left: -104px;
-  bottom: 40px;
-  width: 404px;
-  z-index: 2;
-}
-
 /* ---------- кнопки ---------- */
 .btn {
   display: inline-flex;
@@ -611,10 +602,6 @@
     grid-template-columns: 1fr 46vw;
   }
 
-  .chatSlot {
-    left: -72px;
-    width: 360px;
-  }
 }
 
 @media (max-width: 1100px) {
@@ -637,13 +624,6 @@
     min-height: 320px;
   }
 
-  /* Чат уходит из наложения в отдельный блок после фото. */
-  .chatSlot {
-    position: static;
-    width: 100%;
-    padding: 22px 24px 26px;
-    background: var(--soft);
-  }
 
   .section,
   .sectionSoft,
@@ -697,8 +677,7 @@
   .sectionSoft,
   .docs,
   .splitCopy,
-  .cta,
-  .chatSlot {
+  .cta {
     padding-left: 18px;
     padding-right: 18px;
   }

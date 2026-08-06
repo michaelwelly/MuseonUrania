@@ -7,7 +7,7 @@ import styles from "./UraniaChat.module.css";
 
 type Message = { from: "bot" | "me"; text: string };
 
-export default function UraniaChat() {
+export default function UraniaChat({ onClose }: { onClose?: () => void }) {
   const [list, setList] = useState<Message[]>([{ from: "bot", text: urania.greeting }]);
   const [typing, setTyping] = useState(false);
   const [draft, setDraft] = useState("");
@@ -53,14 +53,26 @@ export default function UraniaChat() {
           <div className={styles.name}>{urania.name}</div>
           <div className={styles.role}>{urania.role}</div>
         </div>
-        <div className={styles.headTools} aria-hidden="true">
-          <button type="button" className={styles.headButton} tabIndex={-1}>
-            −
-          </button>
-          <button type="button" className={styles.headButton} tabIndex={-1}>
-            ×
-          </button>
-        </div>
+        {onClose && (
+          <div className={styles.headTools}>
+            <button
+              type="button"
+              className={styles.headButton}
+              onClick={onClose}
+              aria-label="Свернуть чат"
+            >
+              −
+            </button>
+            <button
+              type="button"
+              className={styles.headButton}
+              onClick={onClose}
+              aria-label="Закрыть чат"
+            >
+              ×
+            </button>
+          </div>
+        )}
       </div>
 
       <div className={styles.feed} aria-live="polite">
