@@ -117,7 +117,11 @@ export default function Home() {
         <ul className={styles.cards}>
           {featured.map((p) => (
             <li key={p.slug}>
-              <Link className={styles.card} href="/products/" data-analytics="product_card_open">
+              <Link
+                className={styles.card}
+                href={`/products/${p.slug}/`}
+                data-analytics="product_card_open"
+              >
                 <div className={styles.cardPhoto}>
                   <Image
                     src={p.image.src}
