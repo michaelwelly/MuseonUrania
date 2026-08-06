@@ -28,9 +28,11 @@ type Props = {
   topics?: readonly string[];
   analytics: string;
   submitLabel?: string;
+  hint?: string;
+  messageLabel?: string;
 };
 
-export default function LeadForm({ topics, analytics, submitLabel }: Props) {
+export default function LeadForm({ topics, analytics, submitLabel, hint, messageLabel }: Props) {
   const [errors, setErrors] = useState<Errors>({});
   const [tried, setTried] = useState(false);
 
@@ -50,7 +52,7 @@ export default function LeadForm({ topics, analytics, submitLabel }: Props) {
   return (
     <form className={styles.form} onSubmit={onSubmit} noValidate>
       {topics && (
-        <div className={`${styles.field} ${styles.wide}`}>
+        <div className={`${styles.field} ${styles.fieldWide}`} style={{ marginTop: 0 }}>
           <label className={styles.label} htmlFor="topic">
             Тема обращения
           </label>
@@ -64,63 +66,65 @@ export default function LeadForm({ topics, analytics, submitLabel }: Props) {
         </div>
       )}
 
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor="name">
-          {serviceForm.fields.name} <span className={styles.required}>*</span>
-        </label>
-        <input
-          id="name"
-          name="name"
-          className={`${styles.input} ${errors.name ? styles.invalid : ""}`}
-          autoComplete="name"
-          aria-invalid={!!errors.name}
-        />
-        {errors.name && <span className={styles.error}>{errors.name}</span>}
+      <div className={styles.row} style={topics ? { marginTop: 18 } : undefined}>
+        <div className={styles.field}>
+          <label className={styles.label} htmlFor="name">
+            {serviceForm.fields.name} <span className={styles.required}>*</span>
+          </label>
+          <input
+            id="name"
+            name="name"
+            className={`${styles.input} ${errors.name ? styles.invalid : ""}`}
+            autoComplete="name"
+            aria-invalid={!!errors.name}
+          />
+          {errors.name && <span className={styles.error}>{errors.name}</span>}
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.label} htmlFor="company">
+            {serviceForm.fields.company}
+          </label>
+          <input
+            id="company"
+            name="company"
+            className={styles.input}
+            autoComplete="organization"
+          />
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.label} htmlFor="phone">
+            {serviceForm.fields.phone} <span className={styles.required}>*</span>
+          </label>
+          <input
+            id="phone"
+            name="phone"
+            type="tel"
+            className={`${styles.input} ${errors.phone ? styles.invalid : ""}`}
+            autoComplete="tel"
+            aria-invalid={!!errors.phone}
+          />
+          {errors.phone && <span className={styles.error}>{errors.phone}</span>}
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.label} htmlFor="email">
+            {serviceForm.fields.email} <span className={styles.required}>*</span>
+          </label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            className={`${styles.input} ${errors.email ? styles.invalid : ""}`}
+            autoComplete="email"
+            aria-invalid={!!errors.email}
+          />
+          {errors.email && <span className={styles.error}>{errors.email}</span>}
+        </div>
       </div>
 
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor="company">
-          {serviceForm.fields.company}
-        </label>
-        <input
-          id="company"
-          name="company"
-          className={styles.input}
-          autoComplete="organization"
-        />
-      </div>
-
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor="phone">
-          {serviceForm.fields.phone} <span className={styles.required}>*</span>
-        </label>
-        <input
-          id="phone"
-          name="phone"
-          type="tel"
-          className={`${styles.input} ${errors.phone ? styles.invalid : ""}`}
-          autoComplete="tel"
-          aria-invalid={!!errors.phone}
-        />
-        {errors.phone && <span className={styles.error}>{errors.phone}</span>}
-      </div>
-
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor="email">
-          {serviceForm.fields.email} <span className={styles.required}>*</span>
-        </label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          className={`${styles.input} ${errors.email ? styles.invalid : ""}`}
-          autoComplete="email"
-          aria-invalid={!!errors.email}
-        />
-        {errors.email && <span className={styles.error}>{errors.email}</span>}
-      </div>
-
-      <div className={`${styles.field} ${styles.wide}`}>
+      <div className={`${styles.field} ${styles.fieldWide}`}>
         <label className={styles.label} htmlFor="product">
           {serviceForm.fields.product}
         </label>
@@ -134,9 +138,9 @@ export default function LeadForm({ topics, analytics, submitLabel }: Props) {
         </select>
       </div>
 
-      <div className={`${styles.field} ${styles.wide}`}>
+      <div className={`${styles.field} ${styles.fieldWide}`}>
         <label className={styles.label} htmlFor="message">
-          {serviceForm.fields.message} <span className={styles.required}>*</span>
+          {messageLabel ?? serviceForm.fields.message} <span className={styles.required}>*</span>
         </label>
         <textarea
           id="message"
@@ -147,23 +151,24 @@ export default function LeadForm({ topics, analytics, submitLabel }: Props) {
         {errors.message && <span className={styles.error}>{errors.message}</span>}
       </div>
 
-      <div className={styles.wide}>
-        <label className={styles.consent}>
-          <input type="checkbox" name="consent" />
-          <span>
-            {serviceForm.consent} <span className={styles.required}>*</span>
-          </span>
-        </label>
-        {errors.consent && <span className={styles.error}>{errors.consent}</span>}
-        <p className={styles.consentNote}>{serviceForm.consentNote}</p>
+      <label className={styles.consent}>
+        <input type="checkbox" name="consent" />
+        <span>
+          {serviceForm.consent} <span className={styles.required}>*</span>
+        </span>
+      </label>
+      {errors.consent && <span className={styles.error}>{errors.consent}</span>}
+      <p className={styles.consentNote}>{serviceForm.consentNote}</p>
+
+      <div className={styles.actions}>
+        <button type="submit" className={styles.submit} data-analytics={analytics}>
+          {submitLabel ?? serviceForm.submit}
+        </button>
+        {hint && <span className={styles.hint}>{hint}</span>}
       </div>
 
-      <button type="submit" className={styles.submit} data-analytics={analytics}>
-        {submitLabel ?? serviceForm.submit}
-      </button>
-
       {showPending && (
-        <p className={styles.pending} role="status">
+        <p className={styles.pending} role="status" data-anim="rise">
           Отправка заявок подключается вместе с CRM. Пока напишите на{" "}
           <a href={`mailto:${site.email}`}>{site.email}</a> или позвоните{" "}
           <a href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a> — запрос примет

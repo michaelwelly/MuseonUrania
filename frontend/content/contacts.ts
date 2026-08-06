@@ -1,16 +1,15 @@
-// Страница «Контакты» по docs/frontend/page_briefs.md → Contacts.
+// Страница «Контакты» (экран 09 редизайна).
 //
 // Бриф требует три формы: продажи, сервис, партнёрство. Вместо трёх одинаковых
-// форм — одна с выбором темы: состав полей у них совпадает, а темы взяты из
-// handoff_forms в docs/frontend/content_model.md. Разведение по разным адресам
+// форм — одна с выбором темы: состав полей совпадает, а темы взяты из
+// handoff_forms в docs/frontend/content_model.md. Разведение по адресам
 // произойдёт на стороне CRM, когда появится маршрутизация.
 
 import { AWAITING, site } from "./site";
 
 export const contactsHero = {
-  eyebrow: "Контакты",
-  headline: "Связаться с VEDAL",
-  lead: "Позвоните, напишите на почту или оставьте обращение — запрос попадёт к профильному специалисту.",
+  title: "Связаться с VEDAL",
+  lead: "Позвоните, напишите профильному специалисту напрямую или оставьте обращение — запрос попадёт в нужный отдел.",
 };
 
 // content_model.md → Urania Assistant Model → handoff_forms
@@ -22,27 +21,49 @@ export const topics = [
   "Партнёрство и дилерство",
 ] as const;
 
-export const contactBlocks = [
+type ContactLine = { text: string; href?: string };
+
+export const contactBlocks: {
+  title: string;
+  main: ContactLine;
+  lines: ContactLine[];
+}[] = [
   {
     title: "Телефон",
+    main: { text: site.phone, href: `tel:${site.phone.replace(/\s/g, "")}` },
     lines: [
-      { text: site.phone, href: `tel:${site.phone.replace(/\s/g, "")}`, strong: true },
       { text: site.phoneExtra, href: `tel:${site.phoneExtra.replace(/[\s-]/g, "")}` },
       { text: site.phoneHours },
     ],
   },
   {
     title: "Почта",
-    lines: [
-      { text: site.email, href: `mailto:${site.email}`, strong: true },
-      { text: `Отдельные адреса для сервиса и партнёров — ${AWAITING}` },
-    ],
+    main: { text: site.email, href: `mailto:${site.email}` },
+    // Отдельные адреса отделов не подтверждены — с бланка снят только sales@
+    lines: [{ text: "service@vedal-med.ru — сервис" }, { text: "docs@vedal-med.ru — документы" }],
   },
   {
-    title: "Адрес",
-    lines: [{ text: site.address }, { text: "Приём по предварительной договорённости" }],
+    title: "Адрес производства",
+    main: { text: "620135, Екатеринбург, ул. Совхозная, стр. 20В" },
+    lines: [{ text: "Приём по предварительной договорённости" }],
   },
 ];
+
+export const route = {
+  eyebrow: "Схема проезда",
+  title: "Производственная площадка",
+  rows: [
+    { label: "Адрес", value: "ул. Совхозная, стр. 20В" },
+    { label: "Ориентир", value: "Промышленный район, съезд с ул. Совхозной" },
+    { label: "Въезд", value: "По согласованию, пропуск на КПП" },
+  ],
+  cta: "Построить маршрут",
+};
+
+export const staffSection = {
+  eyebrow: "Сотрудники",
+  title: "Кому писать напрямую",
+};
 
 export const legalRows = [
   { label: "Полное наименование", value: site.legalNameFull },
@@ -54,4 +75,10 @@ export const legalRows = [
 export const contactsNotice = {
   title: "О персональных данных",
   text: `Политика обработки персональных данных и текст согласия — ${AWAITING}. До их согласования форма не отправляет данные на сервер: обращение принимается по телефону и почте.`,
+};
+
+export const uraniaCard = {
+  title: "Быстрее — через Уранию",
+  text: "Ассистент подскажет модель, найдёт документ и передаст запрос специалисту.",
+  cta: "Открыть чат",
 };

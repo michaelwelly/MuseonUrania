@@ -1,0 +1,273 @@
+/* Стилизованная схема проезда на чистом CSS.
+   Внешние картографические сервисы не подключаем — решение заказчика. */
+
+.map {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+  overflow: hidden;
+  background: #e7ede9;
+}
+
+/* Сетка */
+.grid {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(#dce5df 1px, transparent 1px),
+    linear-gradient(90deg, #dce5df 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+/* Кварталы */
+.block {
+  position: absolute;
+  border-radius: 4px;
+  background: #dee7e0;
+}
+
+.block1 {
+  left: -6%;
+  top: 8%;
+  width: 34%;
+  height: 26%;
+}
+
+.block2 {
+  left: 6%;
+  top: 44%;
+  width: 22%;
+  height: 30%;
+}
+
+.block3 {
+  right: 4%;
+  top: 12%;
+  width: 26%;
+  height: 22%;
+}
+
+.block4 {
+  right: -4%;
+  bottom: 6%;
+  width: 30%;
+  height: 28%;
+  background: #e1eae2;
+}
+
+.round {
+  left: 8%;
+  bottom: -6%;
+  width: 26%;
+  height: 22%;
+  border-radius: 50%;
+  background: #dfeadf;
+}
+
+/* Дороги */
+.roadH {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 41%;
+  height: 34px;
+  background: #fff;
+}
+
+.roadDash {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(41% + 16px);
+  height: 2px;
+  background: repeating-linear-gradient(90deg, #c6d2ca 0 12px, transparent 12px 26px);
+}
+
+.roadDiag {
+  position: absolute;
+  left: 62%;
+  top: -10%;
+  width: 26px;
+  height: 130%;
+  background: #fff;
+  transform: rotate(13deg);
+}
+
+.roadBottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 14%;
+  height: 16px;
+  background: var(--soft);
+}
+
+/* Подписи улиц */
+.street {
+  position: absolute;
+  font-family: var(--font-mono), monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #7c8a82;
+}
+
+.streetA {
+  left: 24px;
+  top: calc(41% - 26px);
+}
+
+.streetB {
+  right: 24px;
+  bottom: calc(14% + 24px);
+}
+
+/* Маркер */
+.marker {
+  position: absolute;
+  left: 50%;
+  top: 41%;
+  transform: translate(-50%, -100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.plate {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 15px;
+  background: var(--deep);
+  border-radius: 3px;
+  box-shadow: 0 14px 34px -12px rgba(8, 33, 29, 0.6);
+  white-space: nowrap;
+}
+
+/* Квадрат с «+» — отсылка к кресту в логотипе. */
+.cross {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 2px;
+  background: var(--green);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.plateName {
+  font-family: var(--font-display), sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+}
+
+.plateNote {
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.pin {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+}
+
+.ping {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--green);
+  animation: v-ping 2.2s ease-out infinite;
+}
+
+@keyframes v-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+.dot {
+  position: relative;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--green);
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+/* Контролы зума — декоративные, обработчиков нет. */
+.zoom {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.zoom span {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  font-size: 17px;
+  color: var(--text-2);
+  line-height: 1;
+}
+
+.zoom span:first-child {
+  border-bottom: 1px solid var(--line-2);
+}
+
+.legend {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 13px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.legendDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+@media (max-width: 640px) {
+  .plate {
+    padding: 9px 12px;
+  }
+
+  .plateNote {
+    display: none;
+  }
+
+  .legend {
+    font-size: 11px;
+  }
+}

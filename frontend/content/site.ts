@@ -22,19 +22,68 @@ export const site = {
 // CTA шапки по макету заказчика. В hero остаётся «Запросить КП».
 export const headerCta = { label: "Связаться с нами", href: "/contacts/" };
 
-// Вкладки действующего сайта vedal-med.ru, переданы заказчиком.
-// Отличия от docs/frontend/sitemap.md: нет «Главная» (её роль выполняет логотип)
-// и «Партнёры», добавлена «Разработка и технологии», «Пресс-центр» назван «Новости».
+// Семь пунктов редизайна. «Разработка и технологии» удалён вместе с разделом —
+// прямое требование заказчика из хендоффа.
 export const nav = [
   { label: "О компании", href: "/about/" },
   { label: "Продукция", href: "/products/" },
   { label: "Сервис", href: "/service/" },
-  { label: "Разработка и технологии", href: "/technology/" },
   { label: "Производство", href: "/production/" },
   { label: "Документы", href: "/documents/" },
   { label: "Новости", href: "/news/" },
   { label: "Контакты", href: "/contacts/" },
 ];
+
+// Верхняя утилитарная полоса шапки
+export const topbar = {
+  note: "Екатеринбург, ул. Совхозная, стр. 20В — собственное производство",
+  noteShort: "Собственное производство · Екатеринбург",
+  links: [
+    { label: "Лицензии и разрешительные документы", href: "/documents/" },
+    { label: "Сервисный запрос", href: "/service/" },
+  ],
+};
+
+// Футер
+export const footer = {
+  about:
+    "Производим оборудование для неонатологии, реанимации, анестезиологии и интенсивной терапии. Разработка, сборка и сервис — внутри одной компании.",
+  columns: [
+    {
+      title: "Компания",
+      links: [
+        { label: "О компании", href: "/about/" },
+        { label: "Производство", href: "/production/" },
+        { label: "Документы и лицензии", href: "/documents/" },
+        { label: "Новости", href: "/news/" },
+        { label: "Контакты", href: "/contacts/" },
+      ],
+    },
+    {
+      title: "Оборудование",
+      links: [
+        { label: "Неонатология", href: "/products/" },
+        { label: "Реанимация", href: "/products/" },
+        { label: "Анестезиология", href: "/products/" },
+        { label: "Мониторинг", href: "/products/" },
+        { label: "Сервис и поддержка", href: "/service/" },
+      ],
+    },
+  ],
+  // Ссылки на аккаунты заказчик не передавал — до этого пилюли никуда не ведут.
+  messengers: [
+    { label: "Telegram", href: null },
+    { label: "WhatsApp", href: null },
+    { label: "VK", href: null },
+  ],
+  subscribe: {
+    title: "Новости и релизы",
+    placeholder: "Рабочая почта",
+    note: "Отправляя почту, вы соглашаетесь с политикой обработки персональных данных.",
+  },
+  disclaimer:
+    "Информация на сайте не является публичной офертой. Регистрационные удостоверения публикуются после согласования.",
+};
 
 // docs/frontend/page_briefs.md → Home → Hero draft
 export const hero = {

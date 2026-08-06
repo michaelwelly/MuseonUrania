@@ -1,169 +1,448 @@
-/* Стили формы — components/LeadForm.module.css, здесь только страница. */
+/* Контакты. Экран 09 редизайна.
+   Стили формы — components/LeadForm.module.css, она общая с /service/. */
 
 .page {
   display: flex;
   flex-direction: column;
 }
 
-.section {
-  padding: 56px 64px;
-  border-bottom: 1px solid var(--line);
-}
-
-.page > section:nth-of-type(even) {
-  background: var(--soft);
-}
-
-.eyebrow {
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--green);
-}
-
-.h1 {
-  margin-top: 14px;
-  font-size: clamp(32px, 3.4vw, 52px);
-  line-height: 1.1;
-  max-width: 16ch;
-}
-
-.h2 {
-  font-size: clamp(22px, 2vw, 30px);
-  line-height: 1.2;
-}
-
-.lead {
-  margin-top: 20px;
-  max-width: 62ch;
-  font-size: clamp(16px, 1.3vw, 20px);
-  line-height: 1.5;
-  color: var(--muted);
-}
-
-.cards {
+/* ---------- три блока контактов ---------- */
+.blocks {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-  margin-top: 32px;
+  grid-template-columns: repeat(3, 1fr);
+  border-bottom: 1px solid var(--line);
   list-style: none;
 }
 
-.card {
-  padding: 24px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
+.block {
+  padding: 34px 40px;
+  border-right: 1px solid var(--line);
 }
 
-.cardTitle {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+.block:last-child {
+  border-right: 0;
+}
+
+.blockTitle {
+  font-family: var(--font-mono), monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--muted);
 }
 
-.lines {
-  margin-top: 14px;
+.contacts {
+  margin-top: 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  font-size: 15px;
-  line-height: 1.5;
+  gap: 8px;
   font-style: normal;
 }
 
-.strong {
-  font-size: 22px;
-  font-weight: 800;
+.mainPhone {
+  font-family: var(--font-display), sans-serif;
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
 }
 
-.muted {
+.mainMail {
+  font-family: var(--font-display), sans-serif;
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  word-break: break-word;
+}
+
+.mainAddress {
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.line {
+  font-size: 15px;
+  color: var(--text-2);
+}
+
+.lineDim {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.contacts a:hover {
+  color: var(--green);
+}
+
+/* ---------- схема проезда ---------- */
+.route {
+  display: grid;
+  grid-template-columns: 400px 1fr;
+}
+
+.routePanel {
+  padding: 48px;
+  background: var(--deep);
+  color: #fff;
+}
+
+.eyebrow {
+  font-family: var(--font-mono), monospace;
+  font-size: 11.5px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--green-on-dark);
+}
+
+.routeTitle {
+  margin-top: 16px;
+  font-size: 28px;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+.routeRows {
+  margin-top: 26px;
+  list-style: none;
+}
+
+.routeRow {
+  padding: 14px 0;
+  border-top: 1px solid var(--on-dark-line);
+}
+
+.routeLabel {
+  font-size: 12.5px;
+  color: var(--on-dark-3);
+}
+
+.routeValue {
+  margin-top: 4px;
+  font-size: 15px;
+}
+
+.routeCta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 50px;
+  padding: 0 24px;
+  margin-top: 26px;
+  border-radius: 2px;
+  background: var(--green);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.routeCta:hover {
+  background: var(--green-bright);
+  color: #fff;
+}
+
+.mapSlot {
+  min-height: 520px;
+}
+
+/* ---------- сотрудники ---------- */
+.staff {
+  padding: 72px 48px 76px;
+  background: #fff;
+}
+
+.staffHead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 40px;
+}
+
+.h2 {
+  margin-top: 14px;
+  font-size: 36px;
+  letter-spacing: -0.03em;
+}
+
+.staffNote {
+  flex: none;
+  max-width: 40ch;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.staffGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 36px;
+  list-style: none;
+}
+
+.person {
+  height: 100%;
+  padding: 26px 26px 28px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+
+.personTop {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.avatar {
+  position: relative;
+  flex: none;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--soft);
+}
+
+.avatar img {
+  object-fit: cover;
+  object-position: 50% 22%;
+}
+
+.personName {
+  font-family: var(--font-display), sans-serif;
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.personRole {
+  margin-top: 4px;
+  font-size: 13.5px;
+  color: var(--deep-2);
+}
+
+.personScope {
+  margin-top: 18px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.personContacts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line-2);
+  font-style: normal;
+}
+
+.personPhone {
+  font-size: 15.5px;
+  font-weight: 600;
+}
+
+.personMail {
   font-size: 14px;
   color: var(--muted);
 }
 
-.lines a:hover {
+.personContacts a:hover {
   color: var(--green);
 }
 
-/* Форма и реквизиты рядом */
-.split {
+/* ---------- форма и реквизиты ---------- */
+.bottom {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.6fr);
-  gap: 48px;
-  align-items: start;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 56px;
+  padding: 68px 48px;
+  background: var(--soft);
+}
+
+.card {
+  padding: 34px 36px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+
+.cardTitle {
+  font-size: 28px;
+  letter-spacing: -0.03em;
 }
 
 .aside {
-  padding: 24px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.legalCard {
+  padding: 28px 30px;
   background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 3px;
 }
 
-.table {
+.legalTitle {
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+
+.legalRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 13px 0;
+  border-top: 1px solid var(--line-2);
+  font-size: 14.5px;
+}
+
+.legalRow:first-of-type {
   margin-top: 14px;
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 15px;
 }
 
-.table th,
-.table td {
-  padding: 10px 0;
-  text-align: left;
-  vertical-align: top;
-  border-bottom: 1px solid var(--line);
-}
-
-.table th {
-  padding-right: 16px;
-  font-weight: 500;
+.legalLabel {
   color: var(--muted);
-  white-space: nowrap;
+  font-size: 13px;
 }
 
-.table tr:last-child th,
-.table tr:last-child td {
-  border-bottom: 0;
+.uraniaCard {
+  padding: 28px 30px;
+  background: var(--deep-2);
+  border-radius: 3px;
+  color: #fff;
 }
 
-.note {
-  max-width: 78ch;
+.uraniaTitle {
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+
+.uraniaText {
+  margin-top: 12px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--on-dark-lead);
+}
+
+.uraniaCta {
+  display: inline-flex;
+  align-items: center;
+  height: 46px;
+  padding: 0 20px;
   margin-top: 18px;
+  border-radius: 2px;
+  background: var(--green);
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.uraniaCta:hover {
+  background: var(--green-bright);
+  color: #fff;
+}
+
+/* ---------- персональные данные ---------- */
+.notice {
+  padding: 48px;
+  background: #fff;
+  border-top: 1px solid var(--line);
+}
+
+.noticeTitle {
+  font-size: 24px;
+  letter-spacing: -0.03em;
+}
+
+.noticeText {
+  margin-top: 16px;
+  max-width: 78ch;
   padding: 18px 20px;
   border-left: 3px solid #a08422;
-  background: #fff;
+  background: var(--soft);
   font-size: 15px;
   line-height: 1.6;
   color: var(--muted);
 }
 
-@media (max-width: 1000px) {
-  .section {
-    padding: 40px 24px;
+@media (max-width: 1100px) {
+  .blocks {
+    grid-template-columns: 1fr;
   }
 
-  .split {
+  .block {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    padding: 26px 24px;
+  }
+
+  .block:last-child {
+    border-bottom: 0;
+  }
+
+  .route,
+  .bottom {
     grid-template-columns: 1fr;
-    gap: 28px;
+  }
+
+  .routePanel,
+  .staff,
+  .bottom,
+  .notice {
+    padding: 48px 24px;
+  }
+
+  .mapSlot {
+    min-height: 360px;
+  }
+
+  .staffGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .staffHead {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .h2 {
+    font-size: 26px;
   }
 }
 
-@media (max-width: 560px) {
-  .table th,
-  .table td {
-    display: block;
-    width: auto;
-    padding-right: 0;
-    white-space: normal;
+@media (max-width: 640px) {
+  .block,
+  .routePanel,
+  .staff,
+  .bottom,
+  .notice {
+    padding-left: 18px;
+    padding-right: 18px;
   }
 
-  .table th {
-    padding-bottom: 2px;
-    border-bottom: 0;
+  .staffGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .card {
+    padding: 24px 20px;
+  }
+
+  .cardTitle {
+    font-size: 23px;
+  }
+
+  .mapSlot {
+    min-height: 300px;
+  }
+
+  .routeCta {
+    width: 100%;
   }
 }

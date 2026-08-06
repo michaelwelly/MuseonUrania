@@ -1,110 +1,252 @@
-/* Одна строка по макету заказчика:
-   логотип — навигация — телефон с часами — кнопка «Связаться с нами». */
+/* Шапка редизайна: утилитарная полоса + основная полоса.
+   Размеры из design/VedalHeader.dc.html. */
+
 .header {
-  border-bottom: 1px solid var(--line);
   background: #fff;
 }
 
-.inner {
-  min-height: 92px;
+/* --- верхняя утилитарная полоса --- */
+.topbar {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 18px 32px;
-  padding: 12px 48px;
+  gap: 32px;
+  height: 36px;
+  padding: 0 48px;
+  background: var(--deep);
+  color: var(--on-dark-2);
+  font-size: 12.5px;
+  letter-spacing: 0.01em;
+}
+
+.topbarNote {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.dot {
+  flex: none;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.topbarLinks {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  white-space: nowrap;
+}
+
+.topbarLinks a {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.topbarLinks a:hover {
+  color: #fff;
+}
+
+.sep {
+  width: 1px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* --- основная полоса --- */
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 36px;
+  height: 78px;
+  padding: 0 48px;
+  border-bottom: 1px solid var(--line);
 }
 
 .brand {
-  flex-shrink: 0;
+  flex: none;
   display: flex;
   align-items: center;
 }
 
 .brand img {
   display: block;
+  height: 42px;
   width: auto;
-  height: 60px;
 }
 
 .nav {
-  flex: 1;
   display: flex;
-  justify-content: center;
+  align-items: center;
   gap: 26px;
   font-size: 15px;
+}
+
+.navLink {
+  position: relative;
+  padding: 28px 0;
+  white-space: nowrap;
+  color: var(--text-2);
   font-weight: 500;
 }
 
-.nav a {
-  white-space: nowrap;
+.navLink:hover {
+  color: var(--green);
 }
 
-.nav a:hover {
-  color: var(--green);
+/* Активный пункт: цвет, вес и полоса, прижатая к низу полосы. */
+.navActive {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.navActive::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--green);
+}
+
+.tools {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 24px;
 }
 
 .phone {
-  flex-shrink: 0;
   display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.phoneIcon {
-  flex-shrink: 0;
-  color: var(--green);
+  flex-direction: column;
+  gap: 1px;
+  text-align: right;
 }
 
 .phoneNumber {
-  display: block;
-  font-size: 19px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   white-space: nowrap;
 }
 
 .phoneHours {
-  display: block;
-  margin-top: 2px;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--muted);
   white-space: nowrap;
 }
 
 .cta {
-  flex-shrink: 0;
-  height: 52px;
-  padding: 0 22px;
-  border-radius: 4px;
-  background: var(--green);
-  color: #fff;
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-size: 15px;
+  height: 48px;
+  padding: 0 22px;
+  border-radius: 2px;
+  background: var(--green);
+  color: #fff;
+  font-size: 14.5px;
   font-weight: 600;
   white-space: nowrap;
 }
 
 .cta:hover {
   background: var(--green-dark);
+  color: #fff;
 }
 
-@media (max-width: 1450px) {
-  .inner {
-    padding: 12px 24px;
-    gap: 16px 22px;
-  }
-
-  .nav {
-    gap: 18px;
-    font-size: 14px;
-  }
+/* --- мобильные элементы, на десктопе скрыты --- */
+.iconButton,
+.burger {
+  display: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 2px;
+  cursor: pointer;
 }
 
-/* Одна строка требует минимум 1317px: навигация 763 + логотип 72 + телефон 164
-   + кнопка 204 + отступы 114. Ниже этого переносим навигацию на свою строку,
-   иначе flex выталкивает вниз кнопку. Прокрутка вместо исчезновения меню. */
+.iconButton {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--green);
+}
+
+.burger {
+  border: 0;
+  background: var(--green);
+}
+
+.burgerLines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.burgerLines span {
+  height: 2px;
+  background: #fff;
+}
+
+.burgerLines span:nth-child(1),
+.burgerLines span:nth-child(2) {
+  width: 18px;
+}
+
+.burgerLines span:nth-child(3) {
+  width: 12px;
+}
+
+.menu {
+  display: none;
+  flex-direction: column;
+  padding: 8px 18px 20px;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+
+.menu a {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line-2);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.menu a:last-of-type {
+  border-bottom: 0;
+}
+
+.menuActive {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.menuCta {
+  margin-top: 14px;
+  justify-content: center;
+  width: 100%;
+}
+
+/* Одна строка требует места под навигацию, телефон и кнопку.
+   Ниже порога навигация уходит на свою строку с прокруткой. */
 @media (max-width: 1320px) {
+  .topbar,
+  .bar {
+    padding: 0 24px;
+  }
+
+  .bar {
+    flex-wrap: wrap;
+    height: auto;
+    padding-top: 12px;
+    padding-bottom: 0;
+    gap: 16px 24px;
+  }
+
   .brand {
     margin-right: auto;
   }
@@ -112,13 +254,27 @@
   .nav {
     order: 3;
     flex-basis: 100%;
-    justify-content: flex-start;
+    gap: 20px;
     overflow-x: auto;
     scrollbar-width: none;
   }
 
   .nav::-webkit-scrollbar {
     display: none;
+  }
+
+  .navLink {
+    padding: 14px 0;
+  }
+}
+
+@media (max-width: 1100px) {
+  .topbarNote {
+    display: none;
+  }
+
+  .topbarLinks {
+    margin-left: 0;
   }
 }
 
@@ -127,22 +283,63 @@
     display: none;
   }
 
-  .phoneNumber {
-    font-size: 16px;
-  }
-
   .brand img {
-    height: 48px;
+    height: 36px;
   }
 }
 
+/* Мобильная шапка: логотип, кнопка-телефон, бургер. */
 @media (max-width: 640px) {
-  .phone {
+  .topbar {
+    justify-content: center;
+    gap: 0;
+    height: 28px;
+    padding: 0 18px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .topbarLinks,
+  .topbarNote {
     display: none;
   }
 
-  .inner {
-    min-height: 72px;
-    padding: 10px 16px;
+  .topbarShort {
+    display: block;
   }
+
+  .bar {
+    flex-wrap: nowrap;
+    gap: 12px;
+    height: 62px;
+    padding: 0 18px;
+  }
+
+  .brand img {
+    height: 34px;
+  }
+
+  .nav,
+  .phone,
+  .cta {
+    display: none;
+  }
+
+  .tools {
+    gap: 12px;
+  }
+
+  .iconButton,
+  .burger {
+    display: grid;
+  }
+
+  .menuOpen {
+    display: flex;
+  }
+}
+
+/* Короткая подпись показывается только на мобильной полосе. */
+.topbarShort {
+  display: none;
 }
