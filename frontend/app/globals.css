@@ -1,18 +1,40 @@
-/* Токены и базовые стили из prototypes/urania-web-interface.html.
-   Фирменные шрифты/цвета ждут бренд-материалов от НН
-   (docs/strategy/content_and_seo_plan.md → Content Inventory To Request). */
+/* Токены редизайна. Значения из design_handoff_vedal_redesign/README.md →
+   Design Tokens. Зелёный снят пипеткой с логотипа и не меняется. */
 
 :root {
-  /* Снят пипеткой с логотипа public/brand/vedal-logo.png.
-     В прототипе стоял подобранный на глаз #008f5b — заменён на фирменный. */
+  /* база */
   --green: #149c3c;
-  --green-dark: #0f7c30;
-  --teal: #00695f;
+  --green-dark: #0f7c30; /* hover основной кнопки в шапке */
+  --green-bright: #17b04a; /* hover основной кнопки в hero */
+  --green-on-dark: #3fc46a; /* eyebrow и ссылки на тёмном фоне */
+
   --ink: #12202a;
+  --text-2: #3e4e55; /* текст средней важности */
   --muted: #5e6b73;
+
+  --deep: #08211d; /* самый тёмный: hero, футер, тёмные полосы */
+  --deep-2: #0d3229; /* шапки внутренних страниц, CTA */
+
   --line: #dde5e2;
-  --soft: #f4f8f6;
+  --line-2: #edf2ef; /* тонкие разделители внутри карточек */
+  --line-3: #c9d6d0; /* границы вторичных кнопок и чипов */
+
   --page: #fff;
+  --soft: #f4f8f6;
+  --img-bg: #eef3f0; /* подложка под фото до загрузки */
+
+  --ok-bg: #eaf6ee;
+  --ok-fg: #0f7c30;
+  --ok-line: #c9e6d3;
+
+  /* белый с альфой на тёмном фоне */
+  --on-dark-lead: rgba(255, 255, 255, 0.66);
+  --on-dark-2: rgba(255, 255, 255, 0.62);
+  --on-dark-3: rgba(255, 255, 255, 0.5);
+  --on-dark-label: rgba(255, 255, 255, 0.38);
+  --on-dark-line: rgba(255, 255, 255, 0.14);
+  --on-dark-field: rgba(255, 255, 255, 0.2);
+  --on-dark-ghost: rgba(255, 255, 255, 0.28);
 }
 
 * {
@@ -33,15 +55,27 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), system-ui, sans-serif;
   color: var(--ink);
   background: var(--page);
   -webkit-font-smoothing: antialiased;
 }
 
+h1,
+h2,
+h3 {
+  font-family: var(--font-display), var(--font-body), sans-serif;
+  font-weight: 500;
+}
+
 a {
   color: inherit;
   text-decoration: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
 }
 
 /* Шапка и контент вместе занимают минимум высоту экрана, поэтому футер
@@ -57,7 +91,14 @@ a {
   flex: 1;
 }
 
-:focus-visible {
-  outline: 2px solid var(--teal);
-  outline-offset: 2px;
+/* Продукт медицинский — движение сдержанное. Под prefers-reduced-motion
+   гасим пульсации и появления полностью. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
