@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { hero, headerCta } from "@/content/site";
+import PageHero from "@/components/PageHero";
+import { StatsBand, DarkCta } from "@/components/Blocks";
 import {
   aboutHero,
+  aboutStats,
+  cycle,
   directions,
-  production,
-  products,
-  team,
-  quality,
   partners,
   legal,
   aboutCta,
@@ -22,168 +21,111 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <main className={styles.page}>
-      <section className={styles.section}>
-        <div className={`${styles.container} ${styles.hero}`}>
-          <div>
-            <p className={styles.eyebrow}>{aboutHero.eyebrow}</p>
-            <h1 className={styles.h1}>{aboutHero.headline}</h1>
-            <p className={styles.lead}>{aboutHero.lead}</p>
-          </div>
-          <div className={styles.heroImage}>
-            <Image
-              src={aboutHero.image.src}
-              alt={aboutHero.image.alt}
-              fill
-              sizes="(max-width: 1000px) 100vw, 50vw"
-              priority
-            />
-          </div>
-        </div>
-      </section>
+      <PageHero
+        crumbs={[{ label: "Главная", href: "/" }, { label: "О компании" }]}
+        title={aboutHero.title}
+        lead={aboutHero.lead}
+      />
 
-      <section className={styles.section}>
-        <div className={styles.container}>
-          <h2 className={styles.h2}>Направления</h2>
-          <ul className={styles.grid}>
-            {directions.map((d) => (
-              <li key={d.title} className={styles.card}>
-                <h3 className={styles.cardTitle}>{d.title}</h3>
-                <p className={styles.cardText}>{d.text}</p>
+      <div className={styles.banner}>
+        <Image
+          src={aboutHero.image.src}
+          alt={aboutHero.image.alt}
+          fill
+          sizes="100vw"
+          priority
+        />
+      </div>
+
+      <StatsBand items={aboutStats} />
+
+      <section className={styles.cycle}>
+        <div>
+          <p className={styles.eyebrow}>{cycle.eyebrow}</p>
+          <h2 className={styles.cycleTitle}>{cycle.title}</h2>
+        </div>
+        <div>
+          {cycle.paragraphs.map((p) => (
+            <p key={p} className={styles.paragraph}>
+              {p}
+            </p>
+          ))}
+          <ul className={styles.grid2}>
+            {cycle.items.map((it) => (
+              <li key={it.n} className={styles.cell}>
+                <p className={styles.num}>{it.n}</p>
+                <h3 className={styles.cellTitle}>{it.title}</h3>
+                <p className={styles.cellText}>{it.text}</p>
               </li>
             ))}
           </ul>
         </div>
       </section>
 
-      <section className={styles.section}>
-        <div className={`${styles.container} ${styles.split}`}>
-          <div>
-            <h2 className={styles.h2}>{production.title}</h2>
-            {production.paragraphs.map((p) => (
-              <p key={p} className={styles.paragraph}>
-                {p}
-              </p>
-            ))}
-          </div>
-          <div className={styles.splitImage}>
-            <Image
-              src={production.image.src}
-              alt={production.image.alt}
-              fill
-              sizes="(max-width: 1000px) 100vw, 50vw"
-            />
-          </div>
-        </div>
+      <section className={styles.directions}>
+        <h2 className={styles.h2}>Направления</h2>
+        <ul className={styles.grid5}>
+          {directions.map((d) => (
+            <li key={d.n} className={styles.dirCell}>
+              <p className={styles.num}>{d.n}</p>
+              <h3 className={styles.cellTitle}>{d.title}</h3>
+              <p className={styles.cellText}>{d.text}</p>
+            </li>
+          ))}
+        </ul>
       </section>
 
-      <section className={styles.section}>
-        <div className={styles.container}>
-          <h2 className={styles.h2}>Продукция</h2>
-          <ul className={styles.grid}>
-            {products.map((p) => (
-              <li key={p.name} className={styles.card}>
-                <h3 className={styles.cardTitle}>{p.name}</h3>
-                <p className={styles.cardKind}>{p.kind}</p>
-                <p className={styles.cardText}>{p.text}</p>
+      <section className={styles.partners}>
+        <div className={styles.partnersCopy}>
+          <p className={`${styles.eyebrow} ${styles.eyebrowDark}`}>{partners.eyebrow}</p>
+          <h2 className={styles.partnersTitle}>{partners.title}</h2>
+          <ul className={styles.partnerList}>
+            {partners.items.map((p) => (
+              <li key={p.name} className={styles.partner}>
+                <p className={styles.partnerName}>{p.name}</p>
+                <p className={styles.partnerText}>{p.text}</p>
               </li>
             ))}
           </ul>
         </div>
+        <div className={styles.photo}>
+          <Image
+            src={partners.image.src}
+            alt={partners.image.alt}
+            fill
+            sizes="(max-width: 1100px) 100vw, 50vw"
+          />
+        </div>
       </section>
 
-      <section className={styles.section}>
-        <div className={`${styles.container} ${styles.split} ${styles.splitFirst}`}>
-          <div>
-            <h2 className={styles.h2}>{team.title}</h2>
-            {team.paragraphs.map((p) => (
-              <p key={p} className={styles.paragraph}>
-                {p}
-              </p>
+      <section className={styles.legal}>
+        <div>
+          <h2 className={styles.legalTitle}>{legal.title}</h2>
+          <div className={styles.table}>
+            {legal.rows.map((row) => (
+              <div key={row.label} className={styles.row}>
+                <span className={styles.rowLabel}>{row.label}</span>
+                <span>{row.value}</span>
+              </div>
             ))}
           </div>
-          <div className={styles.splitImage}>
-            <Image
-              src={team.image.src}
-              alt={team.image.alt}
-              fill
-              sizes="(max-width: 1000px) 100vw, 50vw"
-            />
-          </div>
+        </div>
+        <div className={styles.legalPhoto}>
+          <Image
+            src={legal.image.src}
+            alt={legal.image.alt}
+            fill
+            sizes="(max-width: 1100px) 100vw, 45vw"
+          />
         </div>
       </section>
 
-      <section className={styles.section}>
-        <div className={styles.container}>
-          <h2 className={styles.h2}>{quality.title}</h2>
-          <p className={styles.paragraph}>{quality.text}</p>
-          <p className={styles.note}>{quality.note}</p>
-        </div>
-      </section>
-
-      <section className={styles.section}>
-        <div className={styles.container}>
-          <h2 className={styles.h2}>Партнёры</h2>
-          <ul className={styles.grid}>
-            {partners.map((p) => (
-              <li key={p.name} className={styles.card}>
-                <h3 className={styles.cardTitle}>{p.name}</h3>
-                <p className={styles.cardText}>{p.text}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      <section className={styles.section}>
-        <div className={`${styles.container} ${styles.split} ${styles.splitFirst}`}>
-          <div>
-            <h2 className={styles.h2}>{legal.title}</h2>
-            <table className={styles.table}>
-              <tbody>
-                {legal.rows.map((row) => (
-                  <tr key={row.label}>
-                    <th scope="row">{row.label}</th>
-                    <td>{row.value}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className={styles.splitImage}>
-            <Image
-              src={legal.image.src}
-              alt={legal.image.alt}
-              fill
-              sizes="(max-width: 1000px) 100vw, 50vw"
-            />
-          </div>
-        </div>
-      </section>
-
-      <section className={styles.section}>
-        <div className={`${styles.container} ${styles.cta}`}>
-          <div>
-            <h2 className={styles.h2}>{aboutCta.title}</h2>
-            <p className={styles.lead}>{aboutCta.text}</p>
-          </div>
-          <div className={styles.actions}>
-            <a
-              className={`${styles.button} ${styles.primary}`}
-              href={hero.primaryCta.href}
-              data-analytics="hero_quote_click"
-            >
-              {hero.primaryCta.label}
-            </a>
-            <a
-              className={`${styles.button} ${styles.secondary}`}
-              href={headerCta.href}
-              data-analytics="header_contact_click"
-            >
-              {headerCta.label}
-            </a>
-          </div>
-        </div>
-      </section>
+      <DarkCta
+        title={aboutCta.title}
+        text={aboutCta.text}
+        primary={{ label: "Запросить КП", href: "/contacts/", analytics: "hero_quote_click" }}
+        secondary={{ label: "Контакты", href: "/contacts/" }}
+      />
     </main>
   );
 }
