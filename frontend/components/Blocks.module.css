@@ -1,0 +1,149 @@
+/* Блоки, повторяющиеся на нескольких экранах редизайна:
+   полоса цифр и тёмный CTA. */
+
+/* ---------- полоса цифр ---------- */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+  list-style: none;
+}
+
+.stat {
+  padding: 30px 32px;
+  border-right: 1px solid var(--line);
+}
+
+.stat:last-child {
+  border-right: 0;
+}
+
+.statValue {
+  font-family: var(--font-display), sans-serif;
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.statLabel {
+  margin-top: 7px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* ---------- тёмный CTA ---------- */
+.cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 48px;
+  padding: 56px 48px;
+  color: #fff;
+}
+
+.ctaDeep {
+  background: var(--deep);
+}
+
+.ctaDeep2 {
+  background: var(--deep-2);
+}
+
+.ctaTitle {
+  font-size: 30px;
+  letter-spacing: -0.03em;
+}
+
+.ctaText {
+  margin-top: 12px;
+  max-width: 56ch;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--on-dark-2);
+}
+
+.ctaActions {
+  flex: none;
+  display: flex;
+  gap: 12px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 54px;
+  padding: 0 26px;
+  border-radius: 2px;
+  font-size: 15.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.btnPrimary {
+  background: var(--green);
+  color: #fff;
+}
+
+.btnPrimary:hover {
+  background: var(--green-bright);
+  color: #fff;
+}
+
+.btnGhost {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  font-weight: 500;
+}
+
+.btnGhost:hover {
+  border-color: #fff;
+  color: #fff;
+}
+
+@media (max-width: 1100px) {
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .stat:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .cta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 24px;
+    padding: 40px 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .stat {
+    padding: 22px 18px;
+  }
+
+  .cta {
+    padding: 30px 18px 34px;
+  }
+
+  .ctaTitle {
+    font-size: 23px;
+  }
+
+  .ctaActions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .btn {
+    width: 100%;
+    height: 50px;
+  }
+}

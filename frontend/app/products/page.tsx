@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import PageHero from "@/components/PageHero";
+import { DarkCta } from "@/components/Blocks";
 import { categories, products } from "@/content/products";
 import Catalog from "./catalog";
 import styles from "./page.module.css";
@@ -28,27 +28,17 @@ export default function ProductsPage() {
 
       <Catalog />
 
-      <section className={styles.cta}>
-        <div>
-          <h2 className={styles.ctaTitle}>Не нашли нужную конфигурацию?</h2>
-          <p className={styles.ctaText}>
-            Опишите задачу отделения — Урания подскажет модели сразу, а специалист подготовит
-            предложение с характеристиками и документами.
-          </p>
-        </div>
-        <div className={styles.ctaActions}>
-          <Link
-            className={`${styles.btn} ${styles.btnPrimary}`}
-            href="/contacts/"
-            data-analytics="product_quote_click"
-          >
-            Запросить подбор
-          </Link>
-          <Link className={`${styles.btn} ${styles.btnGhost}`} href="/#urania">
-            Спросить Уранию
-          </Link>
-        </div>
-      </section>
+      <DarkCta
+        tone="deep"
+        title="Не нашли нужную конфигурацию?"
+        text="Опишите задачу отделения — Урания подскажет модели сразу, а специалист подготовит предложение с характеристиками и документами."
+        primary={{
+          label: "Запросить подбор",
+          href: "/contacts/",
+          analytics: "product_quote_click",
+        }}
+        secondary={{ label: "Спросить Уранию", href: "/#urania" }}
+      />
     </main>
   );
 }

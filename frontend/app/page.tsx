@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import UraniaChat from "@/components/UraniaChat";
 import HomeLeadForm from "@/components/HomeLeadForm";
+import { StatsBand } from "@/components/Blocks";
 import { site } from "@/content/site";
 import { news } from "@/content/news";
 import {
@@ -69,14 +70,7 @@ export default function Home() {
       </section>
 
       {/* 02. Полоса цифр */}
-      <section className={styles.stats} aria-label="Ключевые цифры">
-        {stats.map((s) => (
-          <div key={s.label} className={styles.stat}>
-            <p className={styles.statValue}>{s.value}</p>
-            <p className={styles.statLabel}>{s.label}</p>
-          </div>
-        ))}
-      </section>
+      <StatsBand items={stats} />
 
       {/* 03. Направления */}
       <section className={styles.section}>

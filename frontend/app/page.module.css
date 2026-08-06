@@ -145,37 +145,6 @@
   color: var(--green);
 }
 
-/* ---------- полоса цифр ---------- */
-.stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  background: #fff;
-  border-bottom: 1px solid var(--line);
-}
-
-.stat {
-  padding: 30px 32px;
-  border-right: 1px solid var(--line);
-}
-
-.stat:last-child {
-  border-right: 0;
-}
-
-.statValue {
-  font-family: var(--font-display), sans-serif;
-  font-size: 30px;
-  font-weight: 500;
-  letter-spacing: -0.03em;
-}
-
-.statLabel {
-  margin-top: 7px;
-  font-size: 14px;
-  line-height: 1.45;
-  color: var(--muted);
-}
-
 /* ---------- секции ---------- */
 .section {
   padding: 76px 48px 72px;
@@ -697,17 +666,8 @@
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .stats {
-    grid-template-columns: repeat(2, 1fr);
-  }
 
-  .stat:nth-child(2n) {
-    border-right: 0;
-  }
 
-  .stat:nth-child(-n + 2) {
-    border-bottom: 1px solid var(--line);
-  }
 
   .splitPhoto {
     min-height: 320px;
