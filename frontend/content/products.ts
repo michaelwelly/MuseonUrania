@@ -7,7 +7,10 @@
 // 10 продуктов», а именованных позиций больше. Ни характеристик, ни описаний
 // для них не выдумываем.
 
-import { AWAITING } from "./site";
+// Единственное, что сказано про позиции без датащитов. Характеристики для них
+// не придумываем — правило из HANDOFF.md.
+const PENDING_SUMMARY =
+  "Технические характеристики и документация выдаются по запросу.";
 
 // docs/frontend/page_briefs.md → Products → Categories
 export const categories = [
@@ -76,7 +79,7 @@ export const products: Product[] = [
     kind: "Аппарат искусственной вентиляции лёгких",
     categories: ["Реанимация", "Интенсивная терапия"],
     status: "pending",
-    summary: AWAITING,
+    summary: PENDING_SUMMARY,
   },
   {
     slug: "vedal-vp4",
@@ -84,7 +87,7 @@ export const products: Product[] = [
     kind: "Портативный аппарат ИВЛ для интенсивной терапии",
     categories: ["Интенсивная терапия"],
     status: "pending",
-    summary: AWAITING,
+    summary: PENDING_SUMMARY,
   },
   {
     slug: "vedal-vn10",
@@ -92,7 +95,7 @@ export const products: Product[] = [
     kind: "Портативный неонатальный аппарат ИВЛ",
     categories: ["Неонатология", "Реанимация"],
     status: "pending",
-    summary: AWAITING,
+    summary: PENDING_SUMMARY,
   },
   {
     slug: "vedal-n6",
@@ -100,7 +103,7 @@ export const products: Product[] = [
     kind: "Аппарат ингаляционной анестезии",
     categories: ["Анестезиология"],
     status: "pending",
-    summary: AWAITING,
+    summary: PENDING_SUMMARY,
   },
   {
     slug: "vedal-n12",
@@ -108,7 +111,7 @@ export const products: Product[] = [
     kind: "Монитор пациента",
     categories: ["Мониторинг"],
     status: "pending",
-    summary: AWAITING,
+    summary: PENDING_SUMMARY,
   },
   {
     slug: "vedal-n15",
@@ -116,7 +119,7 @@ export const products: Product[] = [
     kind: "Монитор пациента",
     categories: ["Мониторинг"],
     status: "pending",
-    summary: AWAITING,
+    summary: PENDING_SUMMARY,
   },
   {
     slug: "vedal-n1",
@@ -124,7 +127,7 @@ export const products: Product[] = [
     kind: "Инкубатор для новорождённых",
     categories: ["Неонатология"],
     status: "pending",
-    summary: AWAITING,
+    summary: PENDING_SUMMARY,
   },
   {
     slug: "vedal-n2",
@@ -132,7 +135,7 @@ export const products: Product[] = [
     kind: "Инкубатор для новорождённых",
     categories: ["Неонатология"],
     status: "pending",
-    summary: AWAITING,
+    summary: PENDING_SUMMARY,
   },
   {
     slug: "vedal-n3",
@@ -140,11 +143,11 @@ export const products: Product[] = [
     kind: "Инкубатор для новорождённых",
     categories: ["Неонатология"],
     status: "pending",
-    summary: AWAITING,
+    summary: PENDING_SUMMARY,
   },
 ];
 
 export const statusLabel: Record<Product["status"], string> = {
   confirmed: "Документация подтверждена",
-  pending: "Ожидает уточнения",
+  pending: "Характеристики по запросу",
 };

@@ -1,279 +1,328 @@
+/* Каталог. Экран 02 редизайна. */
+
 .page {
   display: flex;
   flex-direction: column;
 }
 
-.section {
-  padding: 56px 64px;
+/* ---------- полоса фильтров ---------- */
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 48px;
+  background: #fff;
   border-bottom: 1px solid var(--line);
 }
 
-.page > section:nth-of-type(even) {
-  background: var(--soft);
-}
-
-.eyebrow {
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--green);
-}
-
-.h1 {
-  margin-top: 14px;
-  font-size: clamp(32px, 3.4vw, 52px);
-  line-height: 1.1;
-  max-width: 20ch;
-}
-
-.h2 {
-  font-size: clamp(22px, 2vw, 30px);
-  line-height: 1.2;
-}
-
-.lead {
-  margin-top: 20px;
-  max-width: 62ch;
-  font-size: clamp(16px, 1.3vw, 20px);
-  line-height: 1.5;
-  color: var(--muted);
-}
-
-/* Фильтры */
-.filters {
+.chips {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
-.filter {
-  min-height: 42px;
-  padding: 0 18px;
+.chips::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 38px;
+  padding: 0 16px;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 19px;
   background: #fff;
-  color: var(--ink);
+  color: var(--text-2);
   font: inherit;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 13.5px;
+  font-weight: 500;
+  white-space: nowrap;
   cursor: pointer;
 }
 
-.filter:hover {
+.chip:hover {
   border-color: var(--green);
   color: var(--green);
 }
 
-.filterActive,
-.filterActive:hover {
-  border-color: var(--green);
-  background: var(--green);
+.chipActive,
+.chipActive:hover {
+  background: var(--deep-2);
+  border-color: var(--deep-2);
   color: #fff;
+  font-weight: 600;
 }
 
-.count {
-  margin-top: 18px;
-  font-size: 15px;
+.meta {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 13.5px;
   color: var(--muted);
+  white-space: nowrap;
 }
 
-/* Карточки */
+.sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.sort:hover {
+  border-color: var(--green);
+}
+
+.sortActive {
+  border-color: var(--deep-2);
+}
+
+/* ---------- сетка ---------- */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 24px;
-  margin-top: 28px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  padding: 36px 48px 56px;
+  background: var(--soft);
   list-style: none;
 }
 
 .card {
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  height: 100%;
   background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 3px;
   overflow: hidden;
 }
 
-.thumb {
+.card:hover {
+  border-color: var(--green);
+}
+
+.photo {
   position: relative;
-  aspect-ratio: 4 / 3;
-  background: var(--soft);
-  border-bottom: 1px solid var(--line);
+  height: 224px;
+  background: var(--img-bg);
 }
 
-.thumb img {
-  object-fit: contain;
+.photo img {
+  object-fit: cover;
 }
 
-/* Заглушка вместо фото: держит ту же высоту, чтобы карточки в ряду
-   не разъезжались, когда снимок ещё не пришёл. */
-.thumbEmpty {
+/* Фото ещё нет — держим ту же высоту, чтобы карточки не разъезжались. */
+.photoEmpty {
   display: grid;
   place-items: center;
-  color: var(--muted);
-  font-size: 14px;
-  text-align: center;
   padding: 16px;
+  font-family: var(--font-mono), monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
 }
 
 .body {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  flex: 1;
-  padding: 20px;
+  padding: 22px 22px 24px;
+}
+
+.cat {
+  font-family: var(--font-mono), monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 .name {
-  font-size: 19px;
-  font-weight: 800;
+  margin-top: 10px;
+  font-size: 20px;
+  letter-spacing: -0.02em;
 }
 
 .kind {
-  margin-top: 4px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--green);
+  margin-top: 7px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink);
 }
 
 .summary {
-  margin-top: 12px;
-  font-size: 15px;
+  margin: 12px 0 18px;
+  font-size: 13.5px;
   line-height: 1.55;
   color: var(--muted);
 }
 
-.tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 14px;
-  list-style: none;
-}
-
-.tag {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--soft);
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.status {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 18px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.status::before {
-  content: "";
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.statusConfirmed {
-  color: var(--green);
-}
-
-.statusPending {
-  color: #a08422;
-}
-
-.cardActions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+.badge {
   margin-top: auto;
-  padding-top: 18px;
-}
-
-.smallButton {
-  min-height: 42px;
-  padding: 0 16px;
-  border-radius: 6px;
-  border: 1px solid var(--green);
+  align-self: flex-start;
   display: inline-flex;
   align-items: center;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--green);
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 2px;
+  font-size: 11.5px;
+  font-weight: 600;
 }
 
-.smallButton:hover {
-  background: var(--green);
-  color: #fff;
+.badgeOk {
+  background: var(--ok-bg);
+  color: var(--ok-fg);
+}
+
+.badgeMuted {
+  background: var(--soft);
+  color: var(--muted);
 }
 
 .empty {
-  margin-top: 28px;
-  padding: 28px;
-  border: 1px dashed var(--line);
-  border-radius: 8px;
+  grid-column: 1 / -1;
+  padding: 40px;
+  border: 1px dashed var(--line-3);
+  border-radius: 3px;
+  background: #fff;
   color: var(--muted);
 }
 
-/* Подбор через ассистента и нижний CTA */
-.assistant {
+/* ---------- CTA ---------- */
+.cta {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: 48px;
+  padding: 52px 48px;
+  background: var(--deep);
+  color: #fff;
 }
 
-.actions {
+.ctaTitle {
+  font-size: 30px;
+  letter-spacing: -0.03em;
+}
+
+.ctaText {
+  margin-top: 12px;
+  max-width: 56ch;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--on-dark-2);
+}
+
+.ctaActions {
+  flex: none;
   display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
+  gap: 12px;
 }
 
-.button {
-  height: 56px;
-  padding: 0 26px;
-  border-radius: 6px;
-  border: 1px solid var(--green);
+.btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 17px;
-  font-weight: 800;
+  height: 54px;
+  padding: 0 26px;
+  border-radius: 2px;
+  font-size: 15.5px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-.primary {
+.btnPrimary {
   background: var(--green);
   color: #fff;
 }
 
-.primary:hover {
-  background: var(--green-dark);
-  border-color: var(--green-dark);
+.btnPrimary:hover {
+  background: var(--green-bright);
+  color: #fff;
 }
 
-.secondary {
-  background: #fff;
-  color: var(--green);
+.btnGhost {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  font-weight: 500;
 }
 
-@media (max-width: 1000px) {
-  .section {
+.btnGhost:hover {
+  border-color: #fff;
+  color: #fff;
+}
+
+@media (max-width: 1100px) {
+  .filters {
+    padding: 16px 24px;
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 28px 24px 44px;
+  }
+
+  .cta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 24px;
     padding: 40px 24px;
   }
 }
 
-@media (max-width: 560px) {
-  .grid {
-    grid-template-columns: 1fr;
+@media (max-width: 640px) {
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding: 16px 18px;
   }
 
-  .button {
+  .chips {
+    margin: 0 -18px;
+    padding: 0 18px;
+  }
+
+  .meta {
+    margin-left: 0;
+    justify-content: space-between;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    padding: 22px 18px 28px;
+  }
+
+  .cta {
+    padding: 30px 18px 34px;
+  }
+
+  .ctaTitle {
+    font-size: 23px;
+  }
+
+  .ctaActions {
+    flex-direction: column;
     width: 100%;
+  }
+
+  .btn {
+    width: 100%;
+    height: 50px;
   }
 }

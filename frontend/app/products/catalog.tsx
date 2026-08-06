@@ -2,99 +2,100 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { categories, products, statusLabel, type Category } from "@/content/products";
-import { hero } from "@/content/site";
 import styles from "./page.module.css";
 
-// Фильтр по категориям из docs/frontend/page_briefs.md → Products.
-// Фильтрация на клиенте: каталог небольшой, перезагрузка страницы ради
-// смены категории тут только мешала бы.
+// Фильтр и сортировка на клиенте: позиций мало, перезагрузка страницы ради
+// смены категории только мешала бы.
 export default function Catalog() {
   const [active, setActive] = useState<Category | null>(null);
-  const shown = active ? products.filter((p) => p.categories.includes(active)) : products;
+  const [docsFirst, setDocsFirst] = useState(false);
+
+  const filtered = active ? products.filter((p) => p.categories.includes(active)) : products;
+  const shown = docsFirst
+    ? [...filtered].sort((a, b) => Number(b.status === "confirmed") - Number(a.status === "confirmed"))
+    : filtered;
 
   return (
     <>
       <div className={styles.filters}>
-        <button
-          type="button"
-          className={`${styles.filter} ${active === null ? styles.filterActive : ""}`}
-          onClick={() => setActive(null)}
-          aria-pressed={active === null}
-        >
-          Все
-        </button>
-        {categories.map((c) => (
+        <div className={styles.chips}>
           <button
-            key={c}
             type="button"
-            className={`${styles.filter} ${active === c ? styles.filterActive : ""}`}
-            onClick={() => setActive(c)}
-            aria-pressed={active === c}
+            className={`${styles.chip} ${active === null ? styles.chipActive : ""}`}
+            onClick={() => setActive(null)}
+            aria-pressed={active === null}
           >
-            {c}
+            Все
           </button>
-        ))}
+          {categories.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className={`${styles.chip} ${active === c ? styles.chipActive : ""}`}
+              onClick={() => setActive(c)}
+              aria-pressed={active === c}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+
+        <div className={styles.meta}>
+          <span aria-live="polite">
+            Показано {shown.length} из {products.length}
+          </span>
+          <button
+            type="button"
+            className={`${styles.sort} ${docsFirst ? styles.sortActive : ""}`}
+            onClick={() => setDocsFirst((v) => !v)}
+            aria-pressed={docsFirst}
+          >
+            Сначала с документацией
+            <svg width="11" height="7" viewBox="0 0 12 8" fill="none" aria-hidden="true">
+              <path d="M1 1.5 6 6.5l5-5" stroke="currentColor" strokeWidth="1.6" />
+            </svg>
+          </button>
+        </div>
       </div>
 
-      <p className={styles.count} aria-live="polite">
-        Показано {shown.length} из {products.length}
-      </p>
+      <ul className={styles.grid}>
+        {shown.length === 0 && <li className={styles.empty}>В этой категории пока нет позиций.</li>}
 
-      {shown.length === 0 ? (
-        <p className={styles.empty}>В этой категории пока нет позиций.</p>
-      ) : (
-        <ul className={styles.grid}>
-          {shown.map((p) => (
-            <li key={p.slug} className={styles.card}>
-              <div className={`${styles.thumb} ${p.image ? "" : styles.thumbEmpty}`}>
+        {shown.map((p) => (
+          <li key={p.slug}>
+            <Link className={styles.card} href="/products/" data-analytics="product_card_open">
+              <div className={`${styles.photo} ${p.image ? "" : styles.photoEmpty}`}>
                 {p.image ? (
                   <Image
                     src={p.image.src}
                     alt={p.image.alt}
                     fill
-                    sizes="(max-width: 560px) 100vw, 320px"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 33vw"
                   />
                 ) : (
-                  <span>Фото ожидает уточнения</span>
+                  <span>Фото ожидает съёмки</span>
                 )}
               </div>
 
               <div className={styles.body}>
+                <p className={styles.cat}>{p.categories[0]}</p>
                 <h3 className={styles.name}>{p.name}</h3>
                 <p className={styles.kind}>{p.kind}</p>
                 <p className={styles.summary}>{p.summary}</p>
-
-                <ul className={styles.tags}>
-                  {p.categories.map((c) => (
-                    <li key={c} className={styles.tag}>
-                      {c}
-                    </li>
-                  ))}
-                </ul>
-
-                <p
-                  className={`${styles.status} ${
-                    p.status === "confirmed" ? styles.statusConfirmed : styles.statusPending
+                <span
+                  className={`${styles.badge} ${
+                    p.status === "confirmed" ? styles.badgeOk : styles.badgeMuted
                   }`}
                 >
                   {statusLabel[p.status]}
-                </p>
-
-                <div className={styles.cardActions}>
-                  <a
-                    className={styles.smallButton}
-                    href={hero.primaryCta.href}
-                    data-analytics="product_quote_click"
-                  >
-                    Запросить КП
-                  </a>
-                </div>
+                </span>
               </div>
-            </li>
-          ))}
-        </ul>
-      )}
+            </Link>
+          </li>
+        ))}
+      </ul>
     </>
   );
 }

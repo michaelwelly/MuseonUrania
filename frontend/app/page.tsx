@@ -61,7 +61,8 @@ export default function Home() {
             sizes="(max-width: 1100px) 100vw, 588px"
             priority
           />
-          <div className={styles.chatSlot}>
+          {/* id — цель ссылок «Спросить Уранию» с других страниц. */}
+          <div className={styles.chatSlot} id="urania">
             <UraniaChat />
           </div>
         </div>

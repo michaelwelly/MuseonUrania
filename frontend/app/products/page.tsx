@@ -1,82 +1,52 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { hero, headerCta, urania } from "@/content/site";
-import { products } from "@/content/products";
+import PageHero from "@/components/PageHero";
+import { categories, products } from "@/content/products";
 import Catalog from "./catalog";
 import styles from "./page.module.css";
 
-const confirmed = products.filter((p) => p.status === "confirmed").length;
+const lead =
+  "Изделия для неонатологии, реанимации, анестезиологии, мониторинга и интенсивной терапии. У каждой позиции указан статус документации.";
 
 export const metadata: Metadata = {
-  title: "Продукция — VEDAL",
-  description:
-    "Оборудование VEDAL для неонатологии, реанимации, анестезиологии, мониторинга и интенсивной терапии.",
+  title: "Каталог оборудования — VEDAL",
+  description: lead,
 };
 
 export default function ProductsPage() {
   return (
     <main className={styles.page}>
-      <section className={styles.section}>
-        <p className={styles.eyebrow}>Продукция</p>
-        <h1 className={styles.h1}>Оборудование для неонатологии и интенсивной терапии</h1>
-        <p className={styles.lead}>
-          Выберите категорию или откройте карточку изделия. По {confirmed} позициям
-          описание приведено по документации производителя, остальные позиции
-          уточняются — характеристики появятся после согласования.
-        </p>
-      </section>
+      <PageHero
+        crumbs={[{ label: "Главная", href: "/" }, { label: "Продукция" }]}
+        title="Каталог оборудования"
+        lead={lead}
+        stats={[
+          { value: String(products.length), label: "моделей" },
+          { value: String(categories.length), label: "направлений" },
+        ]}
+      />
 
-      <section className={styles.section}>
-        <Catalog />
-      </section>
+      <Catalog />
 
-      <section className={styles.section}>
-        <div className={styles.assistant}>
-          <div>
-            <h2 className={styles.h2}>Не знаете, что подойдёт под задачу?</h2>
-            <p className={styles.lead}>
-              {urania.name} задаст уточняющие вопросы и подскажет категорию, а сложный
-              запрос передаст специалисту.
-            </p>
-          </div>
-          <div className={styles.actions}>
-            {/* Панели чата ещё нет, поэтому ведём к карточке ассистента на главной. */}
-            <Link
-              className={`${styles.button} ${styles.secondary}`}
-              href="/#urania"
-              data-analytics="urania_quick_action_click"
-            >
-              Подобрать оборудование
-            </Link>
-          </div>
+      <section className={styles.cta}>
+        <div>
+          <h2 className={styles.ctaTitle}>Не нашли нужную конфигурацию?</h2>
+          <p className={styles.ctaText}>
+            Опишите задачу отделения — Урания подскажет модели сразу, а специалист подготовит
+            предложение с характеристиками и документами.
+          </p>
         </div>
-      </section>
-
-      <section className={styles.section}>
-        <div className={styles.assistant}>
-          <div>
-            <h2 className={styles.h2}>Запросите коммерческое предложение</h2>
-            <p className={styles.lead}>
-              Укажите позиции и объём — специалист подготовит предложение и ответит
-              на вопросы по комплектации.
-            </p>
-          </div>
-          <div className={styles.actions}>
-            <a
-              className={`${styles.button} ${styles.primary}`}
-              href={hero.primaryCta.href}
-              data-analytics="quote_form_submit"
-            >
-              {hero.primaryCta.label}
-            </a>
-            <a
-              className={`${styles.button} ${styles.secondary}`}
-              href={headerCta.href}
-              data-analytics="header_contact_click"
-            >
-              {headerCta.label}
-            </a>
-          </div>
+        <div className={styles.ctaActions}>
+          <Link
+            className={`${styles.btn} ${styles.btnPrimary}`}
+            href="/contacts/"
+            data-analytics="product_quote_click"
+          >
+            Запросить подбор
+          </Link>
+          <Link className={`${styles.btn} ${styles.btnGhost}`} href="/#urania">
+            Спросить Уранию
+          </Link>
         </div>
       </section>
     </main>
