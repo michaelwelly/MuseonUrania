@@ -1,6 +1,10 @@
 HELP.md
 target/
 .mvn/wrapper/maven-wrapper.jar
+
+# Локальное хранилище документов вместо объектного, пока Yandex Cloud нет.
+# Загруженные файлы в репозиторий не попадают.
+var/
 !**/src/main/**/target/
 !**/src/test/**/target/
 

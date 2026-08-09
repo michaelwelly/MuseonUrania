@@ -29,6 +29,21 @@ public class AuditLog {
     @Transactional(propagation = Propagation.MANDATORY)
     public void record(String actor, String action, String subject, String subjectId,
                        Map<String, ?> payload) {
+        write(actor, action, subject, subjectId, payload);
+    }
+
+    // Запись в собственной транзакции — для случаев, когда вызывающий сразу
+    // после этого валит свою. Отказ в доступе к закрытому файлу заканчивается
+    // исключением, и запись, сделанная в общей транзакции, откатилась бы вместе
+    // с ним: попытка не осталась бы в журнале вообще.
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void recordIndependently(String actor, String action, String subject, String subjectId,
+                                    Map<String, ?> payload) {
+        write(actor, action, subject, subjectId, payload);
+    }
+
+    private void write(String actor, String action, String subject, String subjectId,
+                       Map<String, ?> payload) {
         var entry = new AuditEntry();
         entry.setId(UUID.randomUUID());
         entry.setActor(actor);
