@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16
+    container_name: vedal-db
+    environment:
+      POSTGRES_DB: vedal
+      POSTGRES_USER: vedal
+      POSTGRES_PASSWORD: vedal
+    ports:
+      - "5434:5432"
+    volumes:
+      - vedal-db:/var/lib/postgresql/data
+
+volumes:
+  vedal-db:
