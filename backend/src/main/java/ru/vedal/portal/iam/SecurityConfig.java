@@ -36,7 +36,8 @@ public class SecurityConfig {
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/public/**", "/api/forms/**", "/actuator/health", "/login").permitAll()
+                        .requestMatchers("/api/public/**", "/api/forms/**", "/api/assistant/**",
+                                "/actuator/health", "/login").permitAll()
                         .requestMatchers("/admin/**").authenticated()
                         .anyRequest().denyAll())
                 .formLogin(form -> form.defaultSuccessUrl("/admin/products", true))
@@ -44,7 +45,8 @@ public class SecurityConfig {
                 // Публичное API читающее, Forms API принимает JSON без cookie-сессии —
                 // CSRF защищает от отправки формы из чужой вкладки под чужой сессией,
                 // а здесь сессии нет. Периметр двери — валидация и лимит частоты.
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/api/public/**", "/api/forms/**"))
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/api/public/**", "/api/forms/**",
+                        "/api/assistant/**"))
                 .build();
     }
 }

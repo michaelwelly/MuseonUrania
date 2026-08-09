@@ -21,6 +21,13 @@ public class ApiExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ProblemDetail tooMany(TooManyRequestsException e) {
+        var problem = ProblemDetail.forStatus(HttpStatus.TOO_MANY_REQUESTS);
+        problem.setTitle(e.getMessage());
+        return problem;
+    }
+
     // Разбор по полям: форма на сайте должна показать ошибку рядом с полем,
     // а не одну строку «неверный запрос» над всей формой.
     @ExceptionHandler(MethodArgumentNotValidException.class)

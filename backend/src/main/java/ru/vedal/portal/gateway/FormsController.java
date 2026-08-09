@@ -2,12 +2,15 @@ package ru.vedal.portal.gateway;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import ru.vedal.portal.common.RateLimit;
+import ru.vedal.portal.common.TooManyRequestsException;
 import ru.vedal.portal.crm.LeadIntake;
 
 import java.util.UUID;
@@ -26,7 +29,7 @@ public class FormsController {
     private final LeadIntake intake;
     private final RateLimit rateLimit;
 
-    public FormsController(LeadIntake intake, RateLimit rateLimit) {
+    public FormsController(LeadIntake intake, @Qualifier("formsRateLimit") RateLimit rateLimit) {
         this.intake = intake;
         this.rateLimit = rateLimit;
     }
