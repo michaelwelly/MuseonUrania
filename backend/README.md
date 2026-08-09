@@ -60,17 +60,71 @@ gateway. Под это девять модулей:
 
 ## Как запустить
 
-Maven не нужен — в репозитории лежит wrapper, он поставит себе Maven сам.
+Нужен только JDK 25 и PostgreSQL 16. Maven ставить не надо — в репозитории лежит
+wrapper.
+
+**База.** Либо контейнером:
+
+```
+docker compose -f backend/compose.yaml up -d
+```
+
+либо нативной установкой PostgreSQL 16 на порт 5434 с ролью и базой `vedal`.
+Адрес, пользователь и пароль переопределяются переменными `VEDAL_DB_URL`,
+`VEDAL_DB_USER`, `VEDAL_DB_PASSWORD`; значения по умолчанию совпадают с
+`compose.yaml`. Схему ведёт только Flyway, миграции применяются на старте.
+
+**Приложение.**
 
 ```
 cd backend
-./mvnw test          # сборка и тесты
 ./mvnw spring-boot:run
 ```
 
-Приложение поднимается на `http://localhost:8081`, проверка живости —
-`GET /actuator/health`. Порт не 8080, потому что на машине разработки он занят
-чужим контейнером.
+Первый администратор создаётся, только если заданы обе переменные — иначе
+учётной записи просто не будет:
+
+```
+VEDAL_ADMIN_USER=editor VEDAL_ADMIN_PASSWORD=<пароль> ./mvnw spring-boot:run
+```
+
+Приложение поднимается на `http://localhost:8081`. Порт не 8080, потому что на
+машине разработки он занят чужим контейнером.
+
+## Что уже работает
+
+| Маршрут | Кто ходит | Что делает |
+| --- | --- | --- |
+| `GET /actuator/health` | мониторинг | живость; остальные endpoint'ы закрыты |
+| `GET /api/public/v1/categories` | сборка сайта | категории каталога |
+| `GET /api/public/v1/products` | сборка сайта | только опубликованные позиции, `Cache-Control: max-age=300` |
+| `GET /api/public/v1/products/{slug}` | сборка сайта | карточка изделия; неопубликованное — 404 |
+| `POST /api/forms/v1/leads` | формы сайта | приём заявки, заголовок `Idempotency-Key`, ответ `202` |
+| `GET /admin/products` | сотрудник | список, правка, публикация |
+| `GET /admin/leads` | сотрудник | заявки |
+
+Ошибки всех дверей — `application/problem+json` (RFC 9457).
+
+Каталог наполняется миграцией `V2__catalog_seed.sql`, которая **генерируется**,
+а не пишется руками:
+
+```
+node backend/tools/seed-catalog.mjs > backend/src/main/resources/db/migration/V2__catalog_seed.sql
+```
+
+Источник — `frontend/content/products.ts`. Править `V2` вручную бессмысленно:
+перегенерировать и закоммитить заново.
+
+## Тесты
+
+```
+cd backend
+./mvnw test
+```
+
+Тесты идут на настоящем PostgreSQL через Testcontainers, поэтому **требуют
+запущенного Docker**. H2 не используется: различия диалектов должны вылезать
+здесь, а не на проде.
 
 ## Принятые решения
 
@@ -81,9 +135,17 @@ cd backend
 | Число сервисов | Одно приложение | 50 сотрудников; модули — границы пакетов `ru.vedal.portal.*`, а не отдельные деплои |
 | Раскладка кода | `backend/src/main/java/ru/vedal/portal/<модуль>/` | Стандартный Maven-layout; папки `app/`, `crm/`… рядом остаются документацией модулей |
 
-Spring Boot 4.1.0, стартеры: web, validation, actuator. БД, миграции и
-Keycloak подключаются вместе с первым модулем, которому они нужны, — пустой
-`spring.datasource` без таблиц только ломает старт.
+Spring Boot 4.1.0 на Spring Framework 7. Подключены: webmvc, validation,
+actuator, data-jpa, flyway, security, thymeleaf; Jackson 3.
+
+Три ловушки Boot 4, на которые здесь уже наступили:
+
+- **Flyway подключается через `spring-boot-starter-flyway`,** а не через один
+  `flyway-core`. Автоконфигурации в Boot 4 разнесены по модулям: с одним
+  `flyway-core` миграции не применяются **молча**, без ошибки в логе.
+- **`@AutoConfigureMockMvc`** живёт в `org.springframework.boot.webmvc.test.autoconfigure`,
+  а не в `org.springframework.boot.test.autoconfigure.web.servlet`.
+- **Jackson 3** — пакет `tools.jackson.databind`, а не `com.fasterxml.jackson`.
 
 ## Что ещё не решено
 
