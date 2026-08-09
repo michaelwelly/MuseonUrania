@@ -8,11 +8,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import ru.vedal.portal.audit.AuditLog;
 import ru.vedal.portal.catalog.Product;
 import ru.vedal.portal.catalog.ProductRepository;
 import ru.vedal.portal.common.NotFoundException;
 
+import java.security.Principal;
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 @Controller
@@ -20,9 +23,11 @@ import java.util.UUID;
 public class AdminCatalogController {
 
     private final ProductRepository products;
+    private final AuditLog audit;
 
-    public AdminCatalogController(ProductRepository products) {
+    public AdminCatalogController(ProductRepository products, AuditLog audit) {
         this.products = products;
+        this.audit = audit;
     }
 
     @GetMapping
@@ -44,7 +49,8 @@ public class AdminCatalogController {
                        @RequestParam String kind,
                        @RequestParam String summary,
                        @RequestParam String detail,
-                       @RequestParam String docStatus) {
+                       @RequestParam String docStatus,
+                       Principal who) {
         var product = find(id);
         product.setName(name);
         product.setKind(kind);
@@ -53,6 +59,8 @@ public class AdminCatalogController {
         product.setDocStatus(docStatus);
         product.setUpdatedAt(Instant.now());
         products.save(product);
+        audit.record(actor(who), "product.edit", "product", product.getSlug(),
+                Map.of("docStatus", docStatus));
         return "redirect:/admin/products";
     }
 
@@ -60,12 +68,20 @@ public class AdminCatalogController {
     // убирает изделие с сайта, и это не должно случаться заодно с правкой текста.
     @PostMapping("/{id}/publish")
     @Transactional
-    public String togglePublish(@PathVariable UUID id) {
+    public String togglePublish(@PathVariable UUID id, Principal who) {
         var product = find(id);
         product.setPublished(!product.isPublished());
         product.setUpdatedAt(Instant.now());
         products.save(product);
+        // Пишем в той же транзакции, что и само изменение: видимость изделия
+        // на сайте меняется здесь, и запись об этом не должна разойтись с фактом.
+        audit.record(actor(who), product.isPublished() ? "product.publish" : "product.unpublish",
+                "product", product.getSlug(), Map.of());
         return "redirect:/admin/products";
+    }
+
+    private static String actor(Principal who) {
+        return who == null ? "anonymous" : who.getName();
     }
 
     private Product find(UUID id) {
