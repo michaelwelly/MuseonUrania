@@ -10,10 +10,11 @@ import ru.vedal.portal.common.DomainEvents;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
-public class LeadService implements LeadIntake {
+public class LeadService implements LeadIntake, LeadContacts {
 
     private final LeadRepository leads;
     private final DomainEvents events;
@@ -76,6 +77,13 @@ public class LeadService implements LeadIntake {
                 Map.of("form", lead.getForm(), "source", lead.getSource()));
 
         return new Receipt(lead.getId(), true);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Contact> contact(UUID leadId) {
+        return leads.findById(leadId)
+                .map(l -> new Contact(l.getId(), l.getEmail(), l.getForm(), l.getProductSlug()));
     }
 
     private static String blankToNull(String value) {

@@ -31,6 +31,8 @@ public class DomainEvents {
         event.setAggregateId(aggregateId);
         event.setType(type);
         event.setPayload(serialize(type, payload));
+        // Запоминаем цепочку здесь, в потоке запроса: relay её уже не увидит.
+        event.setCorrelationId(CorrelationId.current());
         outbox.save(event);
         return event.getId();
     }

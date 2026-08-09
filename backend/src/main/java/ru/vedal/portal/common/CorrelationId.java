@@ -24,5 +24,17 @@ public final class CorrelationId {
         MDC.remove(KEY);
     }
 
+    // Восстановление цепочки в потоке, который не обслуживает HTTP-запрос:
+    // relay и потребители событий работают в потоке расписания.
+    public static void runWith(String value, Runnable work) {
+        var previous = MDC.get(KEY);
+        set(value);
+        try {
+            work.run();
+        } finally {
+            if (previous == null) clear(); else MDC.put(KEY, previous);
+        }
+    }
+
     private CorrelationId() {}
 }

@@ -9,6 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
 // Чтение outbox и публикация. Домены сюда не обращаются: они только пишут
@@ -32,12 +34,18 @@ public class OutboxRelay {
 
     private final OutboxRepository outbox;
     private final EventPublisher publisher;
+    private final EventConsumedRepository consumed;
+    private final List<DomainEventConsumer> consumers;
     private final AtomicLong pending = new AtomicLong();
     private final AtomicLong lagSeconds = new AtomicLong();
 
-    public OutboxRelay(OutboxRepository outbox, EventPublisher publisher, MeterRegistry meters) {
+    public OutboxRelay(OutboxRepository outbox, EventPublisher publisher,
+                       EventConsumedRepository consumed, List<DomainEventConsumer> consumers,
+                       MeterRegistry meters) {
         this.outbox = outbox;
         this.publisher = publisher;
+        this.consumed = consumed;
+        this.consumers = consumers;
         meters.gauge("vedal.outbox.pending", pending);
         meters.gauge("vedal.outbox.lag.seconds", lagSeconds);
     }
@@ -50,10 +58,33 @@ public class OutboxRelay {
             // не выставится и событие уйдёт в следующий заход. Дубль потребитель
             // отсечёт по идентификатору, потерянное событие не восстановит никто.
             publisher.publish(event);
+            dispatch(event);
             event.setPublishedAt(Instant.now());
             outbox.save(event);
         }
         return batch.size();
+    }
+
+    // Пока Kafka нет, потребители живут в процессе. Отсечение повторов по
+    // (потребитель, событие) — то же, что будет у консьюмера топика.
+    private void dispatch(Outbox event) {
+        // Восстанавливаем цепочку запроса: этот код работает в потоке
+        // расписания, где MDC пуст, и без этого логи и письма теряют связь
+        // с заявкой, которая их породила.
+        CorrelationId.runWith(event.getCorrelationId(), () -> {
+            for (var consumer : consumers) {
+                if (!consumer.handles(event.getType())) continue;
+                if (consumed.existsByConsumerAndEventId(consumer.name(), event.getId())) continue;
+
+                consumer.consume(event);
+
+                var mark = new EventConsumed();
+                mark.setId(UUID.randomUUID());
+                mark.setConsumer(consumer.name());
+                mark.setEventId(event.getId());
+                consumed.save(mark);
+            }
+        });
     }
 
     @Transactional(readOnly = true)

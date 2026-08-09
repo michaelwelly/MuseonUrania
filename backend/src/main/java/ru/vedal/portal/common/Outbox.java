@@ -28,6 +28,11 @@ public class Outbox {
     @JdbcTypeCode(SqlTypes.JSON)
     private String payload;
 
+    // Идентификатор запроса, породившего событие. Нужен, чтобы цепочка
+    // не обрывалась на границе планировщика: relay работает в другом потоке.
+    @Column(name = "correlation_id")
+    private String correlationId;
+
     @Column(name = "created_at")
     private Instant createdAt = Instant.now();
 
@@ -45,6 +50,8 @@ public class Outbox {
     public void setType(String type) { this.type = type; }
     public String getPayload() { return payload; }
     public void setPayload(String payload) { this.payload = payload; }
+    public String getCorrelationId() { return correlationId; }
+    public void setCorrelationId(String correlationId) { this.correlationId = correlationId; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     public Instant getPublishedAt() { return publishedAt; }
