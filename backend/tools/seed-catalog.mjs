@@ -3,9 +3,9 @@
 //   node backend/tools/seed-catalog.mjs > backend/src/main/resources/db/migration/V2__catalog_seed.sql
 import { products, categories } from "../../frontend/content/products.ts";
 import { randomUUID } from "node:crypto";
+import { slugify } from "./slug.mjs";
 
 const q = (v) => (v === undefined || v === null ? "null" : `'${String(v).replace(/'/g, "''")}'`);
-const slugify = (s) => s.toLowerCase().replace(/[^a-zа-я0-9]+/gi, "-").replace(/^-|-$/g, "");
 
 const out = [];
 out.push("-- Сгенерировано backend/tools/seed-catalog.mjs из frontend/content/products.ts.");
