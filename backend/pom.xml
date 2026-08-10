@@ -17,7 +17,7 @@
 	<properties>
 		<java.version>25</java.version>
 		<!-- Spring Boot 4.1 не тянет testcontainers-bom, версию держим сами. -->
-		<testcontainers.version>1.21.3</testcontainers.version>
+		<testcontainers.version>1.21.4</testcontainers.version>
 	</properties>
 
 	<dependencyManagement>
@@ -78,9 +78,14 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- Именно стартер Boot, а не голый spring-security-test: в Boot 4
+		     тестовые автоконфигурации разнесены по модулям, и без него
+		     springSecurity() к MockMvc не применяется — @WithMockUser молча
+		     не аутентифицирует запрос, а тест с andExpect(is3xxRedirection())
+		     проходит на редиректе к форме входа, ничего не проверив. -->
 		<dependency>
-			<groupId>org.springframework.security</groupId>
-			<artifactId>spring-security-test</artifactId>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
