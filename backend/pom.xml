@@ -67,6 +67,17 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-thymeleaf</artifactId>
 		</dependency>
+		<!-- Публикация событий из outbox. Включается свойством
+		     vedal.events.publisher=kafka; по умолчанию события уходят в лог,
+		     и брокер не нужен для работы приложения.
+
+		     Именно стартер Boot, а не голый spring-kafka: автоконфигурации
+		     в Boot 4 разнесены по модулям, и без стартера нет ни KafkaTemplate,
+		     ни создания топиков — ровно как с flyway-core. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-kafka</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>

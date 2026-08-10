@@ -69,7 +69,8 @@ gateway. Плюс два модуля из
 
 | Что | Состояние | На чём стоит |
 | --- | --- | --- |
-| Kafka | Брокер описан в `compose.yaml` (KRaft, один узел). Реализации `EventPublisher` поверх него нет | Нужен запущенный брокер, иначе реализацию нечем проверить |
+| Kafka: публикация | ✅ готова. Включается `vedal.events.publisher=kafka`, топики заводит приложение | — |
+| Kafka: потребители | Потребители пока в процессе (`DomainEventConsumer`), из топиков не читают | Следующий шаг; форма потребителя уже та же, что будет у консьюмера топика |
 | Object Storage | `FileStorage` работает на локальном каталоге | Выбор хранилища — открытый вопрос в [infrastructure_architecture.md](../docs/architecture/infrastructure_architecture.md) |
 | pgvector | Не используется | **В установке PostgreSQL для Windows от EnterpriseDB расширения нет** — `pg_available_extensions` его не знает. Понадобится образ `pgvector/pgvector:pg16`, и переводить на него надо одновременно `compose.yaml` и `PostgresTestBase`, иначе тесты разойдутся с разработкой |
 | Managed PostgreSQL, VM, бэкапы, мониторинг | Нет | Yandex Cloud |
@@ -195,7 +196,7 @@ VEDAL_ADMIN_USER=editor VEDAL_ADMIN_PASSWORD=<пароль> ./mvnw spring-boot:r
 
 | Порт | Сейчас | Дальше |
 | --- | --- | --- |
-| `EventPublisher` | запись в лог | Kafka |
+| `EventPublisher` | лог по умолчанию, Kafka по `vedal.events.publisher=kafka` | — |
 | `MailSender` | запись в лог | SMTP Яндекс 360 |
 | `FileStorage` | локальный каталог `var/documents` | Yandex Object Storage |
 | `LlmEngine` | детерминированный поиск по словам | YandexGPT + pgvector |
