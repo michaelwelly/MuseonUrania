@@ -71,11 +71,7 @@
   align-items: center;
 }
 
-.brand img {
-  display: block;
-  height: 42px;
-  width: auto;
-}
+/* Размер знака задаёт AnimatedLogo инлайн-стилем из пропа height. */
 
 .nav {
   display: flex;
@@ -283,8 +279,11 @@
     display: none;
   }
 
-  .brand img {
-    height: 36px;
+  /* Прежние 36px от 42px: знак масштабируется целиком, чтобы слои
+     анимации не разъезжались между собой. */
+  .brand > span {
+    transform: scale(0.857);
+    transform-origin: left center;
   }
 }
 
@@ -315,8 +314,9 @@
     padding: 0 18px;
   }
 
-  .brand img {
-    height: 34px;
+  /* Прежние 34px от 42px. */
+  .brand > span {
+    transform: scale(0.81);
   }
 
   .nav,

@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
+import AnimatedLogo from "@/components/AnimatedLogo";
 import { nav, topbar, headerCta, site } from "@/content/site";
 import styles from "./Header.module.css";
 
@@ -52,13 +52,8 @@ export default function Header() {
 
       <div className={styles.bar}>
         <Link href="/" className={styles.brand} aria-label={`${site.brand}, на главную`}>
-          <Image
-            src={site.logo.src}
-            alt={site.brand}
-            width={site.logo.width}
-            height={site.logo.height}
-            priority
-          />
+          {/* 42 — та же высота, что была у статичного знака в .brand img. */}
+          <AnimatedLogo height={42} />
         </Link>
 
         <nav className={styles.nav} aria-label="Основная навигация">
