@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+    <meta charset="utf-8">
+    <title>Заявки — админка VEDAL</title>
+    <style>
+        body { font: 15px/1.5 system-ui, sans-serif; margin: 32px; color: #12202a; }
+        table { border-collapse: collapse; width: 100%; margin-top: 16px; }
+        th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #dde5e2; vertical-align: top; }
+        .muted { color: #5e6b73; }
+        .empty { margin-top: 24px; color: #5e6b73; }
+    </style>
+</head>
+<body>
+<h1>Заявки</h1>
+<p><a th:href="@{/admin/products}">К каталогу</a></p>
+
+<p class="empty" th:if="${#lists.isEmpty(leads)}">Заявок пока нет.</p>
+
+<table th:unless="${#lists.isEmpty(leads)}">
+    <tr>
+        <th>Когда</th><th>Форма</th><th>Кто</th><th>Контакты</th>
+        <th>Изделие</th><th>Обращение</th><th>Статус</th>
+    </tr>
+    <tr th:each="l : ${leads}">
+        <td th:text="${#temporals.format(l.createdAt, 'dd.MM.yyyy HH:mm')}">—</td>
+        <td th:text="${l.form}">—</td>
+        <td>
+            <span th:text="${l.name}">—</span>
+            <div class="muted" th:if="${l.company}" th:text="${l.company}">—</div>
+        </td>
+        <td>
+            <div th:text="${l.phone}">—</div>
+            <div class="muted" th:text="${l.email}">—</div>
+        </td>
+        <td th:text="${l.productSlug} ?: '—'">—</td>
+        <td th:text="${l.message}">—</td>
+        <td th:text="${l.status}">—</td>
+    </tr>
+</table>
+</body>
+</html>

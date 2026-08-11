@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+    <meta charset="utf-8">
+    <title>Каталог — админка VEDAL</title>
+    <style>
+        body { font: 15px/1.5 system-ui, sans-serif; margin: 32px; color: #12202a; }
+        table { border-collapse: collapse; width: 100%; margin-top: 16px; }
+        th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #dde5e2; }
+        .off { color: #5e6b73; }
+        button { font: inherit; padding: 6px 12px; cursor: pointer; }
+    </style>
+</head>
+<body>
+<h1>Каталог</h1>
+<table>
+    <tr><th>Изделие</th><th>Тип</th><th>Документация</th><th>На сайте</th><th></th></tr>
+    <tr th:each="p : ${products}">
+        <td><a th:href="@{/admin/products/{id}(id=${p.id})}" th:text="${p.name}">—</a></td>
+        <td th:text="${p.kind}">—</td>
+        <td th:text="${p.docStatus == 'confirmed'} ? 'подтверждена' : 'уточняется'">—</td>
+        <td th:text="${p.published} ? 'да' : 'нет'" th:classappend="${p.published} ? '' : 'off'">—</td>
+        <td>
+            <form th:action="@{/admin/products/{id}/publish(id=${p.id})}" method="post">
+                <button type="submit" th:text="${p.published} ? 'Снять с сайта' : 'Опубликовать'">—</button>
+            </form>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

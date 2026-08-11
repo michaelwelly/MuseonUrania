@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+    <meta charset="utf-8">
+    <title>Изделие — админка VEDAL</title>
+    <style>
+        body { font: 15px/1.5 system-ui, sans-serif; margin: 32px; color: #12202a; }
+        label { display: block; margin-top: 16px; font-weight: 600; }
+        input, textarea, select { font: inherit; width: 100%; max-width: 640px; padding: 8px; }
+        textarea { height: 120px; }
+        button { font: inherit; margin-top: 20px; padding: 8px 16px; cursor: pointer; }
+    </style>
+</head>
+<body>
+<h1 th:text="${product.name}">Изделие</h1>
+<form th:action="@{/admin/products/{id}(id=${product.id})}" method="post">
+    <label>Название<input name="name" th:value="${product.name}"></label>
+    <label>Тип изделия<input name="kind" th:value="${product.kind}"></label>
+    <label>Краткое описание<textarea name="summary" th:text="${product.summary}"></textarea></label>
+    <label>Развёрнутое описание<textarea name="detail" th:text="${product.detail}"></textarea></label>
+    <label>Статус документации
+        <select name="docStatus">
+            <option value="confirmed" th:selected="${product.docStatus == 'confirmed'}">подтверждена</option>
+            <option value="pending" th:selected="${product.docStatus == 'pending'}">уточняется</option>
+        </select>
+    </label>
+    <button type="submit">Сохранить</button>
+</form>
+<p><a th:href="@{/admin/products}">К списку</a></p>
+</body>
+</html>
