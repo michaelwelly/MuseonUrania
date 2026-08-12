@@ -14,8 +14,9 @@
   padding: 64px 48px 52px;
 }
 
-/* Логотип — PNG на белом фоне без прозрачности, поэтому плашка обязательна.
-   Появится SVG с альфой — плашку убрать. */
+/* Плашка обязательна: надпись в знаке чёрная, а футер на тёмном фоне.
+   Слои знака уже с прозрачностью, но это ничего не меняет — дело в цвете
+   надписи, а не в фоне картинки. */
 .brand {
   display: inline-flex;
   padding: 9px 12px;
@@ -23,11 +24,7 @@
   background: #fff;
 }
 
-.brand img {
-  display: block;
-  height: 40px;
-  width: auto;
-}
+/* Размер знака задаёт AnimatedLogo инлайн-стилем из пропа height. */
 
 .about {
   margin-top: 20px;
@@ -241,8 +238,11 @@ a.pill:hover {
     border-top: 1px solid rgba(255, 255, 255, 0.12);
   }
 
-  .brand img {
-    height: 32px;
+  /* Прежние 32px от 40px. Масштабируем плашку целиком вместе со знаком,
+     иначе она осталась бы под размер 40 и вокруг знака появился бы зазор. */
+  .brand {
+    transform: scale(0.8);
+    transform-origin: left center;
   }
 
   .links {
