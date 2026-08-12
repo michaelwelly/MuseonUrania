@@ -1,58 +1,9 @@
-/* Шапка редизайна: утилитарная полоса + основная полоса.
-   Размеры из design/VedalHeader.dc.html. */
+/* Шапка редизайна. Размеры из design/VedalHeader.dc.html.
+   Верхняя утилитарная полоса убрана по требованию заказчика: ссылки
+   «Лицензии» и «Сервисный запрос» остались в основной навигации и футере. */
 
 .header {
   background: #fff;
-}
-
-/* --- верхняя утилитарная полоса --- */
-.topbar {
-  display: flex;
-  align-items: center;
-  gap: 32px;
-  height: 36px;
-  padding: 0 48px;
-  background: var(--deep);
-  color: var(--on-dark-2);
-  font-size: 12.5px;
-  letter-spacing: 0.01em;
-}
-
-.topbarNote {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  min-width: 0;
-}
-
-.dot {
-  flex: none;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--green);
-}
-
-.topbarLinks {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  white-space: nowrap;
-}
-
-.topbarLinks a {
-  color: rgba(255, 255, 255, 0.72);
-}
-
-.topbarLinks a:hover {
-  color: #fff;
-}
-
-.sep {
-  width: 1px;
-  height: 12px;
-  background: rgba(255, 255, 255, 0.18);
 }
 
 /* --- основная полоса --- */
@@ -230,7 +181,6 @@
 /* Одна строка требует места под навигацию, телефон и кнопку.
    Ниже порога навигация уходит на свою строку с прокруткой. */
 @media (max-width: 1320px) {
-  .topbar,
   .bar {
     padding: 0 24px;
   }
@@ -264,16 +214,6 @@
   }
 }
 
-@media (max-width: 1100px) {
-  .topbarNote {
-    display: none;
-  }
-
-  .topbarLinks {
-    margin-left: 0;
-  }
-}
-
 @media (max-width: 820px) {
   .phoneHours {
     display: none;
@@ -289,24 +229,6 @@
 
 /* Мобильная шапка: логотип, кнопка-телефон, бургер. */
 @media (max-width: 640px) {
-  .topbar {
-    justify-content: center;
-    gap: 0;
-    height: 28px;
-    padding: 0 18px;
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.6);
-  }
-
-  .topbarLinks,
-  .topbarNote {
-    display: none;
-  }
-
-  .topbarShort {
-    display: block;
-  }
-
   .bar {
     flex-wrap: nowrap;
     gap: 12px;
@@ -337,9 +259,4 @@
   .menuOpen {
     display: flex;
   }
-}
-
-/* Короткая подпись показывается только на мобильной полосе. */
-.topbarShort {
-  display: none;
 }
