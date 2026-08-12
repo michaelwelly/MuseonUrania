@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
+import AnimatedLogo from "@/components/AnimatedLogo";
 import { footer, site } from "@/content/site";
 import FooterSubscribe from "./FooterSubscribe";
 import styles from "./Footer.module.css";
@@ -10,12 +10,8 @@ export default function Footer() {
       <div className={styles.top}>
         <div>
           <Link href="/" className={styles.brand} aria-label={`${site.brand}, на главную`}>
-            <Image
-              src={site.logo.src}
-              alt={site.brand}
-              width={site.logo.width}
-              height={site.logo.height}
-            />
+            {/* 40 — та же высота, что была у статичного знака в .brand img. */}
+            <AnimatedLogo height={40} />
           </Link>
           <p className={styles.about}>{footer.about}</p>
           <div className={styles.messengers}>

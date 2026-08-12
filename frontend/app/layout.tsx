@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import UraniaWidget from "@/components/UraniaWidget";
+import LogoPreloader from "@/components/LogoPreloader";
 import Motion from "@/components/Motion";
 import { fontVariables } from "./fonts";
 import "./globals.css";
@@ -20,6 +21,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ru" className={fontVariables}>
       <body>
+        <LogoPreloader />
         <Motion />
         <div className="frame">
           <Header />

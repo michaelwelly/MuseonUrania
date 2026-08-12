@@ -1,0 +1,230 @@
+/* Анимация фирменного знака VEDAL, вариант «Точность», цикл 5.4 с.
+   Слои нарезаны из public/brand/vedal-logo.png:
+   vedal-cross.png — зелёный крест, vedal-word.png — надпись.
+   Знак собирается, держится, стирается за курсором и собирается снова.
+   Только CSS, без библиотек. */
+
+.wrap {
+  position: relative;
+  display: block;
+  flex-shrink: 0;
+}
+
+.settle {
+  position: absolute;
+  inset: 0;
+  animation: vedalSettle 5400ms linear infinite;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+.cross {
+  background-image: url("/brand/vedal-cross.png");
+  clip-path: inset(0 100% 0 0);
+  animation: vedalCross 5400ms linear infinite;
+}
+
+.word {
+  background-image: url("/brand/vedal-word.png");
+  clip-path: inset(0 100% 0 0);
+  animation: vedalWord 5400ms linear infinite;
+}
+
+/* Направляющие: горизонталь по центру знака, вертикаль по левому плечу креста. */
+.guideH,
+.guideV {
+  background: rgba(20, 156, 60, 0.5);
+  opacity: 0;
+}
+
+.guideH {
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  transform-origin: left center;
+  transform: scaleX(0);
+  animation: vedalGuideX 5400ms linear infinite;
+}
+
+.guideV {
+  top: 0;
+  bottom: 0;
+  left: 28.2%;
+  width: 1px;
+  transform-origin: center top;
+  transform: scaleY(0);
+  animation: vedalGuideY 5400ms linear infinite;
+}
+
+/* Курсор набора: слева направо по надписи, в конце цикла стирает её обратно. */
+.cursor {
+  top: 40%;
+  left: 34.3%;
+  width: 2px;
+  height: 22%;
+  background: #149c3c;
+  opacity: 0;
+  animation: vedalCursor 5400ms linear infinite;
+}
+
+@keyframes vedalCross {
+  0% {
+    clip-path: inset(0 100% 0 0);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.15, 1);
+  }
+  9.63% {
+    clip-path: inset(0 100% 0 0);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.15, 1);
+  }
+  24.44%,
+  87.78% {
+    clip-path: inset(0 0 0 0);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.15, 1);
+  }
+  92.22%,
+  100% {
+    clip-path: inset(0 100% 0 0);
+  }
+}
+
+@keyframes vedalWord {
+  0%,
+  22.22% {
+    clip-path: inset(0 100% 0 0);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.2, 1);
+  }
+  38.89%,
+  81.48% {
+    clip-path: inset(0 0 0 0);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.2, 1);
+  }
+  90%,
+  100% {
+    clip-path: inset(0 100% 0 0);
+  }
+}
+
+@keyframes vedalGuideX {
+  0% {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+  1.11% {
+    opacity: 1;
+    transform: scaleX(0);
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  11.48%,
+  35.19% {
+    opacity: 1;
+    transform: scaleX(1);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  42.59%,
+  100% {
+    opacity: 0;
+    transform: scaleX(1);
+  }
+}
+
+@keyframes vedalGuideY {
+  0% {
+    opacity: 0;
+    transform: scaleY(0);
+  }
+  3.33% {
+    opacity: 1;
+    transform: scaleY(0);
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  14.07%,
+  35.19% {
+    opacity: 1;
+    transform: scaleY(1);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  42.59%,
+  100% {
+    opacity: 0;
+    transform: scaleY(1);
+  }
+}
+
+@keyframes vedalCursor {
+  0%,
+  22.21% {
+    opacity: 0;
+    left: 34.3%;
+  }
+  22.22% {
+    opacity: 1;
+    left: 34.3%;
+    animation-timing-function: cubic-bezier(0.45, 0, 0.2, 1);
+  }
+  38.89% {
+    opacity: 1;
+    left: 99.5%;
+  }
+  42.96%,
+  80.37% {
+    opacity: 0;
+    left: 99.5%;
+  }
+  81.48% {
+    opacity: 1;
+    left: 99.5%;
+    animation-timing-function: cubic-bezier(0.45, 0, 0.2, 1);
+  }
+  90% {
+    opacity: 1;
+    left: 34.3%;
+  }
+  92.22%,
+  100% {
+    opacity: 0;
+    left: 34.3%;
+  }
+}
+
+/* Доводящий масштаб в момент, когда знак собран. */
+@keyframes vedalSettle {
+  0%,
+  37.96% {
+    transform: scale(1);
+    animation-timing-function: cubic-bezier(0.34, 1.5, 0.5, 1);
+  }
+  44.44% {
+    transform: scale(1.03);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  53.7%,
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Пользователь просил меньше движения — показываем сразу собранный знак. */
+@media (prefers-reduced-motion: reduce) {
+  .settle {
+    animation: none;
+  }
+
+  .cross,
+  .word {
+    animation: none;
+    clip-path: none;
+  }
+
+  .guideH,
+  .guideV,
+  .cursor {
+    display: none;
+  }
+}
