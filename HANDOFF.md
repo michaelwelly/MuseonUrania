@@ -12,6 +12,7 @@ Primary frontend package:
 - `docs/frontend/content_model.md`
 - `docs/frontend/page_briefs.md`
 - `docs/frontend/implementation_checklist.md`
+- `docs/operations/egor_handoff_tasks.md`
 
 ## Prototype And Assets
 
