@@ -1,0 +1,17 @@
+-- Сгенерировано backend/tools/seed-documents.mjs из frontend/content/documents.ts.
+-- Править руками бессмысленно: перегенерировать и закоммитить заново.
+--
+-- listed = true, published = false у всех: перечень документов на сайте
+-- показывается вместе со статусом доступа, но ни один файл ещё не
+-- согласован к публикации и не загружен.
+
+insert into document (id, slug, title, doc_group, subject, product_slug, sensitivity, access, listed, published) values ('47ab36c5-d821-4fe4-a63d-c645fda70912', 'licenziya-na-proizvodstvo-medicinskih-izdeliy', 'Лицензия на производство медицинских изделий', 'Лицензирование', 'ООО «ВЕДАЛ»', null, 'public', 'on_request', true, false);
+insert into document (id, slug, title, doc_group, subject, product_slug, sensitivity, access, listed, published) values ('d77900b8-50ea-41e1-9982-deceb00dc9ce', 'registracionnoe-udostoverenie-vedal-r1-r2', 'Регистрационное удостоверение', 'Лицензирование', 'VEDAL R1, R2', 'vedal-r1-r2', 'public', 'on_request', true, false);
+insert into document (id, slug, title, doc_group, subject, product_slug, sensitivity, access, listed, published) values ('d358705b-7520-48c0-9287-068985b6c7e9', 'registracionnoe-udostoverenie-vedal-a-2000', 'Регистрационное удостоверение', 'Лицензирование', 'VEDAL A-2000', 'vedal-a-2000', 'public', 'on_request', true, false);
+insert into document (id, slug, title, doc_group, subject, product_slug, sensitivity, access, listed, published) values ('dac8758e-6208-4fad-8099-8f58b578803c', 'registracionnoe-udostoverenie-vedal-t-100', 'Регистрационное удостоверение', 'Лицензирование', 'VEDAL Т-100', 'vedal-t-100', 'public', 'on_request', true, false);
+insert into document (id, slug, title, doc_group, subject, product_slug, sensitivity, access, listed, published) values ('4dd8ab37-89a4-4c89-a1cb-c03ae7cd982e', 'sertifikat-iso-13485', 'Сертификат ISO 13485', 'Система качества', 'Производство', null, 'public', 'pending', true, false);
+insert into document (id, slug, title, doc_group, subject, product_slug, sensitivity, access, listed, published) values ('9b114af8-b480-4208-a438-e95c4db64964', 'deklaraciya-o-sootvetstvii', 'Декларация о соответствии', 'Система качества', 'Все изделия', null, 'public', 'pending', true, false);
+insert into document (id, slug, title, doc_group, subject, product_slug, sensitivity, access, listed, published) values ('11ba3a1f-d0b8-4e55-b52e-072694f9e2c9', 'opisanie-izdeliya-vedal-r1-r2', 'Описание изделия', 'Техническая документация', 'VEDAL R1, R2', 'vedal-r1-r2', 'public', 'pdf', true, false);
+insert into document (id, slug, title, doc_group, subject, product_slug, sensitivity, access, listed, published) values ('ffb756b8-b37f-4b8b-b7e8-91e69a733232', 'opisanie-izdeliya-vedal-a-2000', 'Описание изделия', 'Техническая документация', 'VEDAL A-2000', 'vedal-a-2000', 'public', 'pdf', true, false);
+insert into document (id, slug, title, doc_group, subject, product_slug, sensitivity, access, listed, published) values ('42a3b6f0-cbc6-4142-8cd0-42d969b68966', 'opisanie-izdeliya-vedal-t-100', 'Описание изделия', 'Техническая документация', 'VEDAL Т-100', 'vedal-t-100', 'public', 'pdf', true, false);
+insert into document (id, slug, title, doc_group, subject, product_slug, sensitivity, access, listed, published) values ('6cd057ae-d368-4937-8989-560ea9c504c9', 'katalog-produkcii-2026', 'Каталог продукции 2026', 'Коммерческие материалы', 'Все изделия', null, 'public', 'pdf', true, false);

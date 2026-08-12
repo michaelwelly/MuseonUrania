@@ -1,56 +1,53 @@
 import type { Metadata } from "next";
-import { site } from "@/content/site";
-import { newsHero, news, expected, newsNotice } from "@/content/news";
+import Image from "next/image";
+import PageHero from "@/components/PageHero";
+import { newsHero, press } from "@/content/news";
+import { pressContact, DEMO_NOTE } from "@/content/staff";
+import NewsFeed from "./feed";
+import NewsSubscribe from "./subscribe";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
-  title: "Новости — VEDAL",
+  title: "Новости и пресс-центр — VEDAL",
   description: newsHero.lead,
 };
 
 export default function NewsPage() {
   return (
     <main className={styles.page}>
-      <section className={styles.section}>
-        <p className={styles.eyebrow}>{newsHero.eyebrow}</p>
-        <h1 className={styles.h1}>{newsHero.headline}</h1>
-        <p className={styles.lead}>{newsHero.lead}</p>
-      </section>
+      <PageHero
+        crumbs={[{ label: "Главная", href: "/" }, { label: "Новости" }]}
+        title={newsHero.title}
+        lead={newsHero.lead}
+      />
 
-      <section className={styles.section}>
-        {news.length === 0 ? (
-          <div className={styles.empty}>
-            <p className={styles.emptyTitle}>Публикаций пока нет</p>
-            <p className={styles.emptyText}>
-              Раздел готов к наполнению. Первым материалом планируется релиз по
-              Иннопрому — ждём исходники от компании.
-            </p>
-            <ul className={styles.expected}>
-              {expected.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
+      <NewsFeed />
+
+      <section className={styles.press}>
+        <div data-reveal="0">
+          <p className={styles.eyebrow}>{press.eyebrow}</p>
+          <h2 className={styles.h2} data-words="30">
+            {press.title}
+          </h2>
+          <p className={styles.pressText}>{press.text}</p>
+
+          <div className={styles.contact}>
+            <div className={styles.avatar}>
+              <Image src="/urania/urania-avatar-middle-v1.png" alt="" fill sizes="56px" />
+            </div>
+            <div>
+              <p className={styles.contactName}>{pressContact.name}</p>
+              <p className={styles.contactRole}>
+                {pressContact.role} ·{" "}
+                <a href={`mailto:${pressContact.email}`}>{pressContact.email}</a>
+              </p>
+            </div>
           </div>
-        ) : (
-          <ul className={styles.list}>
-            {news.map((item) => (
-              <li key={item.title} className={styles.item}>
-                <p className={styles.date}>{item.date}</p>
-                <h2 className={styles.itemTitle}>{item.title}</h2>
-                <p className={styles.excerpt}>{item.excerpt}</p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+          {/* Пресс-контакт — заглушка из макета, см. content/staff.ts */}
+          <p className={styles.demoNote}>{DEMO_NOTE}</p>
+        </div>
 
-      <section className={styles.section}>
-        <h2 className={styles.h2}>{newsNotice.title}</h2>
-        <p className={styles.note}>{newsNotice.text}</p>
-        <address className={styles.contacts}>
-          <a href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a>
-          <a href={`mailto:${site.email}`}>{site.email}</a>
-        </address>
+        <NewsSubscribe />
       </section>
     </main>
   );

@@ -1,121 +1,259 @@
+/* Футер редизайна. Размеры из design/VedalFooter.dc.html
+   и design/VedalFooterMobile.dc.html. */
+
 .footer {
   margin-top: auto;
-  background: var(--ink);
+  background: var(--deep);
   color: #fff;
 }
 
 .top {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(0, 1.4fr) minmax(280px, 1fr);
-  gap: 48px;
-  padding: 56px 48px;
+  grid-template-columns: 1.25fr 0.8fr 0.8fr 1.15fr;
+  gap: 56px;
+  padding: 64px 48px 52px;
 }
 
-/* Логотип — JPEG на белом фоне, прозрачности нет. На тёмном футере
-   заворачиваем его в белую плашку, чтобы белый прямоугольник читался
-   как осознанная подложка. Убрать, когда придёт SVG. */
+/* Плашка обязательна: надпись в знаке чёрная, а футер на тёмном фоне.
+   Слои знака уже с прозрачностью, но это ничего не меняет — дело в цвете
+   надписи, а не в фоне картинки. */
 .brand {
   display: inline-flex;
-  padding: 10px 14px;
-  border-radius: 8px;
+  padding: 9px 12px;
+  border-radius: 3px;
   background: #fff;
 }
 
-.brand img {
-  display: block;
-  width: auto;
-  height: 48px;
+/* Размер знака задаёт AnimatedLogo инлайн-стилем из пропа height. */
+
+.about {
+  margin-top: 20px;
+  max-width: 30ch;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.58);
 }
 
-.tagline {
-  margin-top: 16px;
-  max-width: 34ch;
-  font-size: 14px;
-  line-height: 1.55;
-  color: rgba(255, 255, 255, 0.62);
+.messengers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 13px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 2px;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+a.pill:hover {
+  border-color: var(--green);
+  color: #fff;
+}
+
+/* Пилюля без ссылки: аккаунт заказчик не передал. */
+.pillMuted {
+  color: rgba(255, 255, 255, 0.45);
+  cursor: default;
 }
 
 .colTitle {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--on-dark-label);
 }
 
 .links {
-  margin-top: 18px;
-  list-style: none;
-  columns: 2;
-  column-gap: 32px;
-}
-
-.links li {
-  break-inside: avoid;
-  margin-bottom: 10px;
-}
-
-.links a {
-  font-size: 15px;
-  color: rgba(255, 255, 255, 0.85);
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  margin-top: 20px;
+  font-size: 14.5px;
+  color: rgba(255, 255, 255, 0.82);
 }
 
 .links a:hover {
-  color: #fff;
+  color: var(--green);
+}
+
+.right {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
 }
 
 .contacts {
   margin-top: 18px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  font-size: 15px;
-  line-height: 1.5;
+  gap: 6px;
+  font-style: normal;
 }
 
 .phone {
-  font-size: 20px;
-  font-weight: 700;
+  font-family: var(--font-display), sans-serif;
+  font-size: 21px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
 }
 
-.hours,
+.contactLine {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.82);
+}
+
 .address {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.62);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--on-dark-3);
 }
 
 .contacts a:hover {
   color: var(--green);
 }
 
+/* --- подписка --- */
+.subscribeRow {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.subscribeInput {
+  flex: 1;
+  min-width: 0;
+  height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--on-dark-field);
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+}
+
+.subscribeInput::placeholder {
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.subscribeInput:focus {
+  border-color: var(--green);
+  outline: none;
+}
+
+.subscribeInvalid {
+  border-color: #e07a6c;
+}
+
+.subscribeButton {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border: 0;
+  border-radius: 2px;
+  background: var(--green);
+  color: #fff;
+  cursor: pointer;
+}
+
+.subscribeButton:hover {
+  background: var(--green-bright);
+}
+
+.subscribeNote {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.subscribeResult {
+  margin-top: 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--green-on-dark);
+}
+
+/* --- нижняя полоса --- */
 .bottom {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 12px 28px;
+  gap: 28px;
   padding: 20px 48px;
-  border-top: 1px solid rgba(255, 255, 255, 0.14);
-  font-size: 13px;
-  line-height: 1.5;
-  color: rgba(255, 255, 255, 0.55);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.bottom a:hover {
+  color: #fff;
 }
 
 .disclaimer {
   margin-left: auto;
-  max-width: 60ch;
+  max-width: 52ch;
+  text-align: right;
+  line-height: 1.5;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   .top {
-    grid-template-columns: 1fr;
-    gap: 32px;
-    padding: 40px 24px;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    padding: 48px 24px 40px;
   }
 
   .bottom {
-    padding: 18px 24px;
+    padding: 20px 24px;
   }
 
   .disclaimer {
     margin-left: 0;
+    text-align: left;
+  }
+}
+
+/* Одна колонка, блоки разделены линиями — как в FooterMobile. */
+@media (max-width: 640px) {
+  .top {
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 32px 18px 20px;
+  }
+
+  .top > * + * {
+    margin-top: 26px;
+    padding-top: 22px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  /* Прежние 32px от 40px. Масштабируем плашку целиком вместе со знаком,
+     иначе она осталась бы под размер 40 и вокруг знака появился бы зазор. */
+  .brand {
+    transform: scale(0.8);
+    transform-origin: left center;
+  }
+
+  .links {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 18px;
+    font-size: 14px;
+  }
+
+  .bottom {
+    gap: 10px 20px;
+    padding: 18px 18px 24px;
   }
 }

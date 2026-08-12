@@ -7,7 +7,10 @@
 // 10 продуктов», а именованных позиций больше. Ни характеристик, ни описаний
 // для них не выдумываем.
 
-import { AWAITING } from "./site";
+// Единственное, что сказано про позиции без датащитов. Характеристики для них
+// не придумываем — правило из HANDOFF.md.
+const PENDING_SUMMARY =
+  "Технические характеристики и документация выдаются по запросу.";
 
 // docs/frontend/page_briefs.md → Products → Categories
 export const categories = [
@@ -20,6 +23,8 @@ export const categories = [
 
 export type Category = (typeof categories)[number];
 
+export type Spec = { label: string; value: string; muted?: boolean };
+
 export type Product = {
   slug: string;
   name: string;
@@ -28,6 +33,12 @@ export type Product = {
   status: "confirmed" | "pending";
   summary: string;
   image?: { src: string; alt: string };
+  /** Развёрнутое описание для карточки изделия. */
+  detail?: string;
+  /** Четыре строки под заголовком карточки изделия. */
+  keyParams?: Spec[];
+  /** Таблица характеристик. Значения только из датащитов. */
+  specs?: Spec[];
 };
 
 export const products: Product[] = [
@@ -43,6 +54,24 @@ export const products: Product[] = [
       src: "/photos/products/vedal-r1-r2.jpg",
       alt: "Открытая реанимационная система VEDAL",
     },
+    detail:
+      "Открытые реанимационные системы для интенсивной терапии, экстренной помощи и выхаживания новорождённых. Круговой доступ к ребёнку для хирургических, диагностических и реанимационных процедур, температура поддерживается верхним лучистым обогревом.",
+    keyParams: [
+      { label: "Тип изделия", value: "Открытая реанимационная система" },
+      { label: "Обогрев", value: "Лучистый, ручной или сервоконтролируемый режим" },
+      { label: "Мониторинг", value: "Встроенные весы, пульсоксиметрия" },
+      { label: "Производство", value: "Екатеринбург, ул. Совхозная, стр. 20В" },
+    ],
+    specs: [
+      { label: "Габариты R1", value: "1185 × 740 × 1840 мм" },
+      { label: "Габариты R2", value: "1285 × 735 × 1850 мм" },
+      { label: "Масса R1 / R2", value: "87,5 ± 2,0 кг / 113 ± 2 кг" },
+      { label: "Установка температуры кожи", value: "32,0–37,5 °C, погрешность ±0,2 °C" },
+      { label: "Весы", value: "200–8000 г, погрешность ±10 г" },
+      { label: "Пульсоксиметрия", value: "SpO₂ 1–100 %, ЧСС 25–240 уд/мин" },
+      { label: "Только R2", value: "ЖК-дисплей, ящик, отключение звука взмахом руки" },
+      { label: "Опции R2", value: "Фототерапия, аспиратор, блок респираторной поддержки" },
+    ],
   },
   {
     slug: "vedal-a-2000",
@@ -56,6 +85,27 @@ export const products: Product[] = [
       src: "/photos/products/vedal-a-2000.jpg",
       alt: "Инкубатор-трансформер VEDAL A-2000",
     },
+    detail:
+      "Совмещает инкубатор закрытого типа и открытую реанимационную систему. Переход между режимами выполняют электромеханические приводы — новорождённого не нужно перекладывать.",
+    keyParams: [
+      { label: "Режимы", value: "Закрытый инкубатор · открытая реанимационная система" },
+      { label: "Переход между режимами", value: "Электромеханические приводы, без перекладывания" },
+      { label: "Каналы мониторинга", value: "Пульсоксиметрия, ЭКГ, дыхание, НИАД, капнометрия" },
+      { label: "Производство", value: "Екатеринбург, ул. Совхозная, стр. 20В" },
+    ],
+    specs: [
+      { label: "Тип изделия", value: "Инкубатор-трансформер" },
+      { label: "Обогрев в открытом режиме", value: "Лучистый" },
+      { label: "Габариты", value: "1157 × 720 × 2290 мм" },
+      { label: "Масса", value: "160 ± 5 кг" },
+      { label: "Температура по воздуху", value: "20,0–37,0 °C и 37,1–39,0 °C" },
+      { label: "Температура по коже", value: "32,0–37,0 °C и 37,1–38,0 °C" },
+      { label: "Влажность в детском отсеке", value: "30–95 %, точность ±5 %" },
+      { label: "Кислород в детском отсеке", value: "20–65 %, точность ±4 %" },
+      { label: "Весы", value: "200–8000 г, погрешность ±10 г" },
+      { label: "Камера видеонаблюдения", value: "1920 × 1080, интерфейс USB-A" },
+      { label: "Питание", value: "По запросу", muted: true },
+    ],
   },
   {
     slug: "vedal-t-100",
@@ -69,6 +119,24 @@ export const products: Product[] = [
       src: "/photos/products/vedal-t-100.jpg",
       alt: "Система терморегулирующая VEDAL Т-100",
     },
+    detail:
+      "Прокачивает подогретую или охлаждённую воду в терморегулирующее одеяло на теле новорождённого и удерживает температуру по показаниям датчиков пациента. Применяется в отделениях неонатологии, реанимации и интенсивной терапии.",
+    keyParams: [
+      { label: "Тип изделия", value: "Система терморегулирующая медицинская" },
+      { label: "Принцип действия", value: "Циркуляция воды через терморегулирующее одеяло" },
+      { label: "Управление", value: "По температуре кожи и ректальной температуре" },
+      { label: "Производство", value: "Екатеринбург, ул. Совхозная, стр. 20В" },
+    ],
+    specs: [
+      { label: "Температура жидкости", value: "12,0–39,0 °C" },
+      { label: "Скорость охлаждения", value: "0,7 °C/мин без нагрузки" },
+      { label: "Скорость нагрева", value: "1,0 °C/мин без нагрузки" },
+      { label: "Температура кожи", value: "20,0–50,0 °C, точность ±0,2 °C" },
+      { label: "Ректальная температура", value: "25,0–45,0 °C, точность ±0,2 °C" },
+      { label: "Одеяло большое", value: "580 × 390 мм" },
+      { label: "Одеяло малое", value: "425 × 275 мм" },
+      { label: "Габариты, масса, питание", value: "По запросу", muted: true },
+    ],
   },
   {
     slug: "vedal-vv11",
@@ -76,7 +144,7 @@ export const products: Product[] = [
     kind: "Аппарат искусственной вентиляции лёгких",
     categories: ["Реанимация", "Интенсивная терапия"],
     status: "pending",
-    summary: AWAITING,
+    summary: PENDING_SUMMARY,
   },
   {
     slug: "vedal-vp4",
@@ -84,7 +152,7 @@ export const products: Product[] = [
     kind: "Портативный аппарат ИВЛ для интенсивной терапии",
     categories: ["Интенсивная терапия"],
     status: "pending",
-    summary: AWAITING,
+    summary: PENDING_SUMMARY,
   },
   {
     slug: "vedal-vn10",
@@ -92,7 +160,7 @@ export const products: Product[] = [
     kind: "Портативный неонатальный аппарат ИВЛ",
     categories: ["Неонатология", "Реанимация"],
     status: "pending",
-    summary: AWAITING,
+    summary: PENDING_SUMMARY,
   },
   {
     slug: "vedal-n6",
@@ -100,7 +168,7 @@ export const products: Product[] = [
     kind: "Аппарат ингаляционной анестезии",
     categories: ["Анестезиология"],
     status: "pending",
-    summary: AWAITING,
+    summary: PENDING_SUMMARY,
   },
   {
     slug: "vedal-n12",
@@ -108,7 +176,7 @@ export const products: Product[] = [
     kind: "Монитор пациента",
     categories: ["Мониторинг"],
     status: "pending",
-    summary: AWAITING,
+    summary: PENDING_SUMMARY,
   },
   {
     slug: "vedal-n15",
@@ -116,7 +184,7 @@ export const products: Product[] = [
     kind: "Монитор пациента",
     categories: ["Мониторинг"],
     status: "pending",
-    summary: AWAITING,
+    summary: PENDING_SUMMARY,
   },
   {
     slug: "vedal-n1",
@@ -124,7 +192,7 @@ export const products: Product[] = [
     kind: "Инкубатор для новорождённых",
     categories: ["Неонатология"],
     status: "pending",
-    summary: AWAITING,
+    summary: PENDING_SUMMARY,
   },
   {
     slug: "vedal-n2",
@@ -132,7 +200,7 @@ export const products: Product[] = [
     kind: "Инкубатор для новорождённых",
     categories: ["Неонатология"],
     status: "pending",
-    summary: AWAITING,
+    summary: PENDING_SUMMARY,
   },
   {
     slug: "vedal-n3",
@@ -140,11 +208,11 @@ export const products: Product[] = [
     kind: "Инкубатор для новорождённых",
     categories: ["Неонатология"],
     status: "pending",
-    summary: AWAITING,
+    summary: PENDING_SUMMARY,
   },
 ];
 
 export const statusLabel: Record<Product["status"], string> = {
   confirmed: "Документация подтверждена",
-  pending: "Ожидает уточнения",
+  pending: "Характеристики по запросу",
 };

@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import UraniaWidget from "@/components/UraniaWidget";
+import LogoPreloader from "@/components/LogoPreloader";
+import Motion from "@/components/Motion";
+import { fontVariables } from "./fonts";
 import "./globals.css";
+import "./motion.css";
 
 // seo_title / seo_description в content_model.md помечены как awaiting NN answer.
 // До согласования держим только факты из page_briefs.md, без заявлений о
@@ -14,13 +19,17 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ru">
+    <html lang="ru" className={fontVariables}>
       <body>
+        <LogoPreloader />
+        <Motion />
         <div className="frame">
           <Header />
           {children}
         </div>
         <Footer />
+        {/* Плавающий чат — на всех страницах */}
+        <UraniaWidget />
       </body>
     </html>
   );

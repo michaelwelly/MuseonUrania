@@ -1,0 +1,96 @@
+/* Тёмная шапка внутренней страницы. Единая для экранов 02, 04, 07, 08, 09. */
+
+.hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 60px;
+  padding: 52px 48px 48px;
+  background: var(--deep-2);
+  color: #fff;
+}
+
+.crumbs {
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.crumbs a:hover {
+  color: #fff;
+}
+
+.title {
+  margin-top: 16px;
+  font-size: 48px;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+}
+
+.lead {
+  margin-top: 18px;
+  max-width: 60ch;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--on-dark-lead);
+}
+
+.aside {
+  flex: none;
+  padding-bottom: 6px;
+}
+
+/* Цифры справа по низу (экраны 02, 04) */
+.stats {
+  display: flex;
+  gap: 36px;
+  list-style: none;
+}
+
+.statValue {
+  font-family: var(--font-display), sans-serif;
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.statLabel {
+  margin-top: 5px;
+  font-size: 13px;
+  color: var(--on-dark-3);
+}
+
+@media (max-width: 1100px) {
+  .hero {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 28px;
+    padding: 44px 24px 40px;
+  }
+
+  .title {
+    font-size: 36px;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero {
+    padding: 28px 18px 30px;
+  }
+
+  .crumbs {
+    font-size: 10px;
+  }
+
+  .title {
+    margin-top: 12px;
+    font-size: 30px;
+  }
+
+  .lead {
+    margin-top: 14px;
+    font-size: 15px;
+  }
+}
