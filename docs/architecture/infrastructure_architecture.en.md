@@ -1,5 +1,7 @@
 # Infrastructure Architecture
 
+[Русский](infrastructure_architecture.md) · **English**
+
 ## Phase 1: Public Site And Content Foundation
 
 ```mermaid

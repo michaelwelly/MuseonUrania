@@ -1,5 +1,7 @@
 # Frontend Sitemap
 
+[Русский](sitemap.md) · **English**
+
 ## Purpose
 
 This sitemap defines the first website release structure for `vedal-med.ru`.

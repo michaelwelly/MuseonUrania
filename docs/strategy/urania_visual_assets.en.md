@@ -1,5 +1,7 @@
 # Urania Visual Assets
 
+[Русский](urania_visual_assets.md) · **English**
+
 ## Generated Assets
 
 Workspace assets:

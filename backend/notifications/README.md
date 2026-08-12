@@ -1,5 +1,7 @@
 # notifications
 
+**Русский** · [English](README.en.md)
+
 Исходящие письма: подтверждение клиенту, уведомление ответственному менеджеру.
 
 Ограничение из [брифа собственника](../../docs/architecture/vedal_portal_owner_brief.md),

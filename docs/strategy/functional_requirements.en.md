@@ -1,5 +1,7 @@
 # Functional Requirements
 
+[Русский](functional_requirements.md) · **English**
+
 ## Public Website
 
 ### Landing Page Enrichment

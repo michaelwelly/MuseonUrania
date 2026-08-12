@@ -1,5 +1,7 @@
 # Claude Context Bundle
 
+[Русский](claude_context_bundle.md) · **English**
+
 Use this as a single-file context bundle when asking Claude to generate frontend variants.
 
 ## Project

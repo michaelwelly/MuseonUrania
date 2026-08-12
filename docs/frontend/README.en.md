@@ -1,5 +1,7 @@
 # Frontend Handoff Package
 
+[Русский](README.md) · **English**
+
 This package is ready to pass to Claude, a UI designer, or a frontend team.
 
 ## Files

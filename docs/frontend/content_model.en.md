@@ -1,5 +1,7 @@
 # Frontend Content Model
 
+[Русский](content_model.md) · **English**
+
 ## Purpose
 
 The website should be driven by structured content so that NN answers can be inserted without redesigning the whole interface.

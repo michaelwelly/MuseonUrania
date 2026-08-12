@@ -1,5 +1,7 @@
 # Egor Handoff Tasks
 
+[Русский](egor_handoff_tasks.md) · **English**
+
 ## Purpose
 
 This document defines the current handoff for Egor and separates frontend delivery from backend/CMS and AI closed-contour work.

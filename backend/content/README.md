@@ -1,5 +1,7 @@
 # content
 
+**Русский** · [English](README.en.md)
+
 Новости и пресс-центр. Модуль появился из
 [спеки архитектуры](../../docs/superpowers/specs/2026-08-06-vedal-portal-architecture-design.md),
 в исходном списке модулей его не было.

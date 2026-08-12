@@ -1,5 +1,7 @@
 # Frontend Design Handoff
 
+[Русский](frontend_design_handoff.md) · **English**
+
 ## Priority
 
 First priority is the public website design and frontend package for `vedal-med.ru`.

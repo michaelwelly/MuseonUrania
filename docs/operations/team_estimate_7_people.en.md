@@ -1,5 +1,7 @@
 # Team Estimate: Dedicated 7-Person Team
 
+[Русский](team_estimate_7_people.md) · **English**
+
 ## Assumption
 
 The immediate goal is the website/design/frontend release package, not the full infrastructure rollout.

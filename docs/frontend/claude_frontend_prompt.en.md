@@ -1,5 +1,7 @@
 # Claude Frontend Prompt
 
+[Русский](claude_frontend_prompt.md) · **English**
+
 Use this prompt to generate three frontend interface variants for the first release.
 
 ```text

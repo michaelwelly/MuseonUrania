@@ -1,54 +1,76 @@
 # MuseonUrania
 
-> **Начните отсюда: [docs/PROJECT.md](docs/PROJECT.md)** — общая документация проекта.
-> Суть, архитектура, раскладка репозитория, текущее состояние, что нужно сделать
-> с обеих сторон, противоречия и открытые вопросы. Остальные документы — детализация.
+**Русский** · [English](README.en.md)
 
-Project workspace for the VEDAL / medical equipment digital infrastructure initiative.
+> **Начните отсюда: [docs/PROJECT.md](docs/PROJECT.md)** — общая документация
+> проекта. Суть, архитектура, раскладка репозитория, текущее состояние, что нужно
+> сделать с обеих сторон, противоречия и открытые вопросы. Остальные документы —
+> детализация.
 
-The goal is to turn the current public presence of `vedal-med.ru` into a production-ready sales and information platform, then expand it into a full internal IT contour for a medical equipment manufacturer: CRM, media/document storage, multilingual content, analytics, AI-assisted document search, and future VLM/LLM workflows for office, sales, service, and production.
+Рабочее пространство проекта цифровой инфраструктуры VEDAL — производителя
+медицинского оборудования.
 
-## Current Focus
+Цель — превратить нынешнее публичное присутствие `vedal-med.ru` в готовую к
+эксплуатации систему продаж и информирования, а затем развернуть её в полный
+внутренний ИТ-контур производителя медтехники: CRM, хранилище медиа и
+документов, мультиязычный контент, аналитика, AI-поиск по документам и будущие
+VLM/LLM-сценарии для офиса, продаж, сервиса и производства.
 
-1. Enrich the existing `vedal-med.ru` landing page with product, production, partner, and press-release content.
-2. Build a structured product catalog for about 10 products.
-3. Request missing materials from Nikolay Nikolaevich: product catalog, Innoprom materials, cloud photo/video link, product documentation, and sensitivity classification guidance.
-4. Design cloud infrastructure with S3-compatible media/document storage, CRM, analytics, private employee contour, and AI-ready data pipelines.
-5. Prepare multilingual public content in Russian, English, Chinese, and later Hindi.
+## Что делаем сейчас
 
-## Repository Layout
+1. Наполнить существующую посадочную страницу `vedal-med.ru` материалами по
+   продукции, производству, партнёрам и пресс-релизам.
+2. Собрать структурированный каталог примерно на 10 изделий.
+3. Запросить у Николая Николаевича недостающие материалы: каталог продукции,
+   материалы Иннопрома, ссылку на облако с фото и видео, документацию по
+   изделиям и указания по классификации чувствительности.
+4. Спроектировать облачную инфраструктуру: S3-совместимое хранилище медиа и
+   документов, CRM, аналитика, закрытый контур для сотрудников, конвейеры данных
+   под ИИ.
+5. Подготовить публичный контент на русском, английском, китайском и позже на
+   хинди.
 
-Monorepo: `frontend/` (public site + Urania UI), `backend/` (API, forms/CRM handoff), `docs/`, `assets/`, `prototypes/`, `outputs/`.
+## Раскладка репозитория
 
-Branches:
+Монорепозиторий: `frontend/` (публичный сайт и интерфейс Урании), `backend/`
+(API, приём форм и передача в CRM), `docs/`, `assets/`, `prototypes/`,
+`outputs/`.
 
-- `main`: released, finished work only.
-- `dev`: integration branch, everything is reviewed here first.
-- `front`: frontend work, merges into `dev`.
-- `back`: backend work, merges into `dev`.
+Ветки:
 
-## Key Documents
+- `main` — только выпущенная, законченная работа;
+- `dev` — интеграционная ветка, всё проходит ревью здесь;
+- `front` — фронтенд, вливается в `dev`;
+- `back` — бэкенд, вливается в `dev`;
+- `docs` — документация, вливается в `dev`.
+
+Правила работы — [CLAUDE.md](CLAUDE.md).
+
+## Ключевые документы
 
 - [Общая документация проекта](docs/PROJECT.md) — единая точка входа, сводит всё остальное
 - [VEDAL Portal: закрытый контур и CRM](docs/architecture/vedal_portal_owner_brief.md) — целевая архитектура, при расхождениях главнее остальных документов
+- [Архитектура серверной части](docs/superpowers/specs/2026-08-06-vedal-portal-architecture-design.md) — технические решения, принятые и отклонённые
 - [Документация по продукции](docs/products/README.md) — датащиты VEDAL R1/R2, A-2000, Т-100
-- [Frontend handoff](HANDOFF.md)
-- [Frontend handoff package](docs/frontend/README.md)
-- [Project brief](docs/strategy/project_brief.md)
-- [Functional requirements](docs/strategy/functional_requirements.md)
-- [Infrastructure architecture](docs/architecture/infrastructure_architecture.md)
-- [Content and SEO plan](docs/strategy/content_and_seo_plan.md)
-- [Competitor notes](docs/strategy/competitor_notes.md)
-- [Frontend design handoff](docs/strategy/frontend_design_handoff.md)
-- [Frontend variants](docs/strategy/frontend_variants.md)
-- [Urania assistant spec](docs/strategy/urania_assistant_spec.md)
-- [Urania visual assets](docs/strategy/urania_visual_assets.md)
-- [Urania web prototype](prototypes/urania-web-interface.html)
-- [Request to Nikolay Nikolaevich](docs/requests/nikolay_materials_request.md)
-- [Presentation outline for Nikolay Nikolaevich](docs/strategy/nn_presentation_outline.md)
-- [Roadmap](docs/operations/roadmap.md)
-- [7-person team estimate](docs/operations/team_estimate_7_people.md)
+- [Задачи Егора и разделение работ](docs/operations/egor_handoff_tasks.md)
+- [Передача фронтенда](HANDOFF.md)
+- [Пакет для фронтенда](docs/frontend/README.md)
+- [Бриф проекта](docs/strategy/project_brief.md)
+- [Функциональные требования](docs/strategy/functional_requirements.md)
+- [Архитектура инфраструктуры](docs/architecture/infrastructure_architecture.md)
+- [План по контенту и SEO](docs/strategy/content_and_seo_plan.md)
+- [Заметки по конкурентам](docs/strategy/competitor_notes.md)
+- [Дизайн-передача фронтенда](docs/strategy/frontend_design_handoff.md)
+- [Три варианта фронтенда](docs/strategy/frontend_variants.md)
+- [Спецификация ассистента Урания](docs/strategy/urania_assistant_spec.md)
+- [Визуальные материалы Урании](docs/strategy/urania_visual_assets.md)
+- [Веб-прототип Урании](prototypes/urania-web-interface.html)
+- [Запрос материалов Николаю Николаевичу](docs/requests/nikolay_materials_request.md)
+- [План презентации для Николая Николаевича](docs/strategy/nn_presentation_outline.md)
+- [Роадмап](docs/operations/roadmap.md)
+- [Оценка команды из 7 человек](docs/operations/team_estimate_7_people.md)
 
-## Source Notes
+## Откуда взялись исходные данные
 
-Initial input came from a voice-style brief plus the handwritten photo at `/Users/michaelwelly/Downloads/IMG_7136.heic`.
+Первичный вход — устный бриф плюс рукописное фото по адресу
+`/Users/michaelwelly/Downloads/IMG_7136.heic`.

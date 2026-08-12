@@ -1,5 +1,7 @@
 # Frontend Implementation Checklist
 
+[Русский](implementation_checklist.md) · **English**
+
 ## Before Design
 
 - Confirm NN answers for site quiz.

@@ -1,5 +1,7 @@
 # VEDAL Portal: закрытый контур и CRM
 
+**Русский** · [English](vedal_portal_owner_brief.en.md)
+
 Расшифровка презентации для собственника `VEDAL_owner_closed_contour_and_CRM_v1.pdf`
 (8 слайдов, лежит рядом в этой папке). Материал для первого обсуждения и сбора
 обратной связи.

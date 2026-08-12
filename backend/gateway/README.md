@@ -1,5 +1,7 @@
 # gateway
 
+**Русский** · [English](README.en.md)
+
 Integration Gateway — единственная дверь, через которую внешние обращения попадают
 в CRM. Из [брифа собственника](../../docs/architecture/vedal_portal_owner_brief.md):
 «контролируемый gateway между системами», «правила, approve, аудит».

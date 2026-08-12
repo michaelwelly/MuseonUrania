@@ -1,5 +1,7 @@
 # Page Briefs
 
+[Русский](page_briefs.md) · **English**
+
 ## Home
 
 Goal:

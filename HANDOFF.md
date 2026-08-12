@@ -1,10 +1,13 @@
-# Frontend Handoff
+# Передача фронтенда
 
-## Start Here
+**Русский** · [English](HANDOFF.en.md)
 
-Use this repository as the project handoff for the VEDAL website redesign and Urania assistant concept.
+## С чего начать
 
-Primary frontend package:
+Этот репозиторий — пакет передачи по редизайну сайта VEDAL и концепции
+ассистента Урания.
+
+Основной фронтовый пакет:
 
 - `docs/frontend/README.md`
 - `docs/frontend/claude_context_bundle.md`
@@ -12,53 +15,52 @@ Primary frontend package:
 - `docs/frontend/content_model.md`
 - `docs/frontend/page_briefs.md`
 - `docs/frontend/implementation_checklist.md`
-- `docs/operations/egor_handoff_tasks.md`
 
-## Prototype And Assets
+## Прототип и материалы
 
-Prototype:
+Прототип:
 
 - `prototypes/urania-web-interface.html`
 
-Urania assets:
+Материалы Урании:
 
 - `assets/urania/urania-avatar-concepts-v1.png`
 - `assets/urania/urania-avatar-middle-v1.png`
 - `assets/urania/urania-web-integration-mockup-v1.png`
 
-Recommended MVP avatar:
+Рекомендованный аватар для MVP:
 
 - `assets/urania/urania-avatar-middle-v1.png`
 
-## Presentation
+## Презентация
 
-Latest deck:
+Последняя версия:
 
 - `outputs/vedal_frontend_design_pipeline_v3_urania_visuals.pptx`
 - `outputs/vedal_frontend_design_pipeline_v3_urania_visuals.pdf`
 
-## Current Scope
+## Рамки первого релиза
 
-First release focus:
+В первую очередь:
 
-- Redesign home/title page.
-- Build product/catalog structure.
-- Add Urania assistant slot and floating button.
-- Prepare quote/catalog/service forms for CRM handoff.
-- Keep Smart Solution as a secondary integration layer.
+- редизайн главной и первого экрана;
+- структура каталога продукции;
+- место под ассистента Урания и плавающая кнопка;
+- формы запроса КП, каталога и сервиса, подготовленные к передаче в CRM;
+- Smart Solution — вторичный интеграционный слой.
 
-Deferred:
+Отложено:
 
-- Full CRM rollout.
-- Full S3 document system.
-- Internal AI/RAG platform.
-- VLM production/service pilot.
+- полное развёртывание CRM;
+- полная система документов на S3;
+- внутренняя AI/RAG-платформа;
+- пилот VLM для производства и сервиса.
 
-## Hard Rules
+## Жёсткие правила
 
-- Do not invent medical claims.
-- Do not invent prices.
-- Do not invent certifications or registration status.
-- Do not expose private/internal documents.
-- Urania must not provide diagnosis or treatment advice.
-- Use placeholders such as `ожидает уточнения` where NN answers are missing.
+- Не выдумывать медицинские заявления.
+- Не выдумывать цены.
+- Не выдумывать сертификаты и статус регистрации.
+- Не показывать внутренние и закрытые документы.
+- Урания не даёт диагнозов и рекомендаций по лечению.
+- Там, где ответа от НН ещё нет, ставить `ожидает уточнения`.

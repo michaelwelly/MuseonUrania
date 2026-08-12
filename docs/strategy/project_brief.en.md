@@ -1,5 +1,7 @@
 # Project Brief
 
+[Русский](project_brief.md) · **English**
+
 ## Working Name
 
 MuseonUrania: digital infrastructure for VEDAL medical equipment production and sales.

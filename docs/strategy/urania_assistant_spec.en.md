@@ -1,5 +1,7 @@
 # Urania Assistant Spec
 
+[Русский](urania_assistant_spec.md) · **English**
+
 ## Purpose
 
 Urania is the public website assistant for `vedal-med.ru`.

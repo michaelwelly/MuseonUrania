@@ -1,5 +1,7 @@
 # Roadmap
 
+[Русский](roadmap.md) · **English**
+
 ## Stage 0: Discovery And Material Collection
 
 Duration: 1-2 weeks.

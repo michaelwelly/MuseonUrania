@@ -1,5 +1,7 @@
 # Competitor And Reference Notes
 
+[Русский](competitor_notes.md) · **English**
+
 ## VEDAL Public Baseline
 
 `vedal-med.ru` currently communicates:

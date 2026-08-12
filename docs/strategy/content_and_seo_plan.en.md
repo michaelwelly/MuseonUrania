@@ -1,5 +1,7 @@
 # Content And SEO Plan
 
+[Русский](content_and_seo_plan.md) · **English**
+
 ## Site Structure
 
 Recommended public structure:

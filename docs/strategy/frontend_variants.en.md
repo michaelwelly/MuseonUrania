@@ -1,5 +1,7 @@
 # Three Frontend Variants
 
+[Русский](frontend_variants.md) · **English**
+
 ## Variant A: Conservative Manufacturer
 
 Recommended for the first stakeholder presentation.
