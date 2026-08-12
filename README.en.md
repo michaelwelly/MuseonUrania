@@ -47,6 +47,7 @@ Working rules — [CLAUDE.en.md](CLAUDE.en.md).
 ## Key Documents
 
 - [General project documentation](docs/PROJECT.en.md) — single entry point, brings everything else together
+- [Documentation rules](docs/documentation_rules.en.md) — bilingual convention, glossary, checks
 - [VEDAL Portal: closed contour and CRM](docs/architecture/vedal_portal_owner_brief.en.md) — target architecture; outranks the other documents when they disagree
 - [Backend architecture](docs/superpowers/specs/2026-08-06-vedal-portal-architecture-design.en.md) — technical decisions, accepted and rejected
 - [Product documentation](docs/products/README.en.md) — VEDAL R1/R2, A-2000, Т-100 datasheets

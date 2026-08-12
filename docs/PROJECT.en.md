@@ -619,6 +619,7 @@ The full roadmap is [operations/roadmap.en.md](operations/roadmap.en.md): stage 
 | Competitors and partners | [strategy/competitor_notes.en.md](strategy/competitor_notes.en.md) |
 | The customer presentation | [strategy/nn_presentation_outline.en.md](strategy/nn_presentation_outline.en.md) |
 | The detailed catalog module plan (a template for the next ones) | [superpowers/plans/2026-08-06-catalog-module.en.md](superpowers/plans/2026-08-06-catalog-module.en.md) |
+| Documentation rules, the glossary | [documentation_rules.en.md](documentation_rules.en.md) |
 
 ---
 

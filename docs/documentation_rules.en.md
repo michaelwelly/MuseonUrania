@@ -1,4 +1,6 @@
-# Repository Working Rules
+# Documentation rules
+
+[Русский](documentation_rules.md) · **English**
 
 ## Documentation is bilingual
 
@@ -33,8 +35,14 @@ Rules:
    (`[Spec](spec.en.md)`), links inside the Russian version point to Russian ones.
 5. File names, paths, identifiers, table names, field names, topic names and
    routes are **not translated** in either version.
-6. Project terms are not translated ad hoc. The shared glossary is at the end of
-   this file.
+6. **Code blocks are copied verbatim**, including their Russian comments and UI
+   strings: they must match the code in the repository. Only the prose around
+   them is translated.
+7. Project terms are not translated ad hoc — see the glossary below.
+
+Exception: `CLAUDE.md` and `AGENTS.md` do not go into the repository, they are in
+`.gitignore` as tooling-generated files. That is why these rules live here rather
+than in them.
 
 ## Glossary
 
@@ -46,47 +54,34 @@ Rules:
 | КП | quote | commercial proposal |
 | согласовано / опубликовано | approved / published | — |
 | датащит | datasheet | — |
-| дверь (API) | entry point | door |
-| порт (интерфейс наружу) | port | — |
+| дверь (API entrance) | entry point, door | — |
+| порт (outward interface) | port | — |
 | журнал / аудит | audit log | journal |
 | перечень документов | document listing | — |
 | передача человеку | handoff to a human | — |
 | ожидает уточнения | awaiting clarification | — |
+| сид / наполнение каталога | seed | — |
+| сборка сайта | site build | — |
 
-## Branches
+Interface strings and labels that a visitor sees stay in Russian in the English
+version and are put in quotes: `«Запросить КП»`, `«ожидает уточнения»`. They are
+not a translation, they are a fact about the product.
 
-Layered model: each type of change lives in its own long-running branch.
+## How to check that nothing has drifted
 
-| Branch | What goes there |
-| --- | --- |
-| `back` | server logic, Java, backend tests |
-| `front` | client, Next.js, styles, frontend tests |
-| `db` | migrations, SQL, seed data |
-| `infra` | build, CI/CD, Docker, dependencies, deploy scripts |
-| `docs` | documentation, specs, presentations |
-| `dev` | integration branch, everything is tested together here |
-| `main` | tested work only; never committed to directly |
+Files without a counterpart:
 
-Commits follow Conventional Commits: `type(layer): what was done, imperative`.
-Merges into `dev` use `--no-ff`. A merge into `main` happens only after green
-tests and explicit approval.
+```bash
+for f in $(git ls-files '*.md' | grep -v '\.en\.md$'); do b="${f%.md}"; [ -f "$b.en.md" ] || echo "no EN: $f"; done
+for f in $(git ls-files '*.en.md'); do b="${f%.en.md}"; [ -f "$b.md" ] || echo "no RU: $f"; done
+```
 
-## Content rules
+Russian text accidentally left in an English version outside code blocks:
 
-They apply to the website, the admin panel and the assistant's answers:
+```bash
+awk '/^```/{inb=!inb; next} {if(!inb) print FILENAME":"NR": "$0}' $(git ls-files '*.en.md') | grep '[а-яА-Я]'
+```
 
-- do not invent prices;
-- do not invent specifications;
-- do not invent certificates or registration status;
-- do not invent delivery times or availability;
-- do not publish clinical claims without approval;
-- do not expose internal or confidential documents;
-- Urania does not diagnose and does not recommend treatment;
-- missing data is marked `ожидает уточнения`, never filled with a plausible
-  invention.
-
-## Where to start
-
-The general project documentation is [docs/PROJECT.en.md](docs/PROJECT.en.md).
-It covers the essence, the architecture, the repository layout, the current
-state and the open questions.
+The second check always reports the language switcher and the deliberately
+preserved interface strings — they have to be told apart from a forgotten
+translation by eye.

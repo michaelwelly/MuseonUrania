@@ -596,6 +596,7 @@ VEDAL, карта, вкладки на карточке изделия. Весь
 | Конкуренты и партнёры | [strategy/competitor_notes.md](strategy/competitor_notes.md) |
 | Презентация заказчику | [strategy/nn_presentation_outline.md](strategy/nn_presentation_outline.md) |
 | Детальный план модуля каталога (образец для следующих) | [superpowers/plans/2026-08-06-catalog-module.md](superpowers/plans/2026-08-06-catalog-module.md) |
+| Правила ведения документации, словарь терминов | [documentation_rules.md](documentation_rules.md) |
 
 ---
 
