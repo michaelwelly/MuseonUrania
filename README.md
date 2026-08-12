@@ -1,5 +1,9 @@
 # MuseonUrania
 
+> **Начните отсюда: [docs/PROJECT.md](docs/PROJECT.md)** — общая документация проекта.
+> Суть, архитектура, раскладка репозитория, текущее состояние, что нужно сделать
+> с обеих сторон, противоречия и открытые вопросы. Остальные документы — детализация.
+
 Project workspace for the VEDAL / medical equipment digital infrastructure initiative.
 
 The goal is to turn the current public presence of `vedal-med.ru` into a production-ready sales and information platform, then expand it into a full internal IT contour for a medical equipment manufacturer: CRM, media/document storage, multilingual content, analytics, AI-assisted document search, and future VLM/LLM workflows for office, sales, service, and production.
@@ -25,6 +29,7 @@ Branches:
 
 ## Key Documents
 
+- [Общая документация проекта](docs/PROJECT.md) — единая точка входа, сводит всё остальное
 - [VEDAL Portal: закрытый контур и CRM](docs/architecture/vedal_portal_owner_brief.md) — целевая архитектура, при расхождениях главнее остальных документов
 - [Документация по продукции](docs/products/README.md) — датащиты VEDAL R1/R2, A-2000, Т-100
 - [Frontend handoff](HANDOFF.md)
