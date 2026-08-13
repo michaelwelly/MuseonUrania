@@ -6,9 +6,10 @@ The single entry point into the project. Everything else is detail; what is
 collected here is what you need in order to make a decision or start work without
 re-reading thirty-nine files.
 
-**State as of 12 August 2026.** Verified against the code of the branches `front`
-(`5ab20ef`), `dev` (`6262106`), `main` (`cb297e6`). The numbers in "Current state"
-are the result of counting across the repository, not a retelling of documents.
+**State as of 13 August 2026.** Verified against the code of the `dev` branch
+after the `back`, `infra` and `front` layers were merged in. The numbers in
+"Current state" are the result of counting across the repository, not a retelling
+of documents.
 
 ---
 
@@ -98,16 +99,28 @@ inside the file) is a separate task.
 MuseonUrania/
 ├─ docs/PROJECT.md          ← this file, the entry point
 ├─ frontend/                Next.js 16, App Router, TypeScript, CSS Modules
-│  ├─ app/                  routes and global styles
+│  ├─ app/(site)/           the public site: nine routes
+│  ├─ app/(admin)/          the admin UI: dashboard, products, categories, news,
+│  │                        documents, leads, audit log. Its own root layout —
+│  │                        the site's chrome does not leak into it
 │  ├─ components/           Header, Footer, LeadForm, UraniaChat/Widget, AnimatedLogo, VedalMap…
 │  ├─ content/*.ts          ALL page text; unconfirmed facts marked «ожидает уточнения»
-│  └─ lib/                  helpers (animations)
-├─ backend/                 one Spring Boot application, one database
-│  ├─ src/main/java/ru/vedal/portal/<module>/   ← all the code lives here
+│  ├─ lib/api.ts            public API: read at build time
+│  ├─ lib/admin.ts          admin API: browser only, token only
+│  ├─ lib/auth.ts           Keycloak sign-in, authorization code with PKCE
+│  └─ Dockerfile            pages are built when the container starts, not the image
+├─ backend/                 a Spring Boot application and a separate gateway, one database
+│  ├─ src/main/java/ru/vedal/portal/<module>/   ← all the portal code lives here
 │  ├─ src/main/resources/db/migration/          ← Flyway, the single source of the schema
 │  ├─ <module>/README.md    ← folders documenting module boundaries, no code inside
+│  ├─ api-gateway/          a separate application: the single entry point
+│  ├─ keycloak/             the local stack's realm + a README on the two addresses
+│  ├─ debezium/             the outbox → Kafka connector + the settings walkthrough
 │  ├─ tools/seed-catalog.mjs   generator for the V2 migration from frontend/content/products.ts
-│  └─ compose.yaml          PostgreSQL 16 (port 5434) + Kafka 3.9 in KRaft mode
+│  ├─ Dockerfile            the portal's image
+│  └─ compose.yaml          the whole stack: PostgreSQL 16 with wal_level=logical,
+│                           Kafka 3.9 in KRaft, MinIO, Keycloak, Kafka Connect;
+│                           profile `app` adds the portal, the gateway and the site
 ├─ docs/
 │  ├─ api/                  OpenAPI export for the public API (assembled from the code)
 │  ├─ architecture/         owner brief, infrastructure
@@ -185,10 +198,27 @@ perimeter is checked in three places rather than in thirty controllers.
 | --- | --- | --- |
 | `Public API` `/api/public/v1/*` | site build, Urania | read-only, published content only, cacheable |
 | `Forms API` `/api/forms/v1/leads` | website forms, Yandex Form, mail parsing | **the single external write**, idempotency by `Idempotency-Key` |
-| `Admin UI` `/admin/**` | employee | Thymeleaf + session, Spring Security; can be closed off entirely at the proxy |
+| `Admin API` `/api/admin/v1/**` | employee | JSON, Keycloak token, roles `portal-admin` and `portal-editor`; can be closed off entirely at the proxy |
+
+The employee door changed shape rather than being created anew: instead of
+server-rendered Thymeleaf pages it is JSON, with the Next.js admin UI on top.
+The pages remain a fallback entrance, reachable by talking to the portal directly
+on 8081, bypassing the gateway; through the gateway `/admin/**` serves the new
+admin UI.
 
 Errors from every door are `application/problem+json` (RFC 9457), one format for
 everything. The forms and the assistant have per-client rate limits.
+
+**A gateway stands in front of the doors.** `backend/api-gateway/` is a separate
+Spring Cloud Gateway application, the single entry point `http://localhost:8080`.
+The main gain is not routing: the site and the API end up on one origin, and CORS
+drops out of the perimeter entirely — a browser does not make a cross-origin
+request when the domain is the same. The body limit and token verification also
+move into one place.
+
+It does not, however, provide trust: the portal verifies the token itself and
+refuses a request that arrived bypassing the gateway. The gateway is a filter,
+not a trust boundary.
 
 ### 5.2 The path of a lead
 
@@ -225,20 +255,54 @@ configuration.
 
 | Port | Now | Later |
 | --- | --- | --- |
-| `EventPublisher` | log by default, Kafka with `vedal.events.publisher=kafka` | Managed Kafka |
+| `EventPublisher` | log, Kafka or Debezium — via `vedal.events.publisher` | Managed Kafka |
 | `MailSender` | writes to the log | Yandex 360 SMTP |
-| `FileStorage` | local directory `var/documents` | Yandex Object Storage |
+| `FileStorage` | local directory or S3 — via `vedal.storage.kind`; MinIO in the stack | Yandex Object Storage |
 | `LlmEngine` | deterministic word search | YandexGPT + pgvector |
 
-Signed links and privacy are a property of `FileStorage`, not of the calling code.
-Moving to S3 cannot accidentally expose a closed file.
+Privacy is a property of `FileStorage`, not of the calling code, and it is
+anchored to the storage area: `DOCUMENTS` lives in a closed bucket and is served
+only through the controller that checks publication and records the access in the
+audit log, while `MEDIA` lives in a read-open one and is served bypassing the
+application. Separating them by buckets rather than folders is mandatory: an S3
+access policy is set per bucket, and a private folder inside a public bucket is a
+public folder.
+
+Signed links are deliberately not used: an issued link lives until it expires,
+survives the document being unpublished, and access through it does not reach the
+audit log.
+
+The file limit is 20 MB. The real check sits in multipart parsing, that is,
+before the body reaches the heap; the check in the storage is a second line. The
+same number is aligned with the gateway's body limit and with
+`client_max_body_size` on the proxy: a smaller limit further up the chain drops
+the upload with a 413 before the application, and the editor sees the proxy's
+page instead of a clear refusal.
 
 ### 5.5 Events
 
 A transactional outbox: the entity row and the event row are committed by a single
-`COMMIT`, and a separate relay reads the outbox and publishes. Publishing directly
-from a handler is forbidden — between the `INSERT` and the send there is a gap
-that leads fall into.
+`COMMIT`. Publishing directly from a handler is forbidden — between the `INSERT`
+and the send there is a gap that leads fall into.
+
+Who reads the outbox is a matter of the `vedal.events.publisher` setting:
+
+| Value | Publishing | Delivery to consumers |
+| --- | --- | --- |
+| `log` | the event goes to the log | in process |
+| `kafka` | the relay polls the table and publishes itself | in process |
+| `debezium` | a connector reads the PostgreSQL write-ahead log | from the topics |
+
+The stack runs `debezium`. Nobody polls the table: events leave right after
+`COMMIT`, latency stops depending on the poll interval, and there are no idle
+queries against the database at all. It requires `wal_level=logical` and a
+running Kafka Connect — the settings walkthrough is in
+[backend/debezium/README.en.md](../backend/debezium/README.en.md).
+
+In this mode `published_at` is stamped by the **consumer**, not by the relay.
+That changes the meaning of the primary monitoring signal for the better: the lag
+measures the whole path `COMMIT` → log → connector → topic → consumer, rather
+than what the application managed to put on the queue.
 
 | Topic | Who writes | Who reads |
 | --- | --- | --- |
@@ -312,8 +376,31 @@ silently came up on the development database is worse than one that did not come
 up at all. The check runs before the datasource is created and names the missing
 variables one by one.
 
-JDK 25 and PostgreSQL 16 are required; Maven does not have to be installed, the
-wrapper is in the repository.
+JDK 25 and Docker are required; Maven does not have to be installed, the wrapper
+is in the repository.
+
+**Everything in containers, one entry point.** This builds what will go to the
+server:
+
+```bash
+docker compose -f backend/compose.yaml --profile app up -d --build
+```
+
+| Address | What |
+| --- | --- |
+| `http://localhost:8080` | site, API, admin UI at `/admin/` — all through the gateway |
+| `http://localhost:8080/swagger-ui.html` | the specification, both groups |
+| `http://localhost:8180` | Keycloak, console `admin` / `admin-local` |
+| `http://localhost:9001` | the MinIO console |
+| `http://localhost:8083` | Kafka Connect |
+| `http://localhost:8081` | the portal directly, bypassing the gateway |
+
+The local stack's editor account is `editor` / `editor-local`, created by the
+realm import. Details, and why the password sits in the repository, are in
+[backend/keycloak/README.en.md](../backend/keycloak/README.en.md).
+
+**Environment only, applications from the machine.** This way they are visible in
+a debugger and an edit does not require rebuilding an image:
 
 ```bash
 docker compose -f backend/compose.yaml up -d
@@ -323,11 +410,15 @@ docker compose -f backend/compose.yaml up -d
 cd backend && ./mvnw spring-boot:run
 ```
 
-The application comes up on `http://localhost:8081` (not 8080 — that port is taken
-on the development machine). The schema is owned by Flyway alone, migrations are
-applied on start. The first administrator is created only if both
+```bash
+cd frontend && npm run dev
+```
+
+The portal comes up on `http://localhost:8081` (not 8080 — that port belongs to
+the gateway). The schema is owned by Flyway alone, migrations are applied on
+start. The first administrator of the local mode is created only if both
 `VEDAL_ADMIN_USER` and `VEDAL_ADMIN_PASSWORD` are set, otherwise the account
-simply does not exist.
+simply does not exist; with `vedal.iam.mode=keycloak` accounts live in Keycloak.
 
 The tests run against a real PostgreSQL through Testcontainers and **require a
 running Docker**. H2 is not used: dialect differences should surface here, not in
@@ -335,12 +426,6 @@ production.
 
 ```bash
 cd backend && ./mvnw test
-```
-
-Frontend:
-
-```bash
-cd frontend && npm run dev
 ```
 
 ### 5.9 Perimeter, observability, backups
@@ -382,13 +467,17 @@ upon request; infrastructure in Russia.
 
 ### 6.1 Backend — working
 
-97 Java files, 16 test classes, 11 Flyway migrations, 9 controllers, 12 catalog
-items in the seed, 5 categories. Spring Boot 4.1.0 on Spring Framework 7, Java 25,
-Jackson 3, PostgreSQL 16, Testcontainers.
+114 Java files in the portal and 2 in the gateway, 21 test classes (92 tests, all
+green), 12 Flyway migrations, 18 controllers, 12 catalog items in the seed,
+5 categories. Spring Boot 4.1.0 on Spring Framework 7, Java 25, Jackson 3,
+PostgreSQL 16, Testcontainers. The gateway runs Spring Boot 4.0.7 with Spring
+Cloud Gateway 5.0.2: that is the only supported pair, and the version skew is
+harmless precisely because it is a separate process.
 
-Seven of the eight implementation steps are closed: `catalog` → `content` →
-`crm` + Forms API → `notifications` → `documents` → Kafka (publishing) →
-`assistant`.
+All implementation steps but the last are closed: `catalog` → `content` →
+`crm` + Forms API → `notifications` → `documents` → Kafka (publishing **and**
+consuming from the topics via Debezium) → `assistant`. Step 8 — the move to the
+cloud — remains.
 
 Working routes:
 
@@ -404,10 +493,17 @@ Working routes:
 | `GET /api/public/v1/documents/{slug}/file` | visitor | the file; closed returns 404 and the request is logged |
 | `POST /api/forms/v1/leads` | website forms | lead intake, `Idempotency-Key`, `202` response |
 | `POST /api/assistant/v1/ask` | Urania | an answer from published content with links |
-| `GET /admin/products` | employee | catalog: editing and publishing |
-| `GET /admin/news` | employee | news: creating, editing, publishing |
-| `GET /admin/documents` | employee | documents: file upload and publication |
-| `GET /admin/leads` | employee | leads |
+| `/api/admin/v1/products`, `/categories` | admin UI | the whole catalog: editing, specs, images, publishing |
+| `/api/admin/v1/news` | admin UI | news: creating, editing, publishing, deleting a draft |
+| `/api/admin/v1/documents` | admin UI | the card, file upload up to 20 MB, publication with the refusal explained |
+| `/api/admin/v1/leads` | admin UI | leads by page, status and owner |
+| `/api/admin/v1/audit` | admin UI | the log with filters and the chain by `correlation_id` |
+| `/api/admin/v1/media` | admin UI | image upload into the read-open bucket |
+| `/api/admin/v1/session` | admin UI | who signed in and which roles the portal parsed |
+| `/admin/**` (Thymeleaf) | employee | the fallback entrance, only directly on 8081 |
+
+The twenty-five admin API operations are described by a separate specification
+group — [docs/api/vedal-admin-openapi.yaml](api/vedal-admin-openapi.yaml).
 
 A note on `assistant`: the limits live in `Guardrails` **before** the engine is
 called, not in the prompt — a prompt is a request to the model, not a guarantee.
@@ -417,32 +513,44 @@ items exclusively. The assistant cannot be talked into showing a closed file
 because the file is not in the context. No suitable sources means no answer —
 there is a handoff to a human.
 
-### 6.2 Frontend — working, but static
+### 6.2 Frontend — the site and the admin UI
 
 Next.js 16.3.0, React 19.2.8, App Router, TypeScript, CSS Modules, no external
 dependencies besides Next and React.
 
-Nine routes: `/`, `/products`, `/products/[slug]`, `/production`, `/documents`,
-`/news`, `/service`, `/about`, `/contacts`. Twelve product cards (R1 and R2 share
-one), five categories, animations, a preloader, an animated VEDAL mark, a map,
-tabs on the product page. All the text lives in `content/*.ts`, with unconfirmed
-facts marked «ожидает уточнения».
+Nine site routes: `/`, `/products`, `/products/[slug]`, `/production`,
+`/documents`, `/news`, `/service`, `/about`, `/contacts`. Twelve product cards
+(R1 and R2 share one), five categories, animations, a preloader, an animated
+VEDAL mark, a map, tabs on the product page.
 
-### 6.3 The main gap
+Twelve admin routes: dashboard, products with a list and an edit form,
+categories, news, documents, leads, audit log, the Keycloak callback.
 
-**There is not a single network call in the frontend.** Searching for `fetch(`,
-`/api/` and `NEXT_PUBLIC` produces no matches.
+The site and the admin UI are separated by the `(site)` and `(admin)` route
+groups, each with its own root layout. A nested layout cannot remove the parent's
+chrome: the header, the footer, the preloader and the floating Urania would have
+arrived in the admin UI too. The site's page addresses did not change: a group
+name in parentheses never reaches the URL.
 
-- `LeadForm.tsx` — client-side validation only, `onSubmit` sends nothing anywhere;
-- `UraniaChat.tsx` — canned answers from `content/urania.ts`, `/api/assistant/v1/ask` is never called;
-- `FooterSubscribe.tsx` — the same;
-- the catalog, the news and the documents are read from `content/*.ts`, not from the Public API.
+### 6.3 The gap is closed
 
-This is recorded in
-[backend/gateway/README](../backend/gateway/README.en.md) as well: "the frontend
-forms are already built but have nowhere to send to". Both halves were written
-against the same spec, but there is not a single wire between them. **This is work
-item number one.**
+The wire between the halves exists:
+
+- the catalog, the news and the documents are read from the Public API at build
+  time and become static — property №1 is intact, a backend outage does not take
+  down an already built site;
+- `LeadForm` submits to the Forms API with an `Idempotency-Key` and a consent
+  version, `UraniaChat` asks the assistant;
+- the admin UI edits content through the Admin API under a Keycloak token.
+
+The frontend has two API addresses, and that is not duplication: the catalog is
+read at build time from inside the container (`VEDAL_API_INTERNAL_URL`), while
+forms and the admin UI are called from the browser (`NEXT_PUBLIC_API_URL`). One
+address for both cases is impossible: `localhost:8080` from inside a container
+leads to the container itself, and `portal:8081` does not resolve in a browser.
+
+**What is left of the old gap:** multilingual routing, SEO markup and Yandex
+Metrica from section 8 — those are about content, not about the wire.
 
 ---
 
@@ -450,17 +558,19 @@ item number one.**
 
 | # | What | State and pitfalls |
 | --- | --- | --- |
-| 1 | Merge `dev` → `main`, push `front` | 55 and 39 commits respectively; from outside the project looks like documents without code |
-| 2 | Finish step 6: consumers read **from topics** | for now they live in-process through `DomainEventConsumer`, with repeats cut off by `(consumer, event)`; the consumer shape is already the one a topic consumer will have. A DLQ is needed |
-| 3 | **Keycloak + MFA** instead of local accounts | a decision from the owner brief; currently Spring Security with local accounts sits behind the `iam` interface. The identity provider is bought; `iam` keeps the role model and the link between an account and an employee |
-| 4 | Decide where the object storage lives and implement `FileStorage` on it | an open question in two documents at once; on the owner's diagram it is "Private Object Storage" inside the closed contour |
-| 5 | Grow `crm` to full: customers, deals, quotes, statuses, owner, dealer and service funnels, correspondence history, attachments from approved documents, analytics by product/source/language/campaign | currently only lead intake |
+| 1 | Merge `dev` → `main`, push every layer branch | from outside the project still looks like documents without code |
+| 2 | ~~Consumers read from topics~~ | ✅ Debezium reads the outbox from the write-ahead log, consumers take events from the topics, DLQ on `<topic>.dlq` after three attempts |
+| 3 | ~~Keycloak instead of local accounts~~ | ✅ the portal verifies a realm token and parses `realm_access.roles`; local accounts remain as the `vedal.iam.mode=local` fallback. **Not closed: MFA** — enabled by realm policy in a deployed environment, which does not concern the portal |
+| 4 | ~~Object storage and `FileStorage`~~ | ✅ S3 through the AWS SDK: MinIO locally, Yandex Object Storage in the cloud. Two buckets, privacy anchored to the bucket. **Not closed:** which cloud exactly |
+| 5 | Grow `crm` to full: customers, deals, quotes, statuses, dealer and service funnels, correspondence history, attachments from approved documents, analytics by product/source/language/campaign | lead intake and triage (status, owner) exist, the rest does not |
 | 6 | `MailSender` → Yandex 360 SMTP | letters still go to the log |
 | 7 | `LlmEngine` → YandexGPT + pgvector, the pipeline text extraction → chunks with metadata → embeddings | **pitfall:** the EnterpriseDB PostgreSQL build for Windows does not ship pgvector. A `pgvector/pgvector:pg16` image is needed, and `compose.yaml` and `PostgresTestBase` must be switched **at the same time**, otherwise the tests diverge from development |
-| 8 | Step 8 — the move: VM, Managed PostgreSQL, Managed Kafka, Object Storage, backups, monitoring | depends on Yandex Cloud, which does not exist yet |
-| 9 | Perimeter: `forward-headers-strategy`, trusted proxies, body size limit | without these the rate limit and the audit log break |
-| 10 | CI: a build with tests and an image, graceful shutdown, rollback by returning to the previous image | there is no deployment at all right now |
-| 11 | `ETag` on the public API | deliberately deferred: on twelve items the gain is zero and `Cache-Control` is already in place |
+| 8 | Step 8 — the move: VM, Managed PostgreSQL, Managed Kafka, Object Storage, backups, monitoring | depends on Yandex Cloud, which does not exist yet. **Pitfall:** Managed PostgreSQL puts logical replication behind a separate flag, and without it the Debezium connector will not start |
+| 9 | ~~Perimeter: `forward-headers-strategy`, body size limit~~ | ✅ on both the portal and the gateway. **Not closed:** the trusted proxy list is set at deployment |
+| 10 | CI: a build with tests and an image, graceful shutdown, rollback by returning to the previous image | images are built by `compose --profile app`; there is still no deployment and no CI |
+| 11 | Remove the Thymeleaf admin pages | kept as a fallback while the new admin UI is being exercised; two admin interfaces on one address is a temporary state, not a decision |
+| 12 | Outbox cleanup | the table grows without bound. Deleting needs care around Debezium: `skipped.operations` already drops `d`, but the replication slot must read a row before it is removed |
+| 13 | `ETag` on the public API | deliberately deferred: on twelve items the gain is zero and `Cache-Control` is already in place |
 
 ---
 
@@ -571,24 +681,32 @@ the broker will not touch a single domain.
 **Technical, awaiting confirmation:**
 
 1. Acceptable data loss and time to recovery — 5 minutes and 1 hour proposed.
-2. Lead retention period — 3 years proposed.
-3. Whether `/admin` is closed at the network level or left behind a password and MFA.
-4. Where the object storage lives.
-5. When Keycloak is introduced.
+2. Lead retention period — 3 years proposed. There is no auto-cleanup, and until
+   the period is confirmed it must not be introduced: deleting by a wrong period
+   is irreversible.
+3. Whether `/admin` is closed at the network level or left behind a password and
+   MFA. Technically both are ready: the door is one and closes wholesale at the
+   proxy.
+4. Which cloud. The storage runs on S3, and moving between MinIO and Yandex
+   Object Storage changes the address and the keys, not the code.
+5. When MFA is switched on in the realm. This does not concern the portal: it
+   verifies an issued token and does not know how many factors were presented.
+6. Who runs Keycloak in a deployed environment and how employees are created in it.
 
 ---
 
 ## 13. Order of work
 
-1. **Merge `dev` → `main`, push `front`.** Cheap, and it removes the impression of
-   a dead repository with no code.
-2. **Connect the frontend to the backend** — forms, Urania, catalog from the API.
-   Both halves are ready, the wire is missing.
-3. **Bilingual documents** — `ru`/`en` mirrored with a switcher inside the file,
-   and the rule "a new .md is created in both versions at once".
-4. **Keycloak**, following a working implementation in a third-party `api-gateway`
-   (the repository is private, access is needed).
-5. Object storage, the full CRM, YandexGPT + pgvector, the move to Yandex Cloud.
+1. **Merge `dev` → `main`, push the layer branches.** Cheap, and it removes the
+   impression of a dead repository with no code.
+2. **Exercise the admin UI on live data and remove the Thymeleaf pages.** Two
+   admin interfaces on one address is a temporary state.
+3. **Deploy it somewhere.** The stack comes up with one command; there is no
+   deployment and no CI at all — that, not the code, is the next bottleneck.
+4. **The full CRM**: customers, deals, quotes, funnels, analytics. Lead intake and
+   triage exist, the rest does not.
+5. Yandex 360 SMTP, YandexGPT + pgvector, multilingual routing, the move to
+   Yandex Cloud.
 
 The full roadmap is [operations/roadmap.en.md](operations/roadmap.en.md): stage 0
 (collecting materials) → 1 (public MVP) → 2 (corporate contour) → 3 (AI search) →
@@ -604,6 +722,10 @@ The full roadmap is [operations/roadmap.en.md](operations/roadmap.en.md): stage 
 | Technical decisions, accepted and rejected | [superpowers/specs/2026-08-06-vedal-portal-architecture-design.en.md](superpowers/specs/2026-08-06-vedal-portal-architecture-design.en.md) |
 | What is built on the backend, how to run it, the ports | [../backend/README.en.md](../backend/README.en.md) |
 | The public API contract: entry points, forms, entities, errors | [api/README.en.md](api/README.en.md), [api/vedal-openapi.yaml](api/vedal-openapi.yaml) |
+| The admin API contract | [api/vedal-admin-openapi.yaml](api/vedal-admin-openapi.yaml) |
+| Single entry point, routes, body limit | [../backend/api-gateway/README.en.md](../backend/api-gateway/README.en.md) |
+| Sign-in, roles, the local realm, Keycloak's two addresses | [../backend/keycloak/README.en.md](../backend/keycloak/README.en.md) |
+| The outbox → Kafka connector, its settings, what to check on failure | [../backend/debezium/README.en.md](../backend/debezium/README.en.md) |
 | The boundaries of a specific module | `backend/<module>/README.en.md` |
 | How to run the frontend, content rules | [../frontend/README.en.md](../frontend/README.en.md) |
 | Site structure and routes | [frontend/sitemap.en.md](frontend/sitemap.en.md) |

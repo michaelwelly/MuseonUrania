@@ -58,25 +58,26 @@ There are no folders for these yet:
 
 Deferred inside existing modules as well:
 
-- **Kafka.** Step 6 of the implementation order from the spec. For now the event
-  consumers live in-process: the relay distributes events through
-  `DomainEventConsumer`, and repeats are cut off by `(consumer, event)`. The
-  shape is the same one a topic consumer will have.
 - **Moving to Yandex infrastructure.** Step 8. It depends on Yandex Cloud, which
-  does not exist yet: Object Storage instead of a local directory, Managed
-  PostgreSQL, Managed Kafka, backups, monitoring.
+  does not exist yet: Managed PostgreSQL, Managed Kafka, backups, monitoring.
+  Pitfall: Managed PostgreSQL puts logical replication behind a separate flag,
+  and without it the Debezium connector will not start.
 - **`ETag` on the public API.** The spec moves it to the next stage: on twelve
   items the gain is zero, and `Cache-Control` is already in place.
-- **Keycloak.** Until the closed contour is agreed, admin sign-in is Spring
-  Security with local accounts behind the `iam` interface.
+- **The second factor.** Enabled by realm policy in a deployed environment. This
+  does not concern the portal: it verifies an issued token and does not know how
+  many factors were presented at sign-in.
+- **Outbox cleanup.** The table grows without bound.
 
 ## Infrastructure: what is left and what it depends on
 
 | What | State | What it depends on |
 | --- | --- | --- |
-| Kafka: publishing | ✅ ready. Enabled with `vedal.events.publisher=kafka`, the application creates the topics | — |
-| Kafka: consumers | consumers are still in-process (`DomainEventConsumer`), they do not read from topics | Next step; the consumer shape is already the one a topic consumer will have |
-| Object Storage | `FileStorage` runs on a local directory | The choice of storage is an open question in [infrastructure_architecture.en.md](../docs/architecture/infrastructure_architecture.en.md) |
+| Kafka: publishing | ✅ ready. `vedal.events.publisher=kafka` — the relay publishes itself, `debezium` — a connector reads the log. The application creates the topics | — |
+| Kafka: consumers | ✅ read from the topics in `debezium` mode, repeats cut off by `(consumer, event)`, unprocessed messages go to `<topic>.dlq` | — |
+| Object Storage | ✅ S3 through the AWS SDK: MinIO locally, two areas — closed documents and open media | Which cloud it will be is an open question in [infrastructure_architecture.en.md](../docs/architecture/infrastructure_architecture.en.md) |
+| Identity provider | ✅ Keycloak: the portal verifies the token and parses `realm_access.roles`. Local accounts are the `vedal.iam.mode=local` fallback | Who runs Keycloak in a deployed environment |
+| Single entry point | ✅ [api-gateway](api-gateway/README.en.md) on Spring Cloud Gateway | — |
 | pgvector | not used | **The EnterpriseDB PostgreSQL build for Windows does not ship the extension** — `pg_available_extensions` does not know it. A `pgvector/pgvector:pg16` image will be needed, and `compose.yaml` and `PostgresTestBase` must be switched at the same time, otherwise the tests diverge from development |
 | Managed PostgreSQL, VM, backups, monitoring | none | Yandex Cloud |
 | Backups: `wal-g`, weekly `pg_dump`, monthly restore check | none | Cloud and service accounts. The spec section "Backups and recovery" describes the whole target scheme |
@@ -109,10 +110,21 @@ logs, monitoring), Managed PostgreSQL, Lockbox, WAF as they become relevant.
 
 ## How to run it
 
-Only JDK 25 and PostgreSQL 16 are needed. Maven does not have to be installed —
-the wrapper is in the repository.
+JDK 25 and Docker are needed. Maven does not have to be installed — the wrapper
+is in the repository.
 
-**Database.** Either in a container:
+**The whole stack at once**, including the portal, the gateway and the site. This
+builds what will go to the server, and everything ends up behind the single entry
+point `http://localhost:8080`:
+
+```
+docker compose -f backend/compose.yaml --profile app up -d --build
+```
+
+What follows is the mode where the applications run from the machine and are
+visible in a debugger.
+
+**Database and environment.** Either in containers:
 
 ```
 docker compose -f backend/compose.yaml up -d
@@ -172,13 +184,16 @@ panel.
 | `GET /api/public/v1/documents/{slug}/file` | visitor | the file; closed returns 404 and the request is logged |
 | `POST /api/forms/v1/leads` | website forms | lead intake, `Idempotency-Key` header, `202` response |
 | `POST /api/assistant/v1/ask` | Urania | an answer from published content with links; no sources means handoff to a human |
-| `GET /admin/products` | employee | catalog: editing and publishing |
-| `GET /admin/news` | employee | news: creating, editing, publishing |
-| `GET /admin/documents` | employee | documents: file upload and publication upon approval |
-| `GET /admin/leads` | employee | leads |
+| `/api/admin/v1/**` | admin UI | twenty-five operations: products, categories, news, documents, leads, audit log, images, session |
+| `/admin/**` (Thymeleaf) | employee | the fallback entrance; unavailable through the gateway, only directly on 8081 |
 
 Errors from every door are `application/problem+json` (RFC 9457). The forms and
-the assistant have their own per-client rate limits.
+the assistant have their own per-client rate limits. The admin API contract is
+[docs/api/vedal-admin-openapi.yaml](../docs/api/vedal-admin-openapi.yaml).
+
+Publication rules live in the domains (`CatalogEditor`, `ContentEditor`,
+`DocumentEditor`, `LeadTriage`) rather than in the controllers: there are two
+doors, and a rule written in a controller is honoured by only one of them.
 
 ## What is enforced by database constraints rather than code
 
@@ -206,10 +221,14 @@ port.
 
 | Port | Now | Later |
 | --- | --- | --- |
-| `EventPublisher` | log by default, Kafka with `vedal.events.publisher=kafka` | — |
+| `EventPublisher` | `log`, `kafka` or `debezium` via `vedal.events.publisher` | Managed Kafka |
 | `MailSender` | writes to the log | Yandex 360 SMTP |
-| `FileStorage` | local directory `var/documents` | Yandex Object Storage |
+| `FileStorage` | `local` or `s3` via `vedal.storage.kind`; MinIO in the stack, 20 MB limit | Yandex Object Storage |
 | `LlmEngine` | deterministic word search | YandexGPT + pgvector |
+
+All three pick their implementation by a property, not by the classpath and not
+by "whichever bean was found": silently switching the storage or the broker one
+day means a local directory instead of S3 in production.
 
 The catalog is filled by the `V2__catalog_seed.sql` migration, which is
 **generated** rather than written by hand:
@@ -258,13 +277,18 @@ Three Boot 4 traps already stepped on here:
 
 ## Still undecided
 
-- **Where the object storage lives** for the Document Vault — the question is
-  open in
+- **Which cloud** hosts the Document Vault — the question is open in
   [infrastructure_architecture.en.md](../docs/architecture/infrastructure_architecture.en.md)
   as well. On the owner's diagram it is "Private Object Storage" inside the
-  closed contour.
-- **When Keycloak is introduced.** By the diagram, sign-in is built on Keycloak +
-  MFA rather than on our own authorization; until the closed section exists it is
-  not needed.
+  closed contour. The storage already speaks S3, so the move changes the address
+  and the keys, not the code.
+- **Who runs Keycloak** in a deployed environment and how employees are created
+  in it.
+- **When the Thymeleaf admin pages go away.** They are kept as a fallback while
+  the new admin UI is exercised; two admin interfaces on one address is a
+  temporary state, not a decision.
+- **The lead retention period.** Three years proposed, no auto-cleanup. Until the
+  period is confirmed it must not be introduced: deleting by a wrong period is
+  irreversible.
 
 Work happens in the `back` branch.
