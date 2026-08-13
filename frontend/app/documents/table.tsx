@@ -2,14 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { groups, documents, type Group, type Access } from "@/content/documents";
+import { groups } from "@/content/documents";
+import type { Doc } from "@/lib/api";
 import styles from "./page.module.css";
 
-const badgeClass = (access: Access) =>
+const badgeClass = (access: string) =>
   access === "Уточняется" ? styles.badgeMuted : styles.badgeOk;
 
-export default function DocumentsTable() {
-  const [active, setActive] = useState<Group | null>(null);
+// Перечень приходит сверху: его читает серверный компонент на сборке.
+// Ссылка на файл есть только у опубликованных — её ставит бэкенд.
+export default function DocumentsTable({ documents }: { documents: Doc[] }) {
+  const [active, setActive] = useState<string | null>(null);
   const shown = active ? documents.filter((d) => d.group === active) : documents;
 
   return (
@@ -54,7 +57,7 @@ export default function DocumentsTable() {
 
           {shown.map((d) => (
             <Link
-              key={`${d.title}-${d.product}`}
+              key={d.slug || `${d.title}-${d.product}`}
               className={styles.row}
               // Пока published:false — ведём на запрос, а не на файл.
               href={d.published && d.file ? d.file : "/contacts/"}

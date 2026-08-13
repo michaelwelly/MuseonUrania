@@ -3,13 +3,18 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { categories, products, statusLabel, type Category } from "@/content/products";
+import { statusLabel } from "@/content/products";
+import type { Product } from "@/lib/api";
 import styles from "./page.module.css";
+import { mediaSrc } from "@/lib/media";
+
+type Props = { products: Product[]; categories: string[] };
 
 // Фильтр и сортировка на клиенте: позиций мало, перезагрузка страницы ради
-// смены категории только мешала бы.
-export default function Catalog() {
-  const [active, setActive] = useState<Category | null>(null);
+// смены категории только мешала бы. Сами позиции приходят сверху — их читает
+// серверный компонент на сборке.
+export default function Catalog({ products, categories }: Props) {
+  const [active, setActive] = useState<string | null>(null);
   const [docsFirst, setDocsFirst] = useState(false);
 
   const filtered = active ? products.filter((p) => p.categories.includes(active)) : products;
@@ -76,7 +81,7 @@ export default function Catalog() {
               <div className={`${styles.photo} ${p.image ? "" : styles.photoEmpty}`}>
                 {p.image ? (
                   <Image
-                    src={p.image.src}
+                    src={mediaSrc(p.image.src)}
                     alt={p.image.alt}
                     fill
                     sizes="(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 33vw"

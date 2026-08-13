@@ -1,15 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { serviceForm } from "@/content/service";
-import { products } from "@/content/products";
 import { site } from "@/content/site";
+import { newIdempotencyKey, submitLead, type LeadForm as FormType } from "@/lib/submit";
 import styles from "./LeadForm.module.css";
 
 type Errors = Partial<Record<"name" | "phone" | "email" | "message" | "consent", string>>;
 
 // Проверка полей до отправки — валидация на границе доверия нужна независимо
-// от того, куда запрос уйдёт потом.
+// от того, куда запрос уйдёт потом. Те же правила стоят в LeadSubmission
+// на бэкенде: браузеру верить нельзя, а пользователю нужно показать ошибку
+// сразу, не гоняя запрос.
 export function validate(data: FormData): Errors {
   const errors: Errors = {};
   const get = (k: string) => String(data.get(k) ?? "").trim();
@@ -23,31 +25,113 @@ export function validate(data: FormData): Errors {
   return errors;
 }
 
+/** Поля бэкенда, у которых на этой форме есть свой ярлык под инпутом. */
+const FIELD_ERRORS = new Set(["name", "phone", "email", "message", "consent"]);
+
+export type Topic = { code: FormType; label: string };
+
 type Props = {
-  /** Список тем обращения. Если не передан, селектор темы не показывается. */
-  topics?: readonly string[];
+  /** Тип заявки. Если передан список тем, его перекрывает выбор пользователя. */
+  form: FormType;
+  /** Темы обращения. Если не переданы, селектор темы не показывается. */
+  topics?: readonly Topic[];
+  /** Позиции каталога для селектора изделия. Приходят с бэкенда через страницу. */
+  products?: readonly { slug: string; name: string; kind: string }[];
   analytics: string;
   submitLabel?: string;
   hint?: string;
   messageLabel?: string;
 };
 
-export default function LeadForm({ topics, analytics, submitLabel, hint, messageLabel }: Props) {
+export default function LeadForm({
+  form,
+  topics,
+  products = [],
+  analytics,
+  submitLabel,
+  hint,
+  messageLabel,
+}: Props) {
   const [errors, setErrors] = useState<Errors>({});
-  const [tried, setTried] = useState(false);
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "failed">("idle");
+  const [notice, setNotice] = useState("");
 
-  // ponytail: отправлять некуда — CRM и Integration Gateway из
-  // docs/architecture/vedal_portal_owner_brief.md ещё не построены.
-  // Показываем рабочие контакты вместо ложного «спасибо, отправлено».
-  // Заменить на POST в API, когда появится бэкенд.
-  function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+  // Ключ живёт столько же, сколько заполняемая форма: повторный клик по
+  // «Отправить» не создаст вторую заявку. После успешной отправки берём новый —
+  // следующее обращение с той же страницы должно быть отдельной заявкой.
+  const idempotencyKey = useRef(newIdempotencyKey());
+
+  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setErrors(validate(new FormData(event.currentTarget)));
-    setTried(true);
+    const data = new FormData(event.currentTarget);
+
+    const found = validate(data);
+    setErrors(found);
+    if (Object.keys(found).length > 0) return;
+
+    setStatus("sending");
+    setNotice("");
+
+    const get = (k: string) => String(data.get(k) ?? "").trim();
+    const result = await submitLead(
+      {
+        form: (get("topic") || form) as FormType,
+        name: get("name"),
+        company: get("company") || undefined,
+        phone: get("phone"),
+        email: get("email"),
+        productSlug: get("product") || undefined,
+        message: get("message"),
+        consent: data.get("consent") !== null,
+        trap: get("trap") || undefined,
+      },
+      idempotencyKey.current,
+    );
+
+    if (result.ok) {
+      setStatus("sent");
+      setNotice(result.message);
+      idempotencyKey.current = newIdempotencyKey();
+      return;
+    }
+
+    // Бэкенд разбирает ошибку по полям — показываем их рядом с полями,
+    // а не одной строкой над формой.
+    if (result.fields) {
+      const mapped: Errors = {};
+      for (const [field, message] of Object.entries(result.fields)) {
+        if (FIELD_ERRORS.has(field)) mapped[field as keyof Errors] = message;
+      }
+      setErrors(mapped);
+    }
+    setStatus("failed");
+    setNotice(result.message);
   }
 
-  // Показываем только после реальной попытки отправки, а не при заполнении полей.
-  const showPending = tried && Object.keys(errors).length === 0;
+  const sending = status === "sending";
+
+  // Успешная отправка убирает форму: повторно слать то же обращение незачем.
+  if (status === "sent") {
+    return (
+      <div className={styles.form}>
+        <p className={styles.pending} role="status" data-anim="rise">
+          {notice}
+        </p>
+        <div className={styles.actions}>
+          <button
+            type="button"
+            className={styles.submit}
+            onClick={() => {
+              setStatus("idle");
+              setNotice("");
+            }}
+          >
+            Отправить ещё одно обращение
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form className={styles.form} onSubmit={onSubmit} noValidate>
@@ -56,10 +140,10 @@ export default function LeadForm({ topics, analytics, submitLabel, hint, message
           <label className={styles.label} htmlFor="topic">
             Тема обращения
           </label>
-          <select id="topic" name="topic" className={styles.select} defaultValue={topics[0]}>
+          <select id="topic" name="topic" className={styles.select} defaultValue={topics[0].code}>
             {topics.map((t) => (
-              <option key={t} value={t}>
-                {t}
+              <option key={t.code} value={t.code}>
+                {t.label}
               </option>
             ))}
           </select>
@@ -124,19 +208,23 @@ export default function LeadForm({ topics, analytics, submitLabel, hint, message
         </div>
       </div>
 
-      <div className={`${styles.field} ${styles.fieldWide}`}>
-        <label className={styles.label} htmlFor="product">
-          {serviceForm.fields.product}
-        </label>
-        <select id="product" name="product" className={styles.select} defaultValue="">
-          <option value="">{serviceForm.productOther}</option>
-          {products.map((p) => (
-            <option key={p.slug} value={p.name}>
-              {p.name} — {p.kind}
-            </option>
-          ))}
-        </select>
-      </div>
+      {products.length > 0 && (
+        <div className={`${styles.field} ${styles.fieldWide}`}>
+          <label className={styles.label} htmlFor="product">
+            {serviceForm.fields.product}
+          </label>
+          {/* Значение — slug, а не название: бэкенд связывает заявку с позицией
+              каталога по нему. Название в базе может смениться, slug — нет. */}
+          <select id="product" name="product" className={styles.select} defaultValue="">
+            <option value="">{serviceForm.productOther}</option>
+            {products.map((p) => (
+              <option key={p.slug} value={p.slug}>
+                {p.name} — {p.kind}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className={`${styles.field} ${styles.fieldWide}`}>
         <label className={styles.label} htmlFor="message">
@@ -151,6 +239,17 @@ export default function LeadForm({ topics, analytics, submitLabel, hint, message
         {errors.message && <span className={styles.error}>{errors.message}</span>}
       </div>
 
+      {/* Ловушка для ботов. Скрыта от человека и от скринридера, автозаполнение
+          выключено: браузер не должен подставить сюда значение сам. */}
+      <input
+        type="text"
+        name="trap"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        className={styles.trap}
+      />
+
       <label className={styles.consent}>
         <input type="checkbox" name="consent" />
         <span>
@@ -161,18 +260,21 @@ export default function LeadForm({ topics, analytics, submitLabel, hint, message
       <p className={styles.consentNote}>{serviceForm.consentNote}</p>
 
       <div className={styles.actions}>
-        <button type="submit" className={styles.submit} data-analytics={analytics}>
-          {submitLabel ?? serviceForm.submit}
+        <button
+          type="submit"
+          className={styles.submit}
+          data-analytics={analytics}
+          disabled={sending}
+        >
+          {sending ? "Отправляем…" : (submitLabel ?? serviceForm.submit)}
         </button>
         {hint && <span className={styles.hint}>{hint}</span>}
       </div>
 
-      {showPending && (
-        <p className={styles.pending} role="status" data-anim="rise">
-          Отправка заявок подключается вместе с CRM. Пока напишите на{" "}
-          <a href={`mailto:${site.email}`}>{site.email}</a> или позвоните{" "}
-          <a href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a> — запрос примет
-          специалист.
+      {status === "failed" && (
+        <p className={styles.pending} role="alert" data-anim="rise">
+          {notice} Можно написать на <a href={`mailto:${site.email}`}>{site.email}</a> или позвонить{" "}
+          <a href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a>.
         </p>
       )}
     </form>

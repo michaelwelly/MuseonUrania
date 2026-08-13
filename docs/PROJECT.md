@@ -105,6 +105,7 @@ MuseonUrania/
 │  ├─ tools/seed-catalog.mjs   генератор миграции V2 из frontend/content/products.ts
 │  └─ compose.yaml          PostgreSQL 16 (порт 5434) + Kafka 3.9 в режиме KRaft
 ├─ docs/
+│  ├─ api/                  выгрузка OpenAPI публичного API (собирается из кода)
 │  ├─ architecture/         бриф собственника, инфраструктура
 │  ├─ strategy/             бизнес-рамка, требования, Урания, SEO, конкуренты
 │  ├─ frontend/             карта сайта, модели контента, брифы страниц, чек-лист
@@ -579,6 +580,7 @@ VEDAL, карта, вкладки на карточке изделия. Весь
 | Целевая архитектура, контуры, бюджет | [architecture/vedal_portal_owner_brief.md](architecture/vedal_portal_owner_brief.md) |
 | Технические решения, принятые и отклонённые | [superpowers/specs/2026-08-06-vedal-portal-architecture-design.md](superpowers/specs/2026-08-06-vedal-portal-architecture-design.md) |
 | Что построено на бэке, как запустить, порты | [../backend/README.md](../backend/README.md) |
+| Контракт публичного API: двери, формы, сущности, ошибки | [api/README.md](api/README.md), [api/vedal-openapi.yaml](api/vedal-openapi.yaml) |
 | Границы конкретного модуля | `backend/<модуль>/README.md` |
 | Как запустить фронт, правила контента | [../frontend/README.md](../frontend/README.md) |
 | Структура сайта и маршруты | [frontend/sitemap.md](frontend/sitemap.md) |

@@ -12,6 +12,7 @@ import {
   aboutCta,
 } from "@/content/about";
 import styles from "./page.module.css";
+import { mediaSrc } from "@/lib/media";
 
 export const metadata: Metadata = {
   title: "О компании — VEDAL",
@@ -29,7 +30,7 @@ export default function AboutPage() {
 
       <div className={styles.banner} data-reveal="0">
         <Image
-          src={aboutHero.image.src}
+          src={mediaSrc(aboutHero.image.src)}
           alt={aboutHero.image.alt}
           fill
           sizes="100vw"
@@ -96,7 +97,7 @@ export default function AboutPage() {
         </div>
         <div className={styles.photo} data-reveal="1">
           <Image
-            src={partners.image.src}
+            src={mediaSrc(partners.image.src)}
             alt={partners.image.alt}
             fill
             sizes="(max-width: 1100px) 100vw, 50vw"
@@ -120,7 +121,7 @@ export default function AboutPage() {
         </div>
         <div className={styles.legalPhoto} data-reveal="1">
           <Image
-            src={legal.image.src}
+            src={mediaSrc(legal.image.src)}
             alt={legal.image.alt}
             fill
             sizes="(max-width: 1100px) 100vw, 45vw"
