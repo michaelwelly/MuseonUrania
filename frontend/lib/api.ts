@@ -142,7 +142,10 @@ export async function fetchProducts(): Promise<Product[]> {
 export async function fetchProduct(slug: string): Promise<Product | null> {
   if (!apiConfigured) return localProducts.find((p) => p.slug === slug) ?? null;
 
-  const url = `${apiUrl}/api/public/v1/products/${encodeURIComponent(slug)}`;
+  // buildUrl, а не apiUrl: этот запрос идёт на сборке, из процесса Node.
+  // Собственный fetch здесь нужен ради разбора 404 — общий get() на нём
+  // бросает исключение, а неопубликованное изделие это не сбой.
+  const url = `${buildUrl}/api/public/v1/products/${encodeURIComponent(slug)}`;
   const response = await fetch(url, { next: { revalidate: REVALIDATE } });
 
   // 404 — это не сбой, а неопубликованное или несуществующее изделие.
@@ -252,6 +255,10 @@ export async function fetchDocuments(): Promise<Doc[]> {
     published: c.published,
     // Ссылку на файл строит бэкенд и только у опубликованных: собирать её
     // здесь значит однажды собрать её для закрытого документа.
+    //
+    // Здесь apiUrl, а не buildUrl, и это не описка: по этой ссылке пойдёт
+    // браузер посетителя, а не сборка. Внутренний адрес портала в разметке
+    // страницы означал бы ссылку, которая не открывается ни у кого.
     file: c.fileUrl ? `${apiUrl}${c.fileUrl}` : undefined,
   }));
 }
