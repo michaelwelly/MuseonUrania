@@ -113,12 +113,53 @@
   overflow-y: auto;
 }
 
+/* Ход диалога: сообщение плюс источники и передача человеку под ним.
+   Выравнивание живёт здесь, а не на .msg — иначе список источников уезжает
+   в противоположную сторону от реплики. */
+.turn {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.turnBot {
+  align-items: flex-start;
+}
+
+.turnMe {
+  align-items: flex-end;
+}
+
 .msg {
   max-width: 82%;
   padding: 12px 14px;
   font-size: 14.5px;
   line-height: 1.5;
   animation: u-in 0.28s ease both;
+}
+
+.sources,
+.handoff {
+  max-width: 82%;
+  margin: 0;
+  padding: 0 0 0 14px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.sources {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  list-style: none;
+}
+
+.sources a,
+.handoff a {
+  color: var(--green);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 @keyframes u-in {

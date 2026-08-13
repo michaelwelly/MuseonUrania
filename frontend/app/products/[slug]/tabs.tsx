@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import type { Product } from "@/content/products";
+import type { Product } from "@/lib/api";
 import styles from "./page.module.css";
 
 const TABS = ["Характеристики", "Комплектация", "Документы", "Сервис и обучение"] as const;

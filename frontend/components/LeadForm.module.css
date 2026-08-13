@@ -144,6 +144,22 @@
   color: var(--green);
 }
 
+/* Ловушка для ботов. Убираем из потока, а не через display:none: часть
+   заполнителей форм пропускает скрытые поля, а сдвинутое за экран поле
+   выглядит для них обычным. */
+.trap {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.submit:disabled {
+  cursor: progress;
+  opacity: 0.65;
+}
+
 @media (max-width: 640px) {
   .row {
     grid-template-columns: 1fr;
