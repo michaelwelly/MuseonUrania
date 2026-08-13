@@ -1,10 +1,13 @@
-# Frontend Content Model
+# Модель контента фронтенда
 
-## Purpose
+**Русский** · [English](content_model.en.md)
 
-The website should be driven by structured content so that NN answers can be inserted without redesigning the whole interface.
+## Назначение
 
-## Page Model
+Сайт должен строиться на структурированном контенте, чтобы ответы НН можно было
+вставить, не перерисовывая интерфейс целиком.
+
+## Модель страницы
 
 ```json
 {
@@ -13,20 +16,20 @@ The website should be driven by structured content so that NN answers can be ins
   "page_status": "draft",
   "public_status": "public",
   "language": "ru",
-  "seo_title": "awaiting NN answer",
-  "seo_description": "awaiting NN answer",
+  "seo_title": "ожидает ответа НН",
+  "seo_description": "ожидает ответа НН",
   "hero": {
-    "headline": "awaiting NN answer",
-    "subheadline": "awaiting NN answer",
+    "headline": "ожидает ответа НН",
+    "subheadline": "ожидает ответа НН",
     "primary_cta": "Запросить КП",
     "secondary_cta": "Каталог",
-    "image_asset": "awaiting NN asset"
+    "image_asset": "ожидает материалов от НН"
   },
-  "approver": "awaiting NN answer"
+  "approver": "ожидает ответа НН"
 }
 ```
 
-## Product Model
+## Модель изделия
 
 ```json
 {
@@ -35,48 +38,48 @@ The website should be driven by structured content so that NN answers can be ins
   "name": "VEDAL R1",
   "category": "neonatal_resuscitation",
   "product_priority": 1,
-  "public_status": "awaiting NN answer",
-  "short_description": "awaiting NN answer",
-  "use_case": "awaiting NN answer",
+  "public_status": "ожидает ответа НН",
+  "short_description": "ожидает ответа НН",
+  "use_case": "ожидает ответа НН",
   "advantages": [],
   "specs_public": [],
   "certification": {
-    "registration_status": "awaiting NN answer",
-    "iso": "awaiting NN answer",
+    "registration_status": "ожидает ответа НН",
+    "iso": "ожидает ответа НН",
     "documents": []
   },
   "media": {
-    "main_image": "awaiting NN asset",
+    "main_image": "ожидает материалов от НН",
     "gallery": [],
     "video": []
   },
   "documents": [],
   "cta_type": ["quote", "catalog", "consultation", "service"],
   "language_ready": ["ru"],
-  "approver": "awaiting NN answer"
+  "approver": "ожидает ответа НН"
 }
 ```
 
-## Document Model
+## Модель документа
 
 ```json
 {
   "id": "doc-product-catalog-2026",
   "title": "Каталог продукции VEDAL",
   "document_type": "catalog",
-  "public_status": "awaiting NN answer",
+  "public_status": "ожидает ответа НН",
   "sensitivity": "public | internal | confidential",
   "language": "ru",
   "product_ids": [],
-  "file_asset": "awaiting NN asset",
-  "source_owner": "awaiting NN answer",
+  "file_asset": "ожидает материалов от НН",
+  "source_owner": "ожидает ответа НН",
   "approval_status": "draft",
-  "approved_by": "awaiting NN answer",
-  "revision": "awaiting NN answer"
+  "approved_by": "ожидает ответа НН",
+  "revision": "ожидает ответа НН"
 }
 ```
 
-## Lead Form Model
+## Модель формы заявки
 
 ```json
 {
@@ -91,18 +94,18 @@ The website should be driven by structured content so that NN answers can be ins
     "message",
     "consent"
   ],
-  "crm_route": "awaiting CRM decision",
-  "email_fallback": "awaiting NN answer",
+  "crm_route": "ожидает решения по CRM",
+  "email_fallback": "ожидает ответа НН",
   "success_message": "Спасибо. Специалист VEDAL свяжется с вами."
 }
 ```
 
-## Urania Assistant Model
+## Модель ассистента Урания
 
 ```json
 {
   "assistant_name": "Urania",
-  "assistant_role": "public product/document/navigation assistant",
+  "assistant_role": "публичный ассистент по продукции, документам и навигации",
   "assistant_avatar": "assets/urania/urania-avatar-middle-v1.png",
   "assistant_slot": "hero_and_floating_button",
   "quick_actions": [
@@ -112,17 +115,17 @@ The website should be driven by structured content so that NN answers can be ins
     "Сервис"
   ],
   "allowed_sources": [
-    "approved public pages",
-    "approved public PDFs",
-    "approved product catalog"
+    "согласованные публичные страницы",
+    "согласованные публичные PDF",
+    "согласованный каталог продукции"
   ],
   "blocked_answers": [
-    "medical diagnosis",
-    "treatment advice",
-    "unapproved clinical claims",
-    "invented prices",
-    "invented delivery times",
-    "private documents"
+    "медицинский диагноз",
+    "рекомендации по лечению",
+    "несогласованные клинические заявления",
+    "выдуманные цены",
+    "выдуманные сроки поставки",
+    "закрытые документы"
   ],
   "handoff_forms": [
     "quote_request",
@@ -133,25 +136,25 @@ The website should be driven by structured content so that NN answers can be ins
 }
 ```
 
-## Smart Solution Model
+## Модель Smart Solution
 
 ```json
 {
   "integration_partner": "Smart Solution",
-  "role": "technology integration layer",
-  "public_visibility": "secondary to VEDAL",
+  "role": "технологический интеграционный слой",
+  "public_visibility": "вторичен по отношению к VEDAL",
   "responsibilities": [
-    "forms to CRM handoff",
-    "S3/document metadata structure",
-    "future AI search integration",
-    "assistant and analytics roadmap"
+    "передача форм в CRM",
+    "структура метаданных S3 и документов",
+    "будущая интеграция AI-поиска",
+    "роадмап ассистента и аналитики"
   ]
 }
 ```
 
-## Required NN Answers
+## Какие ответы нужны от НН
 
-Critical fields before final design:
+Критичные поля до финального дизайна:
 
 - `product_priority`
 - `public_status`
