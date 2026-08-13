@@ -64,7 +64,7 @@ class DocumentsApiTest extends PostgresTestBase {
     void internalDocumentCannotBecomePublic() {
         var document = documents.findBySlug("opisanie-izdeliya-vedal-r1-r2").orElseThrow();
         document.setSensitivity("internal");
-        document.setStorageKey("documents/probe.pdf");
+        document.setStorageKey("probe.pdf");
         document.setListed(true);
         document.setPublished(true);
 

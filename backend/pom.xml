@@ -22,6 +22,8 @@
 		     и в этом проекте не поднимется. Версию держим сами: в BOM
 		     Spring Boot springdoc не входит. -->
 		<springdoc.version>3.1.0</springdoc.version>
+		<!-- Клиент объектного хранилища. В BOM Spring Boot не входит. -->
+		<awssdk.version>2.52.1</awssdk.version>
 	</properties>
 
 	<dependencyManagement>
@@ -30,6 +32,13 @@
 				<groupId>org.testcontainers</groupId>
 				<artifactId>testcontainers-bom</artifactId>
 				<version>${testcontainers.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>software.amazon.awssdk</groupId>
+				<artifactId>bom</artifactId>
+				<version>${awssdk.version}</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
@@ -90,6 +99,30 @@
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 			<version>${springdoc.version}</version>
+		</dependency>
+		<!-- Проверка токена Keycloak на дверях админки. Именно resource server,
+		     а не client: портал токены не выдаёт и вход не рисует — он их
+		     проверяет. Логин живёт в Keycloak, редирект — на стороне админки. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+		</dependency>
+		<!-- Объектное хранилище. Клиент — AWS SDK, а не родная библиотека MinIO:
+		     локально это MinIO, в облаке будет Yandex Object Storage, и оба
+		     говорят на S3. С родной библиотекой переезд означал бы переписать
+		     клиент, с SDK — поменять адрес и ключи.
+
+		     netty-nio-client выброшен: асинхронный клиент здесь не используется,
+		     а тянет он половину Netty. Синхронный ходит через apache-client. -->
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>s3</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>software.amazon.awssdk</groupId>
+					<artifactId>netty-nio-client</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.postgresql</groupId>
