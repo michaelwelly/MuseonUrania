@@ -1,49 +1,55 @@
-# Team Estimate: Dedicated 7-Person Team
+# Оценка выделенной команды из 7 человек
 
-## Assumption
+**Русский** · [English](team_estimate_7_people.en.md)
 
-The immediate goal is the website/design/frontend release package, not the full infrastructure rollout.
+## Допущение
 
-Timeline is compressed:
+Ближайшая цель — пакет по сайту, дизайну и фронтенду, а не полное развёртывание
+инфраструктуры.
 
-- July 23, 2026: deck and question pack.
-- July 24, 2026: NN review, answers, corrections.
-- July 27, 2026: final release package, tests, presentation.
-- July 28, 2026: stakeholder presentation.
+Сроки сжатые:
 
-## Team
+- 23 июля 2026: презентация и пакет вопросов.
+- 24 июля 2026: разбор у НН, ответы, правки.
+- 27 июля 2026: финальный пакет релиза, тесты, презентация.
+- 28 июля 2026: показ стейкхолдерам.
 
-| Role | Load | Responsibility |
+## Команда
+
+| Роль | Загрузка | Ответственность |
 | --- | ---: | --- |
-| PM / analyst | 1.0 | scope, NN answers, deadlines, stakeholder story |
-| UX/UI designer | 1.0 | three frontend concepts, final conservative visual direction |
-| Frontend lead | 1.0 | frontend architecture, components, implementation plan |
-| Frontend developer | 1.0 | pages, responsive layout, forms, integration-ready UI |
-| Backend/CMS developer | 0.7 | CMS, forms, S3 handoff, CRM handoff |
-| Content/SEO specialist | 0.8 | page copy, metadata, SEO, document publication split |
-| QA/DevOps | 0.5 | deployment checks, domain, analytics, smoke tests |
+| Менеджер проекта, аналитик | 1,0 | рамки работ, ответы НН, сроки, история для стейкхолдеров |
+| UX/UI-дизайнер | 1,0 | три концепции фронтенда, финальное консервативное визуальное направление |
+| Ведущий фронтенд-разработчик | 1,0 | архитектура фронтенда, компоненты, план реализации |
+| Фронтенд-разработчик | 1,0 | страницы, адаптивная вёрстка, формы, интерфейс, готовый к интеграции |
+| Разработчик бэкенда и CMS | 0,7 | CMS, формы, передача в S3, передача в CRM |
+| Специалист по контенту и SEO | 0,8 | тексты страниц, метаданные, SEO, разделение публикуемых документов |
+| QA и DevOps | 0,5 | проверки развёртывания, домен, аналитика, дымовые тесты |
 
-Total effective load: 6.0 FTE across 7 people.
+Суммарная эффективная загрузка: 6,0 FTE на 7 человек.
 
-## What This Team Can Deliver Fast
+## Что такая команда успевает быстро
 
-- Conservative deck and decision flow.
-- Sitemap and page briefs.
-- Product/card metadata model.
-- Three frontend variants.
-- First visual direction.
-- Implementation-ready frontend brief.
-- Smart Solution integration role in the website/CRM/S3/AI roadmap.
-- Basic testing checklist.
+- Консервативная презентация и порядок принятия решений.
+- Карта сайта и брифы страниц.
+- Модель метаданных изделия и карточки.
+- Три варианта фронтенда.
+- Первое визуальное направление.
+- Готовый к реализации бриф фронтенда.
+- Роль Smart Solution в роадмапе сайта, CRM, S3 и ИИ.
+- Базовый чек-лист тестирования.
 
-## What Should Be Deferred
+## Что нужно отложить
 
-- Full CRM rollout.
-- Full corporate infrastructure for 60 employees.
-- Production-grade AI/RAG platform.
-- VLM pilot for production/service.
-- Full multilingual implementation beyond structural readiness.
+- Полное развёртывание CRM.
+- Полную корпоративную инфраструктуру на 60 сотрудников.
+- Промышленную AI/RAG-платформу.
+- Пилот VLM для производства и сервиса.
+- Полную мультиязычность сверх структурной готовности.
 
-## Main Risk
+## Главный риск
 
-If product data, public document permissions, and media links are not received by the end of July 24, 2026, the Monday release should be scoped as a strategy/design package with placeholders, not a fact-complete production website.
+Если данные по продукции, разрешения на публикацию документов и ссылки на медиа
+не придут до конца 24 июля 2026, релиз в понедельник надо позиционировать как
+стратегический и дизайнерский пакет с заглушками, а не как фактически полный
+рабочий сайт.

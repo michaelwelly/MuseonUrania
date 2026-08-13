@@ -1,95 +1,112 @@
-# Claude Frontend Prompt
+# Промпт для Claude по фронтенду
 
-Use this prompt to generate three frontend interface variants for the first release.
+**Русский** · [English](claude_frontend_prompt.en.md)
+
+Этим промптом генерируем три варианта интерфейса для первого релиза.
 
 ```text
-You are building three frontend concepts for VEDAL, a Russian medical equipment manufacturer.
+Ты собираешь три концепции фронтенда для VEDAL — российского производителя
+медицинского оборудования.
 
-Primary domain:
+Основной домен:
 vedal-med.ru
 
-Business goal:
-Turn the current public website into a conservative B2B product and sales interface for medical equipment. The site must inform, support product discovery, capture quote/catalog/service requests, and prepare for CRM/S3/AI integration.
+Бизнес-цель:
+Превратить нынешний публичный сайт в консервативный B2B-интерфейс продукции и
+продаж медицинского оборудования. Сайт должен информировать, помогать находить
+изделие, собирать заявки на КП, каталог и сервис и готовить интеграцию с CRM,
+S3 и ИИ.
 
-Audience:
-B2B buyers, medical organization representatives, dealers/integrators, service contacts, stakeholders.
+Аудитория:
+B2B-покупатели, представители медицинских организаций, дилеры и интеграторы,
+сервисные контакты, стейкхолдеры.
 
-Core pages:
-1. Home
-2. Products
-3. Product detail
-4. Production
-5. Documents
-6. Press center
-7. Partners
-8. Service
-9. Contacts
+Основные страницы:
+1. Главная
+2. Продукция
+3. Карточка изделия
+4. Производство
+5. Документы
+6. Пресс-центр
+7. Партнёры
+8. Сервис
+9. Контакты
 
-Mandatory first-screen requirements:
-- Redesign the title/hero section.
-- Keep VEDAL as the primary brand.
-- Show Russian medical equipment production clearly.
-- Include primary CTA: "Запросить КП".
-- Include secondary CTA: "Каталог".
-- Reserve a visible but secondary area for the public assistant Urania.
-- Use product/production visuals as evidence.
+Обязательные требования к первому экрану:
+- Переработать первый экран.
+- Сохранить VEDAL основным брендом.
+- Ясно показать производство российского медицинского оборудования.
+- Основной призыв: «Запросить КП».
+- Вторичный призыв: «Каталог».
+- Оставить заметное, но вторичное место публичному ассистенту Урания.
+- Использовать изображения продукции и производства как доказательство.
 
-Urania assistant:
-- Public website assistant named Urania.
-- Inspired by the muse of astronomy.
-- Visual motifs: celestial globe, compass, star map, subtle orbit lines.
-- Use recommended MVP avatar: assets/urania/urania-avatar-middle-v1.png.
-- Placement: hero assistant card and floating lower-right button.
-- Quick actions: "Подобрать оборудование", "Найти документ", "Запросить КП", "Сервис".
-- Urania must not provide diagnosis, treatment advice, unapproved specifications, prices, delivery times, certification claims, or private documents.
-- All factual answers must come from approved public pages/documents.
+Ассистент Урания:
+- Публичный ассистент сайта по имени Урания.
+- Образ вдохновлён музой астрономии.
+- Визуальные мотивы: небесный глобус, циркуль, звёздная карта, лёгкие
+  орбитальные линии.
+- Рекомендованный аватар для MVP: assets/urania/urania-avatar-middle-v1.png.
+- Размещение: карточка на первом экране и плавающая кнопка в правом нижнем углу.
+- Быстрые действия: «Подобрать оборудование», «Найти документ», «Запросить КП»,
+  «Сервис».
+- Урания не даёт диагнозов, рекомендаций по лечению, несогласованных
+  характеристик, цен, сроков поставки, заявлений о сертификации и не показывает
+  закрытые документы.
+- Все фактические ответы берутся только из согласованных публичных страниц и
+  документов.
 
 Smart Solution:
-- Show Smart Solution only as a secondary technology integration layer.
-- Role: forms to CRM, S3/document metadata, future AI search.
-- Do not make Smart Solution visually stronger than VEDAL.
+- Показывать Smart Solution только как вторичный технологический интеграционный
+  слой.
+- Роль: передача форм в CRM, метаданные S3 и документов, будущий AI-поиск.
+- Визуально Smart Solution не должен быть сильнее VEDAL.
 
-Frontend variants:
+Варианты фронтенда:
 
-Variant A: Conservative Manufacturer
-- Most suitable for first stakeholder presentation.
-- Trust, production, documents, certification blocks, clear CTAs.
+Вариант A: Консервативный производитель
+- Наиболее подходит для первого показа стейкхолдерам.
+- Доверие, производство, документы, блоки сертификации, ясные призывы к
+  действию.
 
-Variant B: Product-Led Catalog
-- Product cards, categories, filters, fast quote/catalog flow.
-- Catalog discovery is the center of the UI.
+Вариант B: Каталог во главе
+- Карточки изделий, категории, фильтры, быстрый путь к КП и каталогу.
+- Поиск по каталогу — центр интерфейса.
 
-Variant C: Expert Technology Platform
-- Production/R&D capability, international readiness, Smart Solution and Urania as technology layer.
-- Keep claims conservative and approved-only.
+Вариант C: Экспертная технологическая платформа
+- Производственные и R&D-возможности, готовность к международным рынкам,
+  Smart Solution и Урания как технологический слой.
+- Заявления держать консервативными и только согласованными.
 
-Design constraints:
-- Conservative B2B medical/industrial style.
-- White, VEDAL green, teal, charcoal, light gray.
-- No decorative gradient hero.
-- No fantasy visual dominance for Urania.
-- No prices.
-- No invented certificates.
-- No clinical claims.
-- No fake technical specifications.
-- No marketing fluff.
-- Text must fit responsively.
-- UI must be production-implementable, not only a concept image.
+Ограничения дизайна:
+- Консервативный B2B-стиль, медицинский и промышленный.
+- Белый, зелёный VEDAL, бирюзовый, графитовый, светло-серый.
+- Без декоративного градиента на первом экране.
+- Без фэнтезийного доминирования Урании.
+- Без цен.
+- Без выдуманных сертификатов.
+- Без клинических заявлений.
+- Без выдуманных технических характеристик.
+- Без маркетингового пустословия.
+- Текст должен помещаться при любой ширине.
+- Интерфейс должен быть реализуемым в продакшене, а не только картинкой.
 
-Use these assets:
+Использовать материалы:
 - assets/urania/urania-avatar-middle-v1.png
 - assets/urania/urania-avatar-left-v1.png
 - assets/urania/urania-avatar-right-v1.png
-- assets/urania/urania-web-integration-mockup-v1.png as direction reference only, not final UI
+- assets/urania/urania-web-integration-mockup-v1.png — только как ориентир
+  направления, не как финальный интерфейс
 
-Placeholder policy:
-Where NN answer is missing, use "ожидает уточнения" or "awaiting NN answer".
-Do not fill missing product/certification/price/specification facts yourself.
+Политика заглушек:
+Там, где ответа НН нет, ставить «ожидает уточнения» или «awaiting NN answer».
+Не заполнять недостающие факты по продукции, сертификации, ценам и
+характеристикам самостоятельно.
 
-Deliverables:
-1. A concise design rationale for all three variants.
-2. Home page layout for each variant.
-3. Product listing layout for each variant.
-4. Urania assistant UI state for each variant.
-5. Recommendation: which variant to show first to NN and why.
+Результат:
+1. Короткое обоснование дизайна по всем трём вариантам.
+2. Раскладка главной для каждого варианта.
+3. Раскладка списка продукции для каждого варианта.
+4. Состояние интерфейса ассистента для каждого варианта.
+5. Рекомендация: какой вариант показать НН первым и почему.
 ```

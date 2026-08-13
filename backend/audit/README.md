@@ -1,5 +1,7 @@
 # audit
 
+**Русский** · [English](README.en.md)
+
 Журнал действий: кто, что и когда сделал.
 
 Из [брифа собственника](../../docs/architecture/vedal_portal_owner_brief.md):

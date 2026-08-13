@@ -1,5 +1,7 @@
 # Frontend
 
+**Русский** · [English](README.en.md)
+
 Публичный сайт `vedal-med.ru` и ассистент Urania. Next.js 16, App Router, TypeScript, CSS Modules.
 
 ## Запуск

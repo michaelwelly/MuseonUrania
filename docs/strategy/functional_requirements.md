@@ -1,181 +1,213 @@
-# Functional Requirements
+# Функциональные требования
 
-## Public Website
+**Русский** · [English](functional_requirements.en.md)
 
-### Landing Page Enrichment
+## Публичный сайт
 
-The existing `vedal-med.ru` landing page should be expanded with:
+### Наполнение посадочной страницы
 
-- Redesigned title/hero section: clearer first screen, stronger product/production message, practical CTA, and a reserved assistant area.
-- Clear production positioning: Russian medical equipment for neonatology, anesthesiology, resuscitation, intensive care.
-- Product blocks for all portfolio items.
-- Production photos and factory story.
-- Quality and certification story, including ISO 13485 and registration status where legally safe.
-- Partner block for Divisy and Morus MS.
-- Press/news block, including Innoprom press release.
-- Lead forms for consultation, catalog request, КП request, dealer inquiry, service inquiry.
-- Contact block with phone, email, sales email, address, and legal consent text.
+Существующую посадочную страницу `vedal-med.ru` нужно расширить:
 
-### Title Page / Hero Requirements
+- переработанный первый экран: понятнее, с более сильным сообщением о продукции и
+  производстве, практичным призывом к действию и зарезервированной областью под
+  ассистента;
+- ясное производственное позиционирование: российское медицинское оборудование
+  для неонатологии, анестезиологии, реанимации и интенсивной терапии;
+- продуктовые блоки по всем позициям портфеля;
+- фотографии производства и рассказ о заводе;
+- рассказ о качестве и сертификации, включая ISO 13485 и статус регистрации там,
+  где это юридически безопасно;
+- блок партнёров: Divisy и Morus MS;
+- блок прессы и новостей, включая пресс-релиз Иннопрома;
+- формы заявок: консультация, запрос каталога, запрос КП, обращение дилера,
+  сервисное обращение;
+- контактный блок с телефоном, почтой, почтой отдела продаж, адресом и текстом
+  юридического согласия.
 
-The first screen of the public site must be redesigned.
+### Требования к первому экрану
 
-Required elements:
+Первый экран публичного сайта должен быть переработан.
 
-- VEDAL logo and navigation.
-- One clear headline about Russian medical equipment production.
-- Supporting text focused on neonatology, resuscitation, intensive care, and production capability.
-- Primary CTA: request КП / consultation.
-- Secondary CTA: open product catalog.
-- A visible reserved area for the site assistant Urania.
-- Production/product visual as the main evidence image.
-- No unsupported medical claims, prices, or certification claims until approved.
+Обязательные элементы:
 
-The assistant area should not compete with the product and production message. It should work as a guided helper: "Ask Urania about products, documents, service, or catalog selection."
+- знак VEDAL и навигация;
+- один ясный заголовок о производстве российского медицинского оборудования;
+- поддерживающий текст про неонатологию, реанимацию, интенсивную терапию и
+  производственные возможности;
+- основной призыв: запрос КП или консультации;
+- вторичный призыв: открыть каталог продукции;
+- видимая зарезервированная область под ассистента сайта Урания;
+- изображение производства или изделия как главное доказательство;
+- никаких неподтверждённых медицинских заявлений, цен и заявлений о
+  сертификации до согласования.
 
-### Site Assistant: Urania
+Область ассистента не должна конкурировать с сообщением о продукции и
+производстве. Она работает как проводник: «Спросите Уранию о продукции,
+документах, сервисе или подборе по каталогу».
 
-The public website should include an AI assistant named Urania.
+### Ассистент сайта: Урания
 
-Concept:
+На публичном сайте должен быть ИИ-ассистент по имени Урания.
 
-- Urania is inspired by the Greek muse of astronomy.
-- Based on Wikipedia reference, Urania is associated with astronomy and with attributes such as the celestial globe and compass.
-- The visual image should be calm, precise, expert, and celestial, but not fantasy-heavy.
-- The assistant should feel like a guide through products, documents, and next steps, not like a medical decision-maker.
+Концепция:
 
-Primary assistant jobs:
+- образ вдохновлён Уранией, греческой музой астрономии;
+- по справке из Википедии Урания связана с астрономией и такими атрибутами, как
+  небесный глобус и циркуль;
+- визуальный образ должен быть спокойным, точным, экспертным и небесным, но без
+  перегруза фэнтези;
+- ассистент должен ощущаться проводником по продукции, документам и следующим
+  шагам, а не тем, кто принимает медицинские решения.
 
-- Help users choose a product category.
-- Answer questions from approved public product/catalog/document content.
-- Guide users to request КП, catalog, consultation, or service.
-- Explain where documents are located.
-- Collect lead context before passing to CRM.
-- Hand off uncertain or sensitive questions to a human specialist.
+Основные задачи ассистента:
 
-Safety and compliance:
+- помочь выбрать категорию изделия;
+- отвечать на вопросы по согласованному публичному контенту: продукция, каталог,
+  документы;
+- вести к запросу КП, каталога, консультации или сервиса;
+- объяснять, где находятся документы;
+- собирать контекст обращения до передачи в CRM;
+- передавать спорные и чувствительные вопросы живому специалисту.
 
-- Urania must not provide medical diagnosis or treatment advice.
-- Urania must not invent specifications, certification status, prices, delivery times, or clinical claims.
-- Urania must cite or link to approved public source pages/documents when answering factual questions.
-- Internal/private documents must not be exposed through the public assistant.
-- Sensitive or uncertain questions should end with a human contact/lead form.
+Безопасность и соответствие:
 
-### Product Catalog
+- Урания не даёт медицинских диагнозов и рекомендаций по лечению;
+- Урания не выдумывает характеристики, статус сертификации, цены, сроки поставки
+  и клинические заявления;
+- отвечая на фактические вопросы, Урания ссылается на согласованные публичные
+  страницы и документы;
+- внутренние и закрытые документы не должны быть доступны через публичного
+  ассистента;
+- чувствительные и спорные вопросы завершаются контактом человека или формой
+  заявки.
 
-Expected products, based on public `vedal-med.ru` content:
+### Каталог продукции
 
-- VEDAL VV11: ventilator.
-- VEDAL VP4: portable intensive therapy ventilator.
-- VEDAL N6: inhalation anesthesia device.
-- VEDAL N12: patient monitor.
-- VEDAL N15: patient monitor.
-- VEDAL VN10: portable neonatal ventilator.
-- VEDAL N1: neonatal incubator.
-- VEDAL N2: neonatal incubator.
-- VEDAL N3: neonatal incubator.
-- A-2000: incubator-transformer / open resuscitation system.
-- VEDAL R1: neonatal resuscitation system.
-- VEDAL R2: neonatal resuscitation system.
-- Neonatal thermoregulation system.
+Ожидаемые изделия по публичному содержимому `vedal-med.ru`:
 
-This list must be reconciled with Nikolay Nikolaevich's catalog because the voice brief says "10 products", while public site content implies more named SKUs or product variants.
+- VEDAL VV11 — аппарат ИВЛ;
+- VEDAL VP4 — портативный аппарат ИВЛ для интенсивной терапии;
+- VEDAL N6 — аппарат ингаляционной анестезии;
+- VEDAL N12 — монитор пациента;
+- VEDAL N15 — монитор пациента;
+- VEDAL VN10 — портативный неонатальный аппарат ИВЛ;
+- VEDAL N1 — инкубатор для новорождённых;
+- VEDAL N2 — инкубатор для новорождённых;
+- VEDAL N3 — инкубатор для новорождённых;
+- A-2000 — инкубатор-трансформер, открытая реанимационная система;
+- VEDAL R1 — реанимационная система для новорождённых;
+- VEDAL R2 — реанимационная система для новорождённых;
+- система терморегуляции для новорождённых.
 
-Each product card/page should include:
+Этот список нужно сверить с каталогом Николая Николаевича: устный бриф говорит
+про «10 изделий», а содержимое публичного сайта подразумевает большее число
+наименований или исполнений.
 
-- Product name and category.
-- Medical use case.
-- Main clinical/technical benefits.
-- Photos and/or video.
-- Technical specification summary.
-- Downloadable public documents.
-- Registration/certification status.
-- CTA: request КП, request catalog, talk to specialist, request service.
+В карточке и на странице изделия должны быть:
 
-## Media And Documentation Storage
+- название и категория;
+- медицинское назначение;
+- основные клинические и технические преимущества;
+- фотографии и видео;
+- сводка технических характеристик;
+- публичные документы для скачивания;
+- статус регистрации и сертификации;
+- призывы к действию: запросить КП, запросить каталог, поговорить со
+  специалистом, запросить сервис.
 
-Create S3-compatible object storage for:
+## Хранилище медиа и документации
 
-- Product photos.
-- Production photos.
-- Videos.
-- Catalog PDFs.
-- Certificates and declarations.
-- Manuals and service documentation.
-- Press materials.
-- Private technical/R&D documents.
+Создать S3-совместимое объектное хранилище для:
 
-Required features:
+- фотографий изделий;
+- фотографий производства;
+- видео;
+- каталогов в PDF;
+- сертификатов и деклараций;
+- руководств и сервисной документации;
+- пресс-материалов;
+- закрытых технических и R&D-документов.
 
-- Public bucket or CDN-backed path only for approved media/documents.
-- Private buckets for sensitive documentation.
-- Role-based access.
-- Versioning and lifecycle rules.
-- Metadata tags: product, language, public/private, document type, revision, source owner, approval status.
+Обязательные свойства:
 
-## CRM And Sales
+- публичный бакет или путь за CDN только для согласованных медиа и документов;
+- приватные бакеты для чувствительной документации;
+- ролевой доступ;
+- версионирование и правила жизненного цикла;
+- метки метаданных: изделие, язык, публичный или закрытый статус, тип документа,
+  редакция, владелец источника, статус согласования.
 
-CRM must support:
+## CRM и продажи
 
-- Lead capture from website forms.
-- Product interest tagging.
-- КП workflow.
-- Dealer/partner pipeline.
-- Service request pipeline.
-- Sales owner assignment.
-- Email/phone history.
-- Attachments from approved S3 documents.
-- Analytics by product, source, language, and campaign.
+CRM должна поддерживать:
 
-## Internal Employee Contour
+- приём заявок с форм сайта;
+- отметку интереса к изделию;
+- рабочий процесс КП;
+- воронку дилеров и партнёров;
+- воронку сервисных заявок;
+- назначение ответственного за продажу;
+- историю переписки и звонков;
+- вложения из согласованных документов S3;
+- аналитику по изделию, источнику, языку и кампании.
 
-Target scale: 60 employees.
+## Внутренний контур сотрудников
 
-Required systems:
+Целевой масштаб — 60 сотрудников.
 
-- Corporate email.
-- Calendar and video meetings.
-- Internal messenger.
-- File/document storage.
-- VPN or zero-trust access.
-- Access groups for sales, service, production, engineering, management, marketing.
-- Device/account lifecycle: onboarding, offboarding, MFA, recovery.
+Нужные системы:
 
-Candidate stacks:
+- корпоративная почта;
+- календарь и видеовстречи;
+- внутренний мессенджер;
+- хранилище файлов и документов;
+- VPN или zero-trust доступ;
+- группы доступа для продаж, сервиса, производства, инженерии, руководства и
+  маркетинга;
+- жизненный цикл устройств и учётных записей: приём, увольнение, MFA,
+  восстановление доступа.
 
-- Yandex 360 + Yandex Cloud + Yandex Tracker/CRM-compatible stack.
-- Google Workspace + external CRM + cloud/VPN restrictions.
-- Kontur ecosystem, if it covers legal/regulatory/business requirements better.
-- Hybrid: Russian infrastructure for sensitive data, global tools only for non-sensitive collaboration.
+Кандидаты по стеку:
 
-## AI Knowledge Search
+- Яндекс 360 + Yandex Cloud + Яндекс Трекер или совместимый с CRM набор;
+- Google Workspace + внешняя CRM + ограничения по облаку и VPN;
+- экосистема Контура, если она лучше закрывает юридические, регуляторные и
+  деловые требования;
+- гибрид: российская инфраструктура для чувствительных данных, глобальные
+  инструменты только для нечувствительной совместной работы.
 
-Build an internal knowledge system that:
+## AI-поиск по знаниям
 
-- Ingests approved folders and document sets.
-- Separates public, internal, confidential, service, production, and R&D documents.
-- Chunks documents for semantic search.
-- Stores embeddings in a vector database.
-- Provides staff-facing search/chat interface.
-- Shows source citations and file links.
-- Enforces document-level permissions.
+Построить внутреннюю систему знаний, которая:
 
-Primary users:
+- загружает согласованные папки и наборы документов;
+- разделяет публичные, внутренние, конфиденциальные, сервисные,
+  производственные и R&D-документы;
+- нарезает документы для семантического поиска;
+- хранит эмбеддинги в векторной базе;
+- даёт сотрудникам интерфейс поиска и чата;
+- показывает ссылки на источники и файлы;
+- соблюдает права доступа на уровне документа.
 
-- Sales specialists: fast answers from product and production documentation.
-- Service engineers: manuals, troubleshooting, photos/videos, revision history.
-- Management: quick summaries and document discovery.
-- Marketing/SEO: approved public facts and reusable content.
+Основные пользователи:
 
-## VLM For Production And Service
+- специалисты по продажам — быстрые ответы по документации на продукцию и
+  производство;
+- сервисные инженеры — руководства, разбор неисправностей, фото и видео, история
+  редакций;
+- руководство — быстрые сводки и поиск документов;
+- маркетинг и SEO — согласованные публичные факты и переиспользуемый контент.
 
-Future VLM workflows:
+## VLM для производства и сервиса
 
-- Service photo/video analysis.
-- Visual inspection assistance.
-- Assembly/service checklist support.
-- Defect classification support.
-- Training material generation.
-- Production documentation indexing by image.
+Будущие сценарии:
 
-This must be treated as a staged initiative because medical-device production and service contexts require strict validation, human review, and data governance.
+- анализ сервисных фотографий и видео;
+- помощь при визуальном контроле;
+- поддержка чек-листов сборки и обслуживания;
+- помощь в классификации дефектов;
+- подготовка обучающих материалов;
+- индексация производственной документации по изображениям.
+
+Это должно вестись поэтапно: производство и обслуживание медицинских изделий
+требуют строгой валидации, проверки человеком и управления данными.

@@ -1,5 +1,7 @@
 # assistant
 
+**Русский** · [English](README.en.md)
+
 Публичный ассистент Urania. Спецификация —
 [urania_assistant_spec.md](../../docs/strategy/urania_assistant_spec.md),
 место в архитектуре —

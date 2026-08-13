@@ -1,107 +1,109 @@
-# Roadmap
+# Роадмап
 
-## Stage 0: Discovery And Material Collection
+**Русский** · [English](roadmap.en.md)
 
-Duration: 1-2 weeks.
+## Этап 0. Обследование и сбор материалов
 
-- Confirm stakeholders and decision owners.
-- Request materials from Nikolay Nikolaevich.
-- Export/snapshot current `vedal-med.ru`.
-- Build product and document inventory.
-- Classify materials: public, internal, confidential, R&D, service.
-- Choose infrastructure stack candidates for comparison.
+Длительность: 1–2 недели.
 
-Deliverables:
+- Определить стейкхолдеров и владельцев решений.
+- Запросить материалы у Николая Николаевича.
+- Выгрузить и зафиксировать текущее состояние `vedal-med.ru`.
+- Собрать перечень продукции и документов.
+- Классифицировать материалы: публичные, внутренние, конфиденциальные, R&D, сервисные.
+- Отобрать кандидатов по инфраструктурному стеку для сравнения.
 
-- Approved product list.
-- Content inventory.
-- Risk/sensitivity map.
-- Initial architecture decision.
+Результат:
 
-## Stage 1: Public Site MVP
+- утверждённый список продукции;
+- инвентаризация контента;
+- карта рисков и чувствительности;
+- первое архитектурное решение.
 
-Duration: 2-4 weeks after materials are received.
+## Этап 1. MVP публичного сайта
 
-- Update/rebuild landing page.
-- Add product catalog and product pages.
-- Add press/news section and Innoprom release.
-- Add S3/CDN media delivery.
-- Add forms and CRM routing.
-- Add Yandex Metrica.
-- Add SEO basics and sitemap.
-- Prepare Russian content first.
+Длительность: 2–4 недели после получения материалов.
 
-Deliverables:
+- Обновить или пересобрать посадочную страницу.
+- Добавить каталог продукции и страницы изделий.
+- Добавить раздел прессы и новостей с релизом Иннопрома.
+- Подключить доставку медиа через S3 и CDN.
+- Подключить формы и маршрутизацию в CRM.
+- Подключить Яндекс Метрику.
+- Сделать базовое SEO и карту сайта.
+- Подготовить контент сначала на русском.
 
-- Public site MVP.
-- Product catalog.
-- Lead capture workflow.
-- Analytics dashboard.
+Результат:
 
-## Stage 2: Corporate IT Contour
+- MVP публичного сайта;
+- каталог продукции;
+- рабочий процесс сбора заявок;
+- панель аналитики.
 
-Duration: 3-6 weeks.
+## Этап 2. Корпоративный ИТ-контур
 
-- Select Yandex/Google/Kontur/hybrid stack.
-- Configure email, calendar, meetings, messenger.
-- Configure identity, MFA, access groups.
-- Configure VPN/zero-trust access.
-- Configure CRM and sales pipeline.
-- Configure private S3/document storage.
-- Define onboarding/offboarding process for 60 employees.
+Длительность: 3–6 недель.
 
-Deliverables:
+- Выбрать стек: Яндекс, Google, Контур или гибрид.
+- Настроить почту, календарь, встречи, мессенджер.
+- Настроить систему идентичности, MFA, группы доступа.
+- Настроить VPN или zero-trust доступ.
+- Настроить CRM и воронку продаж.
+- Настроить приватное хранилище S3 и документов.
+- Описать процесс приёма и увольнения для 60 сотрудников.
 
-- Working employee accounts and access matrix.
-- CRM pipelines.
-- Private document storage.
-- Basic sysadmin runbook.
+Результат:
 
-## Stage 3: AI Knowledge Search
+- рабочие учётные записи и матрица доступа;
+- воронки CRM;
+- приватное хранилище документов;
+- базовый регламент для системного администратора.
 
-Duration: 4-8 weeks.
+## Этап 3. AI-поиск по знаниям
 
-- Build ingestion pipeline for approved internal documents.
-- Add OCR/PDF parsing where needed.
-- Chunk documents with metadata.
-- Store embeddings.
-- Build internal search/chat interface with citations.
-- Enforce permissions and audit logs.
-- Pilot with sales and service teams.
+Длительность: 4–8 недель.
 
-Deliverables:
+- Собрать конвейер загрузки согласованных внутренних документов.
+- Добавить OCR и разбор PDF там, где нужно.
+- Нарезать документы на чанки с метаданными.
+- Сохранять эмбеддинги.
+- Собрать внутренний интерфейс поиска и чата со ссылками на источники.
+- Обеспечить проверку прав и журнал аудита.
+- Провести пилот с отделами продаж и сервиса.
 
-- Internal AI search MVP.
-- Sales/service knowledge base.
-- Usage and quality feedback loop.
+Результат:
 
-## Stage 4: Multilingual And Internationalization
+- MVP внутреннего AI-поиска;
+- база знаний продаж и сервиса;
+- цикл обратной связи по качеству и использованию.
 
-Duration: 2-6 weeks depending on approval speed.
+## Этап 4. Мультиязычность и выход на другие рынки
 
-- Translate public content to English and Chinese.
-- Add language routes and hreflang.
-- Prepare Hindi later as market-entry content.
-- Review claims and compliance per target geography.
+Длительность: 2–6 недель в зависимости от скорости согласований.
 
-Deliverables:
+- Перевести публичный контент на английский и китайский.
+- Добавить языковые маршруты и hreflang.
+- Подготовить хинди позже, как контент выхода на рынок.
+- Проверить заявления и соответствие требованиям по каждой географии.
 
-- RU/EN/ZH site.
-- International catalog pages.
-- Translation workflow.
+Результат:
 
-## Stage 5: VLM For Production And Service
+- сайт на русском, английском и китайском;
+- международные страницы каталога;
+- рабочий процесс перевода.
 
-Duration: pilot-first.
+## Этап 5. VLM для производства и сервиса
 
-- Identify 2-3 high-value visual workflows.
-- Collect non-sensitive/sanitized visual dataset.
-- Test managed VLM vs private deployment.
-- Validate with service/production experts.
-- Add human review and audit.
+Длительность: сначала пилот.
 
-Deliverables:
+- Определить 2–3 визуальных сценария с высокой отдачей.
+- Собрать нечувствительный или обезличенный визуальный набор данных.
+- Сравнить управляемые VLM-сервисы и собственное развёртывание.
+- Проверить результат с экспертами сервиса и производства.
+- Добавить проверку человеком и аудит.
 
-- VLM pilot report.
-- Cost and infrastructure plan.
-- Go/no-go decision for production rollout.
+Результат:
+
+- отчёт по пилоту VLM;
+- план по стоимости и инфраструктуре;
+- решение о развёртывании в производстве.
