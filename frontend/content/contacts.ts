@@ -13,12 +13,14 @@ export const contactsHero = {
 };
 
 // content_model.md → Urania Assistant Model → handoff_forms
+// Код темы — это тип заявки в Forms API (`quote | catalog | consultation |
+// service | partner`). Подпись меняется без миграции, код — нет.
 export const topics = [
-  "Запрос коммерческого предложения",
-  "Запрос каталога",
-  "Консультация по подбору",
-  "Сервисное обращение",
-  "Партнёрство и дилерство",
+  { code: "quote", label: "Запрос коммерческого предложения" },
+  { code: "catalog", label: "Запрос каталога" },
+  { code: "consultation", label: "Консультация по подбору" },
+  { code: "service", label: "Сервисное обращение" },
+  { code: "partner", label: "Партнёрство и дилерство" },
 ] as const;
 
 type ContactLine = { text: string; href?: string };

@@ -2,17 +2,19 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { products, statusLabel } from "@/content/products";
+import { statusLabel } from "@/content/products";
+import { fetchProduct, fetchProducts } from "@/lib/api";
 import ProductTabs from "./tabs";
 import styles from "./page.module.css";
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const products = await fetchProducts();
   return products.map((p) => ({ slug: p.slug }));
 }
 
 export async function generateMetadata(props: PageProps<"/products/[slug]">): Promise<Metadata> {
   const { slug } = await props.params;
-  const product = products.find((p) => p.slug === slug);
+  const product = await fetchProduct(slug);
   if (!product) return {};
   return {
     title: `${product.name} — ${product.kind} — VEDAL`,
@@ -30,7 +32,8 @@ function Arrow() {
 
 export default async function ProductPage(props: PageProps<"/products/[slug]">) {
   const { slug } = await props.params;
-  const product = products.find((p) => p.slug === slug);
+  const [product, products] = await Promise.all([fetchProduct(slug), fetchProducts()]);
+  // Неопубликованное изделие бэкенд отдаёт как 404 — страницы у него нет.
   if (!product) notFound();
 
   const related = products.filter((p) => p.slug !== product.slug).slice(0, 3);

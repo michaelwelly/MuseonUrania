@@ -4,6 +4,7 @@ import Link from "next/link";
 import PageHero from "@/components/PageHero";
 import LeadForm from "@/components/LeadForm";
 import VedalMap from "@/components/VedalMap";
+import { fetchProducts } from "@/lib/api";
 import { staff, DEMO_NOTE } from "@/content/staff";
 import {
   contactsHero,
@@ -25,7 +26,10 @@ export const metadata: Metadata = {
 const mainClass = (title: string) =>
   title === "Телефон" ? styles.mainPhone : title === "Почта" ? styles.mainMail : styles.mainAddress;
 
-export default function ContactsPage() {
+export default async function ContactsPage() {
+  // Селектор изделия в форме — тот же каталог, что на /products/.
+  const products = await fetchProducts();
+
   return (
     <main className={styles.page}>
       <PageHero
@@ -125,7 +129,9 @@ export default function ContactsPage() {
             Оставить обращение
           </h2>
           <LeadForm
+            form="quote"
             topics={topics}
+            products={products}
             analytics="quote_form_submit"
             submitLabel="Отправить обращение"
             messageLabel="Сообщение"

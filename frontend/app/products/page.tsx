@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import PageHero from "@/components/PageHero";
 import { DarkCta } from "@/components/Blocks";
-import { categories, products } from "@/content/products";
+import { fetchCategories, fetchProducts } from "@/lib/api";
 import Catalog from "./catalog";
 import styles from "./page.module.css";
 
@@ -13,7 +13,11 @@ export const metadata: Metadata = {
   description: lead,
 };
 
-export default function ProductsPage() {
+export default async function ProductsPage() {
+  // Каталог и категории — с бэкенда на сборке. Запросы независимы, поэтому
+  // идут параллельно: последовательные ждали бы друг друга без причины.
+  const [products, categories] = await Promise.all([fetchProducts(), fetchCategories()]);
+
   return (
     <main className={styles.page}>
       <PageHero
@@ -26,7 +30,7 @@ export default function ProductsPage() {
         ]}
       />
 
-      <Catalog />
+      <Catalog products={products} categories={categories} />
 
       <DarkCta
         tone="deep"
