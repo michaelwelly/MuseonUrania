@@ -762,3 +762,16 @@ components:
           type: string
           description: "Значение как его показывает сайт, вместе с единицами."
           example: 1185 × 740 × 1840 мм
+  securitySchemes:
+    keycloak:
+      bearerFormat: JWT
+      description: |
+        Токен доступа из Keycloak. Роли портала — `portal-admin`
+        и `portal-editor` в `realm_access.roles`; токен без них
+        проходит проверку подписи и получает `403`.
+
+        В режиме `vedal.iam.mode=local` вместо этого работает
+        HTTP Basic поверх учётных записей портала — режим
+        разработки, не контракт.
+      scheme: bearer
+      type: http
