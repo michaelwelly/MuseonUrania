@@ -109,6 +109,7 @@ MuseonUrania/
 │  ├─ tools/seed-catalog.mjs   generator for the V2 migration from frontend/content/products.ts
 │  └─ compose.yaml          PostgreSQL 16 (port 5434) + Kafka 3.9 in KRaft mode
 ├─ docs/
+│  ├─ api/                  OpenAPI export for the public API (assembled from the code)
 │  ├─ architecture/         owner brief, infrastructure
 │  ├─ strategy/             business frame, requirements, Urania, SEO, competitors
 │  ├─ frontend/             sitemap, content models, page briefs, checklist
@@ -602,6 +603,7 @@ The full roadmap is [operations/roadmap.en.md](operations/roadmap.en.md): stage 
 | Target architecture, contours, budget | [architecture/vedal_portal_owner_brief.en.md](architecture/vedal_portal_owner_brief.en.md) |
 | Technical decisions, accepted and rejected | [superpowers/specs/2026-08-06-vedal-portal-architecture-design.en.md](superpowers/specs/2026-08-06-vedal-portal-architecture-design.en.md) |
 | What is built on the backend, how to run it, the ports | [../backend/README.en.md](../backend/README.en.md) |
+| The public API contract: entry points, forms, entities, errors | [api/README.en.md](api/README.en.md), [api/vedal-openapi.yaml](api/vedal-openapi.yaml) |
 | The boundaries of a specific module | `backend/<module>/README.en.md` |
 | How to run the frontend, content rules | [../frontend/README.en.md](../frontend/README.en.md) |
 | Site structure and routes | [frontend/sitemap.en.md](frontend/sitemap.en.md) |
