@@ -25,12 +25,14 @@ WORKDIR /app
 # curl для healthcheck'а в compose.
 RUN apk add --no-cache curl
 
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+# Владелец проставляется при копировании, а не отдельным `chown -R`:
+# тот обходит несколько десятков тысяч файлов в node_modules и стоит
+# минуту на каждой сборке, ничего не давая взамен.
+COPY --from=deps --chown=node:node /app/node_modules ./node_modules
+COPY --chown=node:node . .
 
 # Next пишет в .next при сборке, поэтому каталог должен принадлежать
 # пользователю, под которым идёт запуск.
-RUN chown -R node:node /app
 USER node
 
 EXPOSE 3000
