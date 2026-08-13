@@ -1,3 +1,24 @@
+# Локальный стек VEDAL Portal.
+#
+# Два режима запуска, и разница между ними — кто запускает приложения.
+#
+#   docker compose -f backend/compose.yaml up -d
+#     Поднимается только окружение: база, брокер, хранилище, Keycloak,
+#     Kafka Connect. Портал и сайт запускаются с машины разработчика
+#     (./mvnw spring-boot:run и npm run dev) — так их видно в отладчике
+#     и правка не требует пересборки образа.
+#
+#   docker compose -f backend/compose.yaml --profile app up -d --build
+#     Плюс портал, шлюз и сайт в контейнерах. Единственная точка входа —
+#     http://localhost:8080; сайт и API оказываются на одном источнике,
+#     и CORS выпадает из периметра целиком.
+#
+# Пароли и ключи здесь открытым текстом сознательно: это значения машины
+# разработчика, они не выходят за пределы этой docker-сети. В развёрнутых
+# профилях подключение задаётся только переменными окружения, без dev-значений
+# по умолчанию, — прод, молча поднявшийся на базе разработки, хуже прода,
+# который не поднялся.
+
 services:
   db:
     image: postgres:16
@@ -6,17 +27,34 @@ services:
       POSTGRES_DB: vedal
       POSTGRES_USER: vedal
       POSTGRES_PASSWORD: vedal
+    # Логическая репликация — требование Debezium: без wal_level=logical
+    # коннектор не поднимется вовсе. Слоты и отправители нужны по одному
+    # на коннектор, запас взят на будущие.
+    command:
+      - postgres
+      - -c
+      - wal_level=logical
+      - -c
+      - max_replication_slots=4
+      - -c
+      - max_wal_senders=4
     ports:
       - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vedal -d vedal"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
     volumes:
       - vedal-db:/var/lib/postgresql/data
 
-  # Шаг 6 порядка реализации из спеки. Пока EventPublisher пишет в лог,
-  # брокер не нужен для работы приложения — он нужен, чтобы этот шаг можно
-  # было начать, не собирая окружение с нуля.
-  #
   # KRaft, без ZooKeeper: один брокер он же контроллер. Для разработки этого
   # достаточно, в облаке будет Managed Kafka.
+  #
+  # Слушателей два, и это не избыточность. Контейнеры ходят по имени kafka,
+  # клиенты с машины разработчика — по localhost. Один адрес на всех означал
+  # бы, что либо портал в контейнере ищет брокер у себя внутри, либо консоль
+  # разработчика не может к нему подключиться.
   kafka:
     image: apache/kafka:3.9.0
     container_name: vedal-kafka
@@ -25,18 +63,27 @@ services:
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_LISTENERS: INTERNAL://:29092,EXTERNAL://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
       # Один брокер — реплик быть не может.
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      # Топики заводятся миграцией конфигурации, а не первым обращением:
-      # опечатка в имени не должна создавать новый топик молча.
+      # Топики заводит приложение, а не первое обращение: опечатка в имени
+      # не должна создавать новый топик молча и уводить туда события.
+      # Внутренние топики Kafka Connect — исключение, их создаёт сам Connect
+      # явным запросом, а не отправкой в несуществующий топик.
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 20s
     volumes:
       - vedal-kafka:/var/lib/kafka/data
 
@@ -111,7 +158,221 @@ services:
         mc anonymous set-json /tmp/media-policy.json local/vedal-media
         echo 'бакеты готовы: vedal-documents закрыт, vedal-media отдаёт объекты без перечисления'
 
+  # Провайдер идентичности. Пароли, MFA и выдача токенов живут здесь; портал
+  # только проверяет подпись и разбирает роли.
+  #
+  # KC_HOSTNAME задаёт адрес, который Keycloak поставит в поле iss выданного
+  # токена. Он обязан совпадать с тем, по которому браузер ходил за токеном, —
+  # иначе портал отвергнет валидный токен из-за несовпадения издателя. Именно
+  # поэтому портал забирает ключи по внутреннему адресу (VEDAL_OIDC_JWKS),
+  # а издателя сверяет по внешнему: из docker-сети localhost:8180 недостижим,
+  # а из браузера недостижим keycloak:8080.
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: vedal-keycloak
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin-local
+      KC_HOSTNAME: http://localhost:8180
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8180:8080"
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import:ro
+      - vedal-keycloak:/opt/keycloak/data
+    healthcheck:
+      # В образе Keycloak 26 нет ни curl, ни wget: он собран на ubi-micro.
+      # Проверка идёт через /dev/tcp встроенными средствами bash — способ
+      # некрасивый, но это ровно то, что рекомендует сама Keycloak.
+      test:
+        - CMD-SHELL
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/9000 &&
+          printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 &&
+          grep -q '"status": "UP"' <&3
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  # Kafka Connect с коннекторами Debezium. Читает outbox по журналу
+  # предзаписи и кладёт события в топики. Подробности и разбор настроек —
+  # backend/debezium/README.md.
+  connect:
+    image: quay.io/debezium/connect:3.0.0.Final
+    container_name: vedal-connect
+    depends_on:
+      kafka:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    ports:
+      - "8083:8083"
+    environment:
+      BOOTSTRAP_SERVERS: kafka:29092
+      GROUP_ID: vedal-connect
+      # Свои внутренние топики Connect создаёт сам явным запросом, поэтому
+      # выключенное автосоздание в брокере ему не мешает.
+      CONFIG_STORAGE_TOPIC: vedal.connect.configs
+      OFFSET_STORAGE_TOPIC: vedal.connect.offsets
+      STATUS_STORAGE_TOPIC: vedal.connect.status
+      CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      STATUS_STORAGE_REPLICATION_FACTOR: 1
+      KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
+      VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8083/ >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  # Регистрация коннектора. PUT на .../config, а не POST на /connectors:
+  # PUT идемпотентен, и повторный запуск стека не отвечает «коннектор уже
+  # существует», а приводит настройку к тому, что лежит в файле.
+  #
+  # Контейнер одноразовый.
+  connect-init:
+    image: curlimages/curl:8.11.1
+    container_name: vedal-connect-init
+    depends_on:
+      connect:
+        condition: service_healthy
+    volumes:
+      - ./debezium:/config:ro
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        echo 'регистрирую коннектор vedal-outbox'
+        curl -fsS -X PUT -H 'Content-Type: application/json' \
+          --data-binary @/config/outbox-connector.json \
+          http://connect:8083/connectors/vedal-outbox/config > /dev/null
+        echo 'состояние:'
+        curl -fsS http://connect:8083/connectors/vedal-outbox/status
+
+  # --- профиль app: приложения в контейнерах -------------------------------
+
+  portal:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: vedal/portal:local
+    container_name: vedal-portal
+    depends_on:
+      db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      keycloak:
+        condition: service_healthy
+    environment:
+      VEDAL_DB_URL: jdbc:postgresql://db:5432/vedal
+      VEDAL_DB_USER: vedal
+      VEDAL_DB_PASSWORD: vedal
+
+      # Строки outbox читает коннектор, а не relay.
+      VEDAL_EVENTS_PUBLISHER: debezium
+      VEDAL_KAFKA: kafka:29092
+
+      VEDAL_STORAGE_KIND: s3
+      VEDAL_S3_ENDPOINT: http://minio:9000
+      VEDAL_S3_ACCESS_KEY: vedal
+      VEDAL_S3_SECRET_KEY: vedal-local-secret
+
+      VEDAL_IAM_MODE: keycloak
+      # Издателя сверяем по внешнему адресу — он в токене; ключи забираем
+      # по внутреннему — внешний из docker-сети недостижим.
+      VEDAL_OIDC_ISSUER: http://localhost:8180/realms/vedal
+      VEDAL_OIDC_JWKS: http://keycloak:8080/realms/vedal/protocol/openid-connect/certs
+      VEDAL_OIDC_AUDIENCE: vedal-portal
+
+      # Запросы приходят через шлюз, поэтому источник у сайта и у API один.
+      # Список всё равно задан: портал доступен и напрямую на 8081, и режим
+      # разработки ходит туда с localhost:3000.
+      VEDAL_ALLOWED_ORIGINS: http://localhost:8080,http://localhost:3000
+      VEDAL_PORTAL_URL: http://localhost:8080
+    ports:
+      - "8081:8081"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8081/actuator/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+
+  api-gateway:
+    profiles: ["app"]
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    image: vedal/api-gateway:local
+    container_name: vedal-gateway
+    depends_on:
+      portal:
+        condition: service_healthy
+    environment:
+      VEDAL_PORTAL_URL: http://portal:8081
+      VEDAL_SITE_URL: http://site:3000
+      # Токен проверяет портал. Шлюз может проверять его и здесь — включается
+      # VEDAL_GATEWAY_VERIFY_TOKENS=true, — но решение всё равно за порталом:
+      # шлюз это фильтр, а не граница доверия.
+      VEDAL_GATEWAY_VERIFY_TOKENS: "false"
+      VEDAL_OIDC_ISSUER: http://localhost:8180/realms/vedal
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  site:
+    profiles: ["app"]
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    image: vedal/site:local
+    container_name: vedal-site
+    depends_on:
+      portal:
+        condition: service_healthy
+    environment:
+      # Два адреса, и это не дублирование. Каталог, новости и документы
+      # читаются на СБОРКЕ, из контейнера, — туда идёт внутренний адрес.
+      # Формы, Урания и админка ходят из БРАУЗЕРА — туда идёт адрес шлюза.
+      # Один адрес на оба случая невозможен: localhost:8080 из контейнера
+      # ведёт в сам контейнер, а portal:8081 из браузера не резолвится.
+      VEDAL_API_INTERNAL_URL: http://portal:8081
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+
+      NEXT_PUBLIC_MEDIA_URL: http://localhost:9000/vedal-media
+
+      # Админка ходит за токеном сама, публичным клиентом с PKCE.
+      NEXT_PUBLIC_OIDC_ISSUER: http://localhost:8180/realms/vedal
+      NEXT_PUBLIC_OIDC_CLIENT_ID: vedal-admin-ui
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:3000/ >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 40
+      start_period: 60s
+
 volumes:
   vedal-db:
   vedal-kafka:
   vedal-minio:
+  vedal-keycloak:

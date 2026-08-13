@@ -1,0 +1,114 @@
+{
+  "_комментарий": [
+    "Realm для локального стека. Импортируется контейнером keycloak при первом запуске.",
+    "",
+    "Пароль пользователя лежит здесь открытым текстом сознательно и по тому же",
+    "правилу, что пароль PostgreSQL и ключ MinIO в compose.yaml: это значения",
+    "машины разработчика, они не выходят за пределы docker-сети и никогда",
+    "не попадают в развёрнутую среду. В prod, staging и internal Keycloak",
+    "поднимается отдельно, учётные записи заводятся в нём, а этот файл",
+    "не используется вовсе.",
+    "",
+    "Роли ровно две: portal-admin и portal-editor. Обе значат право править",
+    "содержимое. Разделение на «кто видит» и «кто меняет» появится вместе с CRM,",
+    "где право видеть сделку и право её менять — разные вещи; заводить его",
+    "сейчас значит выдумать иерархию, которой никто не пользуется."
+  ],
+
+  "realm": "vedal",
+  "enabled": true,
+  "displayName": "VEDAL Portal",
+
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "rememberMe": false,
+  "verifyEmail": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+
+  "accessTokenLifespan": 900,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+
+  "roles": {
+    "realm": [
+      {
+        "name": "portal-admin",
+        "description": "Полный доступ к админскому API портала: каталог, новости, документы, заявки, журнал."
+      },
+      {
+        "name": "portal-editor",
+        "description": "То же, что portal-admin. Отдельная роль заведена под будущее разделение прав в CRM."
+      }
+    ]
+  },
+
+  "clients": [
+    {
+      "clientId": "vedal-admin-ui",
+      "name": "Админка VEDAL Portal",
+      "description": "Публичный клиент админки на Next.js. Секрета нет и быть не может: код клиента выполняется в браузере, и любой «секрет» в нём — не секрет. Поток защищается PKCE.",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://localhost:8080/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://localhost:8080"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3000/*##http://localhost:8080/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "vedal-portal-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "vedal-portal",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "vedal-portal",
+      "name": "VEDAL Portal (сервер)",
+      "description": "Портал токены не выдаёт — он их проверяет. Клиент заведён только затем, чтобы его имя можно было положить в aud выданного токена: без этого токен любого клиента того же realm'а подходил бы и порталу.",
+      "enabled": true,
+      "publicClient": false,
+      "bearerOnly": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false
+    }
+  ],
+
+  "users": [
+    {
+      "username": "editor",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Локальный",
+      "lastName": "редактор",
+      "email": "editor@vedal.local",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "editor-local",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["portal-admin"]
+    }
+  ]
+}
