@@ -57,6 +57,12 @@ max_wal_senders >= 1
 curl -X PUT -H "Content-Type: application/json" --data @backend/debezium/outbox-connector.json http://localhost:8083/connectors/vedal-outbox/config
 ```
 
+`PUT .../config`, а не `POST /connectors`: он идемпотентен, и повторный запуск
+стека приводит настройку к тому, что лежит в файле, вместо ответа «коннектор
+уже существует». Отсюда и формат файла — **только карта настроек**, без обёртки
+`{"name": ..., "config": {...}}`: обёртку ждёт `POST`, а `PUT` на неё отвечает
+`500` с невнятным сообщением о десериализации. Имя коннектора берётся из адреса.
+
 Состояние:
 
 ```bash

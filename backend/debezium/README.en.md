@@ -57,6 +57,13 @@ Done by the `connect-init` container in `compose.yaml`. By hand:
 curl -X PUT -H "Content-Type: application/json" --data @backend/debezium/outbox-connector.json http://localhost:8083/connectors/vedal-outbox/config
 ```
 
+`PUT .../config` rather than `POST /connectors`: it is idempotent, so restarting
+the stack brings the configuration to whatever the file says instead of
+answering "connector already exists". Hence the file's shape — **the config map
+only**, without the `{"name": ..., "config": {...}}` wrapper: `POST` expects the
+wrapper, while `PUT` answers `500` with an opaque deserialization message. The
+connector name comes from the URL.
+
 State:
 
 ```bash
