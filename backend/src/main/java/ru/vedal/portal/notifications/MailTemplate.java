@@ -48,7 +48,7 @@ public enum MailTemplate {
                     Изделие: %s
                     Номер обращения: %s
 
-                    Контакты клиента — в портале: %s/admin/leads
+                    Контакты клиента — в портале: %s/admin/leads/
                     """.formatted(context.form(),
                     context.productSlug() == null ? "не указано" : context.productSlug(),
                     context.leadId(), context.portalUrl());

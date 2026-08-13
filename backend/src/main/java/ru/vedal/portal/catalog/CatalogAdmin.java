@@ -28,7 +28,12 @@ public interface CatalogAdmin {
                       List<String> categories, Instant updatedAt) {}
 
     @Schema(name = "AdminProduct", description = "Изделие целиком, как его правит редактор.")
-    record ProductView(UUID id, String slug, String name, String kind, String summary, String detail,
+    record ProductView(UUID id,
+                       @Schema(description = "Версия карточки. Её надо вернуть в форме правки — "
+                               + "по ней портал отличает «правлю то, что прочитал» от «правлю "
+                               + "то, что за это время поменял кто-то другой».")
+                       long version,
+                       String slug, String name, String kind, String summary, String detail,
                        String docStatus, boolean published, int sortOrder,
                        String imageSrc, String imageAlt,
                        List<String> categorySlugs,
@@ -44,6 +49,12 @@ public interface CatalogAdmin {
             изделие с сайта, и это не должно случаться заодно с правкой текста.
             """)
     record ProductForm(
+
+            @Schema(description = "Версия карточки, прочитанная перед правкой. Обязательна "
+                    + "при обновлении, при создании игнорируется. Форма без версии "
+                    + "отклоняется: сохранить вслепую значит затереть чужую правку.",
+                    example = "3", nullable = true)
+            Long version,
 
             @Schema(description = "Идентификатор в URL. Только латиница, цифры и дефис.",
                     example = "vedal-a-2000")

@@ -48,9 +48,23 @@ public class KeycloakRoles implements Converter<Jwt, AbstractAuthenticationToken
             roles(client).forEach(role -> authorities.add(authority(role)));
         }
 
-        // Имя берём из preferred_username: getName() у токена — это `sub`,
-        // то есть UUID, и журнал по нему не читается.
-        return new JwtAuthenticationToken(jwt, authorities, jwt.getClaimAsString("preferred_username"));
+        return new JwtAuthenticationToken(jwt, authorities, name(jwt));
+    }
+
+    // Имя берём из preferred_username: `sub` — это UUID, и журнал по нему
+    // не читается. Но запасной вариант обязателен: realm без клиентского scope
+    // `profile` или токен сервисной учётной записи приезжают без этого
+    // утверждения, и тогда имя оказывается null. Запись в журнал с actor = null
+    // отбивается ограничением NOT NULL, то есть валидный токен с нужной ролью
+    // ронял бы любую правку пятисотой.
+    private static String name(Jwt jwt) {
+        var username = jwt.getClaimAsString("preferred_username");
+        if (username != null && !username.isBlank()) return username;
+
+        var email = jwt.getClaimAsString("email");
+        if (email != null && !email.isBlank()) return email;
+
+        return jwt.getSubject();
     }
 
     private static List<String> roles(Map<?, ?> claim) {

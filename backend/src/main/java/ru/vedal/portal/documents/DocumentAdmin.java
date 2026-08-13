@@ -24,7 +24,10 @@ public interface DocumentAdmin {
     List<String> ACCESS_KINDS = List.of("pdf", "on_request", "pending");
 
     @Schema(name = "AdminDocumentRow", description = "Строка списка документов в админке.")
-    record DocumentRow(UUID id, String slug, String title, String group, String subject,
+    record DocumentRow(UUID id,
+                       @Schema(description = "Версия карточки. Её надо вернуть в форме правки.")
+                       long version,
+                       String slug, String title, String group, String subject,
                        String productSlug, String sensitivity, String access,
                        boolean listed, boolean published,
                        boolean hasFile, Long fileSize, String revision,
@@ -37,6 +40,10 @@ public interface DocumentAdmin {
 
     @Schema(name = "AdminDocumentForm")
     record DocumentForm(
+
+            @Schema(description = "Версия карточки, прочитанная перед правкой. Обязательна "
+                    + "при обновлении, при создании игнорируется.", nullable = true)
+            Long version,
 
             @NotBlank
             @Pattern(regexp = "^[a-z0-9]+(?:-[a-z0-9]+)*$",

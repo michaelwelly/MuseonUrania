@@ -59,10 +59,28 @@ public class DocumentService implements DocumentQuery {
             throw new UncheckedIOException(e);
         }
 
-        audit.record("public", "document.download", "document", slug,
-                Map.of("revision", document.getRevision() == null ? "-" : document.getRevision()));
+        // Запись в журнал обёрнута: поток из объектного хранилища уже открыт,
+        // и если журнал упадёт, закрывать его будет некому — контроллер до
+        // InputStreamResource не дойдёт. Пул соединений SDK не бесконечен,
+        // и серия таких отказов останавливает скачивание документов до
+        // перезапуска приложения.
+        try {
+            audit.record("public", "document.download", "document", slug,
+                    Map.of("revision", document.getRevision() == null ? "-" : document.getRevision()));
+        } catch (RuntimeException e) {
+            closeQuietly(stored.data());
+            throw e;
+        }
 
         return new Download(filename(document), stored);
+    }
+
+    private static void closeQuietly(java.io.InputStream data) {
+        try {
+            data.close();
+        } catch (IOException ignored) {
+            // Мы уже падаем с другой причиной — она важнее этой.
+        }
     }
 
     private static String filename(Document document) {

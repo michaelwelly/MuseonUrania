@@ -40,7 +40,12 @@ public class AdminMediaApi {
     // положит файл в photos/../что-угодно.
     private static final Set<String> FOLDERS = Set.of("products", "news", "production");
 
-    private static final Set<String> EXTENSIONS = Set.of(".jpg", ".jpeg", ".png", ".webp", ".svg");
+    // Только растровые форматы. SVG сюда не входит и не должен: это XML,
+    // он умеет нести внутри себя <script>, а бакет отдаёт объекты анонимно.
+    // Пока хранилище живёт на отдельном хосте, домена сайта это не касается;
+    // после переезда медиа на поддомен основного домена — уже касается,
+    // вместе с куками. Для снимков изделий растровых форматов достаточно.
+    private static final Set<String> EXTENSIONS = Set.of(".jpg", ".jpeg", ".png", ".webp");
 
     @Schema(name = "UploadedMedia")
     public record Uploaded(
