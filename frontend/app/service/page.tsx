@@ -7,6 +7,7 @@ import { site } from "@/content/site";
 import { serviceHero, steps, serviceForm, serviceNotice, urgent } from "@/content/service";
 import { serviceEngineer, DEMO_NOTE } from "@/content/staff";
 import styles from "./page.module.css";
+import { mediaSrc } from "@/lib/media";
 
 export const metadata: Metadata = {
   title: "Сервис — VEDAL",
@@ -32,7 +33,7 @@ export default async function ServicePage() {
         </div>
         <div className={styles.photo} data-anim="clip">
           <Image
-            src={serviceHero.image.src}
+            src={mediaSrc(serviceHero.image.src)}
             alt={serviceHero.image.alt}
             fill
             sizes="(max-width: 1100px) 100vw, 50vw"

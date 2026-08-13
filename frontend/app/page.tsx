@@ -16,6 +16,7 @@ import {
   homeCta,
 } from "@/content/home";
 import styles from "./page.module.css";
+import { mediaSrc } from "@/lib/media";
 
 function Arrow({ size = 16 }: { size?: number }) {
   return (
@@ -64,7 +65,7 @@ export default function Home() {
 
         <div className={styles.heroVisual} data-anim="clip ken">
           <Image
-            src={homeHero.image.src}
+            src={mediaSrc(homeHero.image.src)}
             alt={homeHero.image.alt}
             fill
             sizes="(max-width: 1100px) 100vw, 588px"
@@ -126,7 +127,7 @@ export default function Home() {
               >
                 <div className={styles.cardPhoto}>
                   <Image
-                    src={p.image.src}
+                    src={mediaSrc(p.image.src)}
                     alt={p.image.alt}
                     fill
                     sizes="(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 25vw"
@@ -165,7 +166,7 @@ export default function Home() {
       <section className={styles.split}>
         <div className={styles.splitPhoto} data-reveal="0">
           <Image
-            src={productionBlock.image.src}
+            src={mediaSrc(productionBlock.image.src)}
             alt={productionBlock.image.alt}
             fill
             sizes="(max-width: 1100px) 100vw, 50vw"
