@@ -5,6 +5,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.vedal.portal.audit.AuditLog;
 import ru.vedal.portal.common.ConflictException;
 import ru.vedal.portal.common.NotFoundException;
+import ru.vedal.portal.common.Versions;
 
 import java.time.Instant;
 import java.util.List;
@@ -61,6 +62,7 @@ public class ContentEditor implements ContentAdmin {
     public NewsView updateNews(UUID id, NewsForm form, String actor) {
         checkTag(form.tag());
         var item = find(id);
+        Versions.check(form.version(), item.getVersion(), "Материал");
 
         // Та же причина, что и у изделия: адрес опубликованного материала
         // разослан и проиндексирован, переименование его обрывает.
@@ -74,7 +76,7 @@ public class ContentEditor implements ContentAdmin {
         }
 
         apply(item, form);
-        news.save(item);
+        news.saveAndFlush(item);
 
         audit.record(actor, "news.edit", "news", item.getSlug(), Map.of());
         return view(item);
@@ -140,7 +142,7 @@ public class ContentEditor implements ContentAdmin {
     }
 
     private static NewsView view(NewsItem n) {
-        return new NewsView(n.getId(), n.getSlug(), n.getTag(), n.getTitle(), n.getExcerpt(),
+        return new NewsView(n.getId(), n.getVersion(), n.getSlug(), n.getTag(), n.getTitle(), n.getExcerpt(),
                 n.getBody(), n.isPublished(), n.getPublishedOn(), n.getImageSrc(), n.getImageAlt(),
                 n.getCreatedAt(), n.getUpdatedAt());
     }

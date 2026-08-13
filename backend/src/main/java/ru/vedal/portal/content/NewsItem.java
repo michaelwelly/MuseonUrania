@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -32,12 +33,18 @@ public class NewsItem {
     @Column(name = "image_alt")
     private String imageAlt;
 
+    // Версия строки. Её ведёт Hibernate: одновременная запись двумя
+    // транзакциями заканчивается отказом второй, а не тихой перезаписью.
+    @Version
+    private long version;
+
     @Column(name = "created_at")
     private Instant createdAt = Instant.now();
 
     @Column(name = "updated_at")
     private Instant updatedAt = Instant.now();
 
+    public long getVersion() { return version; }
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
     public String getSlug() { return slug; }

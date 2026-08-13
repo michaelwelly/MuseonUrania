@@ -24,7 +24,10 @@ public interface ContentAdmin {
                    LocalDate publishedOn, Instant updatedAt) {}
 
     @Schema(name = "AdminNews", description = "Материал целиком, как его правит редактор.")
-    record NewsView(UUID id, String slug, String tag, String title, String excerpt, String body,
+    record NewsView(UUID id,
+                    @Schema(description = "Версия материала. Её надо вернуть в форме правки.")
+                    long version,
+                    String slug, String tag, String title, String excerpt, String body,
                     boolean published, LocalDate publishedOn, String imageSrc, String imageAlt,
                     Instant createdAt, Instant updatedAt) {}
 
@@ -34,6 +37,10 @@ public interface ContentAdmin {
             и к видимости отношения не имеет.
             """)
     record NewsForm(
+
+            @Schema(description = "Версия материала, прочитанная перед правкой. Обязательна "
+                    + "при обновлении, при создании игнорируется.", nullable = true)
+            Long version,
 
             @Schema(description = "Идентификатор в URL.", example = "postavka-v-perinatalnyy-centr")
             @NotBlank

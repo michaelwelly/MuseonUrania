@@ -17,7 +17,7 @@ export default function AuditPage() {
 
   const { data, error, loading } = useLoad<Page<AuditEntry>>(
     () => audit({ subject, actor }, page),
-    [subject, actor, page],
+    `${subject}:${actor}:${page}`,
   );
 
   return (

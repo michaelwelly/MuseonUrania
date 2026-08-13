@@ -13,6 +13,7 @@ import {
 import { Field, Note, fieldErrors, message, useLoad } from "../ui";
 
 const EMPTY: NewsForm = {
+  version: 0,
   slug: "",
   tag: "Производство",
   title: "",
@@ -27,7 +28,7 @@ export default function NewsEditor({ existing }: { existing?: News }) {
   const router = useRouter();
   // Рубрики закрыты проверкой в схеме. Берём список с портала, а не пишем
   // руками: разъехавшись, они дадут отказ базы вместо понятной ошибки.
-  const { data: tags } = useLoad<string[]>(newsTags, []);
+  const { data: tags } = useLoad<string[]>(newsTags);
 
   const [form, setForm] = useState<NewsForm>(existing ? toForm(existing) : EMPTY);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -160,6 +161,15 @@ export default function NewsEditor({ existing }: { existing?: News }) {
 }
 
 function toForm(item: News): NewsForm {
-  const { id, published, createdAt, updatedAt, ...form } = item;
-  return form;
+  return {
+    version: item.version,
+    slug: item.slug,
+    tag: item.tag,
+    title: item.title,
+    excerpt: item.excerpt,
+    body: item.body,
+    publishedOn: item.publishedOn,
+    imageSrc: item.imageSrc,
+    imageAlt: item.imageAlt,
+  };
 }

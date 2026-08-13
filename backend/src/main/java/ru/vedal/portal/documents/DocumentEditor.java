@@ -1,11 +1,14 @@
 package ru.vedal.portal.documents;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import ru.vedal.portal.audit.AuditLog;
 import ru.vedal.portal.common.ConflictException;
 import ru.vedal.portal.common.DomainEvents;
 import ru.vedal.portal.common.NotFoundException;
+import ru.vedal.portal.common.Versions;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -15,8 +18,9 @@ import java.util.Map;
 import java.util.UUID;
 
 // Правка документов. Правила публикации живут здесь, а не в контроллере:
-// дверей две — админка на фронте и серверные страницы на Thymeleaf, и правило,
-// написанное в контроллере, соблюдается только в одной из них.
+// контроллер — это транспорт, и правило, записанное в нём, действует ровно
+// до появления второго транспорта. Здесь оно действует для любого
+// вызывающего — двери правки, будущего импорта, теста.
 @Service
 public class DocumentEditor implements DocumentAdmin {
 
@@ -26,13 +30,19 @@ public class DocumentEditor implements DocumentAdmin {
     private final FileStorage storage;
     private final DomainEvents events;
     private final AuditLog audit;
+    private final TransactionTemplate transactions;
 
     public DocumentEditor(DocumentRepository documents, FileStorage storage,
-                          DomainEvents events, AuditLog audit) {
+                          DomainEvents events, AuditLog audit,
+                          PlatformTransactionManager transactionManager) {
         this.documents = documents;
         this.storage = storage;
         this.events = events;
         this.audit = audit;
+        // Шаблон, а не @Transactional на методе: границу транзакции здесь надо
+        // ставить руками вокруг двух коротких участков, а не вокруг всего
+        // метода — между ними идёт сетевая отправка файла.
+        this.transactions = new TransactionTemplate(transactionManager);
     }
 
     @Override
@@ -72,6 +82,7 @@ public class DocumentEditor implements DocumentAdmin {
     public DocumentRow updateDocument(UUID id, DocumentForm form, String actor) {
         check(form);
         var document = find(id);
+        Versions.check(form.version(), document.getVersion(), "Документ");
 
         if (document.isPublished() && !document.getSlug().equals(form.slug())) {
             throw new ConflictException(
@@ -93,22 +104,31 @@ public class DocumentEditor implements DocumentAdmin {
         }
 
         apply(document, form);
-        documents.save(document);
+        documents.saveAndFlush(document);
 
         audit.record(actor, "document.edit", "document", document.getSlug(),
                 Map.of("sensitivity", document.getSensitivity()));
         return row(document);
     }
 
+    // Метод НЕ транзакционный, и это принципиально.
+    //
+    // Отправка двадцати мегабайт в объектное хранилище — сетевая операция
+    // на десятки секунд. Внутри транзакции она держала бы соединение из пула
+    // всё это время: десяток параллельных загрузок исчерпывает пул, и посторонние
+    // запросы начинают падать с «Connection is not available».
+    //
+    // Поэтому здесь три отдельных шага: короткое чтение, отправка без
+    // транзакции, короткая запись. Транзакция открывается только на третий.
     @Override
-    @Transactional
     public DocumentRow uploadFile(UUID id, Upload upload, String actor) {
-        var document = find(id);
         if (upload.size() <= 0) {
             throw new ConflictException("Файл пустой");
         }
 
-        var key = document.getSlug() + extension(upload.filename());
+        var slug = transactions.execute(status -> find(id).getSlug());
+        var key = slug + extension(upload.filename());
+
         try (var data = upload.data()) {
             // Предел размера проверяет само хранилище: он его свойство,
             // а не свойство этой двери.
@@ -117,17 +137,21 @@ public class DocumentEditor implements DocumentAdmin {
             throw new UncheckedIOException(e);
         }
 
-        // Замена файла у опубликованного документа меняет то, что скачивают
-        // прямо сейчас. Публикацию не снимаем автоматически — это решение
-        // редактора, — но след в журнале обязателен.
-        document.setStorageKey(key);
-        document.setFileSize(upload.size());
-        document.setUpdatedAt(Instant.now());
-        documents.save(document);
+        return transactions.execute(status -> {
+            var document = find(id);
 
-        audit.record(actor, "document.upload", "document", document.getSlug(),
-                Map.of("size", upload.size(), "published", document.isPublished()));
-        return row(document);
+            // Замена файла у опубликованного документа меняет то, что скачивают
+            // прямо сейчас. Публикацию не снимаем автоматически — это решение
+            // редактора, — но след в журнале обязателен.
+            document.setStorageKey(key);
+            document.setFileSize(upload.size());
+            document.setUpdatedAt(Instant.now());
+            documents.save(document);
+
+            audit.record(actor, "document.upload", "document", document.getSlug(),
+                    Map.of("size", upload.size(), "published", document.isPublished()));
+            return row(document);
+        });
     }
 
     @Override
@@ -204,7 +228,7 @@ public class DocumentEditor implements DocumentAdmin {
     }
 
     private static DocumentRow row(Document d) {
-        return new DocumentRow(d.getId(), d.getSlug(), d.getTitle(), d.getDocGroup(), d.getSubject(),
+        return new DocumentRow(d.getId(), d.getVersion(), d.getSlug(), d.getTitle(), d.getDocGroup(), d.getSubject(),
                 d.getProductSlug(), d.getSensitivity(), d.getAccess(), d.isListed(), d.isPublished(),
                 d.getStorageKey() != null, d.getFileSize(), d.getRevision(), d.getApprovedBy(),
                 d.getUpdatedAt(), d.isPublished() ? null : publishBlockedBy(d));

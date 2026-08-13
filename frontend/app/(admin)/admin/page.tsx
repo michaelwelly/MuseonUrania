@@ -33,7 +33,7 @@ export default function Dashboard() {
       },
       leads: { total: all.total, fresh: draft.total },
     };
-  }, []);
+  });
 
   return (
     <>

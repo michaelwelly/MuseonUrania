@@ -23,9 +23,15 @@ final class Actor {
             if (username != null) return username;
             var email = claim(jwt, "email");
             if (email != null) return email;
+            if (jwt.getSubject() != null) return jwt.getSubject();
         }
 
-        return authentication.getName();
+        // Последняя защита: actor в журнале объявлен NOT NULL, и пустое имя
+        // уронило бы не запись в журнал, а всё действие целиком. Строка
+        // «unknown» в журнале хуже настоящего логина, но лучше пятисотой
+        // на правке карточки.
+        var name = authentication.getName();
+        return name == null || name.isBlank() ? "unknown" : name;
     }
 
     private static String claim(Jwt jwt, String name) {

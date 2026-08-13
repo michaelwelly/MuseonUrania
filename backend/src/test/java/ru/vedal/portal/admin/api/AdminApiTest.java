@@ -46,6 +46,9 @@ class AdminApiTest extends PostgresTestBase {
     @Autowired
     ObjectMapper json;
 
+    @jakarta.persistence.PersistenceContext
+    jakarta.persistence.EntityManager entityManager;
+
     @Test
     void anonymousIsRefusedWithoutBeingSentToALoginPage() throws Exception {
         // Именно 401, а не редирект на форму: это API, и клиент у него —
@@ -111,9 +114,111 @@ class AdminApiTest extends PostgresTestBase {
 
         mvc.perform(put("/api/admin/v1/products/" + product.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(productJson("vedal-r1-r2-new")))
+                        .content(productJson("vedal-r1-r2-new", product.getVersion())))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.title").value(org.hamcrest.Matchers.containsString("переименовать")));
+    }
+
+    // Правка изделия, у которого уже есть характеристики, заменяет их список
+    // целиком. Отдельный тест, потому что путь замены раньше не был покрыт
+    // ни одним: он падал пятисотой на попытке отвязать строку характеристики
+    // от изделия, а колонка объявлена not null.
+    @Test
+    @WithMockUser(username = "editor", roles = "PORTAL_ADMIN")
+    void productWithExistingSpecsCanBeEdited() throws Exception {
+        var product = products.findAllByOrderBySortOrderAscNameAsc().stream()
+                .filter(p -> !p.getSpecs().isEmpty())
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("в сиде нет изделия с характеристиками"));
+
+        mvc.perform(put("/api/admin/v1/products/" + product.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"version":%d,"slug":"%s","name":"Проба","kind":"Инкубатор",
+                                 "summary":"Короткое описание","detail":null,"docStatus":"pending",
+                                 "sortOrder":1,"imageSrc":null,"imageAlt":null,"categorySlugs":[],
+                                 "keyParams":[{"label":"Масса","value":"12 кг","muted":false}],
+                                 "specs":[{"label":"Питание","value":"220 В","muted":false}]}
+                                """.formatted(product.getVersion(), product.getSlug())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.keyParams.length()").value(1))
+                .andExpect(jsonPath("$.keyParams[0].label").value("Масса"))
+                .andExpect(jsonPath("$.specs.length()").value(1));
+
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(products.findById(product.getId()).orElseThrow().getSpecs())
+                .as("старые характеристики удалены, а не отвязаны")
+                .hasSize(2);
+    }
+
+    // Двое открыли одну карточку. Первый сохранил, второй сохраняет поверх
+    // с той версией, которую прочитал, — и получает отказ вместо тихой
+    // перезаписи чужой правки.
+    @Test
+    @WithMockUser(username = "editor", roles = "PORTAL_ADMIN")
+    void secondEditorCannotOverwriteTheFirstSilently() throws Exception {
+        var product = products.findAllByOrderBySortOrderAscNameAsc().getFirst();
+        var readByBoth = product.getVersion();
+
+        mvc.perform(put("/api/admin/v1/products/" + product.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(productJson(product.getSlug(), readByBoth)))
+                .andExpect(status().isOk());
+
+        mvc.perform(put("/api/admin/v1/products/" + product.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(productJson(product.getSlug(), readByBoth)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.title")
+                        .value(org.hamcrest.Matchers.containsString("другой редактор")));
+    }
+
+    // Форма без версии — это клиент, который не прочитал карточку перед
+    // правкой. Сохранить её значит затереть вслепую.
+    @Test
+    @WithMockUser(username = "editor", roles = "PORTAL_ADMIN")
+    void formWithoutVersionIsRefused() throws Exception {
+        var product = products.findAllByOrderBySortOrderAscNameAsc().getFirst();
+
+        mvc.perform(put("/api/admin/v1/products/" + product.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(productJson(product.getSlug())))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.title")
+                        .value(org.hamcrest.Matchers.containsString("без версии")));
+    }
+
+    // Изделие, на которое ссылаются документы, обязано переименовываться:
+    // ссылка едет за ним каскадом, а не отбивает правку внешним ключом.
+    @Test
+    @WithMockUser(username = "editor", roles = "PORTAL_ADMIN")
+    void unpublishedProductWithDocumentsCanBeRenamed() throws Exception {
+        var product = products.findBySlugAndPublishedTrue("vedal-r1-r2").orElseThrow();
+        assertThat(documents.findAll())
+                .as("на это изделие должны ссылаться документы, иначе тест ничего не проверяет")
+                .anySatisfy(d -> assertThat(d.getProductSlug()).isEqualTo("vedal-r1-r2"));
+
+        mvc.perform(post("/api/admin/v1/products/" + product.getId() + "/unpublish"))
+                .andExpect(status().isOk());
+
+        var current = products.findById(product.getId()).orElseThrow();
+        mvc.perform(put("/api/admin/v1/products/" + current.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(productJson("vedal-r1-r2-renamed", current.getVersion())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.slug").value("vedal-r1-r2-renamed"));
+
+        // Каскад отрабатывает в базе, а не в Hibernate: без очистки контекста
+        // мы читали бы те же управляемые объекты со старым значением и видели
+        // бы прошлое. Тест проверяет базу, поэтому контекст надо сбросить.
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(documents.findAll())
+                .as("ссылка документа поехала за изделием")
+                .anySatisfy(d -> assertThat(d.getProductSlug()).isEqualTo("vedal-r1-r2-renamed"));
     }
 
     @Test
@@ -261,11 +366,16 @@ class AdminApiTest extends PostgresTestBase {
         return ((Map<String, Object>) json.readValue(body, Map.class)).get("id").toString();
     }
 
+    /** Форма без версии — как её отправил бы клиент, не прочитавший карточку. */
     private static String productJson(String slug) {
+        return productJson(slug, null);
+    }
+
+    private static String productJson(String slug, Long version) {
         return """
-                {"slug":"%s","name":"Проба","kind":"Инкубатор","summary":"Короткое описание",
+                {"version":%s,"slug":"%s","name":"Проба","kind":"Инкубатор","summary":"Короткое описание",
                  "detail":null,"docStatus":"pending","sortOrder":99,"imageSrc":null,"imageAlt":null,
                  "categorySlugs":[],"keyParams":[],"specs":[]}
-                """.formatted(slug);
+                """.formatted(version == null ? "null" : version.toString(), slug);
     }
 }

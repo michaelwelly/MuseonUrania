@@ -9,6 +9,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
+import jakarta.persistence.Version;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -42,6 +43,11 @@ public class Product {
     @Column(name = "image_alt")
     private String imageAlt;
 
+    // Версия строки. Её ведёт Hibernate: одновременная запись двумя
+    // транзакциями заканчивается отказом второй, а не тихой перезаписью.
+    @Version
+    private long version;
+
     @Column(name = "created_at")
     private Instant createdAt = Instant.now();
 
@@ -54,11 +60,22 @@ public class Product {
             inverseJoinColumns = @JoinColumn(name = "category_id"))
     private List<Category> categories = new ArrayList<>();
 
+    // nullable = false здесь обязателен, и это не украшение схемы.
+    //
+    // У однонаправленной связи «один ко многим» с join-колонкой Hibernate
+    // по умолчанию считает, что осиротевшую строку можно отвязать: он делает
+    // `update product_spec set product_id = null`, и только потом удаляет.
+    // Колонка объявлена not null, поэтому первый же запрос падает — то есть
+    // правка изделия, у которого есть характеристики, заканчивалась пятисотой.
+    //
+    // С nullable = false Hibernate знает, что отвязать строку нельзя, и сразу
+    // удаляет её. Ровно то, что нужно: характеристика без изделия не существует.
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "product_id")
+    @JoinColumn(name = "product_id", nullable = false)
     @OrderBy("position asc")
     private List<ProductSpec> specs = new ArrayList<>();
 
+    public long getVersion() { return version; }
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
     public String getSlug() { return slug; }

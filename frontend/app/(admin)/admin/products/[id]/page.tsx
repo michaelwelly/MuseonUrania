@@ -7,7 +7,7 @@ import { Note, Published, useLoad } from "../../ui";
 
 export default function EditProduct({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { data, error, loading } = useLoad<Product>(() => product(id), [id]);
+  const { data, error, loading } = useLoad<Product>(() => product(id), id);
 
   return (
     <>

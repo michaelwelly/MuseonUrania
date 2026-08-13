@@ -3,6 +3,7 @@ package ru.vedal.portal.common;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.util.unit.DataSize;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -43,6 +44,18 @@ public class ApiExceptionHandler {
     public ProblemDetail conflict(ConflictException e) {
         var problem = ProblemDetail.forStatus(HttpStatus.CONFLICT);
         problem.setTitle(e.getMessage());
+        return problem;
+    }
+
+    // Настоящая одновременная запись двумя транзакциями: явную сверку версии
+    // прошли обе, а @Version отбил вторую. Наружу это тот же 409, что и при
+    // расхождении версий, — для редактора это одна и та же ситуация, и разные
+    // коды ответа он всё равно не различит.
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ProblemDetail lost(ObjectOptimisticLockingFailureException e) {
+        var problem = ProblemDetail.forStatus(HttpStatus.CONFLICT);
+        problem.setTitle("Карточку в этот момент менял кто-то ещё. Перечитайте её "
+                + "и повторите правку.");
         return problem;
     }
 

@@ -24,6 +24,7 @@
 		<springdoc.version>3.1.0</springdoc.version>
 		<!-- Клиент объектного хранилища. В BOM Spring Boot не входит. -->
 		<awssdk.version>2.52.1</awssdk.version>
+		<jacoco.version>0.8.13</jacoco.version>
 	</properties>
 
 	<dependencyManagement>
@@ -75,10 +76,6 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-thymeleaf</artifactId>
 		</dependency>
 		<!-- Публикация событий из outbox. Включается свойством
 		     vedal.events.publisher=kafka; по умолчанию события уходят в лог,
@@ -177,6 +174,68 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<!-- Покрытие тестами. Планка стоит чуть ниже достигнутого
+			     (инструкции 66%, ветки 42%) и работает как храповик: она
+			     ловит модуль, приехавший вообще без тестов, и не даёт
+			     покрытию сползать.
+
+			     Выкручивать её в потолок незачем. Требование «80% веток»
+			     на этом коде выполняется написанием тестов на геттеры
+			     и на ветки Jackson — они ничего не проверяют и создают
+			     видимость надёжности. Поднимать планку имеет смысл вместе
+			     с тестами на конкретные непокрытые ветки, а не отдельно
+			     от них; отчёт лежит в target/site/jacoco. -->
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>${jacoco.version}</version>
+				<executions>
+					<execution>
+						<id>подготовить-агент</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>отчёт</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>порог</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<rule>
+									<element>BUNDLE</element>
+									<limits>
+										<limit>
+											<counter>INSTRUCTION</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.65</minimum>
+										</limit>
+										<limit>
+											<counter>BRANCH</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.40</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+							<excludes>
+								<!-- Точка входа: в ней одна строка, и покрыть её
+								     можно только запуском самого приложения. -->
+								<exclude>ru/vedal/portal/PortalApplication.class</exclude>
+							</excludes>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

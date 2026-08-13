@@ -22,6 +22,8 @@ import { Field, Note, fieldErrors, message, useLoad } from "../ui";
 // случаться заодно с правкой опечатки в описании.
 
 const EMPTY: ProductForm = {
+  // Новая карточка версии не имеет: портал игнорирует её при создании.
+  version: 0,
   slug: "",
   name: "",
   kind: "",
@@ -38,7 +40,7 @@ const EMPTY: ProductForm = {
 
 export default function ProductEditor({ existing }: { existing?: Product }) {
   const router = useRouter();
-  const { data: cats } = useLoad<Category[]>(loadCategories, []);
+  const { data: cats } = useLoad<Category[]>(loadCategories);
 
   const [form, setForm] = useState<ProductForm>(existing ? toForm(existing) : EMPTY);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -294,7 +296,23 @@ function SpecTable({
   );
 }
 
+// Поля перечислены явно, а не отброшены деструктуризацией: список полей формы
+// должен быть виден целиком, а неиспользуемые переменные из деструктуризации —
+// это предупреждения линтера в обмен на две сэкономленные строки.
 function toForm(product: Product): ProductForm {
-  const { id, published, createdAt, updatedAt, ...form } = product;
-  return form;
+  return {
+    version: product.version,
+    slug: product.slug,
+    name: product.name,
+    kind: product.kind,
+    summary: product.summary,
+    detail: product.detail,
+    docStatus: product.docStatus,
+    sortOrder: product.sortOrder,
+    imageSrc: product.imageSrc,
+    imageAlt: product.imageAlt,
+    categorySlugs: product.categorySlugs,
+    keyParams: product.keyParams,
+    specs: product.specs,
+  };
 }

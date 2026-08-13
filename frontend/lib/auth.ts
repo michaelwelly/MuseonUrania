@@ -96,6 +96,10 @@ export async function login(returnTo?: string) {
     code_challenge_method: "S256",
   });
 
+  // Уход на чужой origin — Keycloak. Роутер Next здесь не годится: он умеет
+  // переходы внутри приложения, а нам нужен настоящий переход браузера,
+  // иначе не будет ни редиректа обратно, ни установки сессии Keycloak.
+  // eslint-disable-next-line @next/next/no-location-assign-relative-destination
   window.location.assign(`${authorizeUrl()}?${params}`);
 }
 
@@ -133,14 +137,38 @@ export function logout() {
   forget();
   if (!authConfigured) return;
 
+  // Сначала гасим сессию на стороне Keycloak фоновым запросом. Именно так
+  // отзывается refresh-токен: у адреса выхода в браузере для этого нет
+  // параметра, и подставить туда токен нельзя — он осел бы в истории
+  // браузера, в Referer следующего перехода и в access-логе Keycloak
+  // и любого прокси перед ним.
+  if (tokens?.refreshToken) {
+    void fetch(`${ISSUER}/protocol/openid-connect/logout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: CLIENT_ID,
+        refresh_token: tokens.refreshToken,
+      }),
+      // keepalive: запрос обязан уйти, даже если страница уже уходит
+      // на адрес выхода.
+      keepalive: true,
+    }).catch(() => {
+      // Не ушёл — токен всё равно стёрт из вкладки, а сам он истечёт
+      // по сроку. Ронять выход из-за этого незачем.
+    });
+  }
+
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
     post_logout_redirect_uri: `${window.location.origin}/admin/`,
   });
-  // id_token_hint у нас нет — мы его не храним, он не нужен ни для чего
-  // другого. Keycloak в этом случае спросит подтверждение выхода, и это
-  // не ошибка, а его штатное поведение.
-  if (tokens?.refreshToken) params.set("refresh_token", tokens.refreshToken);
+  // id_token_hint не храним: он нужен только затем, чтобы Keycloak не
+  // переспрашивал подтверждение выхода. Лишний экран лучше лишнего токена
+  // в sessionStorage.
+  //
+  // Тот же случай, что и при входе: переход на чужой origin.
+  // eslint-disable-next-line @next/next/no-location-assign-relative-destination
   window.location.assign(`${logoutUrl()}?${params}`);
 }
 

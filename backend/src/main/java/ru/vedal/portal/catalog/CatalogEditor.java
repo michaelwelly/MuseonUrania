@@ -5,6 +5,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.vedal.portal.audit.AuditLog;
 import ru.vedal.portal.common.ConflictException;
 import ru.vedal.portal.common.NotFoundException;
+import ru.vedal.portal.common.Versions;
 
 import java.time.Instant;
 import java.util.List;
@@ -12,9 +13,9 @@ import java.util.Map;
 import java.util.UUID;
 
 // Правка каталога. Правила публикации и связности живут здесь, а не
-// в контроллере: их две двери — админка на фронте и серверные страницы
-// на Thymeleaf, и правило, написанное в контроллере, соблюдается только
-// в одной из них.
+// в контроллере: контроллер — это транспорт, и правило, записанное в нём,
+// действует ровно до появления второго транспорта. Здесь оно действует
+// для любого вызывающего: и для двери правки, и для импорта, и для теста.
 @Service
 public class CatalogEditor implements CatalogAdmin {
 
@@ -71,6 +72,7 @@ public class CatalogEditor implements CatalogAdmin {
     @Transactional
     public ProductView updateProduct(UUID id, ProductForm form, String actor) {
         var product = find(id);
+        Versions.check(form.version(), product.getVersion(), "Изделие");
 
         // Смена slug'а у опубликованного изделия обрывает все внешние ссылки
         // на карточку — включая те, что уже проиндексированы и разосланы
@@ -88,7 +90,7 @@ public class CatalogEditor implements CatalogAdmin {
         }
 
         apply(product, form);
-        products.save(product);
+        products.saveAndFlush(product);
 
         audit.record(actor, "product.edit", "product", product.getSlug(),
                 Map.of("docStatus", product.getDocStatus()));
@@ -217,7 +219,7 @@ public class CatalogEditor implements CatalogAdmin {
     }
 
     private static ProductView view(Product p) {
-        return new ProductView(p.getId(), p.getSlug(), p.getName(), p.getKind(), p.getSummary(),
+        return new ProductView(p.getId(), p.getVersion(), p.getSlug(), p.getName(), p.getKind(), p.getSummary(),
                 p.getDetail(), p.getDocStatus(), p.isPublished(), p.getSortOrder(),
                 p.getImageSrc(), p.getImageAlt(),
                 p.getCategories().stream().map(Category::getSlug).toList(),

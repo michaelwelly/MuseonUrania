@@ -136,9 +136,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <span style={{ opacity: 0.7 }}>вход: {state.who.authentication}</span>
           </div>
           <div className="row">
-            <a className="btn btn--small" href="/">
+            {/* Переход между группами маршрутов перезагружает страницу
+                целиком — у сайта и админки разные корневые layout'ы. Next
+                делает это сам, Link здесь нужен ради предзагрузки и того,
+                чтобы правило проверки ссылок не спотыкалось. */}
+            <Link className="btn btn--small" href="/">
               На сайт
-            </a>
+            </Link>
             <button className="btn btn--small" onClick={() => logout()}>
               Выйти
             </button>

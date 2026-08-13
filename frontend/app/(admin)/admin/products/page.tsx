@@ -6,7 +6,7 @@ import { products, publishProduct, type ProductRow } from "@/lib/admin";
 import { Note, Published, message, useLoad, when } from "../ui";
 
 export default function ProductsPage() {
-  const { data, error, loading, reload, setError } = useLoad<ProductRow[]>(products, []);
+  const { data, error, loading, reload, setError } = useLoad<ProductRow[]>(products);
   const [busy, setBusy] = useState<string | null>(null);
 
   async function toggle(row: ProductRow) {

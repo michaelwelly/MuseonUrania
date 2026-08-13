@@ -12,7 +12,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @AutoConfigureMockMvc
-@TestPropertySource(properties = "vedal.web.allowed-origins=https://vedal-med.ru")
+@TestPropertySource(properties = {
+        "vedal.web.allowed-origins=https://vedal-med.ru",
+        // Адрес админки задаётся отдельно от адреса сайта: это разные
+        // периметры, и открывать дверь правки всему, чему открыт публичный
+        // сайт, незачем.
+        "vedal.web.admin-origins=https://admin.vedal-med.ru"})
 class CorsTest extends PostgresTestBase {
 
     @Autowired
@@ -48,12 +53,36 @@ class CorsTest extends PostgresTestBase {
                 .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
     }
 
-    // Админка на сессии: кросс-доменный доступ к ней не открывается никому,
-    // включая собственный сайт.
+    // Дверь правки открыта кросс-доменно, и это не послабление: она опознаёт
+    // запрос по заголовку Authorization, а не по cookie. Чужая вкладка такой
+    // заголовок проставить не может, поэтому разрешение приходить с адреса
+    // админки не даёт ей ничего.
     @Test
-    void adminIsNotReachableCrossOrigin() throws Exception {
-        mvc.perform(options("/admin/products")
+    void adminApiIsReachableFromTheAdminOrigin() throws Exception {
+        mvc.perform(options("/api/admin/v1/products")
+                        .header("Origin", "https://admin.vedal-med.ru")
+                        .header("Access-Control-Request-Method", "GET"))
+                .andExpect(header().string("Access-Control-Allow-Origin", "https://admin.vedal-med.ru"))
+                // Учётные данные не передаются: браузер не должен приложить
+                // сюда ни cookie, ни basic-заголовок сам по себе.
+                .andExpect(header().doesNotExist("Access-Control-Allow-Credentials"));
+    }
+
+    // Два списка источников — не удвоение настройки, а разные периметры.
+    // Сайт открыт всему миру, админка — нет, и адрес сайта не должен давать
+    // доступа к двери правки.
+    @Test
+    void theSiteOriginDoesNotOpenTheAdminDoor() throws Exception {
+        mvc.perform(options("/api/admin/v1/products")
                         .header("Origin", "https://vedal-med.ru")
+                        .header("Access-Control-Request-Method", "GET"))
+                .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
+    }
+
+    @Test
+    void adminApiIsNotReachableFromAnUnknownOrigin() throws Exception {
+        mvc.perform(options("/api/admin/v1/products")
+                        .header("Origin", "https://evil.example")
                         .header("Access-Control-Request-Method", "GET"))
                 .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
     }
