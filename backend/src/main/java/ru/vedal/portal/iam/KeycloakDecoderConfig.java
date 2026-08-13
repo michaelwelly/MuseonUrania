@@ -27,6 +27,7 @@ public class KeycloakDecoderConfig {
 
     @Bean
     JwtDecoder jwtDecoder(@Value("${vedal.iam.issuer}") String issuer,
+                          @Value("${vedal.iam.jwks-uri:}") String jwksUri,
                           @Value("${vedal.iam.audience:}") String audience) {
         if (issuer.isBlank()) {
             // Падаем на старте и называем переменную поимённо — как
@@ -37,10 +38,22 @@ public class KeycloakDecoderConfig {
                     "vedal.iam.mode=keycloak, но адрес realm'а не задан: VEDAL_OIDC_ISSUER");
         }
 
-        // fromIssuerLocation читает /.well-known/openid-configuration и берёт
-        // оттуда адрес ключей. Прописывать JWKS руками значит однажды
-        // не заметить ротацию ключей на стороне Keycloak.
-        var decoder = (NimbusJwtDecoder) JwtDecoders.fromIssuerLocation(issuer);
+        // Издатель и адрес ключей разведены намеренно.
+        //
+        // Поле iss в токене — это адрес, по которому за токеном ходил браузер.
+        // Портал сверяет его буквально: несовпадение строки означает отказ.
+        // Но забирать по этому же адресу ключи портал зачастую не может —
+        // в docker-сети и в закрытом контуре внешний адрес Keycloak просто
+        // не резолвится, а внутренний не годится для сверки, потому что
+        // в токене его нет.
+        //
+        // Пусто — берём адрес ключей из /.well-known/openid-configuration
+        // по адресу издателя. Так правильнее, когда адрес один: прописанный
+        // руками JWKS однажды переживёт ротацию ключей на стороне Keycloak
+        // и перестанет совпадать.
+        var decoder = jwksUri.isBlank()
+                ? (NimbusJwtDecoder) JwtDecoders.fromIssuerLocation(issuer)
+                : NimbusJwtDecoder.withJwkSetUri(jwksUri).build();
 
         var validators = new java.util.ArrayList<OAuth2TokenValidator<Jwt>>();
         validators.add(JwtValidators.createDefaultWithIssuer(issuer));
