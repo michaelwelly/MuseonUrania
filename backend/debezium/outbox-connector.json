@@ -1,41 +1,38 @@
 {
-  "name": "vedal-outbox",
-  "config": {
-    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+  "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
 
-    "database.hostname": "db",
-    "database.port": "5432",
-    "database.user": "vedal",
-    "database.password": "vedal",
-    "database.dbname": "vedal",
+  "database.hostname": "db",
+  "database.port": "5432",
+  "database.user": "vedal",
+  "database.password": "vedal",
+  "database.dbname": "vedal",
 
-    "plugin.name": "pgoutput",
-    "slot.name": "vedal_outbox",
-    "publication.name": "vedal_outbox_pub",
+  "plugin.name": "pgoutput",
+  "slot.name": "vedal_outbox",
+  "publication.name": "vedal_outbox_pub",
 
-    "topic.prefix": "vedal.cdc",
-    "table.include.list": "public.outbox",
+  "topic.prefix": "vedal.cdc",
+  "table.include.list": "public.outbox",
 
-    "snapshot.mode": "no_data",
+  "snapshot.mode": "no_data",
 
-    "skipped.operations": "u,d,t",
+  "skipped.operations": "u,d,t",
 
-    "tombstones.on.delete": "false",
+  "tombstones.on.delete": "false",
 
-    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
-    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
-    "value.converter.schemas.enable": "false",
+  "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+  "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+  "value.converter.schemas.enable": "false",
 
-    "transforms": "outbox",
-    "transforms.outbox.type": "io.debezium.transforms.outbox.EventRouter",
-    "transforms.outbox.table.field.event.id": "id",
-    "transforms.outbox.table.field.event.key": "aggregate_id",
-    "transforms.outbox.table.field.event.type": "type",
-    "transforms.outbox.table.field.event.payload": "payload",
-    "transforms.outbox.table.expand.json.payload": "true",
-    "transforms.outbox.table.fields.additional.placement": "aggregate:header:aggregate,correlation_id:header:correlationId",
-    "transforms.outbox.route.by.field": "type",
-    "transforms.outbox.route.topic.replacement": "${routedByValue}",
-    "transforms.outbox.table.op.invalid.behavior": "warn"
-  }
+  "transforms": "outbox",
+  "transforms.outbox.type": "io.debezium.transforms.outbox.EventRouter",
+  "transforms.outbox.table.field.event.id": "id",
+  "transforms.outbox.table.field.event.key": "aggregate_id",
+  "transforms.outbox.table.field.event.type": "type",
+  "transforms.outbox.table.field.event.payload": "payload",
+  "transforms.outbox.table.expand.json.payload": "true",
+  "transforms.outbox.table.fields.additional.placement": "aggregate:header:aggregate,correlation_id:header:correlationId",
+  "transforms.outbox.route.by.field": "type",
+  "transforms.outbox.route.topic.replacement": "${routedByValue}",
+  "transforms.outbox.table.op.invalid.behavior": "warn"
 }
