@@ -2,13 +2,16 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { tags, news, expected, type Tag } from "@/content/news";
+import { tags, expected } from "@/content/news";
+import type { NewsItem } from "@/lib/api";
 import styles from "./page.module.css";
+import { mediaSrc } from "@/lib/media";
 
 // Чипы рубрик и лента. Публикаций пока нет — фильтр всё равно нужен,
 // иначе при появлении первой записи придётся переписывать разметку.
-export default function NewsFeed() {
-  const [active, setActive] = useState<Tag | null>(null);
+// Записи приходят сверху: их читает серверный компонент на сборке.
+export default function NewsFeed({ news }: { news: NewsItem[] }) {
+  const [active, setActive] = useState<string | null>(null);
   const shown = active ? news.filter((n) => n.tag === active) : news;
 
   return (
@@ -51,12 +54,12 @@ export default function NewsFeed() {
       ) : (
         <ul className={styles.feed} data-reveal="0">
           {shown.map((item) => (
-            <li key={item.title}>
+            <li key={item.slug || item.title}>
               <article className={styles.card}>
                 <div className={styles.cardPhoto}>
                   {item.image && (
                     <Image
-                      src={item.image.src}
+                      src={mediaSrc(item.image.src)}
                       alt={item.image.alt}
                       fill
                       sizes="(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 33vw"

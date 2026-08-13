@@ -1,10 +1,57 @@
 import type { NextConfig } from "next";
+import { loadEnvConfig } from "@next/env";
+
+// Next читает этот файл раньше, чем подхватывает .env.local, поэтому без
+// явной загрузки process.env здесь пуст: список разрешённых хостов вышел бы
+// пустым, а оптимизатор картинок отвечал бы 400 на каждое фото из хранилища.
+// Ошибка тихая — в консоли сборки её не видно, видно только сломанные
+// картинки в браузере.
+loadEnvConfig(process.cwd());
+
+const mediaUrl = (() => {
+  const raw = process.env.NEXT_PUBLIC_MEDIA_URL;
+  if (!raw) return null;
+  try {
+    return new URL(raw);
+  } catch {
+    // Кривой адрес роняем на сборке, а не на первой картинке у посетителя.
+    throw new Error(`NEXT_PUBLIC_MEDIA_URL не разбирается как адрес: ${raw}`);
+  }
+})();
+
+// next/image не берёт чужой хост молча — иначе сайт стал бы бесплатным
+// оптимизатором чужих картинок. Разрешаем ровно тот адрес, что задан
+// в NEXT_PUBLIC_MEDIA_URL, и ровно тот путь внутри него.
+const remotePatterns = mediaUrl
+  ? [
+      {
+        protocol: mediaUrl.protocol.replace(":", "") as "http" | "https",
+        hostname: mediaUrl.hostname,
+        port: mediaUrl.port,
+        pathname: `${mediaUrl.pathname.replace(/\/+$/, "")}/**`,
+      },
+    ]
+  : [];
+
+// MinIO на машине разработчика живёт на localhost, а Next с версии 16
+// отказывается ходить за картинками на адреса, которые резолвятся в локальный
+// IP: так закрывают SSRF, когда адрес картинки приходит от пользователя.
+// У нас адрес приходит из нашего же контента, и снимаем запрет только когда
+// хранилище действительно локальное. На проде хост внешний, условие ложно,
+// и защита остаётся включённой.
+const LOCAL_HOST = /^(localhost|127\.\d+\.\d+\.\d+|\[?::1\]?|0\.0\.0\.0)$/i;
+const mediaIsLocal = mediaUrl !== null && LOCAL_HOST.test(mediaUrl.hostname);
 
 const nextConfig: NextConfig = {
   // docs/frontend/sitemap.md задаёт маршруты со слешем на конце: /products/,
   // /production/ и так далее. Без этой опции Next срезает слеш и каждая ссылка
   // в меню отвечает редиректом 308 вместо страницы.
   trailingSlash: true,
+
+  images: {
+    remotePatterns,
+    ...(mediaIsLocal ? { dangerouslyAllowLocalIP: true } : {}),
+  },
 };
 
 export default nextConfig;

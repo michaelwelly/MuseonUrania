@@ -13,6 +13,25 @@
   gap: 14px;
 }
 
+.row + .row {
+  margin-top: 14px;
+}
+
+/* Ловушка для ботов: убираем из потока, а не через display:none — часть
+   заполнителей форм пропускает скрытые поля. */
+.trap {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.submit:disabled {
+  cursor: progress;
+  opacity: 0.65;
+}
+
 .field {
   display: flex;
   flex-direction: column;

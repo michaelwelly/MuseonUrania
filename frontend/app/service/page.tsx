@@ -2,17 +2,21 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import LeadForm from "@/components/LeadForm";
+import { fetchProducts } from "@/lib/api";
 import { site } from "@/content/site";
 import { serviceHero, steps, serviceForm, serviceNotice, urgent } from "@/content/service";
 import { serviceEngineer, DEMO_NOTE } from "@/content/staff";
 import styles from "./page.module.css";
+import { mediaSrc } from "@/lib/media";
 
 export const metadata: Metadata = {
   title: "Сервис — VEDAL",
   description: serviceHero.lead,
 };
 
-export default function ServicePage() {
+export default async function ServicePage() {
+  const products = await fetchProducts();
+
   return (
     <main className={styles.page}>
       <section className={styles.hero}>
@@ -29,7 +33,7 @@ export default function ServicePage() {
         </div>
         <div className={styles.photo} data-anim="clip">
           <Image
-            src={serviceHero.image.src}
+            src={mediaSrc(serviceHero.image.src)}
             alt={serviceHero.image.alt}
             fill
             sizes="(max-width: 1100px) 100vw, 50vw"
@@ -53,7 +57,12 @@ export default function ServicePage() {
           <h2 className={styles.formTitle} data-words="30">
             {serviceForm.title}
           </h2>
-          <LeadForm analytics="service_form_submit" hint={serviceForm.hint} />
+          <LeadForm
+            form="service"
+            products={products}
+            analytics="service_form_submit"
+            hint={serviceForm.hint}
+          />
         </div>
 
         <div className={styles.aside} data-reveal="1">

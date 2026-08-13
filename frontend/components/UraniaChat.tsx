@@ -3,15 +3,26 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { urania, quickReplies, answerFor } from "@/content/urania";
+import { site } from "@/content/site";
+import { apiConfigured, askUrania, type Handoff, type Source } from "@/lib/submit";
 import styles from "./UraniaChat.module.css";
 
-type Message = { from: "bot" | "me"; text: string };
+type Message = {
+  from: "bot" | "me";
+  text: string;
+  sources?: Source[];
+  /** Заполнен, когда подходящих опубликованных источников нет. */
+  handoff?: Handoff;
+};
 
 export default function UraniaChat({ onClose }: { onClose?: () => void }) {
   const [list, setList] = useState<Message[]>([{ from: "bot", text: urania.greeting }]);
   const [typing, setTyping] = useState(false);
   const [draft, setDraft] = useState("");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Считаем вопросы, чтобы не показать ответ на позапрошлый: сеть может
+  // вернуть их не в том порядке, в каком их задали.
+  const asked = useRef(0);
 
   // Таймер ответа сбрасываем и при новом вопросе, и при размонтировании —
   // иначе быстрые клики по чипам наложат несколько ответов друг на друга.
@@ -28,10 +39,46 @@ export default function UraniaChat({ onClose }: { onClose?: () => void }) {
     setDraft("");
     setTyping(true);
 
-    timer.current = setTimeout(() => {
-      setList((prev) => [...prev, { from: "bot", text: answerFor(question) }]);
+    // Без адреса API отвечаем локально: так чат работает в режиме вёрстки,
+    // когда серверная часть не поднята.
+    if (!apiConfigured) {
+      timer.current = setTimeout(() => {
+        setList((prev) => [...prev, { from: "bot", text: answerFor(question) }]);
+        setTyping(false);
+      }, urania.replyDelay);
+      return;
+    }
+
+    const turn = ++asked.current;
+    void askUrania(question).then((reply) => {
+      if (turn !== asked.current) return;
       setTyping(false);
-    }, urania.replyDelay);
+
+      if ("error" in reply) {
+        // Ассистент молчит — отдаём живые контакты, а не оставляем тупик.
+        setList((prev) => [
+          ...prev,
+          {
+            from: "bot",
+            text: reply.error,
+            handoff: { reason: reply.error, phone: site.phone, email: site.email, forms: [] },
+          },
+        ]);
+        return;
+      }
+
+      // Ответа может не быть вовсе — тогда бэкенд отдаёт передачу человеку.
+      // Придумывать ответ вместо неё запрещено правилами ассистента.
+      setList((prev) => [
+        ...prev,
+        {
+          from: "bot",
+          text: reply.answer ?? reply.handoff?.reason ?? urania.greeting,
+          sources: reply.sources?.length ? reply.sources : undefined,
+          handoff: reply.answer ? undefined : (reply.handoff ?? undefined),
+        },
+      ]);
+    });
   }
 
   const shown = list.slice(-urania.windowSize);
@@ -77,9 +124,32 @@ export default function UraniaChat({ onClose }: { onClose?: () => void }) {
 
       <div className={styles.feed} aria-live="polite">
         {shown.map((m, i) => (
-          <p key={`${m.from}-${i}-${m.text.slice(0, 12)}`} className={`${styles.msg} ${styles[m.from]}`}>
-            {m.text}
-          </p>
+          <div
+            key={`${m.from}-${i}-${m.text.slice(0, 12)}`}
+            className={`${styles.turn} ${m.from === "me" ? styles.turnMe : styles.turnBot}`}
+          >
+            <p className={`${styles.msg} ${styles[m.from]}`}>{m.text}</p>
+
+            {/* Ответ обязан нести ссылки на источники: правило из спеки
+                ассистента. Без них утверждение проверить нечем. */}
+            {m.sources && (
+              <ul className={styles.sources}>
+                {m.sources.map((s) => (
+                  <li key={s.url}>
+                    <a href={s.url}>{s.title}</a>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {m.handoff && (
+              <p className={styles.handoff}>
+                <a href={`tel:${m.handoff.phone.replace(/\s/g, "")}`}>{m.handoff.phone}</a>
+                {" · "}
+                <a href={`mailto:${m.handoff.email}`}>{m.handoff.email}</a>
+              </p>
+            )}
+          </div>
         ))}
 
         {typing && (

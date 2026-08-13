@@ -2,6 +2,7 @@ package ru.vedal.portal.iam;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -35,6 +36,11 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
+                // Правила берутся из CorsConfigurationSource — он описан
+                // в app и покрывает только публичные двери. Без этой строки
+                // Spring Security отвечает на preflight раньше, чем до него
+                // доходит очередь, и браузер видит отказ вместо заголовков.
+                .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/public/**", "/api/forms/**", "/api/assistant/**",
                                 "/actuator/health", "/login").permitAll()

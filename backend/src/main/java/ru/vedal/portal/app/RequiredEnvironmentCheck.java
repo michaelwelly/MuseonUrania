@@ -28,7 +28,7 @@ public class RequiredEnvironmentCheck {
 
     private static final List<String> DEPLOYED = List.of(
             "VEDAL_DB_URL", "VEDAL_DB_USER", "VEDAL_DB_PASSWORD",
-            "VEDAL_PORTAL_URL", "VEDAL_STORAGE_ROOT");
+            "VEDAL_PORTAL_URL", "VEDAL_STORAGE_ROOT", "VEDAL_ALLOWED_ORIGINS");
 
     private static final Map<String, List<String>> REQUIRED = Map.of(
             "prod", DEPLOYED,
