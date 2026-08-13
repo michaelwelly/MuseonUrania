@@ -1,0 +1,2 @@
+/scripts/up.sh text eol=lf
+/scripts/*.ps1 text eol=crlf

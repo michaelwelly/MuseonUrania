@@ -1,0 +1,205 @@
+# Наложение для развёрнутой среды. Применяется поверх compose.yaml:
+#
+#   docker compose -f backend/compose.yaml -f backend/compose.prod.yaml \
+#     --profile app up -d --build
+#
+# Что оно меняет и почему.
+#
+# 1. Значений по умолчанию нет ни у одного секрета. В compose.yaml они есть
+#    и рассчитаны на машину разработчика; здесь `${VAR:?...}` роняет запуск
+#    с понятной ошибкой, если переменная не задана. Прод, молча поднявшийся
+#    с паролем «vedal», страшнее прода, который не поднялся.
+#
+# 2. Наружу торчит только обратный прокси. Порты базы, брокера, хранилища,
+#    Keycloak, Connect и самих приложений публиковать на сервере незачем:
+#    внутри docker-сети они и так доступны друг другу, а снаружи каждый
+#    открытый порт — это дверь, которую надо охранять.
+#
+# 3. TLS. Caddy получает и продлевает сертификаты Let's Encrypt сам, без
+#    cron и без ручного обновления. Это единственная причина, по которой
+#    здесь он, а не nginx: у nginx та же работа делается сертботом
+#    и таймером, то есть двумя лишними местами, где всё ломается молча.
+#
+# 4. Перезапуск и ротация логов. Контейнер, упавший ночью, должен подняться
+#    сам; логи, растущие без предела, однажды кончают место на диске — и это
+#    выглядит как отказ приложения, хотя это отказ диска.
+
+services:
+  db:
+    environment:
+      POSTGRES_DB: ${VEDAL_DB_NAME:?задайте VEDAL_DB_NAME}
+      POSTGRES_USER: ${VEDAL_DB_USER:?задайте VEDAL_DB_USER}
+      POSTGRES_PASSWORD: ${VEDAL_DB_PASSWORD:?задайте VEDAL_DB_PASSWORD}
+    ports: !override []
+    restart: unless-stopped
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  kafka:
+    ports: !override []
+    restart: unless-stopped
+    logging: *logging
+
+  minio:
+    environment:
+      MINIO_ROOT_USER: ${VEDAL_S3_ACCESS_KEY:?задайте VEDAL_S3_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${VEDAL_S3_SECRET_KEY:?задайте VEDAL_S3_SECRET_KEY}
+    ports: !override []
+    restart: unless-stopped
+    logging: *logging
+
+  minio-init:
+    environment:
+      MINIO_ROOT_USER: ${VEDAL_S3_ACCESS_KEY:?задайте VEDAL_S3_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${VEDAL_S3_SECRET_KEY:?задайте VEDAL_S3_SECRET_KEY}
+
+  keycloak:
+    # start, а не start-dev: режим разработки отключает проверки, которые
+    # на сервере нужны, и разрешает HTTP там, где его быть не должно.
+    command: ["start", "--import-realm", "--optimized"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${VEDAL_KEYCLOAK_ADMIN:?задайте VEDAL_KEYCLOAK_ADMIN}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${VEDAL_KEYCLOAK_ADMIN_PASSWORD:?задайте VEDAL_KEYCLOAK_ADMIN_PASSWORD}
+      KC_HOSTNAME: ${VEDAL_KEYCLOAK_URL:?задайте VEDAL_KEYCLOAK_URL, например https://id.vedal-med.ru}
+      # Keycloak за прокси: без этого он строит адреса по своему внутреннему
+      # имени, и редирект после входа уводит в никуда.
+      KC_PROXY_HEADERS: xforwarded
+      KC_HTTP_ENABLED: "true"
+      # Своя база, а не встроенная H2: та не переживает перезапуск контейнера,
+      # и вместе с ней исчезают учётные записи сотрудников.
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://db:5432/${VEDAL_KEYCLOAK_DB_NAME:-keycloak}
+      KC_DB_USERNAME: ${VEDAL_DB_USER:?задайте VEDAL_DB_USER}
+      KC_DB_PASSWORD: ${VEDAL_DB_PASSWORD:?задайте VEDAL_DB_PASSWORD}
+    ports: !override []
+    restart: unless-stopped
+    logging: *logging
+
+  connect:
+    environment:
+      VEDAL_DB_NAME: ${VEDAL_DB_NAME:?задайте VEDAL_DB_NAME}
+      VEDAL_DB_USER: ${VEDAL_DB_USER:?задайте VEDAL_DB_USER}
+      VEDAL_DB_PASSWORD: ${VEDAL_DB_PASSWORD:?задайте VEDAL_DB_PASSWORD}
+    ports: !override []
+    restart: unless-stopped
+    logging: *logging
+
+  portal:
+    environment:
+      # Профиль prod: подключение только из окружения, спецификация и Swagger UI
+      # выключены, логи структурные. Проверка недостающих переменных идёт
+      # до создания datasource и называет их поимённо.
+      SPRING_PROFILES_ACTIVE: prod
+      VEDAL_DB_URL: jdbc:postgresql://db:5432/${VEDAL_DB_NAME:?задайте VEDAL_DB_NAME}
+      VEDAL_DB_USER: ${VEDAL_DB_USER:?}
+      VEDAL_DB_PASSWORD: ${VEDAL_DB_PASSWORD:?}
+      VEDAL_S3_ACCESS_KEY: ${VEDAL_S3_ACCESS_KEY:?}
+      VEDAL_S3_SECRET_KEY: ${VEDAL_S3_SECRET_KEY:?}
+      VEDAL_OIDC_ISSUER: ${VEDAL_KEYCLOAK_URL:?}/realms/vedal
+      VEDAL_ALLOWED_ORIGINS: ${VEDAL_ALLOWED_ORIGINS:?задайте VEDAL_ALLOWED_ORIGINS}
+      VEDAL_ADMIN_ORIGINS: ${VEDAL_ADMIN_ORIGINS:?задайте VEDAL_ADMIN_ORIGINS}
+      VEDAL_PORTAL_URL: ${VEDAL_PUBLIC_URL:?задайте VEDAL_PUBLIC_URL}
+      VEDAL_STORAGE_ROOT: /app/var/documents
+      VEDAL_NOTIFICATIONS_MANAGER: ${VEDAL_NOTIFICATIONS_MANAGER:-}
+    ports: !override []
+    restart: unless-stopped
+    # Плавная остановка настроена в приложении; даём ей время отработать,
+    # прежде чем docker добьёт процесс.
+    stop_grace_period: 40s
+    logging: *logging
+
+  api-gateway:
+    environment:
+      # На периметре токен проверяется: запрос без него не доходит
+      # до приложения вовсе. Портал всё равно проверит его повторно.
+      VEDAL_GATEWAY_VERIFY_TOKENS: "true"
+      VEDAL_OIDC_ISSUER: ${VEDAL_KEYCLOAK_URL:?}/realms/vedal
+    ports: !override []
+    restart: unless-stopped
+    stop_grace_period: 40s
+    logging: *logging
+
+  site:
+    environment:
+      NEXT_PUBLIC_API_URL: ${VEDAL_PUBLIC_URL:?}
+      NEXT_PUBLIC_MEDIA_URL: ${VEDAL_MEDIA_URL:?задайте VEDAL_MEDIA_URL}
+      NEXT_PUBLIC_OIDC_ISSUER: ${VEDAL_KEYCLOAK_URL:?}/realms/vedal
+    ports: !override []
+    restart: unless-stopped
+    logging: *logging
+
+  # ————— то, чего нет в локальном стеке —————
+
+  # Единственный контейнер с портами наружу. Сертификаты Let's Encrypt
+  # Caddy получает и продлевает сам.
+  proxy:
+    profiles: ["app"]
+    image: caddy:2.10-alpine
+    container_name: vedal-proxy
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      VEDAL_DOMAIN: ${VEDAL_DOMAIN:?задайте VEDAL_DOMAIN, например vedal-med.ru}
+      VEDAL_KEYCLOAK_DOMAIN: ${VEDAL_KEYCLOAK_DOMAIN:?задайте VEDAL_KEYCLOAK_DOMAIN, например id.vedal-med.ru}
+      VEDAL_MEDIA_DOMAIN: ${VEDAL_MEDIA_DOMAIN:?задайте VEDAL_MEDIA_DOMAIN, например media.vedal-med.ru}
+    volumes:
+      - ./proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - vedal-caddy-data:/data
+      - vedal-caddy-config:/config
+    restart: unless-stopped
+    logging: *logging
+
+  # Бэкап базы. Ежедневный дамп в том, недельная ротация.
+  #
+  # Это не целевая схема из спеки — там непрерывный WAL через wal-g
+  # в объектное хранилище другого аккаунта. Это минимум, который лучше
+  # отсутствия бэкапов, и он честно называется минимумом: дамп, который
+  # ни разу не восстанавливали, — гипотеза, и раз в месяц его надо
+  # разворачивать в отдельную базу и сверять количество строк.
+  backup:
+    profiles: ["app"]
+    image: postgres:16
+    container_name: vedal-backup
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGDATABASE: ${VEDAL_DB_NAME:?}
+      PGUSER: ${VEDAL_DB_USER:?}
+      PGPASSWORD: ${VEDAL_DB_PASSWORD:?}
+      KEEP_DAYS: ${VEDAL_BACKUP_KEEP_DAYS:-7}
+    volumes:
+      - vedal-backups:/backups
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        echo "бэкап: дамп раз в сутки, хранение $$KEEP_DAYS дней"
+        while true; do
+          stamp=$$(date +%Y-%m-%d-%H%M)
+          # -Fc: формат, который умеет pg_restore с выборочным
+          # восстановлением. Простой SQL-дамп такого не умеет.
+          if pg_dump -Fc -f "/backups/vedal-$$stamp.dump"; then
+            echo "бэкап $$stamp готов"
+          else
+            echo "БЭКАП НЕ СНЯЛСЯ: $$stamp" >&2
+          fi
+          find /backups -name 'vedal-*.dump' -mtime "+$$KEEP_DAYS" -delete
+          sleep 86400
+        done
+    restart: unless-stopped
+    logging: *logging
+
+volumes:
+  vedal-caddy-data:
+  vedal-caddy-config:
+  vedal-backups:
