@@ -78,6 +78,21 @@ class OpenApiDocsTest extends PostgresTestBase {
                 .noneMatch(path -> path.startsWith("/actuator"));
     }
 
+    // Спецификацию забирают не только браузером: YAML удобнее читать глазами
+    // и класть в задачу. Путь у него отдельным сегментом (/v3/api-docs.yaml),
+    // и под правило доступа для /v3/api-docs/** он не подходит — без
+    // отдельного разрешения запрос уезжает на форму входа.
+    @Test
+    void servesSpecAsYamlToo() throws Exception {
+        var yaml = mvc.perform(get("/v3/api-docs.yaml/vedal-public"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(yaml).startsWith("openapi:")
+                .contains("/api/forms/v1/leads:")
+                .contains("LeadSubmission:");
+    }
+
     @Test
     void describesLeadFormFieldsAndConstraints() throws Exception {
         var form = map(schemas().get("LeadSubmission"));

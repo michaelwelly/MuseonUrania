@@ -50,7 +50,10 @@ public class SecurityConfig {
                         // и запрос до спецификации не доходит. Закрывать их ещё
                         // и входом значит требовать учётную запись портала
                         // от того, кто по спецификации только интегрируется.
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
+                        // Спецификация отдаётся и в YAML, и это отдельный
+                        // сегмент пути: под /v3/api-docs/** он не подходит.
+                        .requestMatchers("/v3/api-docs/**", "/v3/api-docs.yaml/**",
+                                "/swagger-ui/**", "/swagger-ui.html")
                         .permitAll()
                         .requestMatchers("/admin/**").authenticated()
                         .anyRequest().denyAll())
