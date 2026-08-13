@@ -185,7 +185,6 @@ panel.
 | `POST /api/forms/v1/leads` | website forms | lead intake, `Idempotency-Key` header, `202` response |
 | `POST /api/assistant/v1/ask` | Urania | an answer from published content with links; no sources means handoff to a human |
 | `/api/admin/v1/**` | admin UI | twenty-five operations: products, categories, news, documents, leads, audit log, images, session |
-| `/admin/**` (Thymeleaf) | employee | the fallback entrance; unavailable through the gateway, only directly on 8081 |
 
 Errors from every door are `application/problem+json` (RFC 9457). The forms and
 the assistant have their own per-client rate limits. The admin API contract is
@@ -284,9 +283,6 @@ Three Boot 4 traps already stepped on here:
   and the keys, not the code.
 - **Who runs Keycloak** in a deployed environment and how employees are created
   in it.
-- **When the Thymeleaf admin pages go away.** They are kept as a fallback while
-  the new admin UI is exercised; two admin interfaces on one address is a
-  temporary state, not a decision.
 - **The lead retention period.** Three years proposed, no auto-cleanup. Until the
   period is confirmed it must not be introduced: deleting by a wrong period is
   irreversible.

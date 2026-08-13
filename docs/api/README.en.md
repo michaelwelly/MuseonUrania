@@ -93,11 +93,10 @@ the database still comes from `compose.yaml`.
 
 ## What is not here
 
-The Thymeleaf admin pages. They accept `form-urlencoded` and answer with a
-redirect; springdoc does not document such handlers, and passing a browser
-interface off as an integration API serves nobody. They remain a fallback
-entrance, reachable by talking to the portal directly on 8081, bypassing the
-gateway.
+Browser-facing pages. The portal has none left: the server-rendered Thymeleaf
+admin is gone, and with it the login form and the cookie session. The only
+interface the portal renders itself is Swagger UI, and that is about the
+contract, not the data.
 
 A standalone copy of Swagger UI as a single HTML file. Such a file can be built,
 but nine tenths of it is minified swagger-ui, and keeping a megabyte and a half

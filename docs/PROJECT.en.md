@@ -202,9 +202,12 @@ perimeter is checked in three places rather than in thirty controllers.
 
 The employee door changed shape rather than being created anew: instead of
 server-rendered Thymeleaf pages it is JSON, with the Next.js admin UI on top.
-The pages remain a fallback entrance, reachable by talking to the portal directly
-on 8081, bypassing the gateway; through the gateway `/admin/**` serves the new
-admin UI.
+The pages are gone, and with them the portal has **no browser-facing page at
+all** — which means no login form, no cookie session, and no CSRF token to
+protect. That removed a whole class of risk rather than shortening the code: the
+ambient authority cross-site request forgery relies on cannot exist when there is
+no session. `AdminAccessTest` guards that state — a controller with a browser
+page coming back will fail the build.
 
 Errors from every door are `application/problem+json` (RFC 9457), one format for
 everything. The forms and the assistant have per-client rate limits.
@@ -362,7 +365,17 @@ Rules that cannot be bypassed by editing a controller or by an editor's mistake:
 - `lead_idempotency_key_idx` — resubmitting a form does not create a second lead;
 - `event_consumed_idx` — a redelivered event does not produce a second letter;
 - `news_published_needs_date` — a published news item must have a date;
-- the `audit_entry_append_only` trigger — the log cannot be edited retroactively.
+- the `audit_entry_append_only` trigger — the log cannot be edited retroactively;
+- the `version` column on products, news items and documents — two editors who
+  opened the same card do not silently overwrite each other.
+
+The version is checked twice, and that is not belt-and-braces. The explicit check
+in the domain catches the common case: the card was opened in the morning and
+saved in the evening, and somebody else edited it in between. `@Version` catches
+a genuine concurrent write by two transactions — without the explicit check it
+would never fire, because the version is read from the database inside the same
+transaction and always matches itself. Both cases surface as a `409` with an
+explanation: for the editor it is one and the same situation.
 
 The trigger does not protect against `TRUNCATE`. The real protection is revoking
 `UPDATE`/`DELETE`/`TRUNCATE` from the application role during environment setup.
@@ -379,8 +392,22 @@ variables one by one.
 JDK 25 and Docker are required; Maven does not have to be installed, the wrapper
 is in the repository.
 
-**Everything in containers, one entry point.** This builds what will go to the
-server:
+**On a clean machine — one command.** Docker is all you need: the script checks
+it, generates `backend/.env` with random passwords, builds the images, waits for
+readiness and prints the addresses and the account. The first run takes about ten
+minutes, later ones take seconds.
+
+```bash
+./scripts/up.sh
+```
+
+On Windows without bash — the same thing:
+
+```
+.\scripts\up.ps1
+```
+
+Underneath it is the same compose command, which can also be called directly:
 
 ```bash
 docker compose -f backend/compose.yaml --profile app up -d --build
@@ -428,6 +455,40 @@ production.
 cd backend && ./mvnw test
 ```
 
+### 5.8a A deployed environment
+
+The `compose.prod.yaml` overlay on top of the regular file:
+
+```bash
+docker compose -f backend/compose.yaml -f backend/compose.prod.yaml \
+  --profile app up -d --build
+```
+
+What it changes and why:
+
+- **No default value for any secret.** `${VAR:?...}` fails the start naming the
+  missing variable. A production instance that silently came up with the password
+  "vedal" is worse than one that did not come up.
+- **Only the reverse proxy is exposed.** The ports of the database, broker,
+  storage, Keycloak, Connect and the applications themselves are not published:
+  inside the docker network they reach each other anyway, and from outside every
+  open port is a door someone has to guard.
+- **TLS on Caddy.** It obtains and renews certificates itself — the only reason
+  it is here rather than nginx, where the same work is done by certbot and a
+  timer, that is, by two more places that break silently and surface ninety days
+  later.
+- **Media on a separate domain**, read-only, `sandbox`, and no execution of
+  the content. Editors put files there, and sharing the site's origin and cookies
+  with them serves nothing.
+- **Keycloak on a persistent database** and in `start` mode rather than
+  `start-dev`: the embedded H2 does not survive a container restart, and the
+  employee accounts go with it.
+- **Backups** — a daily `pg_dump -Fc` with weekly rotation. This is not the
+  target scheme from the spec (continuous WAL via `wal-g` into another
+  account's bucket) but a minimum that beats having none. Once a month it must be
+  restored into a separate database and the row counts compared: a backup never
+  restored is a hypothesis.
+
 ### 5.9 Perimeter, observability, backups
 
 The application sits behind a reverse proxy. Without
@@ -467,9 +528,9 @@ upon request; infrastructure in Russia.
 
 ### 6.1 Backend — working
 
-114 Java files in the portal and 2 in the gateway, 21 test classes (92 tests, all
-green), 12 Flyway migrations, 18 controllers, 12 catalog items in the seed,
-5 categories. Spring Boot 4.1.0 on Spring Framework 7, Java 25, Jackson 3,
+111 Java files in the portal and 2 in the gateway, 21 test classes (102 portal
+tests, 4 gateway tests, all green; plus 31 frontend tests), 13 Flyway migrations,
+14 controllers, 12 catalog items in the seed, 5 categories. Spring Boot 4.1.0 on Spring Framework 7, Java 25, Jackson 3,
 PostgreSQL 16, Testcontainers. The gateway runs Spring Boot 4.0.7 with Spring
 Cloud Gateway 5.0.2: that is the only supported pair, and the version skew is
 harmless precisely because it is a separate process.
@@ -500,7 +561,6 @@ Working routes:
 | `/api/admin/v1/audit` | admin UI | the log with filters and the chain by `correlation_id` |
 | `/api/admin/v1/media` | admin UI | image upload into the read-open bucket |
 | `/api/admin/v1/session` | admin UI | who signed in and which roles the portal parsed |
-| `/admin/**` (Thymeleaf) | employee | the fallback entrance, only directly on 8081 |
 
 The twenty-five admin API operations are described by a separate specification
 group — [docs/api/vedal-admin-openapi.yaml](api/vedal-admin-openapi.yaml).
@@ -568,7 +628,7 @@ Metrica from section 8 — those are about content, not about the wire.
 | 8 | Step 8 — the move: VM, Managed PostgreSQL, Managed Kafka, Object Storage, backups, monitoring | depends on Yandex Cloud, which does not exist yet. **Pitfall:** Managed PostgreSQL puts logical replication behind a separate flag, and without it the Debezium connector will not start |
 | 9 | ~~Perimeter: `forward-headers-strategy`, body size limit~~ | ✅ on both the portal and the gateway. **Not closed:** the trusted proxy list is set at deployment |
 | 10 | CI: a build with tests and an image, graceful shutdown, rollback by returning to the previous image | images are built by `compose --profile app`; there is still no deployment and no CI |
-| 11 | Remove the Thymeleaf admin pages | kept as a fallback while the new admin UI is being exercised; two admin interfaces on one address is a temporary state, not a decision |
+| 11 | ~~Remove the Thymeleaf admin pages~~ | ✅ gone, together with the login form and the cookie session. The portal has no browser-facing page left |
 | 12 | Outbox cleanup | the table grows without bound. Deleting needs care around Debezium: `skipped.operations` already drops `d`, but the replication slot must read a row before it is removed |
 | 13 | `ETag` on the public API | deliberately deferred: on twelve items the gain is zero and `Cache-Control` is already in place |
 
@@ -699,10 +759,12 @@ the broker will not touch a single domain.
 
 1. **Merge `dev` → `main`, push the layer branches.** Cheap, and it removes the
    impression of a dead repository with no code.
-2. **Exercise the admin UI on live data and remove the Thymeleaf pages.** Two
-   admin interfaces on one address is a temporary state.
-3. **Deploy it somewhere.** The stack comes up with one command; there is no
-   deployment and no CI at all — that, not the code, is the next bottleneck.
+2. **Exercise the admin UI on live data.** It is up, covered by tests and checked
+   by hand, but has not yet met a real editor.
+3. **Deploy it somewhere.** The stack comes up with one command
+   (`./scripts/up.sh`), there is a production profile with TLS and backups, and
+   CI runs the tests and brings the stack up — but there is still no deployed
+   environment. That is the next bottleneck, and it is not in the code.
 4. **The full CRM**: customers, deals, quotes, funnels, analytics. Lead intake and
    triage exist, the rest does not.
 5. Yandex 360 SMTP, YandexGPT + pgvector, multilingual routing, the move to
@@ -726,6 +788,10 @@ The full roadmap is [operations/roadmap.en.md](operations/roadmap.en.md): stage 
 | Single entry point, routes, body limit | [../backend/api-gateway/README.en.md](../backend/api-gateway/README.en.md) |
 | Sign-in, roles, the local realm, Keycloak's two addresses | [../backend/keycloak/README.en.md](../backend/keycloak/README.en.md) |
 | The outbox → Kafka connector, its settings, what to check on failure | [../backend/debezium/README.en.md](../backend/debezium/README.en.md) |
+| Bring everything up on a clean machine | [../scripts/up.sh](../scripts/up.sh), [../scripts/up.ps1](../scripts/up.ps1) |
+| Stack settings and where they live | [../backend/.env.example](../backend/.env.example) |
+| Deployed environment: secrets, TLS, backups | [../backend/compose.prod.yaml](../backend/compose.prod.yaml), [../backend/proxy/Caddyfile](../backend/proxy/Caddyfile) |
+| What CI checks | [../.github/workflows/ci.yml](../.github/workflows/ci.yml) |
 | The boundaries of a specific module | `backend/<module>/README.en.md` |
 | How to run the frontend, content rules | [../frontend/README.en.md](../frontend/README.en.md) |
 | Site structure and routes | [frontend/sitemap.en.md](frontend/sitemap.en.md) |
