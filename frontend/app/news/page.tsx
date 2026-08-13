@@ -3,6 +3,7 @@ import Image from "next/image";
 import PageHero from "@/components/PageHero";
 import { newsHero, press } from "@/content/news";
 import { pressContact, DEMO_NOTE } from "@/content/staff";
+import { fetchNews } from "@/lib/api";
 import NewsFeed from "./feed";
 import NewsSubscribe from "./subscribe";
 import styles from "./page.module.css";
@@ -12,7 +13,9 @@ export const metadata: Metadata = {
   description: newsHero.lead,
 };
 
-export default function NewsPage() {
+export default async function NewsPage() {
+  const news = await fetchNews();
+
   return (
     <main className={styles.page}>
       <PageHero
@@ -21,7 +24,7 @@ export default function NewsPage() {
         lead={newsHero.lead}
       />
 
-      <NewsFeed />
+      <NewsFeed news={news} />
 
       <section className={styles.press}>
         <div data-reveal="0">

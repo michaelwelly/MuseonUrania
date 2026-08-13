@@ -1,0 +1,244 @@
+// Клиент публичного API бэкенда.
+//
+// Каталог, новости и документы читаются на сборке и обновляются раз в пять
+// минут — тот же срок, что бэкенд ставит в `Cache-Control`. Поэтому падение
+// бэкенда не роняет уже собранный сайт: свойство №1 из спеки серверной части.
+// Живой бэкенд нужен только формам и Урании, они ходят из браузера.
+//
+// Что происходит, если API недоступен:
+//
+// - `NEXT_PUBLIC_API_URL` не задан — источником остаётся `content/*.ts`.
+//   Это рабочий режим вёрстки: фронтенд поднимается без Docker, базы и
+//   бэкенда, и Егору не нужно поднимать серверную часть, чтобы поправить
+//   отступ.
+// - адрес задан, но API не ответил — сборка падает. Тихо подставить
+//   захардкоженный каталог здесь опаснее, чем не собраться: снятая
+//   с публикации позиция уехала бы на прод как опубликованная.
+
+import { products as localProducts } from "@/content/products";
+import { news as localNews } from "@/content/news";
+import { documents as localDocuments } from "@/content/documents";
+
+export type Spec = { label: string; value: string; muted?: boolean };
+
+export type Product = {
+  slug: string;
+  name: string;
+  kind: string;
+  categories: string[];
+  status: "confirmed" | "pending";
+  summary: string;
+  image?: { src: string; alt: string };
+  detail?: string;
+  keyParams?: Spec[];
+  specs?: Spec[];
+};
+
+export type NewsItem = {
+  slug: string;
+  date: string;
+  tag: string;
+  title: string;
+  excerpt: string;
+  image?: { src: string; alt: string };
+};
+
+export type Doc = {
+  slug: string;
+  title: string;
+  group: string;
+  product: string;
+  access: string;
+  published: boolean;
+  file?: string;
+};
+
+export const apiUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
+
+/** Адрес API задан — значит, источник данных бэкенд, а не `content/*.ts`. */
+export const apiConfigured = apiUrl !== "";
+
+// Пять минут совпадают с max-age бэкенда. Разъедутся — сайт будет держать
+// снятую с публикации позицию дольше, чем рассчитывает бэкенд.
+const REVALIDATE = 300;
+
+async function get<T>(path: string): Promise<T> {
+  const url = `${apiUrl}${path}`;
+  let response: Response;
+
+  try {
+    response = await fetch(url, { next: { revalidate: REVALIDATE } });
+  } catch (cause) {
+    // Причину оборачиваем, но не глотаем: без адреса в сообщении непонятно,
+    // куда именно не достучались.
+    throw new Error(`Публичное API недоступно: ${url}`, { cause });
+  }
+
+  if (!response.ok) {
+    throw new Error(`Публичное API ответило ${response.status}: ${url}`);
+  }
+
+  return response.json() as Promise<T>;
+}
+
+// ————— каталог —————
+
+type ApiSpec = { label: string; value: string; muted: boolean };
+
+type ApiCard = {
+  slug: string;
+  name: string;
+  kind: string;
+  summary: string;
+  docStatus: string;
+  categories: string[];
+  imageSrc: string | null;
+  imageAlt: string | null;
+};
+
+type ApiDetail = ApiCard & {
+  detail: string | null;
+  keyParams: ApiSpec[];
+  specs: ApiSpec[];
+};
+
+// `muted` наружу отдаётся всегда, внутри фронтенда это необязательное поле:
+// в разметке проверяется истинность, а не наличие.
+const toSpec = (s: ApiSpec): Spec => ({ label: s.label, value: s.value, muted: s.muted });
+
+function toProduct(card: ApiCard): Product {
+  return {
+    slug: card.slug,
+    name: card.name,
+    kind: card.kind,
+    categories: card.categories,
+    // docStatus и published — разные флаги бэкенда. Сюда приезжает первый:
+    // второй уже отфильтровал ответ, неопубликованного в нём нет.
+    status: card.docStatus === "confirmed" ? "confirmed" : "pending",
+    summary: card.summary,
+    image: card.imageSrc ? { src: card.imageSrc, alt: card.imageAlt ?? "" } : undefined,
+  };
+}
+
+export async function fetchProducts(): Promise<Product[]> {
+  if (!apiConfigured) return localProducts;
+  const cards = await get<ApiCard[]>("/api/public/v1/products");
+  return cards.map(toProduct);
+}
+
+export async function fetchProduct(slug: string): Promise<Product | null> {
+  if (!apiConfigured) return localProducts.find((p) => p.slug === slug) ?? null;
+
+  const url = `${apiUrl}/api/public/v1/products/${encodeURIComponent(slug)}`;
+  const response = await fetch(url, { next: { revalidate: REVALIDATE } });
+
+  // 404 — это не сбой, а неопубликованное или несуществующее изделие.
+  // Страница обязана показать 404, а не упасть сборкой.
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error(`Публичное API ответило ${response.status}: ${url}`);
+
+  const detail = (await response.json()) as ApiDetail;
+  return {
+    ...toProduct(detail),
+    detail: detail.detail ?? undefined,
+    keyParams: detail.keyParams.length ? detail.keyParams.map(toSpec) : undefined,
+    specs: detail.specs.length ? detail.specs.map(toSpec) : undefined,
+  };
+}
+
+export async function fetchCategories(): Promise<string[]> {
+  if (!apiConfigured) {
+    const { categories } = await import("@/content/products");
+    return [...categories];
+  }
+  const list = await get<{ slug: string; name: string }[]>("/api/public/v1/categories");
+  return list.map((c) => c.name);
+}
+
+// ————— новости —————
+
+type ApiNews = {
+  slug: string;
+  tag: string;
+  title: string;
+  excerpt: string;
+  publishedOn: string;
+  imageSrc: string | null;
+  imageAlt: string | null;
+};
+
+const MONTHS = [
+  "января", "февраля", "марта", "апреля", "мая", "июня",
+  "июля", "августа", "сентября", "октября", "ноября", "декабря",
+];
+
+// Бэкенд отдаёт дату как `2026-08-13`, лента показывает её словами.
+// Формат — забота интерфейса, поэтому разбираем строку здесь, а не там.
+export function formatDate(iso: string): string {
+  const [year, month, day] = iso.split("-").map(Number);
+  if (!year || !month || !day) return iso;
+  return `${day} ${MONTHS[month - 1]} ${year}`;
+}
+
+export async function fetchNews(): Promise<NewsItem[]> {
+  if (!apiConfigured) {
+    return localNews.map((item) => ({ ...item, slug: "", tag: item.tag }));
+  }
+  const cards = await get<ApiNews[]>("/api/public/v1/news");
+  return cards.map((c) => ({
+    slug: c.slug,
+    date: formatDate(c.publishedOn),
+    tag: c.tag,
+    title: c.title,
+    excerpt: c.excerpt,
+    image: c.imageSrc ? { src: c.imageSrc, alt: c.imageAlt ?? "" } : undefined,
+  }));
+}
+
+// ————— документы —————
+
+type ApiDoc = {
+  slug: string;
+  title: string;
+  group: string;
+  subject: string;
+  productSlug: string | null;
+  access: string;
+  published: boolean;
+  fileUrl: string | null;
+};
+
+// Бэкенд хранит код доступа, сайт показывает подпись. Перевод здесь:
+// подпись — это интерфейс, её меняют без миграции.
+const ACCESS_LABEL: Record<string, string> = {
+  pdf: "PDF",
+  on_request: "По запросу",
+  pending: "Уточняется",
+};
+
+export async function fetchDocuments(): Promise<Doc[]> {
+  if (!apiConfigured) {
+    return localDocuments.map((d) => ({
+      slug: "",
+      title: d.title,
+      group: d.group,
+      product: d.product,
+      access: d.access,
+      published: d.published,
+      file: d.file,
+    }));
+  }
+
+  const cards = await get<ApiDoc[]>("/api/public/v1/documents");
+  return cards.map((c) => ({
+    slug: c.slug,
+    title: c.title,
+    group: c.group,
+    product: c.subject,
+    access: ACCESS_LABEL[c.access] ?? c.access,
+    published: c.published,
+    // Ссылку на файл строит бэкенд и только у опубликованных: собирать её
+    // здесь значит однажды собрать её для закрытого документа.
+    file: c.fileUrl ? `${apiUrl}${c.fileUrl}` : undefined,
+  }));
+}

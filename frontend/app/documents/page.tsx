@@ -4,6 +4,7 @@ import Link from "next/link";
 import PageHero from "@/components/PageHero";
 import { documentsHero, order, request } from "@/content/documents";
 import { docsSpecialist, DEMO_NOTE } from "@/content/staff";
+import { fetchDocuments } from "@/lib/api";
 import DocumentsTable from "./table";
 import styles from "./page.module.css";
 
@@ -12,7 +13,9 @@ export const metadata: Metadata = {
   description: documentsHero.lead,
 };
 
-export default function DocumentsPage() {
+export default async function DocumentsPage() {
+  const documents = await fetchDocuments();
+
   return (
     <main className={styles.page}>
       <PageHero
@@ -34,7 +37,7 @@ export default function DocumentsPage() {
         }
       />
 
-      <DocumentsTable />
+      <DocumentsTable documents={documents} />
 
       <section className={styles.order}>
         <div data-reveal="0">
