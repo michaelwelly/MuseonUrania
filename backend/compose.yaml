@@ -255,8 +255,19 @@ services:
         curl -fsS -X PUT -H 'Content-Type: application/json' \
           --data-binary @/config/outbox-connector.json \
           http://connect:8083/connectors/vedal-outbox/config > /dev/null
-        echo 'состояние:'
-        curl -fsS http://connect:8083/connectors/vedal-outbox/status
+        # Ответ на PUT приходит раньше, чем коннектор появляется в реестре
+        # воркера: сразу за настройкой идёт перебалансировка группы. Запрос
+        # состояния без ожидания отвечает 404, и контейнер гаснет с ошибкой
+        # там, где на самом деле всё в порядке.
+        for i in 1 2 3 4 5 6 7 8 9 10; do
+          if curl -fsS http://connect:8083/connectors/vedal-outbox/status; then
+            echo
+            exit 0
+          fi
+          sleep 2
+        done
+        echo 'коннектор зарегистрирован, но состояние не отвечает — смотрите docker logs vedal-connect'
+        exit 1
 
   # --- профиль app: приложения в контейнерах -------------------------------
 

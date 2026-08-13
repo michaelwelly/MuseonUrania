@@ -13,7 +13,11 @@ WORKDIR /build
 # не тянет за собой повторную выкачку всего Maven Central.
 COPY .mvn .mvn
 COPY mvnw pom.xml ./
-RUN chmod +x mvnw
+# Перевод строк выправляется здесь, а не только .gitattributes: Docker копирует
+# рабочее дерево, а не индекс. На Windows файл с CRLF уносит \r в строку
+# shebang, и сборка падает с './mvnw: not found' — сообщением, по которому
+# причину видно последней.
+RUN sed -i 's/\r$//' mvnw && chmod +x mvnw
 
 COPY src src
 
