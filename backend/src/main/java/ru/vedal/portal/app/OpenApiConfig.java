@@ -6,6 +6,7 @@ import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.tags.Tag;
 import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,14 +15,19 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
-// Описание публичного контракта портала. В спецификацию попадают только двери
-// под /api/** — то, по чему интегрируются снаружи.
+// Описание контракта портала. Групп две, и это не удобство раскладки:
 //
-// Админки здесь нет, и это не пропуск: /admin/** — серверные страницы на
-// Thymeleaf, они принимают form-urlencoded и отвечают редиректом, а не JSON.
-// springdoc такие обработчики не документирует (нет @ResponseBody), и
-// затаскивать их сюда значит выдавать браузерный интерфейс за API для
-// интеграции. Права на админку описаны в ru.vedal.portal.iam.SecurityConfig.
+//   vedal-public — двери под /api/public, /api/forms, /api/assistant. То,
+//     по чему интегрируются снаружи; выкладывается в docs/api и читается теми,
+//     у кого учётной записи портала нет и не будет.
+//   vedal-admin — /api/admin/**. Контракт админки на фронте. Отдельной
+//     группой, потому что смешать их значит выдать перечень дверей правки
+//     тому, кому нужен только каталог.
+//
+// Серверных страниц /admin/** здесь нет, и это не пропуск: они принимают
+// form-urlencoded и отвечают редиректом, а не JSON. springdoc такие
+// обработчики не документирует, и затаскивать их сюда значит выдавать
+// браузерный интерфейс за API для интеграции.
 @Configuration
 public class OpenApiConfig {
 
@@ -64,17 +70,53 @@ public class OpenApiConfig {
                         new Tag().name(TAG_ASSISTANT).description(
                                 "Урания отвечает только по опубликованным материалам. Подходящих "
                                         + "источников нет — ответа нет, есть передача человеку.")))
-                .components(new Components().addSchemas("ProblemDetail", problemDetail()));
+                .components(new Components()
+                        .addSchemas("ProblemDetail", problemDetail())
+                        .addSecuritySchemes("keycloak", keycloak()));
     }
 
     // Одна группа на все публичные двери: интегратору удобнее один файл
     // спецификации, а разделение по дверям видно по тегам.
+    //
+    // Админское API исключено явным pathsToExclude, а не тем, что его «здесь
+    // не перечислили»: /api/** покрывает и его тоже, и без этой строки перечень
+    // дверей правки уехал бы в файл, который выкладывается в репозиторий
+    // для внешних интеграторов.
     @Bean
-    GroupedOpenApi publicApi() {
+    GroupedOpenApi publicApiSpec() {
         return GroupedOpenApi.builder()
                 .group("vedal-public")
                 .pathsToMatch("/api/**")
+                .pathsToExclude("/api/admin/**")
                 .build();
+    }
+
+    @Bean
+    GroupedOpenApi adminApiSpec() {
+        return GroupedOpenApi.builder()
+                .group("vedal-admin")
+                .pathsToMatch("/api/admin/**")
+                .build();
+    }
+
+    // Как админка предъявляет себя. В режиме keycloak это токен из realm'а,
+    // в запасном режиме local — HTTP Basic поверх учётных записей в базе.
+    // В спецификации описан боевой вариант: запасной нужен разработке,
+    // и выдавать его за контракт незачем.
+    private static SecurityScheme keycloak() {
+        return new SecurityScheme()
+                .type(SecurityScheme.Type.HTTP)
+                .scheme("bearer")
+                .bearerFormat("JWT")
+                .description("""
+                        Токен доступа из Keycloak. Роли портала — `portal-admin`
+                        и `portal-editor` в `realm_access.roles`; токен без них
+                        проходит проверку подписи и получает `403`.
+
+                        В режиме `vedal.iam.mode=local` вместо этого работает
+                        HTTP Basic поверх учётных записей портала — режим
+                        разработки, не контракт.
+                        """);
     }
 
     private String description() {

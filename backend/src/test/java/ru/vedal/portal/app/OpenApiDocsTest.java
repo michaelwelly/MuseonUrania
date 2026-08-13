@@ -26,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class OpenApiDocsTest extends PostgresTestBase {
 
     private static final String SPEC = "/v3/api-docs/vedal-public";
+    private static final String ADMIN_SPEC = "/v3/api-docs/vedal-admin";
 
     @Autowired
     MockMvc mvc;
@@ -58,14 +59,46 @@ class OpenApiDocsTest extends PostgresTestBase {
     // мог бы устареть вместе со спецификацией, если сверять только их друг с другом.
     @Test
     void documentedPathsMatchRegisteredRoutes() throws Exception {
-        var registered = mappings.getHandlerMethods().keySet().stream()
-                .filter(info -> info.getPathPatternsCondition() != null)
-                .flatMap(info -> info.getPathPatternsCondition().getPatternValues().stream())
-                .filter(path -> path.startsWith("/api/"))
+        var registered = registeredPaths("/api/").stream()
+                .filter(path -> !path.startsWith("/api/admin/"))
                 .collect(Collectors.toCollection(TreeSet::new));
 
         assertThat(registered).isNotEmpty();
         assertThat(documentedPaths()).isEqualTo(registered);
+    }
+
+    // Двери правки описаны отдельной группой. Проверка та же и по той же
+    // причине: админка на фронте собирается по этой спецификации, и дверь,
+    // забытая в ней, для админки не существует.
+    @Test
+    void adminGroupDocumentsEveryAdminDoor() throws Exception {
+        assertThat(documentedPaths(ADMIN_SPEC)).isEqualTo(registeredPaths("/api/admin/"));
+    }
+
+    // Перечень дверей правки не должен уехать в файл, который выкладывается
+    // в репозиторий для внешних интеграторов.
+    @Test
+    void publicGroupHidesTheAdminDoors() throws Exception {
+        assertThat(documentedPaths()).noneMatch(path -> path.startsWith("/api/admin"));
+    }
+
+    // Дверь без схемы безопасности в спецификации читается как открытая.
+    @Test
+    void adminDoorsDeclareTheirAuthentication() throws Exception {
+        var spec = spec(ADMIN_SPEC);
+        assertThat(map(map(map(spec.get("components")).get("securitySchemes")).get("keycloak")))
+                .containsEntry("scheme", "bearer");
+
+        var products = map(map(map(spec.get("paths")).get("/api/admin/v1/products")).get("get"));
+        assertThat(list(products.get("security"))).isNotEmpty();
+    }
+
+    private TreeSet<String> registeredPaths(String prefix) {
+        return mappings.getHandlerMethods().keySet().stream()
+                .filter(info -> info.getPathPatternsCondition() != null)
+                .flatMap(info -> info.getPathPatternsCondition().getPatternValues().stream())
+                .filter(path -> path.startsWith(prefix))
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 
     // Группа ограничена /api/**: служебный /error — обработчик Spring, а не дверь
@@ -146,7 +179,11 @@ class OpenApiDocsTest extends PostgresTestBase {
     }
 
     private TreeSet<String> documentedPaths() throws Exception {
-        return new TreeSet<>(paths().keySet());
+        return documentedPaths(SPEC);
+    }
+
+    private TreeSet<String> documentedPaths(String group) throws Exception {
+        return new TreeSet<>(map(spec(group).get("paths")).keySet());
     }
 
     private Map<String, Object> paths() throws Exception {
@@ -172,7 +209,11 @@ class OpenApiDocsTest extends PostgresTestBase {
     }
 
     private Map<String, Object> spec() throws Exception {
-        var body = mvc.perform(get(SPEC))
+        return spec(SPEC);
+    }
+
+    private Map<String, Object> spec(String group) throws Exception {
+        var body = mvc.perform(get(group))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         return map(json.readValue(body, Map.class));

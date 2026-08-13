@@ -13,4 +13,12 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
     Optional<Product> findBySlugAndPublishedTrue(String slug);
 
     List<Product> findAllByOrderBySortOrderAscNameAsc();
+
+    boolean existsBySlug(String slug);
+
+    // Для проверки занятости slug'а при переименовании: «занят кем-то другим»
+    // отличается от «занят этим же изделием».
+    Optional<Product> findBySlug(String slug);
+
+    long countByCategoriesId(UUID categoryId);
 }

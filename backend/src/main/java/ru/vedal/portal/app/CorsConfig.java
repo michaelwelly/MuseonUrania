@@ -17,48 +17,79 @@ import java.util.List;
 //
 // Что сюда сознательно не попало:
 //
-// - `/admin/**`. Админка работает по cookie-сессии; разрешить к ней
-//   кросс-доменные запросы значит открыть путь к ней с чужой страницы.
-//   Отсутствие CORS здесь — часть периметра, а не недосмотр.
-// - `allowCredentials`. У публичных дверей нет ни cookie, ни сессии:
-//   Forms API опознаёт повтор по `Idempotency-Key`, а не по пользователю.
-//   Включать передачу учётных данных не для чего, а с ней браузер запрещает
-//   `*` в списке источников и цена ошибки в конфигурации растёт.
+// - `/admin/**`. Серверные страницы админки работают по cookie-сессии;
+//   разрешить к ним кросс-доменные запросы значит открыть путь к ним с чужой
+//   страницы. Отсутствие CORS здесь — часть периметра, а не недосмотр.
+// - `allowCredentials`. Ни у одной двери нет cookie-аутентификации:
+//   Forms API опознаёт повтор по `Idempotency-Key`, админское API — по
+//   заголовку Authorization. Включать передачу учётных данных не для чего,
+//   а с ней браузер запрещает `*` в списке источников и цена ошибки
+//   в конфигурации растёт.
+//
+// А вот `/api/admin/**` сюда попал, и это не противоречит первому пункту:
+// там нет ни сессии, ни cookie — запрос опознаётся по заголовку, который
+// чужая страница проставить не может. Разрешение приходить с адреса админки
+// не даёт чужой вкладке ничего.
 @Configuration
 public class CorsConfig {
 
     // Ровно те заголовки, которые шлёт фронтенд. Открывать список целиком
     // незачем: заголовок, которого нет в этом перечне, — повод посмотреть,
     // кто и зачем его добавил.
-    private static final List<String> ALLOWED_HEADERS =
+    private static final List<String> PUBLIC_HEADERS =
             List.of("Content-Type", "Idempotency-Key");
+
+    private static final List<String> ADMIN_HEADERS =
+            List.of("Content-Type", "Authorization");
 
     private static final List<String> PUBLIC_DOORS =
             List.of("/api/public/**", "/api/forms/**", "/api/assistant/**");
 
-    private final List<String> origins;
+    private static final String ADMIN_DOOR = "/api/admin/**";
 
-    public CorsConfig(@Value("${vedal.web.allowed-origins}") String allowedOrigins) {
-        this.origins = Arrays.stream(allowedOrigins.split(","))
-                .map(String::trim)
-                .filter(origin -> !origin.isEmpty())
-                .toList();
+    private final List<String> origins;
+    private final List<String> adminOrigins;
+
+    public CorsConfig(@Value("${vedal.web.allowed-origins}") String allowedOrigins,
+                      // Адрес админки задаётся отдельно от адреса сайта: это
+                      // разные периметры, и открывать админскую дверь всему,
+                      // чему открыт публичный сайт, незачем. Пусто — берём
+                      // список сайта, чтобы разработка заводилась без лишней
+                      // переменной.
+                      @Value("${vedal.web.admin-origins:}") String allowedAdminOrigins) {
+        this.origins = split(allowedOrigins);
+        var admin = split(allowedAdminOrigins);
+        this.adminOrigins = admin.isEmpty() ? this.origins : admin;
     }
 
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
+        var source = new UrlBasedCorsConfigurationSource();
+        PUBLIC_DOORS.forEach(door -> source.registerCorsConfiguration(door,
+                config(origins, List.of("GET", "POST", "OPTIONS"), PUBLIC_HEADERS)));
+        source.registerCorsConfiguration(ADMIN_DOOR,
+                config(adminOrigins, List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"), ADMIN_HEADERS));
+        return source;
+    }
+
+    private static CorsConfiguration config(List<String> origins, List<String> methods,
+                                            List<String> headers) {
         var config = new CorsConfiguration();
         // Именно allowedOrigins, а не allowedOriginPatterns: шаблон легко
         // расширить до `https://*` и не заметить этого на ревью.
         config.setAllowedOrigins(origins);
-        config.setAllowedMethods(List.of("GET", "POST", "OPTIONS"));
-        config.setAllowedHeaders(ALLOWED_HEADERS);
+        config.setAllowedMethods(methods);
+        config.setAllowedHeaders(headers);
         config.setAllowCredentials(false);
         // Preflight на каждую отправку формы — лишний круг к серверу.
         config.setMaxAge(3600L);
+        return config;
+    }
 
-        var source = new UrlBasedCorsConfigurationSource();
-        PUBLIC_DOORS.forEach(door -> source.registerCorsConfiguration(door, config));
-        return source;
+    private static List<String> split(String value) {
+        return Arrays.stream(value.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .toList();
     }
 }
