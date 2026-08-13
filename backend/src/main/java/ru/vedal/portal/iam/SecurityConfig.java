@@ -44,6 +44,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/public/**", "/api/forms/**", "/api/assistant/**",
                                 "/actuator/health", "/login").permitAll()
+                        // Спецификация и Swagger UI. Открыты не потому, что их
+                        // не жалко: там, где лежат настоящие данные, springdoc
+                        // выключен профилем — обработчика на этих адресах нет,
+                        // и запрос до спецификации не доходит. Закрывать их ещё
+                        // и входом значит требовать учётную запись портала
+                        // от того, кто по спецификации только интегрируется.
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
+                        .permitAll()
                         .requestMatchers("/admin/**").authenticated()
                         .anyRequest().denyAll())
                 .formLogin(form -> form.defaultSuccessUrl("/admin/products", true))

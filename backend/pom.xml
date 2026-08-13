@@ -18,6 +18,10 @@
 		<java.version>25</java.version>
 		<!-- Spring Boot 4.1 не тянет testcontainers-bom, версию держим сами. -->
 		<testcontainers.version>1.21.4</testcontainers.version>
+		<!-- Ветка 3.x springdoc собрана под Spring Boot 4; 2.x — под Boot 3
+		     и в этом проекте не поднимется. Версию держим сами: в BOM
+		     Spring Boot springdoc не входит. -->
+		<springdoc.version>3.1.0</springdoc.version>
 	</properties>
 
 	<dependencyManagement>
@@ -77,6 +81,15 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-kafka</artifactId>
+		</dependency>
+		<!-- Спецификация OpenAPI и Swagger UI поверх аннотаций контроллеров.
+		     Спецификация собирается из кода, а не лежит отдельным файлом:
+		     отдельный файл расходится с реальными дверями на первой же правке
+		     и врёт тем, кто по нему интегрируется. -->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>${springdoc.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.postgresql</groupId>
