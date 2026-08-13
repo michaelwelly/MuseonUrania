@@ -973,6 +973,13 @@ components:
           type: string
           maxLength: 300
           minLength: 0
+        version:
+          type:
+          - integer
+          - "null"
+          format: int64
+          description: "Версия карточки, прочитанная перед правкой. Обязательна пр\
+            и обновлении, при создании игнорируется."
       required:
       - access
       - group
@@ -1024,6 +1031,10 @@ components:
         updatedAt:
           type: string
           format: date-time
+        version:
+          type: integer
+          format: int64
+          description: Версия карточки. Её надо вернуть в форме правки.
     AdminLead:
       type: object
       description: "Заявка целиком, вместе с текстом и согласием."
@@ -1153,6 +1164,10 @@ components:
         updatedAt:
           type: string
           format: date-time
+        version:
+          type: integer
+          format: int64
+          description: Версия материала. Её надо вернуть в форме правки.
     AdminNewsForm:
       type: object
       description: |
@@ -1208,6 +1223,13 @@ components:
           type: string
           maxLength: 300
           minLength: 0
+        version:
+          type:
+          - integer
+          - "null"
+          format: int64
+          description: "Версия материала, прочитанная перед правкой. Обязательна п\
+            ри обновлении, при создании игнорируется."
       required:
       - excerpt
       - slug
@@ -1280,6 +1302,12 @@ components:
         updatedAt:
           type: string
           format: date-time
+        version:
+          type: integer
+          format: int64
+          description: "Версия карточки. Её надо вернуть в форме правки — по ней п\
+            ортал отличает «правлю то, что прочитал» от «правлю то, что за это вре\
+            мя поменял кто-то другой»."
     AdminProductForm:
       type: object
       description: |
@@ -1356,6 +1384,15 @@ components:
           description: Короткое описание для карточки в списке.
           maxLength: 1000
           minLength: 0
+        version:
+          type:
+          - integer
+          - "null"
+          format: int64
+          description: "Версия карточки, прочитанная перед правкой. Обязательна пр\
+            и обновлении, при создании игнорируется. Форма без версии отклоняется\
+            : сохранить вслепую значит затереть чужую правку."
+          example: 3
       required:
       - docStatus
       - kind

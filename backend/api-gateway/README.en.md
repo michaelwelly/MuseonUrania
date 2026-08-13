@@ -51,11 +51,10 @@ Order matters: the list is read top to bottom, so the specific ones come first.
 | `/v3/api-docs/**`, `/swagger-ui/**` | portal | springdoc serves them outside the `/api` prefix |
 | `/**` | site | including `/admin/**` — the Next.js admin UI |
 
-The Thymeleaf admin pages are deliberately absent. Both admin interfaces lay
-claim to `/admin/**`, and one has to be chosen: through the gateway it is the
-Next.js one. The Thymeleaf fallback stays reachable by talking to the portal
-directly on 8081, bypassing the gateway — exactly the mode it was kept for: it
-gets used when something further up the chain is broken.
+There is no route to server-rendered admin pages because there are none left:
+the portal has no browser-facing page at all, and with them went the login form,
+the cookie session and the CSRF token. Sign-in goes to Keycloak directly, and
+`/admin/**` is served by the site.
 
 ## Versions
 

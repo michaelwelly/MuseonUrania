@@ -146,6 +146,16 @@ contacts.
 deliberately: it can be closed off entirely at the proxy level without touching
 the application.
 
+> **Revised on 14 August 2026.** The employee door stayed a single door but
+> changed shape: instead of server-rendered pages it is JSON at
+> `/api/admin/v1/**` behind a Keycloak token, with the Next.js admin UI on top.
+> The Thymeleaf pages are gone, and with them the portal has no browser-facing
+> page at all — hence no login form, no cookie session, no CSRF token. The "can
+> be closed off entirely at the proxy" property is preserved: it is still one
+> route.
+>
+> Current state — [docs/PROJECT.en.md](../../PROJECT.en.md), section 5.1.
+
 ## Data
 
 ### First step: the catalog
