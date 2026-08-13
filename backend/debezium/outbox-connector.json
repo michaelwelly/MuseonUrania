@@ -3,9 +3,13 @@
 
   "database.hostname": "db",
   "database.port": "5432",
-  "database.user": "vedal",
-  "database.password": "vedal",
-  "database.dbname": "vedal",
+
+  "config.providers": "env",
+  "config.providers.env.class": "org.apache.kafka.common.config.provider.EnvVarConfigProvider",
+
+  "database.user": "${env:VEDAL_DB_USER}",
+  "database.password": "${env:VEDAL_DB_PASSWORD}",
+  "database.dbname": "${env:VEDAL_DB_NAME}",
 
   "plugin.name": "pgoutput",
   "slot.name": "vedal_outbox",

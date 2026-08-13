@@ -24,9 +24,9 @@ services:
     image: postgres:16
     container_name: vedal-db
     environment:
-      POSTGRES_DB: vedal
-      POSTGRES_USER: vedal
-      POSTGRES_PASSWORD: vedal
+      POSTGRES_DB: ${VEDAL_DB_NAME:-vedal}
+      POSTGRES_USER: ${VEDAL_DB_USER:-vedal}
+      POSTGRES_PASSWORD: ${VEDAL_DB_PASSWORD:-vedal}
     # Логическая репликация — требование Debezium: без wal_level=logical
     # коннектор не поднимется вовсе. Слоты и отправители нужны по одному
     # на коннектор, запас взят на будущие.
@@ -39,7 +39,7 @@ services:
       - -c
       - max_wal_senders=4
     ports:
-      - "5434:5432"
+      - "${VEDAL_DB_PORT:-5434}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U vedal -d vedal"]
       interval: 5s
@@ -59,7 +59,7 @@ services:
     image: apache/kafka:3.9.0
     container_name: vedal-kafka
     ports:
-      - "9092:9092"
+      - "${VEDAL_KAFKA_PORT:-9092}:9092"
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
@@ -105,11 +105,11 @@ services:
     container_name: vedal-minio
     command: server /data --console-address ":9001"
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${VEDAL_MINIO_PORT:-9000}:9000"
+      - "${VEDAL_MINIO_CONSOLE_PORT:-9001}:9001"
     environment:
-      MINIO_ROOT_USER: vedal
-      MINIO_ROOT_PASSWORD: vedal-local-secret
+      MINIO_ROOT_USER: ${VEDAL_S3_ACCESS_KEY:-vedal}
+      MINIO_ROOT_PASSWORD: ${VEDAL_S3_SECRET_KEY:-vedal-local-secret}
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 5s
@@ -133,12 +133,17 @@ services:
     depends_on:
       minio:
         condition: service_healthy
+    # Ключи приходят окружением, а не подставляются в командную строку:
+    # аргументы процесса видны в `docker inspect` и в списке процессов хоста.
+    environment:
+      MINIO_ROOT_USER: ${VEDAL_S3_ACCESS_KEY:-vedal}
+      MINIO_ROOT_PASSWORD: ${VEDAL_S3_SECRET_KEY:-vedal-local-secret}
     entrypoint:
       - /bin/sh
       - -c
       - |
         set -e
-        mc alias set local http://minio:9000 vedal vedal-local-secret
+        mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
         mc mb --ignore-existing local/vedal-documents
         mc mb --ignore-existing local/vedal-media
         mc anonymous set none local/vedal-documents
@@ -172,14 +177,14 @@ services:
     container_name: vedal-keycloak
     command: ["start-dev", "--import-realm"]
     environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: admin-local
-      KC_HOSTNAME: http://localhost:8180
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${VEDAL_KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${VEDAL_KEYCLOAK_ADMIN_PASSWORD:-admin-local}
+      KC_HOSTNAME: ${VEDAL_KEYCLOAK_URL:-http://localhost:8180}
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
       KC_HTTP_ENABLED: "true"
       KC_HEALTH_ENABLED: "true"
     ports:
-      - "8180:8080"
+      - "${VEDAL_KEYCLOAK_PORT:-8180}:8080"
     volumes:
       - ./keycloak:/opt/keycloak/data/import:ro
       - vedal-keycloak:/opt/keycloak/data
@@ -210,7 +215,7 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "8083:8083"
+      - "${VEDAL_CONNECT_PORT:-8083}:8083"
     environment:
       BOOTSTRAP_SERVERS: kafka:29092
       GROUP_ID: vedal-connect
@@ -226,6 +231,18 @@ services:
       VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
       CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: "false"
       CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+      # Пароль базы не лежит в файле коннектора: он подставляется провайдером
+      # из окружения Connect. Файл коммитится, а пароль — нет, и на сервере
+      # он приезжает из .env, как все остальные.
+      #
+      # Провайдер разрешён явным списком: Connect читает ${env:...} только
+      # для тех имён, что здесь перечислены.
+      CONNECT_CONFIG_PROVIDERS: env
+      CONNECT_CONFIG_PROVIDERS_ENV_CLASS: org.apache.kafka.common.config.provider.EnvVarConfigProvider
+      CONNECT_CONFIG_PROVIDERS_ENV_PARAM_ALLOWLIST_PATTERN: "VEDAL_DB_.*"
+      VEDAL_DB_NAME: ${VEDAL_DB_NAME:-vedal}
+      VEDAL_DB_USER: ${VEDAL_DB_USER:-vedal}
+      VEDAL_DB_PASSWORD: ${VEDAL_DB_PASSWORD:-vedal}
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8083/ >/dev/null || exit 1"]
       interval: 10s
@@ -288,9 +305,9 @@ services:
       keycloak:
         condition: service_healthy
     environment:
-      VEDAL_DB_URL: jdbc:postgresql://db:5432/vedal
-      VEDAL_DB_USER: vedal
-      VEDAL_DB_PASSWORD: vedal
+      VEDAL_DB_URL: jdbc:postgresql://db:5432/${VEDAL_DB_NAME:-vedal}
+      VEDAL_DB_USER: ${VEDAL_DB_USER:-vedal}
+      VEDAL_DB_PASSWORD: ${VEDAL_DB_PASSWORD:-vedal}
 
       # Строки outbox читает коннектор, а не relay.
       VEDAL_EVENTS_PUBLISHER: debezium
@@ -298,23 +315,25 @@ services:
 
       VEDAL_STORAGE_KIND: s3
       VEDAL_S3_ENDPOINT: http://minio:9000
-      VEDAL_S3_ACCESS_KEY: vedal
-      VEDAL_S3_SECRET_KEY: vedal-local-secret
+      VEDAL_S3_ACCESS_KEY: ${VEDAL_S3_ACCESS_KEY:-vedal}
+      VEDAL_S3_SECRET_KEY: ${VEDAL_S3_SECRET_KEY:-vedal-local-secret}
 
       VEDAL_IAM_MODE: keycloak
       # Издателя сверяем по внешнему адресу — он в токене; ключи забираем
       # по внутреннему — внешний из docker-сети недостижим.
-      VEDAL_OIDC_ISSUER: http://localhost:8180/realms/vedal
+      VEDAL_OIDC_ISSUER: ${VEDAL_KEYCLOAK_URL:-http://localhost:8180}/realms/vedal
       VEDAL_OIDC_JWKS: http://keycloak:8080/realms/vedal/protocol/openid-connect/certs
       VEDAL_OIDC_AUDIENCE: vedal-portal
 
       # Запросы приходят через шлюз, поэтому источник у сайта и у API один.
       # Список всё равно задан: портал доступен и напрямую на 8081, и режим
       # разработки ходит туда с localhost:3000.
-      VEDAL_ALLOWED_ORIGINS: http://localhost:8080,http://localhost:3000
-      VEDAL_PORTAL_URL: http://localhost:8080
+      VEDAL_ALLOWED_ORIGINS: ${VEDAL_ALLOWED_ORIGINS:-http://localhost:8080,http://localhost:3000}
+      VEDAL_ADMIN_ORIGINS: ${VEDAL_ADMIN_ORIGINS:-http://localhost:8080,http://localhost:3000}
+      VEDAL_PORTAL_URL: ${VEDAL_PUBLIC_URL:-http://localhost:8080}
+      VEDAL_NOTIFICATIONS_MANAGER: ${VEDAL_NOTIFICATIONS_MANAGER:-}
     ports:
-      - "8081:8081"
+      - "${VEDAL_PORTAL_PORT:-8081}:8081"
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8081/actuator/health >/dev/null || exit 1"]
       interval: 10s
@@ -338,10 +357,10 @@ services:
       # Токен проверяет портал. Шлюз может проверять его и здесь — включается
       # VEDAL_GATEWAY_VERIFY_TOKENS=true, — но решение всё равно за порталом:
       # шлюз это фильтр, а не граница доверия.
-      VEDAL_GATEWAY_VERIFY_TOKENS: "false"
-      VEDAL_OIDC_ISSUER: http://localhost:8180/realms/vedal
+      VEDAL_GATEWAY_VERIFY_TOKENS: ${VEDAL_GATEWAY_VERIFY_TOKENS:-false}
+      VEDAL_OIDC_ISSUER: ${VEDAL_KEYCLOAK_URL:-http://localhost:8180}/realms/vedal
     ports:
-      - "8080:8080"
+      - "${VEDAL_GATEWAY_PORT:-8080}:8080"
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health >/dev/null || exit 1"]
       interval: 10s
@@ -366,15 +385,15 @@ services:
       # Один адрес на оба случая невозможен: localhost:8080 из контейнера
       # ведёт в сам контейнер, а portal:8081 из браузера не резолвится.
       VEDAL_API_INTERNAL_URL: http://portal:8081
-      NEXT_PUBLIC_API_URL: http://localhost:8080
+      NEXT_PUBLIC_API_URL: ${VEDAL_PUBLIC_URL:-http://localhost:8080}
 
-      NEXT_PUBLIC_MEDIA_URL: http://localhost:9000/vedal-media
+      NEXT_PUBLIC_MEDIA_URL: ${VEDAL_MEDIA_URL:-http://localhost:9000/vedal-media}
 
       # Админка ходит за токеном сама, публичным клиентом с PKCE.
-      NEXT_PUBLIC_OIDC_ISSUER: http://localhost:8180/realms/vedal
+      NEXT_PUBLIC_OIDC_ISSUER: ${VEDAL_KEYCLOAK_URL:-http://localhost:8180}/realms/vedal
       NEXT_PUBLIC_OIDC_CLIENT_ID: vedal-admin-ui
     ports:
-      - "3000:3000"
+      - "${VEDAL_SITE_PORT:-3000}:3000"
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:3000/ >/dev/null || exit 1"]
       interval: 15s
