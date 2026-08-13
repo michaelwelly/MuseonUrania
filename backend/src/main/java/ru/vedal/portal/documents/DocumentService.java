@@ -53,7 +53,7 @@ public class DocumentService implements DocumentQuery {
 
         FileStorage.Stored stored;
         try {
-            stored = storage.open(document.getStorageKey())
+            stored = storage.open(FileStorage.Area.DOCUMENTS, document.getStorageKey())
                     .orElseThrow(() -> new NotFoundException("Файл документа недоступен"));
         } catch (IOException e) {
             throw new UncheckedIOException(e);

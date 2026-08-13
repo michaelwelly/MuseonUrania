@@ -54,9 +54,9 @@ public class AdminDocumentsController {
             return "redirect:/admin/documents";
         }
 
-        var key = "documents/" + document.getSlug() + extension(file.getOriginalFilename());
+        var key = document.getSlug() + extension(file.getOriginalFilename());
         try (var data = file.getInputStream()) {
-            storage.put(key, data, file.getContentType());
+            storage.put(FileStorage.Area.DOCUMENTS, key, data, file.getSize(), file.getContentType());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

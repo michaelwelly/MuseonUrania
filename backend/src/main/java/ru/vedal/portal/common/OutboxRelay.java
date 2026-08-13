@@ -3,14 +3,13 @@ package ru.vedal.portal.common;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
 // Чтение outbox и публикация. Домены сюда не обращаются: они только пишут
@@ -34,57 +33,42 @@ public class OutboxRelay {
 
     private final OutboxRepository outbox;
     private final EventPublisher publisher;
-    private final EventConsumedRepository consumed;
-    private final List<DomainEventConsumer> consumers;
+    private final EventDispatch dispatch;
+    private final boolean cdcPublishes;
     private final AtomicLong pending = new AtomicLong();
     private final AtomicLong lagSeconds = new AtomicLong();
 
-    public OutboxRelay(OutboxRepository outbox, EventPublisher publisher,
-                       EventConsumedRepository consumed, List<DomainEventConsumer> consumers,
+    public OutboxRelay(OutboxRepository outbox, EventPublisher publisher, EventDispatch dispatch,
+                       @Value("${vedal.events.publisher:log}") String mode,
                        MeterRegistry meters) {
         this.outbox = outbox;
         this.publisher = publisher;
-        this.consumed = consumed;
-        this.consumers = consumers;
+        this.dispatch = dispatch;
+        this.cdcPublishes = "debezium".equals(mode);
         meters.gauge("vedal.outbox.pending", pending);
         meters.gauge("vedal.outbox.lag.seconds", lagSeconds);
     }
 
     @Transactional
     public int drain() {
+        // В режиме debezium строки outbox читает не это приложение, а коннектор
+        // по журналу предзаписи. Публиковать отсюда значило бы отправить каждое
+        // событие дважды. Отметку published_at ставит консьюмер топика, когда
+        // событие возвращается: так лаг меряет весь путь, а не то, что мы
+        // успели положить в очередь.
+        if (cdcPublishes) return 0;
+
         var batch = outbox.findByPublishedAtIsNullOrderByCreatedAtAsc(Limit.of(BATCH));
         for (var event : batch) {
             // Отправка внутри транзакции: если публикация упала, published_at
             // не выставится и событие уйдёт в следующий заход. Дубль потребитель
             // отсечёт по идентификатору, потерянное событие не восстановит никто.
             publisher.publish(event);
-            dispatch(event);
+            dispatch.dispatch(event);
             event.setPublishedAt(Instant.now());
             outbox.save(event);
         }
         return batch.size();
-    }
-
-    // Пока Kafka нет, потребители живут в процессе. Отсечение повторов по
-    // (потребитель, событие) — то же, что будет у консьюмера топика.
-    private void dispatch(Outbox event) {
-        // Восстанавливаем цепочку запроса: этот код работает в потоке
-        // расписания, где MDC пуст, и без этого логи и письма теряют связь
-        // с заявкой, которая их породила.
-        CorrelationId.runWith(event.getCorrelationId(), () -> {
-            for (var consumer : consumers) {
-                if (!consumer.handles(event.getType())) continue;
-                if (consumed.existsByConsumerAndEventId(consumer.name(), event.getId())) continue;
-
-                consumer.consume(event);
-
-                var mark = new EventConsumed();
-                mark.setId(UUID.randomUUID());
-                mark.setConsumer(consumer.name());
-                mark.setEventId(event.getId());
-                consumed.save(mark);
-            }
-        });
     }
 
     @Transactional(readOnly = true)
@@ -95,8 +79,8 @@ public class OutboxRelay {
         lagSeconds.set(lag.toSeconds());
 
         if (lag.compareTo(LAG_ALERT) > 0) {
-            log.warn("лаг outbox {} с, неотправленных {} — relay не справляется или встал",
-                    lag.toSeconds(), pending.get());
+            log.warn("лаг outbox {} с, неотправленных {} — {} не справляется или встал",
+                    lag.toSeconds(), pending.get(), cdcPublishes ? "конвейер Debezium → Kafka" : "relay");
         }
     }
 

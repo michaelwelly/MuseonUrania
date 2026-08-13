@@ -1,5 +1,10 @@
 package ru.vedal.portal.assistant;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -13,6 +18,7 @@ import ru.vedal.portal.common.TooManyRequestsException;
 
 @RestController
 @RequestMapping("/api/assistant/v1")
+@Tag(name = "Ассистент")
 public class PublicAssistantController {
 
     private final AssistantService assistant;
@@ -24,6 +30,28 @@ public class PublicAssistantController {
         this.rateLimit = rateLimit;
     }
 
+    @Operation(summary = "Спросить Уранию",
+            description = """
+                    Отвечает только по опубликованным материалам портала: каталогу, ленте
+                    и перечню документов. Закрытого файла в ответе не будет, потому что
+                    его нет в контексте — движок ходит через интерфейсы модулей, а они
+                    отдают исключительно опубликованное.
+
+                    Вопросы про диагноз и цену отклоняются ограничениями до поиска.
+                    Подходящих источников не нашлось — ответа нет, приходит `handoff`
+                    с контактами и подходящими формами. Ответ всегда `200`: передача
+                    человеку это штатный исход, а не ошибка.
+
+                    Лимит частоты — 20 вопросов за 10 минут с адреса.
+                    """)
+    @ApiResponse(responseCode = "200",
+            description = "Ответ со ссылками на источники либо передача человеку.")
+    @ApiResponse(responseCode = "400", description = "Вопрос пуст или длиннее 500 символов.",
+            content = @Content(mediaType = "application/problem+json",
+                    schema = @Schema(ref = "#/components/schemas/ProblemDetail")))
+    @ApiResponse(responseCode = "429", description = "Превышен лимит частоты.",
+            content = @Content(mediaType = "application/problem+json",
+                    schema = @Schema(ref = "#/components/schemas/ProblemDetail")))
     @PostMapping("/ask")
     public ResponseEntity<AskReply> ask(@Valid @RequestBody AskRequest request,
                                         HttpServletRequest http) {
