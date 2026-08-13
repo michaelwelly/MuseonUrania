@@ -21,10 +21,10 @@ export default function LeadsPage() {
   const [page, setPage] = useState(0);
   const [open, setOpen] = useState<string | null>(null);
 
-  const { data: statuses } = useLoad<string[]>(leadStatuses, []);
+  const { data: statuses } = useLoad<string[]>(leadStatuses);
   const { data, error, loading, reload, setError } = useLoad<Page<LeadRow>>(
     () => leads(status, page),
-    [status, page],
+    `${status}:${page}`,
   );
 
   return (
@@ -116,6 +116,10 @@ export default function LeadsPage() {
 
           {open && (
             <LeadCard
+              // key по заявке обязателен: без него выбранный, но не сохранённый
+              // статус переезжает на следующую открытую заявку, и «Сохранить
+              // разбор» ставит его чужому обращению.
+              key={open}
               id={open}
               statuses={statuses ?? []}
               onDone={() => {
@@ -160,7 +164,7 @@ function LeadCard({
   onDone: () => void;
   onError: (message: string | null) => void;
 }) {
-  const { data, error, loading } = useLoad<Lead>(() => lead(id), [id]);
+  const { data, error, loading } = useLoad<Lead>(() => lead(id), id);
   const [status, setStatus] = useState<string | null>(null);
   const [owner, setOwner] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);

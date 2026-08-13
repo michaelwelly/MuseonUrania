@@ -7,7 +7,7 @@ import { Note, Published, useLoad } from "../../ui";
 
 export default function EditNews({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { data, error, loading } = useLoad<News>(() => newsItem(id), [id]);
+  const { data, error, loading } = useLoad<News>(() => newsItem(id), id);
 
   return (
     <>

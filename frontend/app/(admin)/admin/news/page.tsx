@@ -6,7 +6,7 @@ import { deleteNews, news, publishNews, type NewsRow } from "@/lib/admin";
 import { Note, Published, message, useLoad, when } from "../ui";
 
 export default function NewsPage() {
-  const { data, error, loading, reload, setError } = useLoad<NewsRow[]>(news, []);
+  const { data, error, loading, reload, setError } = useLoad<NewsRow[]>(news);
   const [busy, setBusy] = useState<string | null>(null);
 
   async function act(id: string, action: () => Promise<unknown>) {

@@ -22,8 +22,8 @@ import { Field, Note, Published, message, useLoad, when } from "../ui";
 const MAX_MB = 20;
 
 export default function DocumentsPage() {
-  const { data, error, loading, reload, setError } = useLoad<DocumentRow[]>(documents, []);
-  const { data: vocabulary } = useLoad<Vocabulary>(documentVocabulary, []);
+  const { data, error, loading, reload, setError } = useLoad<DocumentRow[]>(documents);
+  const { data: vocabulary } = useLoad<Vocabulary>(documentVocabulary);
   const [busy, setBusy] = useState<string | null>(null);
   const [editing, setEditing] = useState<DocumentRow | null>(null);
   const [creating, setCreating] = useState(false);
@@ -72,6 +72,11 @@ export default function DocumentsPage() {
 
       {(creating || editing) && vocabulary && (
         <DocumentCard
+          // key по документу обязателен. Без него React переиспользует ту же
+          // позицию в дереве, useState не переинициализируется, и переход
+          // с одного документа на другой оставляет в форме поля предыдущего —
+          // а «Сохранить» пишет их под идентификатором нового.
+          key={editing?.id ?? "new"}
           vocabulary={vocabulary}
           existing={editing ?? undefined}
           onCancel={() => {
@@ -196,6 +201,7 @@ function DocumentCard({
   const [form, setForm] = useState<DocumentForm>(
     existing
       ? {
+          version: existing.version,
           slug: existing.slug,
           title: existing.title,
           group: existing.group,
@@ -208,6 +214,7 @@ function DocumentCard({
           sourceOwner: null,
         }
       : {
+          version: 0,
           slug: "",
           title: "",
           group: vocabulary.groups[0],

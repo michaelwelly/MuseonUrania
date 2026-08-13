@@ -47,8 +47,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${BASE}${ROOT}${path}`, { ...init, headers });
-  } catch (cause) {
-    throw new AdminError(0, "Портал не отвечает.", undefined);
+  } catch {
+    // Сеть, а не портал: до него запрос не дошёл вовсе. Отличается
+    // от отказа портала тем, что статуса нет.
+    throw new AdminError(0, "Портал не отвечает.");
   }
 
   if (response.status === 204) return undefined as T;
@@ -102,6 +104,9 @@ export type ProductRow = {
 
 export type Product = {
   id: string;
+  /** Версия карточки. Её надо вернуть в форме правки: по ней портал отличает
+   *  «правлю то, что прочитал» от «правлю то, что за это время поменял другой». */
+  version: number;
   slug: string;
   name: string;
   kind: string;
@@ -157,6 +162,7 @@ export type NewsRow = {
 };
 
 export type News = NewsRow & {
+  version: number;
   excerpt: string;
   body: string | null;
   imageSrc: string | null;
@@ -179,6 +185,7 @@ export const deleteNews = (id: string) => del(`/news/${id}`);
 
 export type DocumentRow = {
   id: string;
+  version: number;
   slug: string;
   title: string;
   group: string;

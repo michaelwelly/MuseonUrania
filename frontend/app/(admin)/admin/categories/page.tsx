@@ -11,7 +11,7 @@ import {
 import { Field, Note, message, useLoad } from "../ui";
 
 export default function CategoriesPage() {
-  const { data, error, loading, reload, setError } = useLoad<Category[]>(categories, []);
+  const { data, error, loading, reload, setError } = useLoad<Category[]>(categories);
   const [busy, setBusy] = useState<string | null>(null);
   const [draft, setDraft] = useState({ slug: "", name: "", position: 0 });
 
