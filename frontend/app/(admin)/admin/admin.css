@@ -1,0 +1,446 @@
+/* Оформление админки. Не CSS Module, а обычный файл: это глобальные правила
+   рабочего интерфейса, и разносить их по модулям пришлось бы копированием
+   одних и тех же таблиц и кнопок в каждую страницу.
+
+   Токены берутся те же, что на сайте (globals.css), — админка часть того же
+   продукта, и вводить ей отдельную палитру значит однажды поймать два разных
+   зелёных на одном экране. */
+
+.admin-body {
+  background: var(--soft);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+.admin-shell {
+  display: grid;
+  grid-template-columns: 232px 1fr;
+  min-height: 100vh;
+}
+
+@media (max-width: 900px) {
+  .admin-shell {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ————— навигация ————— */
+
+.admin-nav {
+  background: var(--deep);
+  color: #fff;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-nav__mark {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.admin-nav__sub {
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--on-dark-label);
+  margin-bottom: 20px;
+}
+
+.admin-nav a {
+  color: var(--on-dark-2);
+  text-decoration: none;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.admin-nav a:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+}
+
+.admin-nav a[aria-current="page"] {
+  background: var(--green);
+  color: #fff;
+}
+
+.admin-nav__foot {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid var(--on-dark-line);
+  font-size: 12px;
+  color: var(--on-dark-3);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ————— содержимое ————— */
+
+.admin-main {
+  padding: 28px 32px 64px;
+  max-width: 1180px;
+}
+
+@media (max-width: 900px) {
+  .admin-main {
+    padding: 20px 16px 48px;
+  }
+}
+
+.admin-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.admin-head h1 {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 26px;
+  font-weight: 500;
+}
+
+.admin-hint {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+  margin-bottom: 20px;
+  max-width: 72ch;
+}
+
+/* ————— карточка и таблица ————— */
+
+.admin-card {
+  background: var(--page);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 18px;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  background: var(--page);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.admin-table th {
+  text-align: left;
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  font-weight: 500;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--soft);
+}
+
+.admin-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line-2);
+  vertical-align: top;
+}
+
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-table td.tight {
+  white-space: nowrap;
+}
+
+.admin-scroll {
+  overflow-x: auto;
+}
+
+/* ————— бейджи ————— */
+
+.badge {
+  display: inline-block;
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line-3);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.badge--on {
+  background: var(--ok-bg);
+  color: var(--ok-fg);
+  border-color: var(--ok-line);
+}
+
+.badge--off {
+  background: #fff;
+  color: var(--muted);
+}
+
+.badge--warn {
+  background: #fdf3e7;
+  color: #9a5b12;
+  border-color: #f0dcc0;
+}
+
+/* ————— формы ————— */
+
+.field {
+  display: block;
+  margin-bottom: 16px;
+}
+
+.field > span {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+  margin-bottom: 6px;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--page);
+  border: 1px solid var(--line-3);
+  border-radius: 8px;
+  padding: 9px 11px;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: 2px solid var(--green);
+  outline-offset: -1px;
+  border-color: var(--green);
+}
+
+.field textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.field small {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.field--error input,
+.field--error select,
+.field--error textarea {
+  border-color: #c0392b;
+}
+
+.field--error small {
+  color: #c0392b;
+}
+
+.field--row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.field--row input {
+  width: auto;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 18px;
+}
+
+@media (max-width: 720px) {
+  .grid2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ————— кнопки ————— */
+
+.btn {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--line-3);
+  background: var(--page);
+  color: var(--ink);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--muted);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--green-dark);
+  border-color: var(--green-dark);
+}
+
+.btn--danger {
+  color: #c0392b;
+  border-color: #e3c3bf;
+}
+
+.btn--small {
+  font-size: 13px;
+  padding: 6px 11px;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.row--end {
+  justify-content: flex-end;
+}
+
+/* ————— сообщения ————— */
+
+.note {
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+  line-height: 1.55;
+  margin-bottom: 16px;
+  border: 1px solid var(--line);
+  background: var(--page);
+}
+
+.note--error {
+  background: #fdf1ef;
+  border-color: #e8c8c2;
+  color: #8f2c1d;
+}
+
+.note--ok {
+  background: var(--ok-bg);
+  border-color: var(--ok-line);
+  color: var(--ok-fg);
+}
+
+.mono {
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  color: var(--text-2);
+  word-break: break-all;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* ————— вход ————— */
+
+.login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.login__card {
+  background: var(--page);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 32px;
+  max-width: 440px;
+  text-align: center;
+}
+
+.login__card h1 {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 22px;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+.login__card p {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+/* ————— плитки на главной ————— */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.tile {
+  background: var(--page);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.tile:hover {
+  border-color: var(--green);
+}
+
+.tile__num {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.tile__label {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.tile__note {
+  font-size: 12px;
+  color: var(--green-dark);
+  margin-top: 8px;
+}
