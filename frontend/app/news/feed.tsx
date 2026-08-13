@@ -5,6 +5,7 @@ import Image from "next/image";
 import { tags, expected } from "@/content/news";
 import type { NewsItem } from "@/lib/api";
 import styles from "./page.module.css";
+import { mediaSrc } from "@/lib/media";
 
 // Чипы рубрик и лента. Публикаций пока нет — фильтр всё равно нужен,
 // иначе при появлении первой записи придётся переписывать разметку.
@@ -58,7 +59,7 @@ export default function NewsFeed({ news }: { news: NewsItem[] }) {
                 <div className={styles.cardPhoto}>
                   {item.image && (
                     <Image
-                      src={item.image.src}
+                      src={mediaSrc(item.image.src)}
                       alt={item.image.alt}
                       fill
                       sizes="(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 33vw"

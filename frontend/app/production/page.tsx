@@ -5,6 +5,7 @@ import VedalMap from "@/components/VedalMap";
 import { site } from "@/content/site";
 import { productionHero, facility, gallery, quality, address } from "@/content/production";
 import styles from "./page.module.css";
+import { mediaSrc } from "@/lib/media";
 
 export const metadata: Metadata = {
   title: "Производство — VEDAL",
@@ -44,7 +45,7 @@ export default function ProductionPage() {
         </div>
         <div className={styles.photo} data-anim="clip ken">
           <Image
-            src={productionHero.image.src}
+            src={mediaSrc(productionHero.image.src)}
             alt={productionHero.image.alt}
             fill
             sizes="(max-width: 1100px) 100vw, 50vw"
@@ -82,7 +83,7 @@ export default function ProductionPage() {
           <li key={shot.src} data-reveal={i}>
             <div className={styles.shot}>
               <Image
-                src={shot.src}
+                src={mediaSrc(shot.src)}
                 alt={shot.alt}
                 fill
                 sizes="(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 33vw"

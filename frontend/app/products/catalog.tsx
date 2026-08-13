@@ -6,6 +6,7 @@ import Link from "next/link";
 import { statusLabel } from "@/content/products";
 import type { Product } from "@/lib/api";
 import styles from "./page.module.css";
+import { mediaSrc } from "@/lib/media";
 
 type Props = { products: Product[]; categories: string[] };
 
@@ -80,7 +81,7 @@ export default function Catalog({ products, categories }: Props) {
               <div className={`${styles.photo} ${p.image ? "" : styles.photoEmpty}`}>
                 {p.image ? (
                   <Image
-                    src={p.image.src}
+                    src={mediaSrc(p.image.src)}
                     alt={p.image.alt}
                     fill
                     sizes="(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 33vw"

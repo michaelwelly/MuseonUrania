@@ -6,6 +6,7 @@ import { statusLabel } from "@/content/products";
 import { fetchProduct, fetchProducts } from "@/lib/api";
 import ProductTabs from "./tabs";
 import styles from "./page.module.css";
+import { mediaSrc } from "@/lib/media";
 
 export async function generateStaticParams() {
   const products = await fetchProducts();
@@ -52,7 +53,7 @@ export default async function ProductPage(props: PageProps<"/products/[slug]">) 
         >
           {product.image ? (
             <Image
-              src={product.image.src}
+              src={mediaSrc(product.image.src)}
               alt={product.image.alt}
               fill
               sizes="(max-width: 1100px) 100vw, 50vw"
@@ -126,7 +127,7 @@ export default async function ProductPage(props: PageProps<"/products/[slug]">) 
                 <div className={styles.cardPhoto}>
                   {p.image && (
                     <Image
-                      src={p.image.src}
+                      src={mediaSrc(p.image.src)}
                       alt={p.image.alt}
                       fill
                       sizes="(max-width: 1100px) 50vw, 33vw"
