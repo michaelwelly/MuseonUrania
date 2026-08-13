@@ -53,17 +53,30 @@ export type Doc = {
   file?: string;
 };
 
-export const apiUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
+const trim = (value: string | undefined) => (value ?? "").replace(/\/+$/, "");
+
+/** Адрес для браузера: формы, Урания, админка. Он же адрес по умолчанию. */
+export const apiUrl = trim(process.env.NEXT_PUBLIC_API_URL);
+
+// Адрес для сборки. Этот модуль работает на сервере, и в контейнере ему нужен
+// внутренний адрес портала: `localhost:8080` изнутри контейнера ведёт в сам
+// контейнер, а `portal:8081` из браузера не резолвится. Один адрес на оба
+// случая невозможен, поэтому их два.
+//
+// Переменная НЕ `NEXT_PUBLIC_`: внутреннее имя хоста не должно уехать
+// в клиентский бандл. Не задана — берётся публичный адрес, и всё работает
+// как раньше.
+const buildUrl = trim(process.env.VEDAL_API_INTERNAL_URL) || apiUrl;
 
 /** Адрес API задан — значит, источник данных бэкенд, а не `content/*.ts`. */
-export const apiConfigured = apiUrl !== "";
+export const apiConfigured = buildUrl !== "";
 
 // Пять минут совпадают с max-age бэкенда. Разъедутся — сайт будет держать
 // снятую с публикации позицию дольше, чем рассчитывает бэкенд.
 const REVALIDATE = 300;
 
 async function get<T>(path: string): Promise<T> {
-  const url = `${apiUrl}${path}`;
+  const url = `${buildUrl}${path}`;
   let response: Response;
 
   try {

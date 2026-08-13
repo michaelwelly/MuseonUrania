@@ -4,9 +4,9 @@ import Footer from "@/components/Footer";
 import UraniaWidget from "@/components/UraniaWidget";
 import LogoPreloader from "@/components/LogoPreloader";
 import Motion from "@/components/Motion";
-import { fontVariables } from "./fonts";
-import "./globals.css";
-import "./motion.css";
+import { fontVariables } from "../fonts";
+import "../globals.css";
+import "../motion.css";
 
 // seo_title / seo_description в content_model.md помечены как awaiting NN answer.
 // До согласования держим только факты из page_briefs.md, без заявлений о
