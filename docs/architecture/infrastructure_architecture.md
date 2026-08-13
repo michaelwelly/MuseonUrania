@@ -1,41 +1,44 @@
-# Infrastructure Architecture
+# Архитектура инфраструктуры
 
-## Phase 1: Public Site And Content Foundation
+**Русский** · [English](infrastructure_architecture.en.md)
+
+## Фаза 1. Публичный сайт и основа контента
 
 ```mermaid
 flowchart LR
-  user["Website visitor"] --> web["Public website"]
-  web --> forms["Lead forms"]
-  web --> cdn["CDN/public media"]
-  cdn --> s3pub["S3 public bucket"]
+  user["Посетитель сайта"] --> web["Публичный сайт"]
+  web --> forms["Формы заявок"]
+  web --> cdn["CDN и публичные медиа"]
+  cdn --> s3pub["Публичный бакет S3"]
   forms --> crm["CRM"]
-  crm --> sales["Sales team"]
-  cms["CMS/admin"] --> web
+  crm --> sales["Отдел продаж"]
+  cms["CMS и админка"] --> web
   cms --> s3pub
-  analytics["Yandex Metrica"] --> web
+  analytics["Яндекс Метрика"] --> web
 ```
 
-Recommended first version:
+Рекомендованная первая версия:
 
-- Public site: preserve existing WordPress only if rapid edits are required; otherwise rebuild as a structured catalog frontend with CMS.
-- Media: S3-compatible object storage with CDN.
-- Analytics: Yandex Metrica from day one.
-- Forms: send leads into CRM and email fallback.
-- SEO: clean metadata, product schema, sitemap, multilingual routes.
+- публичный сайт: оставить WordPress только если нужны быстрые правки, иначе
+  пересобрать как структурированный каталог с фронтендом и CMS;
+- медиа: S3-совместимое объектное хранилище с CDN;
+- аналитика: Яндекс Метрика с первого дня;
+- формы: отправка заявок в CRM с резервной отправкой на почту;
+- SEO: чистые метаданные, разметка изделий, карта сайта, мультиязычные маршруты.
 
-## Phase 2: Corporate Contour For 60 Employees
+## Фаза 2. Корпоративный контур на 60 сотрудников
 
 ```mermaid
 flowchart TB
-  idp["Identity provider + MFA"]
-  vpn["VPN / zero-trust gateway"]
-  mail["Corporate mail"]
-  calendar["Calendar + video meetings"]
-  messenger["Internal messenger"]
+  idp["Провайдер идентичности и MFA"]
+  vpn["VPN или zero-trust шлюз"]
+  mail["Корпоративная почта"]
+  calendar["Календарь и видеовстречи"]
+  messenger["Внутренний мессенджер"]
   crm["CRM"]
-  docs["Document storage"]
-  s3priv["Private S3 buckets"]
-  users["Employees"]
+  docs["Хранилище документов"]
+  s3priv["Приватные бакеты S3"]
+  users["Сотрудники"]
 
   users --> idp
   idp --> mail
@@ -47,55 +50,64 @@ flowchart TB
   vpn --> s3priv
 ```
 
-Key design principle: one identity system, strict MFA, role-based access, and clear public/private document separation before AI ingestion.
+Ключевой принцип: одна система идентичности, строгая MFA, ролевой доступ и
+чёткое разделение публичных и закрытых документов до того, как их начнёт
+поглощать ИИ.
 
-## Phase 3: AI Knowledge Platform
+## Фаза 3. AI-платформа знаний
 
 ```mermaid
 flowchart LR
-  sources["Docs, PDFs, media metadata"] --> classifier["Sensitivity classification"]
-  classifier --> public["Public approved content"]
-  classifier --> private["Internal/private corpus"]
-  private --> parser["Parsing/OCR/transcription"]
-  parser --> chunks["Chunking + metadata"]
-  chunks --> embeddings["Embeddings"]
-  embeddings --> vector["Vector database"]
-  vector --> ai["LLM/RAG service"]
-  ai --> app["Employee search/chat"]
-  app --> audit["Audit logs"]
+  sources["Документы, PDF, метаданные медиа"] --> classifier["Классификация чувствительности"]
+  classifier --> public["Согласованный публичный контент"]
+  classifier --> private["Внутренний и закрытый корпус"]
+  private --> parser["Разбор, OCR, расшифровка"]
+  parser --> chunks["Нарезка и метаданные"]
+  chunks --> embeddings["Эмбеддинги"]
+  embeddings --> vector["Векторная база"]
+  vector --> ai["LLM/RAG-сервис"]
+  ai --> app["Поиск и чат для сотрудников"]
+  app --> audit["Журнал аудита"]
 ```
 
-Suggested components:
+Предлагаемые компоненты:
 
-- Object storage: Yandex Object Storage or other S3-compatible provider.
-- Database: PostgreSQL for structured app data.
-- Vector DB: pgvector for MVP; Qdrant if search grows.
-- Queue: Redis/RabbitMQ for ingestion jobs.
-- AI: start with managed YandexGPT/VLM APIs where acceptable; move sensitive workloads to private GPU machines only after data classification and cost validation.
-- Observability: logs, metrics, uptime checks, backup monitoring.
+- объектное хранилище: Yandex Object Storage или другой S3-совместимый провайдер;
+- база данных: PostgreSQL под структурированные данные приложения;
+- векторная база: pgvector для MVP, Qdrant если поиск вырастет;
+- очередь: Redis или RabbitMQ под задачи загрузки и индексации;
+- ИИ: начинать с управляемых API YandexGPT и VLM там, где это допустимо;
+  чувствительные нагрузки переносить на приватные GPU-машины только после
+  классификации данных и проверки стоимости;
+- наблюдаемость: логи, метрики, проверки доступности, мониторинг бэкапов.
 
-## Environments
+## Окружения
 
-- `prod`: public website, CRM, public approved docs, stable AI services.
-- `staging`: preview site/content changes and CRM/form integrations.
-- `internal`: private employee knowledge tools and document workflows.
-- `lab`: GPU/VLM experiments with synthetic or approved non-sensitive data.
+- `prod` — публичный сайт, CRM, согласованные публичные документы, стабильные
+  ИИ-сервисы;
+- `staging` — предпросмотр изменений сайта и контента, интеграции CRM и форм;
+- `internal` — внутренние инструменты знаний и работа с документами;
+- `lab` — эксперименты с GPU и VLM на синтетических или согласованных
+  нечувствительных данных.
 
-## Security Baseline
+## Базовые требования безопасности
 
-- MFA for all employee accounts.
-- Least-privilege access groups.
-- Private buckets by default.
-- Signed URLs for private downloads.
-- Separate public and internal document pipelines.
-- Backups for DB, CMS, CRM export, object storage metadata.
-- Audit logs for sensitive document access and AI queries.
-- Explicit publication approval before any document becomes public.
+- MFA для всех учётных записей сотрудников.
+- Группы доступа по принципу наименьших прав.
+- Приватные бакеты по умолчанию.
+- Подписанные ссылки для закрытых файлов.
+- Раздельные конвейеры публичных и внутренних документов.
+- Бэкапы базы, CMS, выгрузки CRM и метаданных объектного хранилища.
+- Журналы аудита по доступу к чувствительным документам и запросам к ИИ.
+- Явное согласование публикации до того, как документ станет публичным.
 
-## Open Architecture Questions
+## Открытые вопросы по архитектуре
 
-- Yandex vs Google vs Kontur as primary office/identity/communications stack.
-- Whether medical/regulatory documentation must stay fully inside Russian infrastructure.
-- Required CRM: Bitrix24, amoCRM, Yandex Tracker-based workflow, Kontur CRM-like tools, or custom CRM.
-- Exact budget and timeline for GPU machines.
-- Required uptime/SLA for production website and internal services.
+- Яндекс, Google или Контур как основной офисный, идентификационный и
+  коммуникационный стек.
+- Должна ли медицинская и регуляторная документация целиком оставаться внутри
+  российской инфраструктуры.
+- Какая нужна CRM: Bitrix24, amoCRM, процесс на Яндекс Трекере, инструменты
+  Контура или собственная CRM.
+- Точный бюджет и сроки по GPU-машинам.
+- Требуемые доступность и SLA для публичного сайта и внутренних сервисов.

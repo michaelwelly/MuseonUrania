@@ -1,53 +1,56 @@
-# Page Briefs
+# Брифы страниц
 
-## Home
+**Русский** · [English](page_briefs.en.md)
 
-Goal:
+## Главная
 
-Present VEDAL as a Russian medical equipment manufacturer and route visitors into product catalog, quote request, documents, or Urania assistant.
+Цель:
 
-Required sections:
+Показать VEDAL как российского производителя медицинского оборудования и увести
+посетителя в каталог, запрос КП, документы или к ассистенту Урания.
 
-- Hero/title section.
-- Urania assistant card.
-- Product categories.
-- Priority product cards.
-- Production and quality block.
-- Public document teaser.
-- Press/Innoprom teaser.
-- Partner/integration block.
-- Lead capture.
+Обязательные разделы:
 
-Hero draft:
+- первый экран;
+- карточка ассистента Урания;
+- категории продукции;
+- карточки приоритетных изделий;
+- блок производства и качества;
+- анонс публичных документов;
+- анонс прессы и Иннопрома;
+- блок партнёров и интеграции;
+- сбор заявок.
 
-- Headline: `Российское медицинское оборудование`
-- Supporting copy: `Собственное производство и современные решения для неонатологии, реанимации, анестезиологии и интенсивной терапии.`
-- Primary CTA: `Запросить КП`
-- Secondary CTA: `Каталог`
-- Urania prompt: `Я помогу найти продукт, документ или передать запрос специалисту.`
+Черновик первого экрана:
 
-Awaiting NN:
+- Заголовок: `Российское медицинское оборудование`
+- Подводка: `Собственное производство и современные решения для неонатологии, реанимации, анестезиологии и интенсивной терапии.`
+- Основной призыв: `Запросить КП`
+- Вторичный призыв: `Каталог`
+- Подсказка Урании: `Я помогу найти продукт, документ или передать запрос специалисту.`
 
-- approved headline;
-- approved production photo;
-- exact priority products;
-- public claims and certification wording.
+Ожидает НН:
 
-## Products
+- утверждённый заголовок;
+- утверждённое фото производства;
+- точный список приоритетных изделий;
+- формулировки публичных заявлений и сертификации.
 
-Goal:
+## Продукция
 
-Make product discovery fast and commercial.
+Цель:
 
-Required sections:
+Сделать поиск изделия быстрым и коммерческим.
 
-- Category filters.
-- Product cards.
-- Product status labels.
-- Quote/catalog CTA.
-- Urania prompt for product selection.
+Обязательные разделы:
 
-Categories:
+- фильтры по категориям;
+- карточки изделий;
+- метки статуса изделия;
+- призывы «Запросить КП» и «Каталог»;
+- подсказка Урании для подбора изделия.
+
+Категории:
 
 - Неонатология
 - Реанимация
@@ -55,143 +58,147 @@ Categories:
 - Мониторинг
 - Интенсивная терапия
 
-Awaiting NN:
+Ожидает НН:
 
-- final list of about 10 products;
-- priority order;
-- allowed specifications;
-- public documents.
+- финальный список примерно из 10 изделий;
+- порядок приоритета;
+- разрешённые характеристики;
+- публичные документы.
 
-## Product Detail
+## Карточка изделия
 
-Goal:
+Цель:
 
-Give enough product information for a B2B buyer to request quote, catalog, consultation, or service.
+Дать B2B-покупателю достаточно информации, чтобы запросить КП, каталог,
+консультацию или сервис.
 
-Required sections:
+Обязательные разделы:
 
-- Product hero.
-- Product purpose.
-- Key advantages.
-- Public specifications.
-- Media gallery.
-- Documents.
-- Certification/registration status.
-- CTA block.
+- первый экран изделия;
+- назначение;
+- ключевые преимущества;
+- публичные характеристики;
+- галерея медиа;
+- документы;
+- статус регистрации и сертификации;
+- блок призывов к действию.
 
-Hard rule:
+Жёсткое правило:
 
-Do not invent any clinical, technical, certification, price, availability, or delivery claims.
+Не выдумывать никаких клинических, технических, сертификационных, ценовых
+заявлений, а также сведений о наличии и сроках поставки.
 
-## Production
+## Производство
 
-Goal:
+Цель:
 
-Show production capability and quality without exposing sensitive manufacturing details.
+Показать производственные возможности и качество, не раскрывая чувствительных
+деталей производства.
 
-Required sections:
+Обязательные разделы:
 
-- Production overview.
-- Quality management.
-- Approved production photos.
-- Non-sensitive process story.
-- Link to documents/certificates.
+- обзор производства;
+- управление качеством;
+- согласованные фотографии производства;
+- нечувствительный рассказ о процессе;
+- ссылка на документы и сертификаты.
 
-Awaiting NN:
+Ожидает НН:
 
-- approved production photos;
-- exact quality/certification wording;
-- what cannot be shown publicly.
+- согласованные фотографии производства;
+- точные формулировки о качестве и сертификации;
+- что нельзя показывать публично.
 
-## Documents
+## Документы
 
-Goal:
+Цель:
 
-Make approved public documents easy to find.
+Сделать согласованные публичные документы легко находимыми.
 
-Required sections:
+Обязательные разделы:
 
-- Product catalog.
-- Certificates.
-- Registration documents.
-- Press materials.
-- Public-only downloads.
+- каталог продукции;
+- сертификаты;
+- регистрационные документы;
+- пресс-материалы;
+- только публичные файлы для скачивания.
 
-Urania behavior:
+Поведение Урании:
 
-- help find approved public documents;
-- never expose private/internal materials.
+- помогать находить согласованные публичные документы;
+- никогда не раскрывать закрытые и внутренние материалы.
 
-## Press Center
+## Пресс-центр
 
-Goal:
+Цель:
 
-Publish Innoprom and company news as trust signals.
+Публиковать материалы Иннопрома и новости компании как сигналы доверия.
 
-Required sections:
+Обязательные разделы:
 
-- Innoprom release.
-- Event photos/media.
-- Short company news.
-- Media kit if approved.
+- релиз Иннопрома;
+- фото и медиа с мероприятий;
+- короткие новости компании;
+- медиакит, если согласован.
 
-Awaiting NN:
+Ожидает НН:
 
-- Innoprom text/materials;
-- allowed photos;
-- press contact.
+- текст и материалы Иннопрома;
+- разрешённые фотографии;
+- контакт для прессы.
 
-## Partners
+## Партнёры
 
-Goal:
+Цель:
 
-Explain ecosystem without weakening VEDAL as the primary brand.
+Объяснить экосистему, не ослабляя VEDAL как основной бренд.
 
-Required sections:
+Обязательные разделы:
 
-- Divisy.
-- Morus MS.
+- Divisy;
+- Morus MS;
 - Smart Solution.
 
-Smart Solution wording:
+Формулировка про Smart Solution:
 
 `Smart Solution выступает технологическим интеграционным слоем для сайта, форм, CRM/S3, метаданных и будущего AI-поиска.`
 
-## Service
+## Сервис
 
-Goal:
+Цель:
 
-Route service questions to a human specialist.
+Направить сервисные вопросы к живому специалисту.
 
-Required sections:
+Обязательные разделы:
 
-- Service request form.
-- Product selector.
-- Contact details.
-- Urania quick action: `Сервис`.
+- форма заявки на сервис;
+- выбор изделия;
+- контактные данные;
+- быстрое действие Урании: `Сервис`.
 
-Safety:
+Безопасность:
 
-Urania may collect context and route the request, but must not provide technical service instructions unless they are approved public instructions.
+Урания может собрать контекст и передать обращение, но не даёт технических
+сервисных инструкций, если это не согласованные публичные инструкции.
 
-## Contacts
+## Контакты
 
-Goal:
+Цель:
 
-Provide clear contact and lead paths.
+Дать понятные контакты и пути обращения.
 
-Required sections:
+Обязательные разделы:
 
-- Phone.
-- Email.
-- Address.
-- Sales form.
-- Service form.
-- Partner form.
-- Consent text.
+- телефон;
+- почта;
+- адрес;
+- форма для отдела продаж;
+- форма сервиса;
+- форма для партнёров;
+- текст согласия.
 
-Awaiting NN:
+Ожидает НН:
 
-- final legal/contact data;
-- email routes;
-- consent/privacy text.
+- финальные юридические и контактные данные;
+- маршруты почты;
+- текст согласия и политики приватности.

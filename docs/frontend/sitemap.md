@@ -1,14 +1,17 @@
-# Frontend Sitemap
+# Карта сайта
 
-## Purpose
+**Русский** · [English](sitemap.en.md)
 
-This sitemap defines the first website release structure for `vedal-med.ru`.
+## Назначение
 
-Primary goal: turn the current public website into a practical B2B sales and information interface for VEDAL medical equipment.
+Карта задаёт структуру первого релиза сайта `vedal-med.ru`.
 
-## Global Navigation
+Главная цель — превратить нынешний публичный сайт в рабочий B2B-интерфейс продаж
+и информирования по медицинскому оборудованию VEDAL.
 
-Recommended top-level navigation:
+## Глобальная навигация
+
+Рекомендованный верхний уровень:
 
 1. Главная
 2. Продукция
@@ -19,91 +22,93 @@ Recommended top-level navigation:
 7. Сервис
 8. Контакты
 
-Persistent elements:
+Постоянные элементы:
 
-- VEDAL logo.
-- Phone number.
-- Search icon.
-- CTA: `Запросить КП`.
-- Urania floating assistant button.
+- знак VEDAL;
+- телефон;
+- иконка поиска;
+- призыв к действию `Запросить КП`;
+- плавающая кнопка ассистента Урания.
 
-## First Release Routes
+## Маршруты первого релиза
 
-| Route | Page | Status | Purpose |
+| Маршрут | Страница | Статус | Назначение |
 | --- | --- | --- | --- |
-| `/` | Главная | MVP | production/product positioning, hero, Urania slot, product categories, trust, CTA |
-| `/products/` | Продукция | MVP | catalog overview, product cards, filters, quote/catalog requests |
-| `/products/<slug>/` | Product detail | MVP | individual product page with specs, docs, media, CTA |
-| `/production/` | Производство | MVP | production story, quality system, approved photos |
-| `/documents/` | Документы | MVP | approved public certificates, catalog, brochures |
-| `/press/` | Пресс-центр | MVP | Innoprom release and news |
-| `/partners/` | Партнёры | MVP | Divisy, Morus MS, Smart Solution role |
-| `/service/` | Сервис | MVP | service request and support routing |
-| `/contacts/` | Контакты | MVP | contact details and forms |
+| `/` | Главная | MVP | позиционирование производства и продукции, первый экран, место Урании, категории, доверие, призыв к действию |
+| `/products/` | Продукция | MVP | обзор каталога, карточки, фильтры, запросы КП и каталога |
+| `/products/<slug>/` | Карточка изделия | MVP | отдельная страница изделия: характеристики, документы, медиа, призыв к действию |
+| `/production/` | Производство | MVP | рассказ о производстве, система качества, согласованные фотографии |
+| `/documents/` | Документы | MVP | согласованные публичные сертификаты, каталог, буклеты |
+| `/press/` | Пресс-центр | MVP | релиз Иннопрома и новости |
+| `/partners/` | Партнёры | MVP | Divisy, Morus MS, роль Smart Solution |
+| `/service/` | Сервис | MVP | заявка на сервис и маршрутизация обращений |
+| `/contacts/` | Контакты | MVP | контактные данные и формы |
 
-## Later Routes
+## Отложенные маршруты
 
-| Route | Page | Reason To Defer |
+| Маршрут | Страница | Почему отложено |
 | --- | --- | --- |
-| `/technology/` | Разработка и технологии | needs careful approval of R&D and claims |
-| `/cases/` | Кейсы | needs customer/project approval |
-| `/en/` | English version | after Russian content approval |
-| `/zh/` | Chinese version | after Russian content approval |
-| `/hi/` | Hindi version | later market-entry stage |
-| `/knowledge/` | Internal knowledge portal | private contour, not public release |
+| `/technology/` | Разработка и технологии | нужно аккуратное согласование R&D и заявлений |
+| `/cases/` | Кейсы | нужно согласие заказчиков и по проектам |
+| `/en/` | Английская версия | после утверждения русского контента |
+| `/zh/` | Китайская версия | после утверждения русского контента |
+| `/hi/` | Версия на хинди | более поздний этап выхода на рынок |
+| `/knowledge/` | Внутренний портал знаний | закрытый контур, не публичный релиз |
 
-## Home Page Structure
+## Структура главной страницы
 
-1. Header and navigation.
-2. Hero/title section:
-   - VEDAL production headline.
-   - two CTAs: `Запросить КП`, `Каталог`.
-   - visual evidence: real product/production image.
-   - Urania assistant card/slot.
-3. Product categories.
-4. Priority products.
-5. Production and quality block.
-6. Documents/certification teaser.
-7. Press/Innoprom block.
-8. Partners and Smart Solution integration.
-9. Lead capture block.
-10. Footer.
+1. Шапка и навигация.
+2. Первый экран:
+   - заголовок о производстве VEDAL;
+   - два призыва к действию: `Запросить КП`, `Каталог`;
+   - визуальное доказательство: настоящее фото изделия или производства;
+   - карточка ассистента Урания.
+3. Категории продукции.
+4. Приоритетные изделия.
+5. Блок производства и качества.
+6. Анонс документов и сертификации.
+7. Блок прессы и Иннопрома.
+8. Партнёры и интеграция Smart Solution.
+9. Блок сбора заявок.
+10. Подвал.
 
-## Urania Placement
+## Размещение Урании
 
-First release should support:
+Первый релиз должен поддерживать:
 
-- hero assistant card on desktop;
-- floating button after scroll;
-- compact mobile assistant button;
-- quick actions:
+- карточку ассистента на первом экране в десктопе;
+- плавающую кнопку после прокрутки;
+- компактную кнопку ассистента на мобильном;
+- быстрые действия:
   - Подобрать оборудование
   - Найти документ
   - Запросить КП
   - Сервис
 
-## Smart Solution Placement
+## Размещение Smart Solution
 
-Smart Solution should appear as:
+Smart Solution должен выглядеть как:
 
-- technology integration partner;
-- not stronger than VEDAL visually;
-- connected to forms, CRM handoff, S3/document metadata, future AI search.
+- технологический интеграционный партнёр;
+- визуально не сильнее VEDAL;
+- связанный с формами, передачей в CRM, метаданными S3 и документов, будущим
+  AI-поиском.
 
-Recommended placement:
+Рекомендованное размещение:
 
-- partner/integration block on Home.
-- short explanation on Partners page.
-- internal architecture roadmap, not headline brand.
+- блок партнёров и интеграции на главной;
+- короткое объяснение на странице «Партнёры»;
+- внутренний архитектурный роадмап, а не заглавный бренд.
 
-## SEO Route Notes
+## Замечания по SEO-маршрутам
 
-Priority SEO pages:
+Приоритетные страницы для SEO:
 
 - `/products/`
 - `/products/<slug>/`
 - `/production/`
 - `/documents/`
-- `/press/innoprom/` if separate Innoprom article is approved.
+- `/press/innoprom/`, если отдельная статья про Иннопром будет согласована.
 
-No SEO page should publish unapproved certification, clinical, price, availability, or delivery claims.
+Ни одна SEO-страница не публикует несогласованные заявления о сертификации,
+клинике, ценах, наличии и сроках поставки.

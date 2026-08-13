@@ -1,109 +1,138 @@
-# Frontend Design Handoff
+# Дизайн-передача фронтенда
 
-## Priority
+**Русский** · [English](frontend_design_handoff.en.md)
 
-First priority is the public website design and frontend package for `vedal-med.ru`.
+## Приоритет
 
-CRM, S3, internal infrastructure, LLM/VLM, and corporate contour remain in the roadmap, but they should not block the first presentation and design handoff.
+Первый приоритет — дизайн публичного сайта и пакет фронтенда для `vedal-med.ru`.
 
-## Goal
+CRM, S3, внутренняя инфраструктура, LLM и VLM, корпоративный контур остаются в
+роадмапе, но не должны блокировать первую презентацию и передачу дизайна.
 
-Prepare a conservative B2B medical equipment website concept that can be handed to Claude or a frontend team for three fast design/frontend variants.
+## Цель
 
-Smart Solution should be shown as a technology integration layer, not as a replacement for the VEDAL brand. Its role is to connect the website, forms, CRM/S3, metadata pipeline, and future AI search.
+Подготовить консервативную концепцию B2B-сайта медицинского оборудования,
+которую можно отдать Claude или команде фронтенда для трёх быстрых вариантов
+дизайна и вёрстки.
 
-The title/hero page must include a reserved place for the public website assistant named Urania. Urania is a personified assistant inspired by the muse of astronomy: precise, calm, knowledge-oriented, and visually connected with celestial globe/compass/star-map motifs. The assistant must be secondary to VEDAL's product and production message.
+Smart Solution нужно показывать как технологический интеграционный слой, а не
+как замену бренда VEDAL. Его роль — связать сайт, формы, CRM и S3, конвейер
+метаданных и будущий AI-поиск.
 
-Generated Urania assets are available under `assets/urania/`. Use `urania-avatar-middle-v1.png` as the recommended MVP avatar unless NN prefers the more medical or more celestial alternatives.
+На первом экране должно быть зарезервировано место для публичного ассистента
+сайта по имени Урания. Урания — персонифицированный ассистент, вдохновлённый
+музой астрономии: точный, спокойный, ориентированный на знание, визуально
+связанный с мотивами небесного глобуса, циркуля и звёздной карты. Ассистент
+должен быть вторичен по отношению к сообщению VEDAL о продукции и производстве.
 
-## First Release Pages
+Сгенерированные материалы Урании лежат в `assets/urania/`. Использовать
+`urania-avatar-middle-v1.png` как рекомендованный аватар для MVP, если НН не
+предпочтёт более медицинский или более небесный вариант.
 
-1. Home
-   - positioning;
-   - production signal;
-   - redesigned hero/title section;
-   - reserved Urania assistant area;
-   - priority products;
-   - trust/certification block;
-   - partner block;
-   - lead CTA.
-2. Products
-   - about 10 products;
-   - categories;
-   - filters;
-   - request quote/catalog CTA.
-3. Product detail
-   - product name;
-   - clinical/technical use;
-   - advantages;
-   - specs;
-   - documents;
-   - media;
-   - registration/certification status.
-4. Production
-   - production photos;
-   - quality management;
-   - ISO/certification;
-   - non-sensitive process story.
-5. Documents
-   - public catalog;
-   - certificates;
-   - press materials;
-   - only approved documents.
-6. Press center
-   - Innoprom release;
-   - events;
-   - media kit.
-7. Contacts
-   - sales;
-   - service;
-   - partner request;
-   - forms.
+## Страницы первого релиза
 
-## Metadata To Fill After NN Answers
+1. Главная
+   - позиционирование;
+   - сигнал производства;
+   - переработанный первый экран;
+   - зарезервированная область ассистента Урания;
+   - приоритетные изделия;
+   - блок доверия и сертификации;
+   - блок партнёров;
+   - призыв оставить заявку.
+2. Продукция
+   - около 10 изделий;
+   - категории;
+   - фильтры;
+   - призывы запросить КП и каталог.
+3. Карточка изделия
+   - название;
+   - клиническое и техническое применение;
+   - преимущества;
+   - характеристики;
+   - документы;
+   - медиа;
+   - статус регистрации и сертификации.
+4. Производство
+   - фотографии производства;
+   - управление качеством;
+   - ISO и сертификация;
+   - нечувствительный рассказ о процессе.
+5. Документы
+   - публичный каталог;
+   - сертификаты;
+   - пресс-материалы;
+   - только согласованные документы.
+6. Пресс-центр
+   - релиз Иннопрома;
+   - мероприятия;
+   - медиакит.
+7. Контакты
+   - продажи;
+   - сервис;
+   - партнёрское обращение;
+   - формы.
 
-Each page and product card should be driven by metadata:
+## Метаданные, которые заполняем после ответов НН
 
-- `page_status`: draft / approved / blocked.
-- `public_status`: public / internal / confidential.
-- `product_priority`: 1-10.
-- `product_category`: neonatology / resuscitation / anesthesia / monitoring / other.
-- `certification`: RU / ISO / protocol / pending / unknown.
-- `cta_type`: quote / catalog / consultation / service / partner.
-- `asset_link`: source photo/video/PDF location.
-- `language_ready`: RU / EN / ZH / HI.
-- `approver`: person responsible for publication approval.
-- `assistant_slot`: hidden / hero / floating button / both.
-- `assistant_allowed_sources`: public pages / public PDFs / product catalog / none yet.
+Каждая страница и карточка изделия должны управляться метаданными:
 
-## Conservative Design Rules
+- `page_status` — draft / approved / blocked;
+- `public_status` — public / internal / confidential;
+- `product_priority` — 1–10;
+- `product_category` — неонатология / реанимация / анестезиология / мониторинг / другое;
+- `certification` — RU / ISO / протокол / ожидается / неизвестно;
+- `cta_type` — КП / каталог / консультация / сервис / партнёрство;
+- `asset_link` — расположение исходного фото, видео или PDF;
+- `language_ready` — RU / EN / ZH / HI;
+- `approver` — кто отвечает за согласование публикации;
+- `assistant_slot` — скрыт / первый экран / плавающая кнопка / и то и другое;
+- `assistant_allowed_sources` — публичные страницы / публичные PDF / каталог продукции / пока ничего.
 
-- Use restrained medical/industrial B2B styling.
-- Prioritize trust, clarity, catalog navigation, and document access.
-- Avoid oversized marketing hero language.
-- Avoid decorative gradients and noisy visuals.
-- Show real equipment and production photos whenever possible.
-- Keep CTAs practical: request quote, request catalog, consult specialist, service request.
-- Reserve assistant UI space in the title screen without turning the site into an AI product landing page.
+## Правила консервативного дизайна
 
-## Claude Handoff Prompt
+- Сдержанный медицинский и промышленный B2B-стиль.
+- В приоритете доверие, ясность, навигация по каталогу и доступ к документам.
+- Без раздутых маркетинговых формулировок на первом экране.
+- Без декоративных градиентов и визуального шума.
+- Настоящие фотографии оборудования и производства везде, где это возможно.
+- Призывы к действию практичные: запросить КП, запросить каталог,
+  проконсультироваться со специалистом, оставить сервисную заявку.
+- Место под интерфейс ассистента на первом экране резервируется так, чтобы сайт
+  не превращался в лендинг ИИ-продукта.
 
-Build three frontend concepts for a Russian medical equipment manufacturer website, using a conservative B2B style.
+## Промпт для передачи Claude
 
-Core pages: home, products, product detail, production, documents, press, contacts.
+Собери три концепции фронтенда для сайта российского производителя медицинского
+оборудования в консервативном B2B-стиле.
 
-Business goal: make the site both informational and sales-oriented. It must support product catalog, lead forms, approved public documents, press release content, and future CRM integration.
+Основные страницы: главная, продукция, карточка изделия, производство,
+документы, пресс-центр, контакты.
 
-Include Smart Solution as a technology integration layer: site forms, CRM handoff, S3/document metadata, and future AI search. Do not make Smart Solution visually stronger than VEDAL on public-facing screens.
+Деловая цель: сайт должен быть одновременно информационным и продающим. Он
+должен поддерживать каталог продукции, формы заявок, согласованные публичные
+документы, контент пресс-релизов и будущую интеграцию с CRM.
 
-Include a public assistant named Urania. She should be represented as a restrained expert guide inspired by the muse of astronomy, using subtle celestial globe/compass/star-map motifs. She helps users navigate products, public documents, service and quote requests. She must not provide medical diagnosis, treatment advice, unapproved specifications, prices, or certification claims.
+Включи Smart Solution как технологический интеграционный слой: формы сайта,
+передача в CRM, метаданные S3 и документов, будущий AI-поиск. Визуально
+Smart Solution не должен быть сильнее VEDAL на публичных экранах.
 
-Variants:
+Включи публичного ассистента по имени Урания. Она должна быть сдержанным
+экспертом-проводником, вдохновлённым музой астрономии, с ненавязчивыми мотивами
+небесного глобуса, циркуля и звёздной карты. Она помогает ориентироваться в
+продукции, публичных документах, сервисных и коммерческих обращениях. Она не
+даёт медицинских диагнозов, рекомендаций по лечению, несогласованных
+характеристик, цен и заявлений о сертификации.
 
-1. Conservative manufacturer: trust, production, certification, documents.
-2. Product-led catalog: product search, categories, quote/catalog CTAs.
-3. Expert technology: R&D, production capability, international-ready language structure.
+Варианты:
 
-Use placeholder content where client answers are pending. Mark placeholders clearly as `awaiting NN answer`.
+1. Консервативный производитель: доверие, производство, сертификация, документы.
+2. Каталог во главе: поиск изделия, категории, призывы запросить КП и каталог.
+3. Экспертные технологии: R&D, производственные возможности, языковая структура,
+   готовая к международным рынкам.
 
-Do not invent certification claims, prices, clinical claims, or technical specifications.
+Там, где ответов заказчика ещё нет, использовать заглушки и помечать их явно как
+`awaiting NN answer`.
+
+Не выдумывать заявления о сертификации, цены, клинические заявления и
+технические характеристики.

@@ -1,5 +1,7 @@
 # documents
 
+**Русский** · [English](README.en.md)
+
 Документы и медиа: метаданные, статус публикации, хранение в объектном хранилище.
 
 Модель — [content_model.md](../../docs/frontend/content_model.md) → Document Model:

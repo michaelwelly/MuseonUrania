@@ -1,67 +1,73 @@
-# Claude Context Bundle
+# Контекстный пакет для Claude
 
-Use this as a single-file context bundle when asking Claude to generate frontend variants.
+**Русский** · [English](claude_context_bundle.en.md)
 
-## Project
+Использовать как единый файл контекста, когда просим Claude сгенерировать
+варианты фронтенда.
 
-VEDAL public website redesign for `vedal-med.ru`.
+## Проект
 
-VEDAL is a Russian medical equipment manufacturer. The first release should be a conservative B2B website that informs, supports product discovery, and captures quote/catalog/service requests.
+Редизайн публичного сайта VEDAL — `vedal-med.ru`.
 
-## Immediate Goal
+VEDAL — российский производитель медицинского оборудования. Первый релиз должен
+быть консервативным B2B-сайтом, который информирует, помогает найти изделие и
+собирает заявки на КП, каталог и сервис.
 
-Generate three frontend variants:
+## Ближайшая цель
 
-1. Conservative Manufacturer.
-2. Product-Led Catalog.
-3. Expert Technology Platform.
+Сгенерировать три варианта фронтенда:
 
-Then recommend one variant for NN review.
+1. Консервативный производитель.
+2. Каталог во главе.
+3. Экспертная технологическая платформа.
 
-## Required Pages
+Затем рекомендовать один вариант на рассмотрение НН.
 
-- Home
-- Products
-- Product detail
-- Production
-- Documents
-- Press center
-- Partners
-- Service
-- Contacts
+## Обязательные страницы
 
-## Hero Requirements
+- Главная
+- Продукция
+- Карточка изделия
+- Производство
+- Документы
+- Пресс-центр
+- Партнёры
+- Сервис
+- Контакты
 
-The home/title screen must be redesigned.
+## Требования к первому экрану
 
-Mandatory hero elements:
+Первый экран главной должен быть переработан.
 
-- VEDAL as the primary brand.
-- headline about Russian medical equipment production.
-- support text for neonatology, resuscitation, anesthesia, intensive therapy.
-- primary CTA: `Запросить КП`.
-- secondary CTA: `Каталог`.
-- production/product visual.
-- Urania assistant card/slot.
-- no unapproved medical, price, certification, delivery, or technical claims.
+Обязательные элементы:
 
-## Urania
+- VEDAL как основной бренд;
+- заголовок о производстве российского медицинского оборудования;
+- подводка про неонатологию, реанимацию, анестезиологию и интенсивную терапию;
+- основной призыв: `Запросить КП`;
+- вторичный призыв: `Каталог`;
+- визуальное доказательство: продукция или производство;
+- карточка и место ассистента Урания;
+- никаких несогласованных медицинских, ценовых, сертификационных, технических
+  заявлений и обещаний по срокам.
 
-Urania is the public website assistant.
+## Урания
 
-Visual idea:
+Урания — публичный ассистент сайта.
 
-- inspired by Urania, muse of astronomy;
-- calm female expert guide;
-- celestial globe, compass, star map, subtle orbit lines;
-- green/teal/white/charcoal palette;
-- precise and restrained, not fantasy-heavy.
+Визуальная идея:
 
-Use recommended MVP asset:
+- вдохновлена Уранией, музой астрономии;
+- спокойный женский образ эксперта-проводника;
+- небесный глобус, циркуль, звёздная карта, лёгкие орбитальные линии;
+- палитра: зелёный, бирюзовый, белый, графитовый;
+- точность и сдержанность, без фэнтезийного перегруза.
+
+Рекомендованный материал для MVP:
 
 - `assets/urania/urania-avatar-middle-v1.png`
 
-Other available references:
+Другие доступные референсы:
 
 - `assets/urania/urania-avatar-concepts-v1.png`
 - `assets/urania/urania-avatar-left-v1.png`
@@ -69,58 +75,59 @@ Other available references:
 - `assets/urania/urania-web-integration-mockup-v1.png`
 - `prototypes/urania-web-interface.html`
 
-Urania quick actions:
+Быстрые действия Урании:
 
 - Подобрать оборудование
 - Найти документ
 - Запросить КП
 - Сервис
 
-Urania safety limits:
+Ограничения безопасности:
 
-- no diagnosis;
-- no treatment advice;
-- no invented specifications;
-- no invented certificates;
-- no prices;
-- no delivery promises;
-- no private documents;
-- route uncertainty to a human specialist.
+- никаких диагнозов;
+- никаких рекомендаций по лечению;
+- никаких выдуманных характеристик;
+- никаких выдуманных сертификатов;
+- никаких цен;
+- никаких обещаний по срокам поставки;
+- никаких закрытых документов;
+- при неуверенности — передача живому специалисту.
 
 ## Smart Solution
 
-Smart Solution is a secondary technology integration layer, not the primary public brand.
+Smart Solution — вторичный технологический интеграционный слой, а не основной
+публичный бренд.
 
-Role:
+Роль:
 
-- website forms to CRM;
-- S3/document metadata;
-- future AI search;
-- assistant and analytics roadmap.
+- передача форм сайта в CRM;
+- метаданные S3 и документов;
+- будущий AI-поиск;
+- роадмап ассистента и аналитики.
 
-Do not make Smart Solution visually stronger than VEDAL.
+Визуально Smart Solution не должен быть сильнее VEDAL.
 
-## Content Rules
+## Правила контента
 
-Use placeholders when data is missing:
+Когда данных нет, ставим заглушку:
 
 - `ожидает уточнения`
 - `awaiting NN answer`
 
-Do not invent:
+Не выдумываем:
 
-- product specs;
-- certification status;
-- ISO claims;
-- registration certificates;
-- prices;
-- availability;
-- delivery times;
-- clinical claims.
+- характеристики изделий;
+- статус сертификации;
+- заявления про ISO;
+- регистрационные удостоверения;
+- цены;
+- наличие;
+- сроки поставки;
+- клинические заявления.
 
-## Sitemap
+## Карта сайта
 
-Top navigation:
+Верхняя навигация:
 
 - Главная
 - Продукция
@@ -131,7 +138,7 @@ Top navigation:
 - Сервис
 - Контакты
 
-MVP routes:
+Маршруты MVP:
 
 - `/`
 - `/products/`
@@ -143,9 +150,9 @@ MVP routes:
 - `/service/`
 - `/contacts/`
 
-## Product Categories
+## Категории продукции
 
-Use these as draft filters:
+Черновые фильтры:
 
 - Неонатология
 - Реанимация
@@ -153,32 +160,32 @@ Use these as draft filters:
 - Мониторинг
 - Интенсивная терапия
 
-## Deliverables Expected From Claude
+## Что ожидаем от Claude
 
-For each of the three variants:
+Для каждого из трёх вариантов:
 
-1. Design rationale.
-2. Home page section layout.
-3. Products page layout.
-4. Product detail layout.
-5. Urania assistant UI state.
-6. Mobile behavior.
-7. Risks and what NN must confirm.
+1. Обоснование дизайна.
+2. Раскладка секций главной.
+3. Раскладка страницы продукции.
+4. Раскладка карточки изделия.
+5. Состояние интерфейса ассистента.
+6. Поведение на мобильном.
+7. Риски и что должен подтвердить НН.
 
-Then provide:
+Затем:
 
-- recommended variant for first NN review;
-- list of implementation components;
-- list of remaining content placeholders.
+- рекомендованный вариант для первого показа НН;
+- перечень компонентов реализации;
+- перечень оставшихся заглушек в контенте.
 
-## Evaluation Criteria
+## Критерии оценки
 
-The best variant should:
+Лучший вариант должен:
 
-- feel conservative and credible;
-- make product discovery easy;
-- show production and documents clearly;
-- preserve VEDAL as the main brand;
-- include Urania visibly but secondarily;
-- prepare CRM/S3/AI integration without overpromising;
-- be realistic to implement quickly.
+- ощущаться консервативным и достоверным;
+- делать поиск изделия простым;
+- ясно показывать производство и документы;
+- сохранять VEDAL основным брендом;
+- показывать Уранию заметно, но вторично;
+- готовить интеграцию с CRM, S3 и ИИ без завышенных обещаний;
+- быть реалистичным для быстрой реализации.

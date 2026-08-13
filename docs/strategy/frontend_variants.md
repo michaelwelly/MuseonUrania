@@ -1,81 +1,90 @@
-# Three Frontend Variants
+# Три варианта фронтенда
 
-## Variant A: Conservative Manufacturer
+**Русский** · [English](frontend_variants.en.md)
 
-Recommended for the first stakeholder presentation.
+## Вариант A. Консервативный производитель
 
-Positioning:
+Рекомендован для первого показа стейкхолдерам.
 
-- VEDAL as a reliable Russian medical equipment manufacturer.
-- Focus on production, certification, product readiness, public documents, and direct sales contact.
+Позиционирование:
 
-Best for:
+- VEDAL как надёжный российский производитель медицинского оборудования;
+- упор на производство, сертификацию, готовность продукции, публичные документы
+  и прямой контакт с продажами.
 
-- trust;
-- B2B procurement;
-- conservative medical audience;
-- fast approval.
+Лучше всего подходит для:
 
-Risks:
+- доверия;
+- B2B-закупок;
+- консервативной медицинской аудитории;
+- быстрого согласования.
 
-- less expressive;
-- may need strong real photos to avoid looking too plain.
+Риски:
 
-## Variant B: Product-Led Catalog
+- менее выразительный;
+- может потребовать сильных настоящих фотографий, иначе выглядит слишком просто.
 
-Positioning:
+## Вариант B. Каталог во главе
 
-- the product catalog is the center of the site.
-- visitors quickly find a device, open a card, request quote/catalog/service.
+Позиционирование:
 
-Best for:
+- каталог продукции — центр сайта;
+- посетитель быстро находит изделие, открывает карточку, запрашивает КП, каталог
+  или сервис.
 
-- sales conversion;
-- dealer/partner traffic;
-- SEO by product category;
-- future CRM integration.
+Лучше всего подходит для:
 
-Risks:
+- конверсии в продажи;
+- трафика дилеров и партнёров;
+- SEO по категориям изделий;
+- будущей интеграции с CRM.
 
-- needs accurate product data quickly;
-- weak if product list remains unresolved.
+Риски:
 
-## Variant C: Expert Technology Platform
+- быстро нужны точные данные по изделиям;
+- слаб, если список продукции остаётся неопределённым.
 
-Positioning:
+## Вариант C. Экспертная технологическая платформа
 
-- VEDAL as a production/R&D and technology company with international-ready communication.
-- Highlights manufacturing, engineering, AI-ready documentation, service intelligence, multilingual plan.
+Позиционирование:
 
-Best for:
+- VEDAL как производственная и R&D-компания с коммуникацией, готовой к
+  международным рынкам;
+- подсвечены производство, инженерия, документация, готовая к ИИ, сервисная
+  аналитика, план мультиязычности.
 
-- investors/stakeholders;
-- international partners;
-- strategic presentation;
-- future AI/VLM roadmap.
+Лучше всего подходит для:
 
-Risks:
+- инвесторов и стейкхолдеров;
+- международных партнёров;
+- стратегической презентации;
+- будущего роадмапа AI и VLM.
 
-- may feel too ambitious before public product/catalog materials are ready;
-- requires careful approval of claims.
+Риски:
 
-## Recommendation
+- может показаться слишком амбициозным, пока не готовы публичные материалы по
+  продукции и каталогу;
+- требует аккуратного согласования заявлений.
 
-Use Variant A for the Friday review with Nikolay Nikolaevich, while preparing B and C as alternative frontend directions.
+## Рекомендация
 
-After NN answers the quiz:
+Для пятничного разбора с Николаем Николаевичем взять вариант A, при этом
+подготовить B и C как альтернативные направления фронтенда.
 
-1. Fill metadata.
-2. Select final product list.
-3. Choose Variant A/B/C or hybrid.
-4. Generate first page layouts.
-5. Move to frontend implementation.
+После ответов НН на опросник:
 
-## Smart Solution Integration
+1. Заполнить метаданные.
+2. Утвердить финальный список продукции.
+3. Выбрать вариант A, B, C или гибрид.
+4. Сгенерировать раскладки первых страниц.
+5. Перейти к реализации фронтенда.
 
-Smart Solution is presented across all variants as a technical integration partner:
+## Интеграция Smart Solution
 
-- connects website forms with CRM routing;
-- prepares media/document metadata for S3 storage;
-- supports future AI search and automation scenarios;
-- stays visually secondary to the VEDAL brand.
+Во всех трёх вариантах Smart Solution показан как технический интеграционный
+партнёр:
+
+- связывает формы сайта с маршрутизацией в CRM;
+- готовит метаданные медиа и документов для хранилища S3;
+- поддерживает будущий AI-поиск и сценарии автоматизации;
+- визуально остаётся вторичным по отношению к бренду VEDAL.

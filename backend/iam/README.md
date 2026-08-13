@@ -1,5 +1,7 @@
 # iam
 
+**Русский** · [English](README.en.md)
+
 Пользователи, группы и роли, вход в закрытую часть портала.
 
 Из [брифа собственника](../../docs/architecture/vedal_portal_owner_brief.md):

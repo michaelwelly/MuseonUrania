@@ -28,11 +28,14 @@ outputs/*_v2_*
 
 # IDE
 .idea/
+.vscode/
 *.iml
 
 # Генерируется тулингом, в репозиторий не идёт
 AGENTS.md
+AGENTS.en.md
 CLAUDE.md
+CLAUDE.en.md
 next-env.d.ts
 
 # Временные файлы Office, живут пока документ открыт

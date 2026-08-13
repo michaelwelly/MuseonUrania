@@ -1,29 +1,34 @@
-# Frontend Handoff Package
+# Пакет для фронтенда
 
-This package is ready to pass to Claude, a UI designer, or a frontend team.
+**Русский** · [English](README.en.md)
 
-## Files
+Этот пакет готов к передаче Claude, дизайнеру интерфейсов или команде фронтенда.
 
-- [Sitemap](sitemap.md)
-- [Content model](content_model.md)
-- [Page briefs](page_briefs.md)
-- [Claude frontend prompt](claude_frontend_prompt.md)
-- [Claude context bundle](claude_context_bundle.md)
-- [Implementation checklist](implementation_checklist.md)
+## Файлы
 
-## Related Assets
+- [Карта сайта](sitemap.md)
+- [Модель контента](content_model.md)
+- [Брифы страниц](page_briefs.md)
+- [Промпт для Claude по фронтенду](claude_frontend_prompt.md)
+- [Контекстный пакет для Claude](claude_context_bundle.md)
+- [Чек-лист реализации](implementation_checklist.md)
+
+## Связанные материалы
 
 - `assets/urania/urania-avatar-concepts-v1.png`
 - `assets/urania/urania-avatar-middle-v1.png`
 - `assets/urania/urania-web-integration-mockup-v1.png`
 - `prototypes/urania-web-interface.html`
 
-## First Action
+## Первое действие
 
-Use [Claude context bundle](claude_context_bundle.md) or [Claude frontend prompt](claude_frontend_prompt.md) to generate three frontend variants:
+Взять [контекстный пакет](claude_context_bundle.md) или
+[промпт по фронтенду](claude_frontend_prompt.md) и сгенерировать три варианта
+фронтенда:
 
-1. Conservative Manufacturer.
-2. Product-Led Catalog.
-3. Expert Technology Platform.
+1. Консервативный производитель.
+2. Каталог во главе.
+3. Экспертная технологическая платформа.
 
-Then choose one variant for implementation after NN answers the pending quiz.
+Затем выбрать один вариант в реализацию — после того как НН ответит на
+оставшиеся вопросы.

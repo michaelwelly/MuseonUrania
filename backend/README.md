@@ -1,5 +1,7 @@
 # Backend
 
+**Русский** · [English](README.en.md)
+
 Серверная часть VEDAL Portal. Java + Spring.
 
 Состав модулей выведен из [брифа собственника](../docs/architecture/vedal_portal_owner_brief.md):

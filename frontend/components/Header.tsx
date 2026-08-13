@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { nav, topbar, headerCta, site } from "@/content/site";
+import AnimatedLogo from "@/components/AnimatedLogo";
+import { nav, headerCta, site } from "@/content/site";
 import styles from "./Header.module.css";
 
 // Клиентский компонент: нужен активный пункт по текущему маршруту и состояние
@@ -33,32 +33,10 @@ export default function Header() {
 
   return (
     <header className={styles.header}>
-      <div className={styles.topbar}>
-        <span className={styles.topbarNote}>
-          {/* Пульс «на связи» — тот же ритм, что у статуса Урании. */}
-          <span className={styles.dot} data-anim="dot" aria-hidden="true" />
-          {topbar.note}
-        </span>
-        <span className={styles.topbarShort}>{topbar.noteShort}</span>
-        <div className={styles.topbarLinks}>
-          {topbar.links.map((link, i) => (
-            <span key={link.href} style={{ display: "contents" }}>
-              {i > 0 && <span className={styles.sep} aria-hidden="true" />}
-              <Link href={link.href}>{link.label}</Link>
-            </span>
-          ))}
-        </div>
-      </div>
-
       <div className={styles.bar}>
         <Link href="/" className={styles.brand} aria-label={`${site.brand}, на главную`}>
-          <Image
-            src={site.logo.src}
-            alt={site.brand}
-            width={site.logo.width}
-            height={site.logo.height}
-            priority
-          />
+          {/* 42 — та же высота, что была у статичного знака в .brand img. */}
+          <AnimatedLogo height={42} />
         </Link>
 
         <nav className={styles.nav} aria-label="Основная навигация">
