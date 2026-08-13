@@ -1,5 +1,6 @@
 package ru.vedal.portal.iam;
 
+import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
@@ -59,6 +60,15 @@ public class SecurityConfig {
                 // доходит очередь, и браузер видит отказ вместо заголовков.
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
+                        // Разбор ошибки идёт отдельной диспетчеризацией на /error,
+                        // и без этого правила она упирается в denyAll. Публичная
+                        // дверь на битый JSON отвечала редиректом на форму входа
+                        // вместо 400: сайт показывал посетителю страницу входа
+                        // в админку, а разработчик искал причину в CORS.
+                        //
+                        // Разрешена именно диспетчеризация, а не путь: прямой
+                        // запрос на /error остаётся закрытым.
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers("/api/public/**", "/api/forms/**", "/api/assistant/**",
                                 "/actuator/health", "/login").permitAll()
                         // Спецификация и Swagger UI. Открыты не потому, что их
