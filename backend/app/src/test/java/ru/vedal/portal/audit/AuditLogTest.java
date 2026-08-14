@@ -49,4 +49,13 @@ class AuditLogTest extends PostgresTestBase {
         assertThatThrownBy(() -> jdbc.sql("delete from audit_entry").update())
                 .hasMessageContaining("append-only");
     }
+
+    // Третий способ стереть журнал — стереть его целиком. До V15 он был открыт:
+    // в документах было записано, что statement-триггер на TRUNCATE не
+    // срабатывает, и это оказалось неверно.
+    @Test
+    void journalRejectsTruncate() {
+        assertThatThrownBy(() -> jdbc.sql("truncate audit_entry").update())
+                .hasMessageContaining("append-only");
+    }
 }
