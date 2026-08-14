@@ -641,8 +641,8 @@ upon request; infrastructure in Russia.
 
 ### 6.1 Backend — working
 
-136 Java files in the portal and 2 in the gateway, 24 test classes (159 portal
-tests, 4 gateway tests, all green; plus 56 frontend tests), 15 Flyway migrations,
+136 Java files in the portal and 2 in the gateway, 24 test classes (164 portal
+tests, 4 gateway tests, all green; plus 57 frontend tests), 15 Flyway migrations,
 18 controllers, 12 catalog items in the seed, 5 categories. The coverage gate is
 70% of instructions and 45% of branches against 72% and 47% achieved.
 Spring Boot 4.1.0 on Spring Framework 7, Java 25, Jackson 3,
