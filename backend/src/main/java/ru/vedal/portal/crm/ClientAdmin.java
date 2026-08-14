@@ -78,16 +78,21 @@ public interface ClientAdmin {
             @Pattern(regexp = "^$|^\\d{9}$", message = "КПП — 9 цифр")
             String kpp,
 
+            @Schema(description = "Идентификатор контрагента во внешней системе, под будущий "
+                    + "обмен с 1С.", nullable = true)
             @Size(max = 200) String externalId,
-            @Size(max = 100) String country,
-            @Size(max = 200) String city,
 
-            @Schema(description = "Почта для переписки.", nullable = true)
+            @Schema(example = "Россия") @Size(max = 100) String country,
+            @Schema(example = "Екатеринбург") @Size(max = 200) String city,
+
+            @Schema(description = "Почта для переписки.", example = "info@example.ru",
+                    nullable = true)
             @Email(message = "Проверьте адрес почты")
             String email,
 
-            @Size(max = 100) String phone,
-            String note,
+            @Schema(example = "+7 343 300-00-00") @Size(max = 100) String phone,
+
+            @Schema(description = "Заметка менеджера.", nullable = true) String note,
 
             @Schema(description = "Логин ответственного. Пусто — снять ответственного.",
                     nullable = true)
