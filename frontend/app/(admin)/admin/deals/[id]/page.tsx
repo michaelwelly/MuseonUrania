@@ -26,12 +26,6 @@ import { Field, Note, day, fieldErrors, isConflict, message, money, useLoad, whe
 // это и есть отдельное действие: правка опечатки в названии не должна
 // заодно закрывать сделку.
 
-// Чем воронка заканчивается неудачей. Список продублирован из домена ради
-// одного: показать поле причины до нажатия, а не после отказа. Решает
-// всё равно портал — он откажет в переводе без причины, даже если здесь
-// ошибиться.
-const LOST_STAGES = new Set(["lost", "declined"]);
-
 const QUOTE_STATUS: Record<string, string> = {
   draft: "черновик",
   sent: "отправлено",
@@ -185,7 +179,10 @@ function StageBlock({
   const [reason, setReason] = useState(deal.lostReason ?? "");
   const [moving, setMoving] = useState(false);
 
-  const losing = LOST_STAGES.has(stage);
+  // Какая стадия проигрышная — правило домена, и приезжает оно в карточке.
+  // Свой список здесь показывал бы поле причины по догадке и разъехался бы
+  // с порталом молча: отказ-то придёт, но уже после нажатия.
+  const losing = deal.lostStages.includes(stage);
 
   async function move() {
     setMoving(true);
