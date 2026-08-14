@@ -78,4 +78,46 @@ class PipelinesTest {
     void wonAndLostStageNamesDoNotOverlap() {
         assertThat(Pipelines.wonStages()).doesNotContainAnyElementsOf(Pipelines.lostStages());
     }
+
+    // Исходы каждой воронки называются по отдельности: это то, что уезжает
+    // в справочник воронок и в карточку сделки, и по чему форма решает,
+    // спрашивать ли причину проигрыша.
+    @Test
+    void everyPipelineNamesItsOwnOutcomes() {
+        assertThat(Pipelines.wonStages("sales")).containsExactly("won");
+        assertThat(Pipelines.lostStages("sales")).containsExactly("lost");
+        assertThat(Pipelines.wonStages("dealer")).containsExactly("active");
+        assertThat(Pipelines.lostStages("dealer")).containsExactly("declined");
+        assertThat(Pipelines.wonStages("service")).containsExactly("closed");
+        assertThat(Pipelines.lostStages("service")).containsExactly("declined");
+    }
+
+    // Чужой исход в списке — это стадия, которую форма предложит, а портал
+    // и ограничение схемы тут же откажутся принять: «active» есть в дилерской
+    // воронке и не значит ничего в продажах.
+    @Test
+    void outcomesOfAPipelineAreStagesOfThatPipeline() {
+        for (var pipeline : Pipelines.all()) {
+            assertThat(Pipelines.stages(pipeline)).as(pipeline)
+                    .containsAll(Pipelines.wonStages(pipeline))
+                    .containsAll(Pipelines.lostStages(pipeline));
+        }
+    }
+
+    // Воронка без исхода — сделка, которую нельзя ни закрыть, ни проиграть:
+    // она навсегда останется в отчёте открытой.
+    @Test
+    void everyPipelineCanBeBothWonAndLost() {
+        for (var pipeline : Pipelines.all()) {
+            assertThat(Pipelines.wonStages(pipeline)).as(pipeline).isNotEmpty();
+            assertThat(Pipelines.lostStages(pipeline)).as(pipeline).isNotEmpty();
+        }
+    }
+
+    @Test
+    void outcomesOfAnUnknownPipelineAreRefused() {
+        assertThatThrownBy(() -> Pipelines.lostStages("marketing"))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("Неизвестная воронка");
+    }
 }

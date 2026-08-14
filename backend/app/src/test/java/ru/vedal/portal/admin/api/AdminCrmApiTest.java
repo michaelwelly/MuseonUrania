@@ -77,7 +77,16 @@ class AdminCrmApiTest extends PostgresTestBase {
         mvc.perform(get("/api/admin/v1/deals/pipelines"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.pipeline == 'sales')].stages[4]").value("lost"))
-                .andExpect(jsonPath("$[?(@.pipeline == 'service')].stages[1]").value("diagnostics"));
+                .andExpect(jsonPath("$[?(@.pipeline == 'service')].stages[1]").value("diagnostics"))
+                // Чем воронка заканчивается, справочник говорит сам: список
+                // исходов, переписанный в форму, разъедется с доменом молча.
+                .andExpect(jsonPath("$[?(@.pipeline == 'sales')].wonStages[0]").value("won"))
+                .andExpect(jsonPath("$[?(@.pipeline == 'sales')].lostStages[0]").value("lost"))
+                .andExpect(jsonPath("$[?(@.pipeline == 'dealer')].wonStages[0]").value("active"))
+                .andExpect(jsonPath("$[?(@.pipeline == 'service')].lostStages[0]").value("declined"))
+                // Чужой исход в списке — стадия, которую форма предложит,
+                // а портал и ограничение схемы тут же откажутся принять.
+                .andExpect(jsonPath("$[?(@.pipeline == 'sales')].wonStages[1]").doesNotExist());
     }
 
     // Заявка разбирается в клиента и сделку. Карточка клиента заводится
@@ -196,6 +205,24 @@ class AdminCrmApiTest extends PostgresTestBase {
                         .content("{\"stage\":\"qualified\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.closedAt").doesNotExist());
+    }
+
+    // Причину проигрыша форма спрашивает до нажатия, а не после отказа —
+    // значит, ей надо знать, какая стадия проигрышная. Знание приезжает
+    // в карточке вместе со списком стадий: у сервисной воронки исходы
+    // зовутся иначе, чем у продаж, и переписанный в интерфейс список
+    // ошибся бы ровно здесь.
+    @Test
+    @WithMockUser(username = "manager", roles = "PORTAL_ADMIN")
+    void dealCardNamesTheStagesThatEndItsPipeline() throws Exception {
+        var dealId = dealFromLead("crm-stage-outcomes", "service");
+
+        mvc.perform(get("/api/admin/v1/deals/" + dealId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.wonStages")
+                        .value(org.hamcrest.Matchers.contains("closed")))
+                .andExpect(jsonPath("$.lostStages")
+                        .value(org.hamcrest.Matchers.contains("declined")));
     }
 
     @Test

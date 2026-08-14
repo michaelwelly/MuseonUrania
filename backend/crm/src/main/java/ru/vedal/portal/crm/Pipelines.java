@@ -83,6 +83,24 @@ public final class Pipelines {
         return isWon(stage) || isLost(stage);
     }
 
+    /** Стадии этой воронки, которыми она заканчивается успехом. */
+    public static List<String> wonStages(String pipeline) {
+        return outcomes(pipeline, WON);
+    }
+
+    /** Стадии этой воронки, которыми она заканчивается отказом. */
+    public static List<String> lostStages(String pipeline) {
+        return outcomes(pipeline, LOST);
+    }
+
+    // Пересечение с набором стадий воронки, а не весь WON или LOST целиком:
+    // «active» — успех дилерской воронки, и в продажах такой стадии нет вовсе.
+    // Отдать наружу весь набор значит предложить форме стадию, которую портал
+    // тут же откажется принять.
+    private static List<String> outcomes(String pipeline, Set<String> names) {
+        return stages(pipeline).stream().filter(names::contains).toList();
+    }
+
     static Set<String> wonStages() {
         return WON;
     }
