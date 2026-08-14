@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.vedal.portal.audit.AuditLog;
 import ru.vedal.portal.common.CorrelationId;
 import ru.vedal.portal.common.DomainEvents;
+import ru.vedal.portal.common.KafkaTopics;
 
 import java.time.Instant;
 import java.util.Map;
@@ -51,6 +52,10 @@ public class LeadService implements LeadIntake, LeadContacts {
         lead.setConsentVersion(consentVersion);
         lead.setConsentAt(Instant.now());
         lead.setSource(draft.source());
+        // Язык приводим к нижнему регистру: `RU` с одной страницы и `ru`
+        // с другой развалили бы разрез по языку на две строки.
+        lead.setLanguage(lower(blankToNull(draft.language())));
+        lead.setCampaign(blankToNull(draft.campaign()));
         // Черновик, а не готовый лид: доступа к закрытым данным у него нет,
         // менеджер поднимает статус вручную.
         lead.setStatus("draft");
@@ -69,7 +74,7 @@ public class LeadService implements LeadIntake, LeadContacts {
 
         // Событие и строка заявки коммитятся одним COMMIT: между INSERT и
         // отправкой не должно быть щели, в которую проваливается заявка.
-        events.record("lead", lead.getId().toString(), "vedal.leads.v1",
+        events.record("lead", lead.getId().toString(), KafkaTopics.LEADS,
                 Map.of("form", lead.getForm(), "source", lead.getSource()));
 
         // В журнал — без персональных данных: только факт, форма и идентификатор.
@@ -88,5 +93,9 @@ public class LeadService implements LeadIntake, LeadContacts {
 
     private static String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value;
+    }
+
+    private static String lower(String value) {
+        return value == null ? null : value.toLowerCase(java.util.Locale.ROOT);
     }
 }

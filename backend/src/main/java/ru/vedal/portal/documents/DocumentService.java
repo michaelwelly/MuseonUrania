@@ -7,8 +7,11 @@ import ru.vedal.portal.common.NotFoundException;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class DocumentService implements DocumentQuery {
@@ -34,6 +37,23 @@ public class DocumentService implements DocumentQuery {
                         d.getProductSlug(), d.getAccess(), d.isPublished(),
                         d.isPublished() ? "/api/public/v1/documents/" + d.getSlug() + "/file" : null))
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Ref> ref(UUID id) {
+        return documents.findById(id).map(DocumentService::ref);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Ref> refs(Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty()) return List.of();
+        return documents.findAllById(ids).stream().map(DocumentService::ref).toList();
+    }
+
+    private static Ref ref(Document d) {
+        return new Ref(d.getId(), d.getSlug(), d.getTitle(), d.isPublished());
     }
 
     @Override

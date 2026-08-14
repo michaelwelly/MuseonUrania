@@ -35,6 +35,13 @@ public class Lead {
     private Instant consentAt;
 
     private String source;
+
+    // Атрибуция: язык страницы и кампания, с которой пришёл посетитель.
+    // Свойство того, откуда человек пришёл, — поэтому здесь, а не в сделке.
+    // Без них два из четырёх разрезов аналитики посчитать нечем.
+    private String language;
+    private String campaign;
+
     private String status;
     private String owner;
 
@@ -69,6 +76,10 @@ public class Lead {
     public void setConsentAt(Instant consentAt) { this.consentAt = consentAt; }
     public String getSource() { return source; }
     public void setSource(String source) { this.source = source; }
+    public String getLanguage() { return language; }
+    public void setLanguage(String language) { this.language = language; }
+    public String getCampaign() { return campaign; }
+    public void setCampaign(String campaign) { this.campaign = campaign; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public String getOwner() { return owner; }

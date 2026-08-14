@@ -105,7 +105,7 @@ class LeadNotificationTest extends PostgresTestBase {
     private void accept(String key) {
         intake.accept(new LeadIntake.Draft("service", "Пётр Смирнов", null,
                 "+7 343 555-33-22", "client@example.ru", "vedal-a-2000",
-                "Нужен сервисный выезд по инкубатору.", "site"), key);
+                "Нужен сервисный выезд по инкубатору.", "site", "ru", null), key);
     }
 
     private void clean() {
