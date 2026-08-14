@@ -173,7 +173,7 @@ export default function Home() {
           />
         </div>
         <div className={styles.splitCopy} data-reveal="1">
-          <p className={styles.eyebrow}>{productionBlock.eyebrow}</p>
+          <p className={`${styles.eyebrow} ${styles.eyebrowLight}`}>{productionBlock.eyebrow}</p>
           <h2 className={styles.splitTitle} data-words="30">
             {productionBlock.title}
           </h2>
@@ -186,8 +186,11 @@ export default function Home() {
               </li>
             ))}
           </ul>
+          {/* Тёмная кнопка, а не призрачная: на светлом фоне белая рамка
+              с белым текстом не видна вовсе. Та же пара, что у блока
+              документов ниже, — соседние светлые полосы держат один приём. */}
           <Link
-            className={`${styles.btn} ${styles.btnGhost} ${styles.ghostWide}`}
+            className={`${styles.btn} ${styles.btnDark} ${styles.ghostWide}`}
             href={productionBlock.cta.href}
           >
             {productionBlock.cta.label}

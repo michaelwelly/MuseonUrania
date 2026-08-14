@@ -328,10 +328,20 @@
 }
 
 /* ---------- производство ---------- */
+/* Разворот о производстве стоит на светлом.
+   Тёмных полос на главной было четыре из девяти — 51% высоты, и ощущение
+   «мрачно» бралось не с оттенка, а с количества. Эта полоса — единственная
+   из четырёх, которой темнота ничего не даёт: у первого экрана на ней стоит
+   контраст, у призыва — акцент, подвал тёмный везде, а здесь тёмное просто
+   тянулось шестьсот пикселей посреди страницы. */
 .split {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  background: var(--deep);
+  background: var(--soft);
+  /* Секция «изделия» над разворотом того же тона: без этой линии тысяча
+     триста пикселей читаются как одна полоса, и граница между двумя разными
+     разговорами пропадает. Раньше её держал перепад со светлого на тёмное. */
+  border-top: 1px solid var(--line);
 }
 
 .splitPhoto {
@@ -357,7 +367,7 @@
   font-size: 38px;
   line-height: 1.08;
   letter-spacing: -0.03em;
-  color: #fff;
+  color: var(--ink);
 }
 
 .splitText {
@@ -365,7 +375,7 @@
   max-width: 46ch;
   font-size: 16.5px;
   line-height: 1.6;
-  color: var(--on-dark-lead);
+  color: var(--muted);
 }
 
 .facts {
@@ -378,17 +388,17 @@
   justify-content: space-between;
   gap: 20px;
   padding: 16px 0;
-  border-top: 1px solid var(--on-dark-line);
+  border-top: 1px solid var(--line);
   font-size: 14.5px;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--ink);
 }
 
 .fact:last-child {
-  border-bottom: 1px solid var(--on-dark-line);
+  border-bottom: 1px solid var(--line);
 }
 
 .factValue {
-  color: var(--on-dark-3);
+  color: var(--muted);
 }
 
 .ghostWide {
