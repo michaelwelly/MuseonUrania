@@ -414,7 +414,7 @@ The catalog is filled by the `V2__catalog_seed.sql` migration, which is
 **generated** from `frontend/content/products.ts` rather than written by hand:
 
 ```bash
-node backend/tools/seed-catalog.mjs > backend/src/main/resources/db/migration/V2__catalog_seed.sql
+node backend/tools/seed-catalog.mjs > backend/app/src/main/resources/db/migration/V2__catalog_seed.sql
 ```
 
 Editing `V2` by hand is pointless — regenerate and commit it again.

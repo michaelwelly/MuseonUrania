@@ -294,7 +294,7 @@ The catalog is filled by the `V2__catalog_seed.sql` migration, which is
 **generated** rather than written by hand:
 
 ```
-node backend/tools/seed-catalog.mjs > backend/src/main/resources/db/migration/V2__catalog_seed.sql
+node backend/tools/seed-catalog.mjs > backend/app/src/main/resources/db/migration/V2__catalog_seed.sql
 ```
 
 The source is `frontend/content/products.ts`. Editing `V2` by hand is pointless:

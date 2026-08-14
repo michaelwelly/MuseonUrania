@@ -283,7 +283,7 @@ VEDAL_ADMIN_USER=editor VEDAL_ADMIN_PASSWORD=<пароль> ./mvnw spring-boot:r
 а не пишется руками:
 
 ```
-node backend/tools/seed-catalog.mjs > backend/src/main/resources/db/migration/V2__catalog_seed.sql
+node backend/tools/seed-catalog.mjs > backend/app/src/main/resources/db/migration/V2__catalog_seed.sql
 ```
 
 Источник — `frontend/content/products.ts`. Править `V2` вручную бессмысленно:
