@@ -14,3 +14,15 @@ sales, service, manufacturing, engineering, management, marketing.
 
 The identity provider itself is bought, not written. What lives here is the role
 model, permission checks and the link between an account and an employee.
+
+## Build module
+
+`portal-iam` is a Maven module with its own `pom.xml` and its own `src/`.
+It depends on: nothing.
+
+External: Spring Security and the resource server.
+
+The boundary is enforced by the build rather than by discipline: importing
+from a module that is not among the dependencies fails compilation. Previously
+all the code sat in one heap under `backend/src/`, and the boundaries held
+only as long as someone was paying attention.

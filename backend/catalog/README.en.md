@@ -14,3 +14,13 @@ are published exactly as approved — see [HANDOFF.en.md](../../HANDOFF.en.md).
 
 For now the same data is hardcoded in the frontend
 (`frontend/content/products.ts`). This module replaces it.
+
+## Build module
+
+`portal-catalog` is a Maven module with its own `pom.xml` and its own `src/`.
+It depends on: `common`, `audit`.
+
+The boundary is enforced by the build rather than by discipline: importing
+from a module that is not among the dependencies fails compilation. Previously
+all the code sat in one heap under `backend/src/`, and the boundaries held
+only as long as someone was paying attention.

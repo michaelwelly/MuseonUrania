@@ -109,11 +109,15 @@ MuseonUrania/
 │  ├─ lib/admin.ts          admin API: browser only, token only
 │  ├─ lib/auth.ts           Keycloak sign-in, authorization code with PKCE
 │  └─ Dockerfile            pages are built when the container starts, not the image
-├─ backend/                 a Spring Boot application and a separate gateway, one database
-│  ├─ src/main/java/ru/vedal/portal/<module>/   ← all the portal code lives here
-│  ├─ src/main/resources/db/migration/          ← Flyway, the single source of the schema
-│  ├─ <module>/README.md    ← folders documenting module boundaries, no code inside
-│  ├─ api-gateway/          a separate application: the single entry point
+├─ backend/                 a 12-module Maven reactor + a separate gateway, one database
+│  ├─ pom.xml               the reactor root: the module list and shared versions
+│  ├─ <module>/pom.xml      ← each has its own pom: dependencies declared and checked
+│  ├─ <module>/src/main/java/ru/vedal/portal/<module>/  ← the module's code
+│  ├─ <module>/README.md    ← purpose, boundaries, what it depends on
+│  ├─ app/                  the only module that becomes an application: entry point,
+│  │                        configuration, the Flyway schema, application tests
+│  ├─ app/src/main/resources/db/migration/   ← Flyway, the single source of the schema
+│  ├─ api-gateway/          a separate application outside the reactor: the single entry point
 │  ├─ keycloak/             the local stack's realm + a README on the two addresses
 │  ├─ debezium/             the outbox → Kafka connector + the settings walkthrough
 │  ├─ tools/seed-catalog.mjs   generator for the V2 migration from frontend/content/products.ts
@@ -136,11 +140,19 @@ MuseonUrania/
 ```
 
 **Important about the backend layout.** The folders `backend/crm/`,
-`backend/iam/` and the rest are **not** Maven modules and contain no code. They
-document boundaries. The code lives in the standard layout:
-`backend/src/main/java/ru/vedal/portal/<module>/`.
+`backend/iam/` and the rest are **real Maven modules**: their own `pom.xml`,
+their own `src/`, their own README. Until 14 August 2026 they merely documented
+boundaries while the code sat in one heap under `backend/src/`; the boundaries
+rested on attentiveness and the build knew nothing about them.
 
-Eleven modules:
+It knows now. A module reaching into a neighbour's guts fails compilation — not
+review, but `mvnw`. The formula is the one the client asked for: "like
+microservices, but like a monolith". The boundary lives in the build, the
+process stays single, and the transactional outbox is intact: the entity row and
+the event row commit in one `COMMIT`, because the database and the transaction
+are shared.
+
+Eleven modules plus `app`, which assembles them:
 
 | Module | Responsibility |
 | --- | --- |
@@ -164,6 +176,26 @@ pilot).
 interface. `crm` knows `CatalogQuery`, not the internals of `catalog`. This is the
 price for being able to extract a module into a separate service without
 untangling a knot.
+
+Half of that rule is now checked by the build: what is absent from a module's
+`pom.xml` is invisible to it. The other half — "only the interface" — still rests
+on people: `gateway` declares a dependency on the whole of `crm` and could reach
+`LeadRepository`. Separating that fully would mean splitting every module into
+`-api` and an implementation; deliberately not done yet — twenty-two artifacts
+instead of twelve for a rule nobody has broken.
+
+The dependency graph is a DAG without a single cycle:
+
+```
+common, iam → (никого)
+audit → common
+catalog, content, documents → common, audit
+crm → common, audit, documents
+gateway, notifications → common, crm
+assistant → common, audit, catalog, content, documents
+admin → common, audit, catalog, content, crm, documents
+app → всё вышеперечисленное
+```
 
 ---
 

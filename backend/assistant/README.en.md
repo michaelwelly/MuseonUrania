@@ -45,3 +45,17 @@ the port, so changing the implementation does not touch them.
 
 The log records the outcome of a request and the number of sources, **without the
 text of the question**: a visitor may name both a clinic and themselves in it.
+
+## Build module
+
+`portal-assistant` is a Maven module with its own `pom.xml` and its own `src/`.
+It depends on: `common`, `audit`, `catalog`, `content`, `documents`.
+
+Only the neighbours' query interfaces — `CatalogQuery`, `ContentQuery`,
+`DocumentQuery`. They return published material only, which is why closed
+materials are physically unreachable for Urania.
+
+The boundary is enforced by the build rather than by discipline: importing
+from a module that is not among the dependencies fails compilation. Previously
+all the code sat in one heap under `backend/src/`, and the boundaries held
+only as long as someone was paying attention.

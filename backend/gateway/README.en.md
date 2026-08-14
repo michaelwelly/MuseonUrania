@@ -23,3 +23,16 @@ quote, catalog, consultation, service, partnership.
 
 The frontend forms are already built but have nowhere to send to —
 `frontend/components/LeadForm.tsx` is waiting for this module.
+
+## Build module
+
+`portal-gateway` is a Maven module with its own `pom.xml` and its own `src/`.
+It depends on: `common`, `crm`.
+
+The dependency on `crm` is `LeadIntake` and nothing else: the door sees
+neither the lead entity nor its repository.
+
+The boundary is enforced by the build rather than by discipline: importing
+from a module that is not among the dependencies fails compilation. Previously
+all the code sat in one heap under `backend/src/`, and the boundaries held
+only as long as someone was paying attention.
