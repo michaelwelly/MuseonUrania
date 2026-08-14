@@ -42,6 +42,14 @@ public interface DealAdmin {
                             + "из них, а не свободное поле.")
                     List<String> stages,
 
+                    @Schema(description = "Стадии, которыми эта воронка заканчивается успехом.")
+                    List<String> wonStages,
+
+                    @Schema(description = "Стадии, которыми эта воронка заканчивается отказом. "
+                            + "Перевод в такую стадию требует причины проигрыша: форма "
+                            + "спрашивает её до нажатия, а не после отказа.")
+                    List<String> lostStages,
+
                     BigDecimal amount, String currency, String productSlug, String owner,
                     Instant closedAt, String lostReason,
                     List<AttachmentView> attachments,
@@ -139,7 +147,17 @@ public interface DealAdmin {
             @Schema(requiredMode = Schema.RequiredMode.REQUIRED) UUID documentId) {}
 
     /** Воронки и их стадии — чтобы форма нарисовала выбор. */
-    record PipelineView(String pipeline, List<String> stages) {}
+    record PipelineView(String pipeline, List<String> stages,
+
+                        @Schema(description = "Стадии, которыми эта воронка заканчивается "
+                                + "успехом.")
+                        List<String> wonStages,
+
+                        @Schema(description = "Стадии, которыми она заканчивается отказом. "
+                                + "Чем воронка кончается — правило домена, и форма берёт его "
+                                + "отсюда: список, переписанный в интерфейс, разъезжается "
+                                + "с доменом на первой же новой воронке.")
+                        List<String> lostStages) {}
 
     List<PipelineView> pipelines();
 

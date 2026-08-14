@@ -65,9 +65,7 @@ public class DealDesk implements DealAdmin {
 
     @Override
     public List<PipelineView> pipelines() {
-        return Pipelines.all().stream()
-                .map(p -> new PipelineView(p, Pipelines.stages(p)))
-                .toList();
+        return Pipelines.all().stream().map(DealDesk::pipelineView).toList();
     }
 
     @Override
@@ -316,11 +314,22 @@ public class DealDesk implements DealAdmin {
                 .collect(Collectors.toMap(Client::getId, Client::getName));
     }
 
+    // Чем воронка заканчивается — правило домена, и уезжает оно вместе
+    // со списком стадий: и в справочник воронок, и в карточку. Иначе
+    // форма, которой надо спросить причину проигрыша до нажатия, вынуждена
+    // держать свой список исходов, а он разъезжается с доменом молча.
+    private static PipelineView pipelineView(String pipeline) {
+        return new PipelineView(pipeline, Pipelines.stages(pipeline),
+                Pipelines.wonStages(pipeline), Pipelines.lostStages(pipeline));
+    }
+
     private DealView view(Deal d) {
         var client = clients.findById(d.getClientId()).orElse(null);
+        var pipeline = pipelineView(d.getPipeline());
         return new DealView(d.getId(), d.getVersion(), d.getClientId(),
                 client == null ? null : client.getName(), d.getLeadId(), d.getPipeline(),
-                d.getTitle(), d.getStage(), Pipelines.stages(d.getPipeline()), d.getAmount(),
+                d.getTitle(), d.getStage(), pipeline.stages(), pipeline.wonStages(),
+                pipeline.lostStages(), d.getAmount(),
                 d.getCurrency(), d.getProductSlug(), d.getOwner(), d.getClosedAt(),
                 d.getLostReason(), attachments(d), d.getCreatedAt(), d.getUpdatedAt());
     }
