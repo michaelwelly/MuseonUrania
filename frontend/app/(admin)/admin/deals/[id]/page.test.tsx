@@ -7,9 +7,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 //
 // 1. перевод в проигранную стадию без причины — воронка, показывающая,
 //    сколько потеряли, и молчащая о том, почему;
-// 2. версия карточки после сохранения — с прошлой версией второе сохранение
+// 2. какая стадия проигрышная — по карточке, а не по списку в интерфейсе:
+//    свой список разъезжается с доменом молча;
+// 3. версия карточки после сохранения — с прошлой версией второе сохранение
 //    подряд получает 409, хотя никто, кроме этого редактора, не правил;
-// 3. отказ по версии — редактору надо сказать «перечитайте», а не «повторите».
+// 4. отказ по версии — редактору надо сказать «перечитайте», а не «повторите».
 
 const mocks = vi.hoisted(() => {
   class AdminError extends Error {
@@ -63,6 +65,8 @@ function deal(overrides: Record<string, unknown> = {}) {
     title: "Поставка двух систем VEDAL R2",
     stage: "qualified",
     stages: ["new", "qualified", "quoted", "won", "lost"],
+    wonStages: ["won"],
+    lostStages: ["lost"],
     amount: 2650000,
     currency: "RUB",
     productSlug: "vedal-r1-r2",
@@ -137,6 +141,35 @@ describe("карточка сделки", () => {
 
     await waitFor(() => expect(mocks.moveDeal).toHaveBeenCalled());
     expect(mocks.moveDeal.mock.calls[0]).toEqual(["deal-1", "won", null]);
+  });
+
+  // Исходы у трёх воронок зовутся по-разному, а четвёртая — правка домена,
+  // а не интерфейса. Карточка сама говорит, чем её воронка заканчивается;
+  // список, переписанный сюда, промолчал бы на незнакомой стадии и отдал
+  // перевод без причины порталу — тот откажет, но уже после нажатия.
+  it("спрашивает причину по исходам из карточки, а не по своему списку", async () => {
+    const user = userEvent.setup();
+    mocks.deal.mockResolvedValue(
+      deal({
+        pipeline: "tender",
+        stage: "new",
+        stages: ["new", "submitted", "awarded", "cancelled"],
+        wonStages: ["awarded"],
+        lostStages: ["cancelled"],
+      }),
+    );
+    await open();
+
+    await screen.findByDisplayValue("Поставка двух систем VEDAL R2");
+    const move = screen.getByRole("button", { name: "Перевести" });
+
+    await user.selectOptions(screen.getByLabelText("Стадия"), "cancelled");
+    expect(screen.getByLabelText(/Причина проигрыша/)).toBeInTheDocument();
+    expect(move).toBeDisabled();
+
+    await user.selectOptions(screen.getByLabelText("Стадия"), "awarded");
+    expect(screen.queryByLabelText(/Причина проигрыша/)).not.toBeInTheDocument();
+    expect(move).toBeEnabled();
   });
 
   it("второе сохранение подряд уходит с версией из ответа портала", async () => {

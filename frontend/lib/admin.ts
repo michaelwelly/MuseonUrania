@@ -377,7 +377,14 @@ export const updateClient = (id: string, form: ClientForm) =>
 
 // ————— сделки —————
 
-export type Pipeline = { pipeline: string; stages: string[] };
+export type Pipeline = {
+  pipeline: string;
+  stages: string[];
+  /** Стадии, которыми эта воронка заканчивается успехом. */
+  wonStages: string[];
+  /** Стадии, которыми она заканчивается отказом: перевод в такую требует причины. */
+  lostStages: string[];
+};
 
 export type DealRow = {
   id: string;
@@ -414,6 +421,10 @@ export type Deal = {
   stage: string;
   /** Стадии этой воронки по порядку: форма рисует выбор из них. */
   stages: string[];
+  /** Стадии, которыми эта воронка заканчивается успехом. */
+  wonStages: string[];
+  /** Стадии, которыми она заканчивается отказом: перевод в такую требует причины. */
+  lostStages: string[];
   amount: number | null;
   currency: string;
   productSlug: string | null;
