@@ -25,11 +25,28 @@ public interface LeadAdmin {
             """)
     record LeadRow(UUID id, String form, String name, String company, String phone, String email,
                    String productSlug, String source, String status, String owner,
+
+                   @Schema(description = "Сделка, в которую разобрана заявка. Пусто — заявка "
+                           + "ещё не разобрана.", nullable = true)
+                   UUID dealId,
+
                    Instant createdAt) {}
 
     @Schema(name = "AdminLead", description = "Заявка целиком, вместе с текстом и согласием.")
     record LeadView(UUID id, String form, String name, String company, String phone, String email,
                     String productSlug, String message, String source, String status, String owner,
+
+                    @Schema(description = "Язык страницы, с которой отправлена заявка. "
+                            + "Разрез аналитики.", example = "ru", nullable = true)
+                    String language,
+
+                    @Schema(description = "Кампания, приведшая посетителя. Разрез аналитики.",
+                            nullable = true)
+                    String campaign,
+
+                    @Schema(description = "Сделка, в которую разобрана заявка.", nullable = true)
+                    UUID dealId,
+
                     @Schema(description = "Версия текста согласия, с которым человек согласился. "
                             + "Хранится версия, а не галочка: через год иначе не доказать, "
                             + "с чем именно он согласился.")

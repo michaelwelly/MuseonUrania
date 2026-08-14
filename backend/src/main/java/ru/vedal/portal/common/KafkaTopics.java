@@ -26,11 +26,15 @@ import java.util.stream.Stream;
 public class KafkaTopics {
 
     public static final String LEADS = "vedal.leads.v1";
+    // Сделки и коммерческие предложения. Отдельно от заявок: у них разный
+    // жизненный цикл и разные потребители — заявка порождает письмо клиенту,
+    // сделка живёт неделями и интересна отчётности.
+    public static final String DEALS = "vedal.deals.v1";
     public static final String DOCUMENTS = "vedal.documents.v1";
     public static final String NOTIFICATIONS = "vedal.notifications.v1";
     public static final String AUDIT = "vedal.audit.v1";
 
-    static final List<String> ALL = List.of(LEADS, DOCUMENTS, NOTIFICATIONS, AUDIT);
+    static final List<String> ALL = List.of(LEADS, DEALS, DOCUMENTS, NOTIFICATIONS, AUDIT);
 
     // Необработанное после ретраев уходит сюда и разбирается руками: иначе
     // один битый payload останавливает конвейер, и за ним встают все заявки.

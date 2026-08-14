@@ -1,10 +1,21 @@
 package ru.vedal.portal;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
-class PortalApplicationTests {
+// Наследуется от PostgresTestBase, как и все остальные тесты, и это не
+// косметика.
+//
+// Без базового класса у этого теста нет контейнера, и Spring поднимает
+// контекст на spring.datasource.url — то есть на базе разработки машины,
+// где его запустили. Следствия: прогон тестов молча накатывает миграции
+// на живую базу; правка ещё не выпущенной миграции ломает сборку
+// расхождением контрольной суммы; а на машине без локального PostgreSQL
+// тест падает подключением, хотя Docker запущен и все остальные тесты
+// зелёные.
+//
+// Заодно контекст здесь тот же, что у соседей, и переиспользуется из кэша
+// вместо второго подъёма приложения.
+class PortalApplicationTests extends PostgresTestBase {
 
 	@Test
 	void contextLoads() {

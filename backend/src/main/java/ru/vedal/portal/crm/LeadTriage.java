@@ -10,6 +10,7 @@ import ru.vedal.portal.common.PageView;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class LeadTriage implements LeadAdmin {
@@ -19,10 +20,12 @@ public class LeadTriage implements LeadAdmin {
     private static final int MAX_PAGE_SIZE = 200;
 
     private final LeadRepository leads;
+    private final DealRepository deals;
     private final AuditLog audit;
 
-    public LeadTriage(LeadRepository leads, AuditLog audit) {
+    public LeadTriage(LeadRepository leads, DealRepository deals, AuditLog audit) {
         this.leads = leads;
+        this.deals = deals;
         this.audit = audit;
     }
 
@@ -33,7 +36,15 @@ public class LeadTriage implements LeadAdmin {
         var found = status == null || status.isBlank()
                 ? leads.findAllByOrderByCreatedAtDesc(pageable)
                 : leads.findByStatusOrderByCreatedAtDesc(status, pageable);
-        return PageView.of(found, LeadTriage::row);
+
+        // Какие заявки уже разобраны — одним запросом на страницу. Спрашивать
+        // по строке значит превратить список из пятидесяти заявок
+        // в пятьдесят с лишним обращений в базу.
+        var ids = found.getContent().stream().map(Lead::getId).toList();
+        var byLead = ids.isEmpty() ? Map.<UUID, UUID>of() : deals.findByLeadIdIn(ids).stream()
+                .collect(Collectors.toMap(Deal::getLeadId, Deal::getId));
+
+        return PageView.of(found, l -> row(l, byLead.get(l.getId())));
     }
 
     @Override
@@ -65,16 +76,18 @@ public class LeadTriage implements LeadAdmin {
         return view(lead);
     }
 
-    private static LeadRow row(Lead l) {
+    private static LeadRow row(Lead l, UUID dealId) {
         return new LeadRow(l.getId(), l.getForm(), l.getName(), l.getCompany(), l.getPhone(),
                 l.getEmail(), l.getProductSlug(), l.getSource(), l.getStatus(), l.getOwner(),
-                l.getCreatedAt());
+                dealId, l.getCreatedAt());
     }
 
-    private static LeadView view(Lead l) {
+    private LeadView view(Lead l) {
         return new LeadView(l.getId(), l.getForm(), l.getName(), l.getCompany(), l.getPhone(),
                 l.getEmail(), l.getProductSlug(), l.getMessage(), l.getSource(), l.getStatus(),
-                l.getOwner(), l.getConsentVersion(), l.getConsentAt(), l.getCorrelationId(),
+                l.getOwner(), l.getLanguage(), l.getCampaign(),
+                deals.findByLeadId(l.getId()).map(Deal::getId).orElse(null),
+                l.getConsentVersion(), l.getConsentAt(), l.getCorrelationId(),
                 l.getCreatedAt());
     }
 

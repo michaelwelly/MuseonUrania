@@ -2,7 +2,10 @@ package ru.vedal.portal.documents;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 // Единственное, что модуль показывает соседям — включая ассистента, которому
 // нужны только опубликованные документы.
@@ -46,9 +49,25 @@ public interface DocumentQuery {
                     nullable = true)
             String fileUrl) {}
 
+    @Schema(name = "DocumentRef", description = """
+            Документ, на который ссылается сосед. Ровно столько, сколько нужно,
+            чтобы показать ссылку и решить, можно ли её отдавать клиенту:
+            ни файла, ни доступа к самой карточке сосед не получает.
+            """)
+    record Ref(UUID id, String slug, String title,
+
+               @Schema(description = "Документ согласован к публикации.")
+               boolean approved) {}
+
     record Download(String filename, FileStorage.Stored stored) {}
 
     List<Card> listedDocuments();
+
+    /** Документ по идентификатору — для соседа, который на него ссылается. */
+    Optional<Ref> ref(UUID id);
+
+    /** Те же ссылки пачкой: карточка со списком вложений не должна давать N+1. */
+    List<Ref> refs(Collection<UUID> ids);
 
     Download download(String slug);
 }

@@ -89,7 +89,8 @@ public class FormsController {
 
         var receipt = intake.accept(new LeadIntake.Draft(
                 body.form(), body.name(), body.company(), body.phone(), body.email(),
-                body.productSlug(), body.message(), "site"), key);
+                body.productSlug(), body.message(), "site",
+                body.language(), body.campaign()), key);
 
         // 202, а не 201: заявка принята, дальше её разбирает менеджер.
         // Повтор с тем же Idempotency-Key вернёт тот же идентификатор.

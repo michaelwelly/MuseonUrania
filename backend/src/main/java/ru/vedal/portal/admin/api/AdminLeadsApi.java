@@ -13,7 +13,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import ru.vedal.portal.common.PageView;
+import ru.vedal.portal.crm.CrmHistory;
+import ru.vedal.portal.crm.DealAdmin;
 import ru.vedal.portal.crm.LeadAdmin;
 
 import java.util.List;
@@ -29,9 +33,13 @@ import java.util.UUID;
 public class AdminLeadsApi {
 
     private final LeadAdmin leads;
+    private final DealAdmin deals;
+    private final CrmHistory history;
 
-    public AdminLeadsApi(LeadAdmin leads) {
+    public AdminLeadsApi(LeadAdmin leads, DealAdmin deals, CrmHistory history) {
         this.leads = leads;
+        this.deals = deals;
+        this.history = history;
     }
 
     @Operation(summary = "Заявки постранично, свежие сверху")
@@ -65,5 +73,38 @@ public class AdminLeadsApi {
                                      @Valid @RequestBody LeadAdmin.Triage triage,
                                      Authentication who) {
         return leads.triage(id, triage, Actor.of(who));
+    }
+
+    @Operation(summary = "Разобрать заявку в сделку",
+            description = """
+                    Заводит сделку в выбранной воронке. Клиент либо указывается существующий,
+                    либо заводится из данных заявки — портал не ищет совпадения сам: слить
+                    две карточки потом можно, разделить ошибочно слитые уже нет.
+
+                    Заявка разбирается один раз. Повтор — `409`: две сделки по одному
+                    обращению обе попали бы в аналитику.
+                    """)
+    @PostMapping("/leads/{id}/convert")
+    @ResponseStatus(HttpStatus.CREATED)
+    public DealAdmin.DealView convert(@PathVariable UUID id,
+                                      @Valid @RequestBody DealAdmin.Conversion form,
+                                      Authentication who) {
+        return deals.convert(id, form, Actor.of(who));
+    }
+
+    @Operation(summary = "История переписки и звонков по заявке")
+    @GetMapping("/leads/{id}/history")
+    public List<CrmHistory.Entry> history(@PathVariable UUID id) {
+        return history.ofLead(id);
+    }
+
+    @Operation(summary = "Дописать в историю заявки",
+            description = "История только дописывается: правки и удаления здесь нет.")
+    @PostMapping("/leads/{id}/history")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CrmHistory.Entry addToHistory(@PathVariable UUID id,
+                                         @Valid @RequestBody CrmHistory.NewEntry entry,
+                                         Authentication who) {
+        return history.addToLead(id, entry, Actor.of(who));
     }
 }

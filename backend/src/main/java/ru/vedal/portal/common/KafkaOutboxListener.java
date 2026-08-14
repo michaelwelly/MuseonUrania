@@ -40,7 +40,7 @@ public class KafkaOutboxListener {
         this.dispatch = dispatch;
     }
 
-    @KafkaListener(topics = {KafkaTopics.LEADS, KafkaTopics.DOCUMENTS,
+    @KafkaListener(topics = {KafkaTopics.LEADS, KafkaTopics.DEALS, KafkaTopics.DOCUMENTS,
             KafkaTopics.NOTIFICATIONS, KafkaTopics.AUDIT},
             groupId = "${vedal.events.group-id:vedal-portal}")
     @Transactional

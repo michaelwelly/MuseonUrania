@@ -62,6 +62,20 @@ public record LeadSubmission(
         @Size(min = 10, message = "Опишите обращение хотя бы одной фразой")
         String message,
 
+        @Schema(description = """
+                Язык страницы, с которой отправлена заявка: двухбуквенный код. Разрез
+                аналитики — без него «по языку» посчитать нечем. Необязателен: заявка
+                без него принимается и попадает в отчёт строкой «—».""",
+                allowableValues = {"ru", "en", "zh"}, example = "ru")
+        @Pattern(regexp = "^$|^[a-zA-Z]{2}$", message = "Язык — двухбуквенный код")
+        String language,
+
+        @Schema(description = "Кампания, приведшая посетителя: `utm_campaign` или её аналог. "
+                + "Разрез аналитики, необязателен.",
+                example = "innoprom-2026", maxLength = 200)
+        @Size(max = 200, message = "Название кампании не длиннее 200 символов")
+        String campaign,
+
         @Schema(description = "Согласие на обработку персональных данных. Без `true` заявка "
                 + "не принимается. В заявке сохраняется версия текста согласия, а не сама галочка.",
                 example = "true", requiredMode = Schema.RequiredMode.REQUIRED)

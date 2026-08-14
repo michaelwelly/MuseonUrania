@@ -103,6 +103,19 @@ class FormsApiTest extends PostgresTestBase {
         assertThat(leads.findAll()).as("ловушка не создаёт заявку").isEmpty();
     }
 
+    // Атрибуция проверяется на границе доверия, как и остальные поля.
+    // Проверка срабатывает до тела обработчика, поэтому лимит частоты
+    // на такую заявку не тратится.
+    @Test
+    void languageMustBeATwoLetterCode() throws Exception {
+        mvc.perform(post("/api/forms/v1/leads")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID.replace("\"consent\":true",
+                                "\"language\":\"russian\",\"consent\":true")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fields.language").value("Язык — двухбуквенный код"));
+    }
+
     @Test
     void unknownFormTypeIsRejected() throws Exception {
         mvc.perform(post("/api/forms/v1/leads")
