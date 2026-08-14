@@ -33,7 +33,7 @@ export default function Home() {
       <section className={styles.hero}>
         <div className={styles.heroCopy}>
           {/* data-anim — крючки появления первого экрана, правила в app/motion.css */}
-          <p className={styles.eyebrow} data-anim="rise-sm">
+          <p className={`${styles.eyebrow} ${styles.eyebrowLight}`} data-anim="rise-sm">
             {homeHero.eyebrow}
           </p>
           {/* Первый экран проявляется по словам: data-words — шаг между
@@ -54,7 +54,7 @@ export default function Home() {
               <Arrow />
             </Link>
             <Link
-              className={`${styles.btn} ${styles.btnGhost}`}
+              className={`${styles.btn} ${styles.btnOutline}`}
               href={homeHero.secondary.href}
               data-analytics="hero_catalog_click"
             >
