@@ -41,6 +41,29 @@ jobs:
         working-directory: backend
         run: ./mvnw --batch-mode verify
 
+      # Планка покрытия. Работает как храповик: ловит модуль, приехавший
+      # вообще без тестов, и не даёт покрытию сползать.
+      #
+      # Считается здесь, а не целью jacoco:check в сборке, и это вынужденно:
+      # check меряет один модуль по его собственным классам, а классы лежат
+      # в двенадцати модулях, тесты же, которые их проходят, — в app.
+      # Помодульная проверка дала бы одиннадцать нулей и одну сотню.
+      # Сводный отчёт строит report-aggregate, порог проверяется по нему.
+      - name: Порог покрытия
+        working-directory: backend
+        run: |
+          csv=app/target/site/jacoco-aggregate/jacoco.csv
+          test -f "$csv" || { echo "нет сводного отчёта $csv"; exit 1; }
+          awk -F, -v min_i=70 -v min_b=45 '
+            NR>1 { im+=$4; ic+=$5; bm+=$6; bc+=$7 }
+            END {
+              i = 100*ic/(im+ic); b = 100*bc/(bm+bc);
+              printf "инструкции %.1f%% (порог %d%%), ветки %.1f%% (порог %d%%)\n", i, min_i, b, min_b;
+              if (i < min_i || b < min_b) {
+                print "покрытие ниже планки"; exit 1
+              }
+            }' "$csv"
+
       - name: Шлюз
         working-directory: backend/api-gateway
         run: ./mvnw --batch-mode verify
@@ -52,7 +75,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: покрытие-портала
-          path: backend/target/site/jacoco/
+          path: backend/app/target/site/jacoco-aggregate/
           if-no-files-found: ignore
 
   frontend:
