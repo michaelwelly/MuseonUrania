@@ -15,15 +15,25 @@ import { message } from "./ui";
 // и различить их важно: подписанный токен без роли портала проходит проверку
 // подписи и получает 403, а «данных нет» выглядит так же, как «доступа нет».
 
+// Два раздела с разделителем: содержимое сайта и работа с клиентами.
+// Плоский список из одиннадцати пунктов читается как свалка, а разделы
+// совпадают с тем, чем человек занят: редактор правит каталог, менеджер
+// ведёт сделки.
 const NAV = [
   { href: "/admin/", label: "Сводка" },
   { href: "/admin/products/", label: "Продукция" },
   { href: "/admin/categories/", label: "Категории" },
   { href: "/admin/news/", label: "Новости" },
   { href: "/admin/documents/", label: "Документы" },
+  { group: "CRM" },
   { href: "/admin/leads/", label: "Заявки" },
+  { href: "/admin/clients/", label: "Клиенты" },
+  { href: "/admin/deals/", label: "Сделки" },
+  { href: "/admin/quotes/", label: "КП" },
+  { href: "/admin/analytics/", label: "Аналитика" },
+  { group: "" },
   { href: "/admin/audit/", label: "Журнал" },
-];
+] as const;
 
 type State =
   | { kind: "checking" }
@@ -120,15 +130,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <nav className="admin-nav">
         <div className="admin-nav__mark">VEDAL</div>
         <div className="admin-nav__sub">portal · админка</div>
-        {NAV.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            aria-current={current(pathname, item.href) ? "page" : undefined}
-          >
-            {item.label}
-          </Link>
-        ))}
+        {NAV.map((item, i) =>
+          "group" in item ? (
+            <div key={`group-${i}`} className="admin-nav__group">
+              {item.group}
+            </div>
+          ) : (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={current(pathname, item.href) ? "page" : undefined}
+            >
+              {item.label}
+            </Link>
+          ),
+        )}
         <div className="admin-nav__foot">
           <div>
             {state.who.actor}

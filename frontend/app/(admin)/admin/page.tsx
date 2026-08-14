@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { documents, leads, news, products } from "@/lib/admin";
+import { clients, deals, documents, leads, news, products, quotes } from "@/lib/admin";
 import { Note, useLoad } from "./ui";
 
 type Summary = {
@@ -9,18 +9,25 @@ type Summary = {
   news: { total: number; published: number };
   documents: { total: number; published: number; awaitingFile: number };
   leads: { total: number; fresh: number };
+  clients: number;
+  deals: number;
+  awaitingDecision: number;
 };
 
 export default function Dashboard() {
   const { data, error, loading } = useLoad<Summary>(async () => {
-    // Четыре запроса разом, а не по очереди: они независимы, и последовательный
-    // вызов складывал бы задержки в сумму на ровном месте.
-    const [p, n, d, all, draft] = await Promise.all([
+    // Все запросы разом, а не по очереди: они независимы, и последовательный
+    // вызов складывал бы задержки в сумму на ровном месте. Счётчики просят
+    // одну строку — нужно только число в `total`, а не сама страница.
+    const [p, n, d, all, draft, base, pipeline, sent] = await Promise.all([
       products(),
       news(),
       documents(),
       leads("", 0, 1),
       leads("draft", 0, 1),
+      clients("", 0, 1),
+      deals({}, 0, 1),
+      quotes("sent", 0, 1),
     ]);
 
     return {
@@ -32,6 +39,9 @@ export default function Dashboard() {
         awaitingFile: d.filter((x) => !x.hasFile).length,
       },
       leads: { total: all.total, fresh: draft.total },
+      clients: base.total,
+      deals: pipeline.total,
+      awaitingDecision: sent.total,
     };
   });
 
@@ -80,6 +90,14 @@ export default function Dashboard() {
             num={data.leads.fresh}
             label={`заявок в разборе из ${data.leads.total}`}
             note={data.leads.fresh > 0 ? "ждут статуса" : undefined}
+          />
+          <Tile href="/admin/clients/" num={data.clients} label="клиентов в базе" />
+          <Tile href="/admin/deals/" num={data.deals} label="сделок во всех воронках" />
+          <Tile
+            href="/admin/quotes/"
+            num={data.awaitingDecision}
+            label="КП отправлено"
+            note={data.awaitingDecision > 0 ? "ждут решения клиента" : undefined}
           />
         </div>
       )}

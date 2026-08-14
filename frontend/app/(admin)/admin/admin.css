@@ -70,6 +70,17 @@
   color: #fff;
 }
 
+.admin-nav__group {
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--on-dark-label);
+  margin: 14px 12px 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--on-dark-line);
+}
+
 .admin-nav__foot {
   margin-top: auto;
   padding-top: 20px;
@@ -166,6 +177,50 @@
 
 .admin-scroll {
   overflow-x: auto;
+}
+
+.admin-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-card__title {
+  font-size: 15px;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+/* Поля фильтров живут вне .field: у них нет подписи сверху, они стоят
+   в строку и не должны растягиваться на всю ширину. */
+
+.admin-search,
+.admin-select {
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--page);
+  border: 1px solid var(--line-3);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.admin-search {
+  min-width: 260px;
+  flex: 0 1 320px;
+}
+
+.admin-search:focus,
+.admin-select:focus {
+  outline: 2px solid var(--green);
+  outline-offset: -1px;
+  border-color: var(--green);
+}
+
+.admin-select:disabled {
+  opacity: 0.55;
 }
 
 /* ————— бейджи ————— */
@@ -402,6 +457,109 @@
   font-size: 14px;
   line-height: 1.6;
   margin-bottom: 20px;
+}
+
+/* ————— выбор из списка: клиент, документ ————— */
+
+.picker {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin-bottom: 16px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.picker__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line-2);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.picker__row:last-child {
+  border-bottom: none;
+}
+
+.picker__row:hover {
+  background: var(--soft);
+}
+
+/* ————— история переписки ————— */
+
+.history {
+  list-style: none;
+  border-left: 2px solid var(--line);
+  padding-left: 16px;
+  margin-bottom: 22px;
+}
+
+.history li {
+  margin-bottom: 18px;
+}
+
+.history__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+
+.history__subject {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 3px;
+}
+
+.history__body {
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.history__form,
+.convert {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+  margin-top: 4px;
+}
+
+/* ————— позиции КП ————— */
+
+.quote-item {
+  display: grid;
+  grid-template-columns: minmax(180px, 2fr) minmax(110px, 1fr) 90px 130px 150px auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 900px) {
+  .quote-item {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.quote-item input {
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-3);
+  border-radius: 8px;
+  background: var(--page);
+  color: var(--ink);
+  min-width: 0;
+}
+
+.quote-item__sum {
+  font-family: var(--font-mono), monospace;
+  font-size: 13px;
+  text-align: right;
+  color: var(--text-2);
 }
 
 /* ————— плитки на главной ————— */

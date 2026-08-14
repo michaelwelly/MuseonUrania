@@ -167,3 +167,122 @@ describe("клиент админского API", () => {
     expect(new URL(fetchMock.mock.calls[0][0] as string).searchParams.has("status")).toBe(false);
   });
 });
+
+const EMPTY_PAGE = { items: [], page: 0, size: 50, total: 0, pages: 0 };
+
+describe("CRM в клиенте админского API", () => {
+  it("складывает все три фильтра сделок в один запрос", async () => {
+    const { deals } = await admin();
+    const fetchMock = vi.fn().mockResolvedValue(json(EMPTY_PAGE));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await deals({ pipeline: "dealer", stage: "talks", clientId: "client-1" }, 1, 25);
+
+    const url = new URL(fetchMock.mock.calls[0][0] as string);
+    expect(url.pathname).toBe("/api/admin/v1/deals");
+    expect(url.searchParams.get("pipeline")).toBe("dealer");
+    expect(url.searchParams.get("stage")).toBe("talks");
+    expect(url.searchParams.get("clientId")).toBe("client-1");
+    expect(url.searchParams.get("page")).toBe("1");
+  });
+
+  // Пустой фильтр — это «все», а не «стадия с пустым именем». Уехавший
+  // `stage=` вернул бы пустой список там, где человек ничего не выбирал.
+  it("незаданные фильтры сделок в запрос не уезжают", async () => {
+    const { deals } = await admin();
+    const fetchMock = vi.fn().mockResolvedValue(json(EMPTY_PAGE));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await deals({});
+
+    const params = new URL(fetchMock.mock.calls[0][0] as string).searchParams;
+    expect(params.has("pipeline")).toBe(false);
+    expect(params.has("stage")).toBe(false);
+    expect(params.has("clientId")).toBe(false);
+  });
+
+  it("поиск клиента уезжает как query, а пустой — не уезжает вовсе", async () => {
+    const { clients } = await admin();
+    const fetchMock = vi.fn().mockResolvedValue(json(EMPTY_PAGE));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await clients("перинатальный");
+    await clients("");
+
+    expect(new URL(fetchMock.mock.calls[0][0] as string).searchParams.get("query")).toBe(
+      "перинатальный",
+    );
+    expect(new URL(fetchMock.mock.calls[1][0] as string).searchParams.has("query")).toBe(false);
+  });
+
+  // Одна дверь на три вида владельца: путь собирается из того, к чему
+  // привязана запись. Ошибка здесь молча пишет историю не тому.
+  it("история берётся у того, к кому привязана", async () => {
+    const { history, addToHistory } = await admin();
+    const fetchMock = vi.fn().mockResolvedValue(json([]));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await history("clients", "client-1");
+    await history("deals", "deal-1");
+    await addToHistory("leads", "lead-1", {
+      kind: "call",
+      direction: "in",
+      at: null,
+      subject: "Созвон",
+      body: "Обсудили сроки.",
+    });
+
+    expect(fetchMock.mock.calls[0][0]).toContain("/clients/client-1/history");
+    expect(fetchMock.mock.calls[1][0]).toContain("/deals/deal-1/history");
+    expect(fetchMock.mock.calls[2][0]).toContain("/leads/lead-1/history");
+    expect(fetchMock.mock.calls[2][1].method).toBe("POST");
+  });
+
+  it("разбор заявки уходит своей дверью, а не правкой сделки", async () => {
+    const { convertLead } = await admin();
+    const fetchMock = vi.fn().mockResolvedValue(json({ id: "deal-1" }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await convertLead("lead-1", {
+      clientId: null,
+      pipeline: "sales",
+      title: null,
+      amount: 2650000,
+      owner: "editor",
+    });
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain("/leads/lead-1/convert");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body as string).clientId).toBeNull();
+  });
+
+  it("период аналитики необязателен и пустым не уезжает", async () => {
+    const { analytics } = await admin();
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(json({ by: "source", rows: [], totals: {} }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await analytics("campaign", "2026-01-01", "");
+
+    const params = new URL(fetchMock.mock.calls[0][0] as string).searchParams;
+    expect(params.get("by")).toBe("campaign");
+    expect(params.get("from")).toBe("2026-01-01");
+    expect(params.has("to")).toBe(false);
+  });
+
+  // Отцепление документа отвечает карточкой сделки, а не 204: разбор пустого
+  // тела здесь означал бы потерю обновлённого списка вложений.
+  it("отцепление документа возвращает карточку сделки", async () => {
+    const { detachFromDeal } = await admin();
+    const fetchMock = vi.fn().mockResolvedValue(json({ id: "deal-1", attachments: [] }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const deal = await detachFromDeal("deal-1", "doc-1");
+
+    expect(fetchMock.mock.calls[0][0]).toContain("/deals/deal-1/attachments/doc-1");
+    expect(fetchMock.mock.calls[0][1].method).toBe("DELETE");
+    expect(deal.attachments).toEqual([]);
+  });
+});
