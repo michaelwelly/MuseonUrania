@@ -50,6 +50,11 @@ public interface QuoteAdmin {
                     nullable = true)
             String productSlug,
 
+            @Schema(description = "Наименование в КП. Хранится своё, а не берётся из каталога "
+                    + "по ссылке: переименование изделия не должно задним числом менять уже "
+                    + "отправленное предложение.",
+                    example = "Реанимационная система для новорождённых VEDAL R2",
+                    requiredMode = Schema.RequiredMode.REQUIRED)
             @NotBlank(message = "Укажите наименование позиции")
             @Size(max = 300) String name,
 

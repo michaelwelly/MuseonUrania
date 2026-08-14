@@ -45,8 +45,13 @@ public interface CrmHistory {
                     nullable = true)
             Instant at,
 
+            @Schema(example = "Созвон по срокам поставки")
             @Size(max = 300) String subject,
 
+            @Schema(description = "Что произошло. Это персональные данные: в топики и в журнал "
+                    + "текст не уходит.",
+                    example = "Обсудили сроки: готовы отгрузить в марте, нужен аванс 30%.",
+                    requiredMode = Schema.RequiredMode.REQUIRED)
             @NotBlank(message = "Пустая запись истории ничего не сохраняет")
             String body) {}
 

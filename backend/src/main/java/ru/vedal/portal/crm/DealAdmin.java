@@ -63,8 +63,11 @@ public interface DealAdmin {
             @Schema(allowableValues = {"sales", "dealer", "service"}, example = "sales")
             @NotBlank String pipeline,
 
+            @Schema(example = "Поставка двух систем VEDAL R2",
+                    requiredMode = Schema.RequiredMode.REQUIRED)
             @NotBlank @Size(max = 300) String title,
 
+            @Schema(example = "2650000.00")
             @DecimalMin(value = "0", message = "Сумма не может быть отрицательной")
             BigDecimal amount,
 
@@ -102,8 +105,11 @@ public interface DealAdmin {
             @Schema(description = "Версия прочитанной карточки.", nullable = true)
             Long version,
 
+            @Schema(example = "Поставка двух систем VEDAL R2",
+                    requiredMode = Schema.RequiredMode.REQUIRED)
             @NotBlank @Size(max = 300) String title,
 
+            @Schema(example = "2650000.00")
             @DecimalMin(value = "0", message = "Сумма не может быть отрицательной")
             BigDecimal amount,
 
@@ -118,6 +124,9 @@ public interface DealAdmin {
             переехавшая из продаж в сервис, — это две разные сделки.
             """)
     record StageChange(
+            @Schema(description = "Стадия из воронки этой сделки. Список приходит в карточке "
+                    + "и в `GET /deals/pipelines`.",
+                    example = "qualified", requiredMode = Schema.RequiredMode.REQUIRED)
             @NotBlank String stage,
 
             @Schema(description = "Причина проигрыша. Обязательна при переводе в проигранную "
