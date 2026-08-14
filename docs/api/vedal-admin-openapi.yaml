@@ -32,7 +32,7 @@ info:
   version: v1
 servers:
 - description: Generated server url
-  url: http://localhost:8099
+  url: http://localhost:8081
 tags:
 - description: "Опубликованные изделия и категории. Неопубликованного в ответах не\
     т: фильтр стоит в запросе, а не в разметке сайта."
@@ -1786,10 +1786,12 @@ components:
       properties:
         city:
           type: string
+          example: Екатеринбург
           maxLength: 200
           minLength: 0
         country:
           type: string
+          example: Россия
           maxLength: 100
           minLength: 0
         email:
@@ -1798,8 +1800,13 @@ components:
           - "null"
           format: email
           description: Почта для переписки.
+          example: info@example.ru
         externalId:
-          type: string
+          type:
+          - string
+          - "null"
+          description: "Идентификатор контрагента во внешней системе, под будущий\
+            \ обмен с 1С."
           maxLength: 200
           minLength: 0
         inn:
@@ -1831,7 +1838,10 @@ components:
           maxLength: 300
           minLength: 0
         note:
-          type: string
+          type:
+          - string
+          - "null"
+          description: Заметка менеджера.
         owner:
           type:
           - string
@@ -1841,6 +1851,7 @@ components:
           minLength: 0
         phone:
           type: string
+          example: +7 343 300-00-00
           maxLength: 100
           minLength: 0
         version:
@@ -1943,6 +1954,7 @@ components:
       properties:
         amount:
           type: number
+          example: 2650000.0
           minimum: 0
         currency:
           type: string
@@ -1955,6 +1967,7 @@ components:
           type: string
         title:
           type: string
+          example: Поставка двух систем VEDAL R2
           maxLength: 300
           minLength: 0
         version:
@@ -1982,6 +1995,9 @@ components:
           minLength: 0
         stage:
           type: string
+          description: Стадия из воронки этой сделки. Список приходит в карточке и
+            в `GET /deals/pipelines`.
+          example: qualified
           minLength: 1
       required:
       - stage
@@ -2267,6 +2283,7 @@ components:
       properties:
         amount:
           type: number
+          example: 2650000.0
           minimum: 0
         clientId:
           type: string
@@ -2293,6 +2310,7 @@ components:
           type: string
         title:
           type: string
+          example: Поставка двух систем VEDAL R2
           maxLength: 300
           minLength: 0
       required:
@@ -2312,6 +2330,9 @@ components:
             зговора, и время разговора важнее времени записи."
         body:
           type: string
+          description: "Что произошло. Это персональные данные: в топики и в журна\
+            л текст не уходит."
+          example: "Обсудили сроки: готовы отгрузить в марте, нужен аванс 30%."
           minLength: 1
         direction:
           type:
@@ -2335,6 +2356,7 @@ components:
           pattern: call|email|meeting|note
         subject:
           type: string
+          example: Созвон по срокам поставки
           maxLength: 300
           minLength: 0
       required:
@@ -2791,6 +2813,10 @@ components:
       properties:
         name:
           type: string
+          description: "Наименование в КП. Хранится своё, а не берётся из каталога\
+            \ по ссылке: переименование изделия не должно задним числом менять уже\
+            \ отправленное предложение."
+          example: Реанимационная система для новорождённых VEDAL R2
           maxLength: 300
           minLength: 0
         productSlug:

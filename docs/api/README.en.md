@@ -11,6 +11,7 @@ portal's server side.
 | `vedal-openapi.json` | The same, for Postman, Insomnia, client generation, `editor.swagger.io` |
 | `vedal-admin-openapi.yaml` | Admin API: the contract of the admin UI |
 | `vedal-admin-openapi.json` | The same in JSON |
+| `vedal.postman_collection.json` | Every door in one Postman import: 16 folders, 73 requests |
 
 ## Two groups, and not for tidiness
 
@@ -81,6 +82,46 @@ are switched off: the list of doors is a map of the system, for the same reason
 actuator exposes only health. The integration contract is taken from here or from
 dev, not from a production address.
 
+## The Postman collection
+
+`vedal.postman_collection.json` imports as a single file: **File → Import**.
+Both groups together, public and admin doors, arranged into folders in working
+order.
+
+It is produced by a generator from those same `docs/api/*.json` files rather
+than written by hand: a hand-written collection would diverge from the doors on
+the first contract change. Editing it in this directory is therefore as
+pointless as editing the export.
+
+How it differs from a plain OpenAPI import into Postman:
+
+- **No token to paste.** The collection script fetches one from Keycloak using
+  the `username`/`password` variables and refreshes it when it expires. A token
+  lives fifteen minutes, and pasting it by hand in the middle of working a deal
+  is exactly the sort of thing that breaks concentration.
+- **Identifiers travel between requests.** "Отправить заявку" stores `leadId`,
+  "Разобрать заявку в сделку" stores `dealId` and `clientId`, "Завести КП"
+  stores `quoteId`. Folders work top to bottom, with no UUIDs to paste.
+- Public folders are set to `noauth`, the lead form gets an `Idempotency-Key`,
+  and optional query parameters arrive disabled.
+
+Collection variables — the gateway address, the Keycloak address, the account:
+
+| Variable | Default |
+| --- | --- |
+| `gateway` | `http://localhost:8080` |
+| `keycloak` | `http://localhost:8180` |
+| `username` / `password` | `editor` / `editor-local` |
+
+The default address is the gateway. The portal answers directly on `8081`, but
+then CORS enters the picture, which it does not through the gateway.
+
+Running it without Postman, from the command line:
+
+```bash
+npx newman run docs/api/vedal.postman_collection.json --folder "Формы" --folder "Админка: заявки"
+```
+
 ## How to refresh the export
 
 ```bash
@@ -92,6 +133,12 @@ curl -s http://localhost:8081/v3/api-docs/vedal-public -o docs/api/vedal-openapi
 curl -s http://localhost:8081/v3/api-docs.yaml/vedal-public -o docs/api/vedal-openapi.yaml
 curl -s http://localhost:8081/v3/api-docs/vedal-admin -o docs/api/vedal-admin-openapi.json
 curl -s http://localhost:8081/v3/api-docs.yaml/vedal-admin -o docs/api/vedal-admin-openapi.yaml
+```
+
+The collection is rebuilt next — it reads those same files:
+
+```bash
+node backend/tools/postman-collection.mjs > docs/api/vedal.postman_collection.json
 ```
 
 Without Docker the application starts locally — `cd backend && ./mvnw spring-boot:run`;
