@@ -20,9 +20,38 @@ export type LeadDraft = {
   productSlug?: string;
   message: string;
   consent: boolean;
+  /** Язык страницы, двухбуквенный код. Разрез аналитики CRM. */
+  language?: string;
+  /** Кампания, приведшая посетителя: `utm_campaign`. Разрез аналитики CRM. */
+  campaign?: string;
   /** Honeypot: поле скрыто в разметке, человек его не заполняет. */
   trap?: string;
 };
+
+/**
+ * Атрибуция заявки: язык страницы и кампания.
+ *
+ * Кампания берётся из `utm_campaign` в адресе. Читается один раз, при монтировании
+ * формы: посетитель приходит по ссылке с меткой, ходит по сайту и отправляет заявку
+ * уже с другого адреса — брать метку в момент отправки значит потерять её у всех,
+ * кто не отправил форму на первой же странице.
+ *
+ * Ничего, кроме метки кампании, отсюда не берётся: остальные `utm_*` — это профиль
+ * посетителя, а не то, что нужно CRM.
+ */
+export function attribution(search: string, documentLanguage: string): {
+  language?: string;
+  campaign?: string;
+} {
+  const campaign = new URLSearchParams(search).get("utm_campaign")?.trim();
+  // Бэкенд ждёт двухбуквенный код, а <html lang> бывает и «ru-RU».
+  const language = documentLanguage.trim().slice(0, 2).toLowerCase();
+
+  return {
+    language: /^[a-z]{2}$/.test(language) ? language : undefined,
+    campaign: campaign ? campaign.slice(0, 200) : undefined,
+  };
+}
 
 export type SubmitResult =
   | { ok: true; message: string }

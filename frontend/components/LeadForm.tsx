@@ -1,9 +1,14 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { serviceForm } from "@/content/service";
 import { site } from "@/content/site";
-import { newIdempotencyKey, submitLead, type LeadForm as FormType } from "@/lib/submit";
+import {
+  attribution,
+  newIdempotencyKey,
+  submitLead,
+  type LeadForm as FormType,
+} from "@/lib/submit";
 import styles from "./LeadForm.module.css";
 
 type Errors = Partial<Record<"name" | "phone" | "email" | "message" | "consent", string>>;
@@ -61,6 +66,15 @@ export default function LeadForm({
   // следующее обращение с той же страницы должно быть отдельной заявкой.
   const idempotencyKey = useRef(newIdempotencyKey());
 
+  // Атрибуция снимается один раз, при монтировании формы, а не в момент
+  // отправки. Посетитель приходит по ссылке с меткой кампании, ходит по сайту
+  // и отправляет заявку уже с другого адреса — прочитать метку при отправке
+  // значит потерять её у всех, кто не заполнил форму на первой же странице.
+  const attributed = useRef<{ language?: string; campaign?: string }>({});
+  useEffect(() => {
+    attributed.current = attribution(window.location.search, document.documentElement.lang);
+  }, []);
+
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -83,6 +97,8 @@ export default function LeadForm({
         productSlug: get("product") || undefined,
         message: get("message"),
         consent: data.get("consent") !== null,
+        language: attributed.current.language,
+        campaign: attributed.current.campaign,
         trap: get("trap") || undefined,
       },
       idempotencyKey.current,
