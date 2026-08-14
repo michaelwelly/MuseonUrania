@@ -26,7 +26,7 @@ that were not in the original list — `content` and `assistant`. Eleven in tota
 | [content](content/README.en.md) | news and press centre |
 | [documents](documents/README.en.md) | documents, publication statuses, object storage |
 | [gateway](gateway/README.en.md) | lead intake from the website: validation, approve, handover to CRM |
-| [crm](crm/README.en.md) | leads, customers, deals, quotes |
+| [crm](crm/README.en.md) | leads, clients, deals, quotes, correspondence history, funnel analytics |
 | [notifications](notifications/README.en.md) | customer letters and manager notifications |
 | [assistant](assistant/README.en.md) | Urania: answers from published content, hard limits |
 | [audit](audit/README.en.md) | log of actions and document access |
@@ -182,9 +182,12 @@ panel.
 | `GET /api/public/v1/news/{slug}` | site build | a publication; unpublished returns 404 |
 | `GET /api/public/v1/documents` | site build | listing with access status; the file link only for published ones |
 | `GET /api/public/v1/documents/{slug}/file` | visitor | the file; closed returns 404 and the request is logged |
-| `POST /api/forms/v1/leads` | website forms | lead intake, `Idempotency-Key` header, `202` response |
+| `POST /api/forms/v1/leads` | website forms | lead intake, `Idempotency-Key` header, `202` response; the optional `language` and `campaign` carry attribution for analytics |
 | `POST /api/assistant/v1/ask` | Urania | an answer from published content with links; no sources means handoff to a human |
-| `/api/admin/v1/**` | admin UI | twenty-five operations: products, categories, news, documents, leads, audit log, images, session |
+| `/api/admin/v1/**` | admin UI | forty-six routes, sixty-four operations: products, categories, news, documents, leads, clients, deals, quotes, correspondence history, funnel analytics, audit log, images, session |
+
+There is no public door to the CRM: the client base, deal amounts and quote
+prices belong to the closed contour.
 
 Errors from every door are `application/problem+json` (RFC 9457). The forms and
 the assistant have their own per-client rate limits. The admin API contract is
@@ -192,7 +195,11 @@ the assistant have their own per-client rate limits. The admin API contract is
 
 Publication rules live in the domains (`CatalogEditor`, `ContentEditor`,
 `DocumentEditor`, `LeadTriage`) rather than in the controllers: there are two
-doors, and a rule written in a controller is honoured by only one of them.
+doors, and a rule written in a controller is honoured by only one of them. The
+CRM works the same way: `ClientDesk`, `DealDesk`, `QuoteDesk`, `HistoryDesk` and
+`Pipelines` hold the rules for pipelines, versions and quotes, while
+`AdminClientsApi`, `AdminDealsApi`, `AdminQuotesApi` and `AdminCrmAnalyticsApi`
+are transport only.
 
 ## What is enforced by database constraints rather than code
 
@@ -207,7 +214,19 @@ Rules that cannot be bypassed by editing a controller or by an editor's mistake:
 - `lead_idempotency_key_idx` — resubmitting a form does not create a second lead;
 - `event_consumed_idx` — a redelivered event does not produce a second letter;
 - `news_published_needs_date` — a published news item must have a date;
+- `deal_stage_check` — a deal's stage must belong to its own pipeline;
+- `deal_lead_idx` — a lead is converted into a deal exactly once;
+- `client_inn_idx` — a second card with the same ИНН would split one
+  organisation's history across two places;
+- `quote_sent_has_date` — a sent quote must remember when it was sent;
+- `interaction_has_subject` — a history entry is attached to a deal, a client
+  or a lead rather than hanging in the air;
 - the `audit_entry_append_only` trigger — the log cannot be edited retroactively.
+
+One constraint is deferred — `quote_item_position_unique`. Quote lines are
+replaced wholesale, and in a single flush Hibernate inserts the new row before
+deleting the old one; checking at `COMMIT` keeps the rule strict and removes the
+dependency on statement order inside the transaction.
 
 The trigger does not protect against `TRUNCATE`: statement triggers do not fire
 for it. The real protection is revoking `UPDATE`/`DELETE`/`TRUNCATE` from the
@@ -249,6 +268,17 @@ cd backend
 The tests run against a real PostgreSQL through Testcontainers, so they **require
 a running Docker**. H2 is not used: dialect differences should surface here, not
 in production.
+
+The container comes from `PostgresTestBase`, and **every** test class without
+exception must extend it. A test that does not raises its context on
+`spring.datasource.url`, that is, on the development database of whichever
+machine ran it: the run silently applies migrations to a live database, editing
+an unreleased migration breaks the build with a checksum mismatch, and on a
+machine without a local PostgreSQL the test fails to connect while Docker is
+running and its neighbours are green.
+
+The coverage check is a separate phase, `./mvnw verify`: the threshold lives in
+`pom.xml` and works as a ratchet.
 
 ## Decisions taken
 

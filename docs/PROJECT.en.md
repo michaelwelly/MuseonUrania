@@ -6,8 +6,8 @@ The single entry point into the project. Everything else is detail; what is
 collected here is what you need in order to make a decision or start work without
 re-reading thirty-nine files.
 
-**State as of 13 August 2026.** Verified against the code of the `dev` branch
-after the `back`, `infra` and `front` layers were merged in. The numbers in
+**State as of 14 August 2026.** Verified against the code of the `dev` branch
+after the `back`, `front`, `infra` and `docs` layers were merged in. The numbers in
 "Current state" are the result of counting across the repository, not a retelling
 of documents.
 
@@ -151,7 +151,7 @@ Eleven modules:
 | [content](../backend/content/README.en.md) | news and press centre |
 | [documents](../backend/documents/README.en.md) | documents, publication statuses, object storage |
 | [gateway](../backend/gateway/README.en.md) | lead intake: validation, approve, handover to CRM |
-| [crm](../backend/crm/README.en.md) | leads, customers, deals, quotes |
+| [crm](../backend/crm/README.en.md) | leads, clients, deals, quotes, correspondence history, funnel analytics |
 | [notifications](../backend/notifications/README.en.md) | customer letters and manager notifications |
 | [assistant](../backend/assistant/README.en.md) | Urania: answers from published content, limits |
 | [audit](../backend/audit/README.en.md) | log of actions and document access |
@@ -310,9 +310,16 @@ than what the application managed to put on the queue.
 | Topic | Who writes | Who reads |
 | --- | --- | --- |
 | `vedal.leads.v1` | `crm` | letters, audit |
+| `vedal.deals.v1` | `crm` | no consumer yet, audit |
 | `vedal.documents.v1` | `documents` | indexing, audit |
 | `vedal.notifications.v1` | `notifications` | sending |
 | `vedal.audit.v1` | everyone | writing the log |
+
+Deals and quotes were given their own topic rather than mixed into leads: they
+have a different life cycle and different consumers — a lead produces a letter
+to the client, while a deal lives for weeks and matters to reporting.
+`vedal.deals.v1` has no consumer yet: the letter carrying the quote itself
+depends on Яндекс 360 SMTP.
 
 The partitioning key is the entity identifier: events of one lead do not get
 reordered. Consumers are idempotent. Anything still unprocessed after retries goes
@@ -337,9 +344,34 @@ product_spec      id, product_id, kind, position, label, value, muted
 outbox            id, aggregate, aggregate_id, type, payload, created_at, published_at
 audit_entry       id, at, actor, action, subject, subject_id, correlation_id, ip, payload
 lead              id, form, name, company, phone, email, product_slug, message,
-                  consent_version, consent_at, source, status, owner,
-                  correlation_id, idempotency_key, created_at
+                  consent_version, consent_at, source, language, campaign,
+                  status, owner, correlation_id, idempotency_key, created_at
+client            id, name, kind, inn, kpp, external_id, country, city,
+                  email, phone, note, owner, version, created_at, updated_at
+deal              id, client_id, lead_id, pipeline, title, stage, amount,
+                  currency, product_slug, owner, closed_at, lost_reason,
+                  version, created_at, updated_at
+quote             id, deal_id, number, status, currency, valid_until, note,
+                  total, sent_at, decided_at, version, created_at, updated_at
+quote_item        id, quote_id, position, product_slug, name, quantity,
+                  unit_price, amount
+interaction       id, deal_id, client_id, lead_id, kind, direction, at,
+                  subject, body, actor, created_at
+deal_document     deal_id, document_id, attached_by, attached_at
 ```
+
+`language` and `campaign` on a lead are not decoration: without them two of the
+four analytics dimensions ("by language", "by campaign") cannot be computed at
+all. They live on the lead rather than the deal because they are a property of
+where the person came from, not of how they were worked with afterwards.
+
+Three pipelines share one `deal` table with different sets of stages rather
+than three tables: they share the card, the owner, the history and the
+analytics. The set of stages is enforced by the `deal_stage_check` constraint.
+
+`interaction` is the only CRM table without a `version` column, and that is a
+decision: history is append-only. A correspondence entry that can be corrected
+after the fact stops being history exactly when it is needed.
 
 `doc_status` (`confirmed | pending`) and `published` are **different** flags. The
 first means "the specifications are confirmed by a datasheet" and draws a badge on
@@ -365,9 +397,23 @@ Rules that cannot be bypassed by editing a controller or by an editor's mistake:
 - `lead_idempotency_key_idx` — resubmitting a form does not create a second lead;
 - `event_consumed_idx` — a redelivered event does not produce a second letter;
 - `news_published_needs_date` — a published news item must have a date;
+- `deal_stage_check` — a deal's stage must belong to its own pipeline;
+- `deal_lead_idx` — a lead is converted into a deal exactly once;
+- `client_inn_idx` — a second card with the same ИНН would split one
+  organisation's history across two places;
+- `quote_sent_has_date` — a sent quote must remember when it was sent;
+- `interaction_has_subject` — a history entry is attached to a deal, a client
+  or a lead rather than hanging in the air;
 - the `audit_entry_append_only` trigger — the log cannot be edited retroactively;
-- the `version` column on products, news items and documents — two editors who
-  opened the same card do not silently overwrite each other.
+- the `version` column on products, news items, documents, clients, deals and
+  quotes — two editors who opened the same card do not silently overwrite each
+  other.
+
+One constraint is **deferred** — `quote_item_position_unique`
+(`deferrable initially deferred`). That is not a relaxation: quote lines are
+replaced wholesale, and in a single flush Hibernate inserts the new row before
+deleting the old one. Checking at `COMMIT` keeps the rule strict and removes
+the dependency on statement order inside the transaction.
 
 The version is checked twice, and that is not belt-and-braces. The explicit check
 in the domain catches the common case: the card was opened in the morning and
@@ -528,9 +574,11 @@ upon request; infrastructure in Russia.
 
 ### 6.1 Backend — working
 
-111 Java files in the portal and 2 in the gateway, 21 test classes (102 portal
-tests, 4 gateway tests, all green; plus 31 frontend tests), 13 Flyway migrations,
-14 controllers, 12 catalog items in the seed, 5 categories. Spring Boot 4.1.0 on Spring Framework 7, Java 25, Jackson 3,
+136 Java files in the portal and 2 in the gateway, 23 test classes (155 portal
+tests, 4 gateway tests, all green; plus 37 frontend tests), 14 Flyway migrations,
+18 controllers, 12 catalog items in the seed, 5 categories. The coverage gate is
+70% of instructions and 45% of branches against 72% and 47% achieved.
+Spring Boot 4.1.0 on Spring Framework 7, Java 25, Jackson 3,
 PostgreSQL 16, Testcontainers. The gateway runs Spring Boot 4.0.7 with Spring
 Cloud Gateway 5.0.2: that is the only supported pair, and the version skew is
 harmless precisely because it is a separate process.
@@ -557,13 +605,23 @@ Working routes:
 | `/api/admin/v1/products`, `/categories` | admin UI | the whole catalog: editing, specs, images, publishing |
 | `/api/admin/v1/news` | admin UI | news: creating, editing, publishing, deleting a draft |
 | `/api/admin/v1/documents` | admin UI | the card, file upload up to 20 MB, publication with the refusal explained |
-| `/api/admin/v1/leads` | admin UI | leads by page, status and owner |
+| `/api/admin/v1/leads` | admin UI | leads by page, status and owner; conversion into a deal |
+| `/api/admin/v1/clients` | admin UI | client base: search, card, editing, history |
+| `/api/admin/v1/deals` | admin UI | deals of three pipelines: stages, attachments, quotes, history |
+| `/api/admin/v1/quotes` | admin UI | quotes: lines, total, sending, the client's decision |
+| `/api/admin/v1/analytics` | admin UI | the funnel by product, source, language and campaign |
 | `/api/admin/v1/audit` | admin UI | the log with filters and the chain by `correlation_id` |
 | `/api/admin/v1/media` | admin UI | image upload into the read-open bucket |
 | `/api/admin/v1/session` | admin UI | who signed in and which roles the portal parsed |
 
-The twenty-five admin API operations are described by a separate specification
-group — [docs/api/vedal-admin-openapi.yaml](api/vedal-admin-openapi.yaml).
+The forty-six routes and sixty-four operations of the admin API are described by
+a separate specification group —
+[docs/api/vedal-admin-openapi.yaml](api/vedal-admin-openapi.yaml).
+
+There is no public door to the CRM and there never will be: the client base,
+deal amounts and quote prices belong to the closed contour. Nothing of this goes
+outward, topics included: a deal event carries the identifier, the pipeline and
+the stage, but not the client's name and not the amount.
 
 A note on `assistant`: the limits live in `Guardrails` **before** the engine is
 called, not in the prompt — a prompt is a request to the model, not a guarantee.
@@ -622,7 +680,7 @@ Metrica from section 8 — those are about content, not about the wire.
 | 2 | ~~Consumers read from topics~~ | ✅ Debezium reads the outbox from the write-ahead log, consumers take events from the topics, DLQ on `<topic>.dlq` after three attempts |
 | 3 | ~~Keycloak instead of local accounts~~ | ✅ the portal verifies a realm token and parses `realm_access.roles`; local accounts remain as the `vedal.iam.mode=local` fallback. **Not closed: MFA** — enabled by realm policy in a deployed environment, which does not concern the portal |
 | 4 | ~~Object storage and `FileStorage`~~ | ✅ S3 through the AWS SDK: MinIO locally, Yandex Object Storage in the cloud. Two buckets, privacy anchored to the bucket. **Not closed:** which cloud exactly |
-| 5 | Grow `crm` to full: customers, deals, quotes, statuses, dealer and service funnels, correspondence history, attachments from approved documents, analytics by product/source/language/campaign | lead intake and triage (status, owner) exist, the rest does not |
+| 5 | ~~Grow `crm` to full: clients, deals, quotes, statuses, dealer and service funnels, correspondence history, attachments from approved documents, analytics by product/source/language/campaign~~ | ✅ the module is complete: `client`, `deal` with three pipelines, `quote` with lines, `interaction` (append-only), attachments from approved documents, four analytics dimensions. **Not closed:** CRM roles await the answer to question 12.3, the 1С exchange awaits 12.4 (the `inn`/`kpp`/`external_id` columns are in place already), the quote letter awaits Яндекс 360 SMTP |
 | 6 | `MailSender` → Yandex 360 SMTP | letters still go to the log |
 | 7 | `LlmEngine` → YandexGPT + pgvector, the pipeline text extraction → chunks with metadata → embeddings | **pitfall:** the EnterpriseDB PostgreSQL build for Windows does not ship pgvector. A `pgvector/pgvector:pg16` image is needed, and `compose.yaml` and `PostgresTestBase` must be switched **at the same time**, otherwise the tests diverge from development |
 | 8 | Step 8 — the move: VM, Managed PostgreSQL, Managed Kafka, Object Storage, backups, monitoring | depends on Yandex Cloud, which does not exist yet. **Pitfall:** Managed PostgreSQL puts logical replication behind a separate flag, and without it the Debezium connector will not start |
@@ -639,7 +697,7 @@ Metrica from section 8 — those are about content, not about the wire.
 | # | What | Details |
 | --- | --- | --- |
 | 1 | An API client plus `NEXT_PUBLIC_API_URL`, reading the catalog, news and documents through the Public API at build time | static stays static — property #1 must not break |
-| 2 | `LeadForm` → `POST /api/forms/v1/leads` | `Idempotency-Key` (a uuid per form mount), the consent text version and time, a honeypot, success/error states, handling `202` |
+| 2 | `LeadForm` → `POST /api/forms/v1/leads` | `Idempotency-Key` (a uuid per form mount), the consent text version and time, a honeypot, success/error states, handling `202`. Plus attribution: the page language and `utm_campaign` are captured when the form mounts rather than when it is submitted — otherwise the tag is lost for everyone who did not fill the form on the very first page |
 | 3 | `UraniaChat` → `POST /api/assistant/v1/ask` | render the list of sources; when there are none, show the handoff to a human with contacts and forms rather than an invented answer |
 | 4 | Bring the routes in line with the sitemap | [sitemap](frontend/sitemap.en.md) requires `/press/` (Innoprom) and `/partners/` (Divisy, Morus MS, Smart Solution) — neither exists; `/news` was built instead of `/press`, and an unplanned `/about` was added. Either build them or update the map |
 | 5 | The product page from the API plus the list of documents per product | currently from `content/products.ts` |
@@ -718,16 +776,31 @@ not an on-the-spot choice.
 Until the broker discrepancy is resolved, `EventPublisher` stays a port: changing
 the broker will not touch a single domain.
 
+**The CRM discrepancy is resolved in favour of the brief: it is written inside
+the portal.** The document hierarchy from section 2 places the owner brief above
+infrastructure_architecture, and the "open question" there was written before the
+brief answered it. The way back is still open: should the customer pick an
+external CRM, deals travel there as a consumer of the `vedal.deals.v1` topic —
+no separate port had to be introduced for that.
+
 ---
 
 ## 12. Open questions
 
 **To the owner / Nikolay Nikolaevich:**
 
-1. Do we build the CRM inside VEDAL Portal?
+1. Do we build the CRM inside VEDAL Portal? — **we follow the brief: yes,
+   inside.** The module is written. The answer is still needed: it closes the
+   discrepancy from section 11.
 2. Which data is forbidden to store in Yandex 360?
-3. Who gets access to the CRM at the first stage?
-4. Is an integration with 1C/Kontur needed right away?
+3. Who gets access to the CRM at the first stage? — **for now the same roles as
+   the rest of the admin area** (`portal-admin`, `portal-editor`). Separating
+   "who may see a deal" from "who may change it" is deliberately not introduced:
+   until there is an answer, that is a hierarchy nobody uses.
+4. Is an integration with 1C/Kontur needed right away? — **we assume "not right
+   away":** a client carries `inn`, `kpp` and `external_id`, but there is no
+   exchange. Adding the columns later means a migration plus a change to every
+   form and every query; adding them now costs almost nothing.
 5. Registration and certification status for each item.
 6. The final product list for the first release and the priority order.
 7. Which documents may be published and which stay in the internal contour only.
@@ -765,8 +838,9 @@ the broker will not touch a single domain.
    (`./scripts/up.sh`), there is a production profile with TLS and backups, and
    CI runs the tests and brings the stack up — but there is still no deployed
    environment. That is the next bottleneck, and it is not in the code.
-4. **The full CRM**: customers, deals, quotes, funnels, analytics. Lead intake and
-   triage exist, the rest does not.
+4. ~~**The full CRM**: clients, deals, quotes, funnels, analytics.~~ Done. What
+   remains is exercising it on live data together with the admin UI and getting
+   answers to questions 12.3 and 12.4 — roles and the 1С exchange depend on them.
 5. Yandex 360 SMTP, YandexGPT + pgvector, multilingual routing, the move to
    Yandex Cloud.
 
