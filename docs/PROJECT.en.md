@@ -230,7 +230,7 @@ perimeter is checked in three places rather than in thirty controllers.
 | --- | --- | --- |
 | `Public API` `/api/public/v1/*` | site build, Urania | read-only, published content only, cacheable |
 | `Forms API` `/api/forms/v1/leads` | website forms, Yandex Form, mail parsing | **the single external write**, idempotency by `Idempotency-Key` |
-| `Admin API` `/api/admin/v1/**` | employee | JSON, Keycloak token, roles `portal-admin` and `portal-editor`; can be closed off entirely at the proxy |
+| `Admin API` `/api/admin/v1/**` | employee | JSON, Keycloak token, roles `portal-admin` and `portal-editor`. The door is single, so restricting it at the proxy takes one rule — **but no such rule is in the [Caddyfile](../backend/proxy/Caddyfile) today**, and it is open to the internet |
 
 The employee door changed shape rather than being created anew: instead of
 server-rendered Thymeleaf pages it is JSON, with the Next.js admin UI on top.
@@ -721,6 +721,16 @@ Metrica from section 8 — those are about content, not about the wire.
 | 11 | ~~Remove the Thymeleaf admin pages~~ | ✅ gone, together with the login form and the cookie session. The portal has no browser-facing page left |
 | 12 | Outbox cleanup | the table grows without bound. Deleting needs care around Debezium: `skipped.operations` already drops `d`, but the replication slot must read a row before it is removed |
 | 13 | `ETag` on the public API | deliberately deferred: on twelve items the gain is zero and `Cache-Control` is already in place |
+| 14 | **Dependency and image scanning in CI** | neither Dependabot nor Trivy nor CodeQL. A vulnerability in a transitive dependency reaches production silently |
+| 15 | **Restrict `/admin/**` at the proxy** | there is no rule in the `Caddyfile`; the editing door is open to the internet and held only by the token |
+| 16 | **Enable MFA in the realm** | a leaked editor password is the entire client base |
+| 17 | **Trim the application role's rights** | the trigger does not protect the log from `TRUNCATE`; `UPDATE`/`DELETE`/`TRUNCATE` must be revoked, and it should become a migration rather than a line in a runbook somebody forgets |
+| 18 | **A rate limit at the proxy** | today it lives in process memory: with a second instance it becomes per-instance, and there is no global one |
+| 19 | **Verify a backup restore** | the daily `pg_dump` exists and has been restored zero times. An unrestored backup is a hypothesis |
+| 20 | **Secrets in Lockbox** | today they live as an `.env` file on a machine |
+
+Items 14–20 come from reconciling the diagram with the code; the full breakdown
+is in [architecture/target_architecture.en.md](architecture/target_architecture.en.md).
 
 ---
 
@@ -850,8 +860,9 @@ no separate port had to be introduced for that.
    the period is confirmed it must not be introduced: deleting by a wrong period
    is irreversible.
 3. Whether `/admin` is closed at the network level or left behind a password and
-   MFA. Technically both are ready: the door is one and closes wholesale at the
-   proxy.
+   MFA. The door is single, so either option is one rule in the `Caddyfile` plus
+   a realm policy. **Neither is done today:** there is no rule at the proxy and
+   MFA is off in the realm.
 4. Which cloud. The storage runs on S3, and moving between MinIO and Yandex
    Object Storage changes the address and the keys, not the code.
 5. When MFA is switched on in the realm. This does not concern the portal: it
@@ -887,6 +898,7 @@ The full roadmap is [operations/roadmap.en.md](operations/roadmap.en.md): stage 
 | You need | File |
 | --- | --- |
 | Target architecture, contours, budget | [architecture/vedal_portal_owner_brief.en.md](architecture/vedal_portal_owner_brief.en.md) |
+| The target architecture diagram with a state per block | [architecture/target_architecture.en.md](architecture/target_architecture.en.md) |
 | Technical decisions, accepted and rejected | [superpowers/specs/2026-08-06-vedal-portal-architecture-design.en.md](superpowers/specs/2026-08-06-vedal-portal-architecture-design.en.md) |
 | What is built on the backend, how to run it, the ports | [../backend/README.en.md](../backend/README.en.md) |
 | The public API contract: entry points, forms, entities, errors | [api/README.en.md](api/README.en.md), [api/vedal-openapi.yaml](api/vedal-openapi.yaml) |
