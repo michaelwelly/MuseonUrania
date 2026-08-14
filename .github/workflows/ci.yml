@@ -9,9 +9,11 @@ name: Сборка и проверки
 
 on:
   push:
-    branches: [main, dev, back, front, infra, docs]
+    branches: [main, dev, db, back, front, infra, docs]
   pull_request:
-    branches: [main, dev]
+    # `infra` здесь потому, что туда приходят PR от Dependabot: без него
+    # обновление зависимости проверялось бы уже после мержа.
+    branches: [main, dev, infra]
 
 # Новый коммит в ту же ветку отменяет предыдущий запуск: пока он досчитывает,
 # его результат уже неинтересен.
@@ -117,21 +119,32 @@ jobs:
         run: npm run build
 
   images:
-    name: Образы собираются
+    name: Образы собираются и сканируются
     runs-on: ubuntu-latest
     # Собирать образы имеет смысл только после того, как тесты прошли:
     # иначе они собираются из заведомо сломанного дерева.
     needs: [backend, frontend]
+
+    permissions:
+      contents: read
+      # Отчёт Trivy уезжает во вкладку Security, а не в лог, который никто
+      # не открывает.
+      security-events: write
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: docker/setup-buildx-action@v3
 
+      # load: true оставляет образ в локальном демоне — без этого сканировать
+      # нечего: push отключён, и образ существует только внутри buildx.
       - name: Образ портала
         uses: docker/build-push-action@v6
         with:
           context: ./backend
           push: false
+          load: true
+          tags: vedal/portal:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -140,6 +153,8 @@ jobs:
         with:
           context: ./backend/api-gateway
           push: false
+          load: true
+          tags: vedal/api-gateway:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -148,8 +163,67 @@ jobs:
         with:
           context: ./frontend
           push: false
+          load: true
+          tags: vedal/site:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # Trivy смотрит внутрь образа: пакеты базового слоя и джарники рядом
+      # с ними. Dependabot этого не видит — там нет ни одного pom.xml.
+      #
+      # Порог разнесён надвое намеренно. HIGH уезжает в отчёт и виден, но
+      # сборку не роняет: постоянно красный CI перестают читать через неделю.
+      # CRITICAL с готовым исправлением сборку роняет — это уже не «однажды
+      # посмотрим», а «оно уже чинится одной строкой».
+      #
+      # ignore-unfixed отсекает то, для чего исправления не выпущено:
+      # такая запись говорит не о нашей нерасторопности, а о состоянии мира,
+      # и рычага у неё нет.
+      - name: Уязвимости в образах — отчёт
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: vedal/portal:ci
+          format: sarif
+          output: trivy-portal.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+
+      - name: Отчёт в Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-portal.sarif
+          category: trivy-portal
+
+      - name: Критические уязвимости роняют сборку
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: vedal/portal:ci
+          format: table
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Критические уязвимости в шлюзе
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: vedal/api-gateway:ci
+          format: table
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Критические уязвимости в образе сайта
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: vedal/site:ci
+          format: table
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
 
   stack:
     name: Стек поднимается целиком
