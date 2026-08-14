@@ -163,16 +163,20 @@ Worked out from the code rather than from intentions. Details in
   dictionary of known columns rather than from a request parameter;
 - personal data never reaches the topics or the audit log; the log is
   append-only;
-- the container does not run as root.
+- the container does not run as root;
+- dependencies, code and images are scanned in CI: Dependabot, CodeQL, Trivy —
+  three checks, none of which finds what the other two find;
+- the log is closed against `TRUNCATE` by a trigger, and `TRUNCATE` is revoked
+  from the application role on every table (migration `V15`).
 
 **Not closed — mandatory before deployment:**
 
 | # | What | What it risks |
 | --- | --- | --- |
-| 1 | No dependency or image scanning in CI | A vulnerability in a transitive dependency reaches production silently |
+| 1 | ~~No dependency or image scanning in CI~~ | ✅ Dependabot, CodeQL and Trivy; a CRITICAL with a released fix fails the build |
 | 2 | `/admin/**` is not restricted at the proxy | The editing door is open to the internet, held only by the token |
 | 3 | MFA is not enabled in the realm | A leaked editor password is the client base |
-| 4 | The application role's rights are not trimmed | The trigger does not protect the log from `TRUNCATE`; `UPDATE`/`DELETE`/`TRUNCATE` must be revoked |
+| 4 | The application role is the schema owner, and in the stack a superuser too | The revoke from `V15` does not bind a superuser at all: it does not undergo a privilege check. The log is held by the trigger, the other tables by nothing. A dedicated runtime role is needed |
 | 5 | The rate limit lives in process memory | With a second instance it becomes per-instance; the proxy has no global limit |
 | 6 | The backup has never been restored | An unrestored backup is a hypothesis |
 | 7 | Secrets sit in `.env`, Lockbox is only on the diagram | A secret lives as a file on a machine |

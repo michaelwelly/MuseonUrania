@@ -437,7 +437,8 @@ Rules that cannot be bypassed by editing a controller or by an editor's mistake:
 - `quote_sent_has_date` — a sent quote must remember when it was sent;
 - `interaction_has_subject` — a history entry is attached to a deal, a client
   or a lead rather than hanging in the air;
-- the `audit_entry_append_only` trigger — the log cannot be edited retroactively;
+- the `audit_entry_append_only` trigger — the log can be neither edited
+  retroactively, nor deleted row by row, nor emptied wholesale;
 - the `version` column on products, news items, documents, clients, deals and
   quotes — two editors who opened the same card do not silently overwrite each
   other.
@@ -456,8 +457,41 @@ would never fire, because the version is read from the database inside the same
 transaction and always matches itself. Both cases surface as a `409` with an
 explanation: for the editor it is one and the same situation.
 
-The trigger does not protect against `TRUNCATE`. The real protection is revoking
-`UPDATE`/`DELETE`/`TRUNCATE` from the application role during environment setup.
+**What used to be written here about `TRUNCATE` was wrong.** The belief was that
+a trigger does not help because statement triggers do not fire on `TRUNCATE`.
+They do: PostgreSQL supports `BEFORE TRUNCATE ... FOR EACH STATEMENT`, and such
+a trigger stops the statement. Verified on PostgreSQL 16 and pinned by the test
+`AuditLogTest.journalRejectsTruncate`.
+
+The `V15__least_privilege.sql` migration puts both measures in place, and they
+close different things:
+
+| Measure | What it holds against | What limits it |
+| --- | --- | --- |
+| the `audit_entry_no_truncate` trigger | a typo in a console, an injection into a query, an extra line in a script | bypassed by an explicit `ALTER TABLE ... DISABLE TRIGGER` |
+| revoking `UPDATE`/`DELETE`/`TRUNCATE` from the application role | the same things, at the level of privileges rather than one table | **does not bind a superuser at all** |
+
+The second limitation is not a detail but a deployment requirement. The
+`postgres` image creates `POSTGRES_USER` as a superuser, and a superuser does not
+fail a privilege check — it does not undergo one. In the local stack and in the
+tests the revoke is therefore decorative, and the log is held by the trigger
+alone. **In a deployed environment the application role must be an ordinary
+one** — otherwise everything above is written in vain.
+
+`TRUNCATE` is revoked not only on the log but on every table: the application
+never empties any of them wholesale. The revoke covers the tables that existed
+at `V15`; a table from the next migration comes with full owner rights again, and
+`ALTER DEFAULT PRIVILEGES` does not change that — an owner's rights are implied,
+not granted. So a `revoke` line has to be added to every migration that creates
+a table, and `LeastPrivilegeTest` makes forgetting it impossible: otherwise the
+difference between "`TRUNCATE` is revoked" and "revoked except for three tables
+added in September" would be visible from nowhere.
+
+Left open: the application connects to the database as the schema owner, that is,
+as the same role Flyway runs migrations with. An owner grants revoked rights back
+to itself in one line. Real separation is a dedicated runtime role, neither a
+superuser nor the owner; it touches `compose.yaml`, `compose.prod.yaml`,
+`.env.example` and `PostgresTestBase`.
 
 ### 5.8 Environments and running it
 
@@ -607,8 +641,8 @@ upon request; infrastructure in Russia.
 
 ### 6.1 Backend — working
 
-136 Java files in the portal and 2 in the gateway, 23 test classes (155 portal
-tests, 4 gateway tests, all green; plus 56 frontend tests), 14 Flyway migrations,
+136 Java files in the portal and 2 in the gateway, 24 test classes (159 portal
+tests, 4 gateway tests, all green; plus 56 frontend tests), 15 Flyway migrations,
 18 controllers, 12 catalog items in the seed, 5 categories. The coverage gate is
 70% of instructions and 45% of branches against 72% and 47% achieved.
 Spring Boot 4.1.0 on Spring Framework 7, Java 25, Jackson 3,
@@ -733,10 +767,10 @@ Metrica from section 8 — those are about content, not about the wire.
 | 11 | ~~Remove the Thymeleaf admin pages~~ | ✅ gone, together with the login form and the cookie session. The portal has no browser-facing page left |
 | 12 | Outbox cleanup | the table grows without bound. Deleting needs care around Debezium: `skipped.operations` already drops `d`, but the replication slot must read a row before it is removed |
 | 13 | `ETag` on the public API | deliberately deferred: on twelve items the gain is zero and `Cache-Control` is already in place |
-| 14 | **Dependency and image scanning in CI** | neither Dependabot nor Trivy nor CodeQL. A vulnerability in a transitive dependency reaches production silently |
+| 14 | ~~Dependency and image scanning in CI~~ | ✅ three checks that do not overlap: Dependabot on versions (PRs land in `infra`), CodeQL on the code, Trivy inside the images. Trivy's threshold is split in two: HIGH is visible in the report, CRITICAL with a released fix fails the build |
 | 15 | **Restrict `/admin/**` at the proxy** | there is no rule in the `Caddyfile`; the editing door is open to the internet and held only by the token |
 | 16 | **Enable MFA in the realm** | a leaked editor password is the entire client base |
-| 17 | **Trim the application role's rights** | the trigger does not protect the log from `TRUNCATE`; `UPDATE`/`DELETE`/`TRUNCATE` must be revoked, and it should become a migration rather than a line in a runbook somebody forgets |
+| 17 | ~~Trim the application role's rights~~ | ✅ by migration `V15`, not by a runbook line: a `BEFORE TRUNCATE` trigger on the log plus revoking `UPDATE`/`DELETE`/`TRUNCATE`. The claim "a trigger does not protect against `TRUNCATE`" turned out to be wrong — see section 5.7. **Not closed:** the application connects as the schema owner, and in the stack as a superuser, for whom a revoke means nothing. A dedicated runtime role is the next step |
 | 18 | **A rate limit at the proxy** | today it lives in process memory: with a second instance it becomes per-instance, and there is no global one |
 | 19 | **Verify a backup restore** | the daily `pg_dump` exists and has been restored zero times. An unrestored backup is a hypothesis |
 | 20 | **Secrets in Lockbox** | today they live as an `.env` file on a machine |

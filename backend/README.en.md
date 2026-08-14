@@ -263,16 +263,36 @@ Rules that cannot be bypassed by editing a controller or by an editor's mistake:
 - `quote_sent_has_date` — a sent quote must remember when it was sent;
 - `interaction_has_subject` — a history entry is attached to a deal, a client
   or a lead rather than hanging in the air;
-- the `audit_entry_append_only` trigger — the log cannot be edited retroactively.
+- the `audit_entry_append_only` trigger — the log can be neither edited
+  retroactively, nor deleted row by row, nor emptied wholesale.
 
 One constraint is deferred — `quote_item_position_unique`. Quote lines are
 replaced wholesale, and in a single flush Hibernate inserts the new row before
 deleting the old one; checking at `COMMIT` keeps the rule strict and removes the
 dependency on statement order inside the transaction.
 
-The trigger does not protect against `TRUNCATE`: statement triggers do not fire
-for it. The real protection is revoking `UPDATE`/`DELETE`/`TRUNCATE` from the
-application role, which is an administrator step during environment setup.
+It used to say here that the trigger does not protect against `TRUNCATE` because
+statement triggers do not fire for it. **That is wrong:** PostgreSQL supports
+`BEFORE TRUNCATE ... FOR EACH STATEMENT`, and such a trigger stops the statement.
+The `V15__least_privilege.sql` migration installs it, and
+`AuditLogTest.journalRejectsTruncate` keeps the claim from drifting away from the
+database again.
+
+The same migration revokes `UPDATE`/`DELETE`/`TRUNCATE` from the application role
+on the log, and `TRUNCATE` on every table. That is the second line, and it has a
+boundary worth knowing: **a revoke does not bind a superuser at all.** The
+`postgres` image creates `POSTGRES_USER` as exactly that, so in the local stack
+and in the tests the revoke is decorative and the trigger alone holds. In a
+deployed environment the application role must be an ordinary one.
+
+`LeastPrivilegeTest` checks the granted privileges themselves rather than an
+attempt to use them — for the same reason — and it also keeps the revoke from
+drifting: a table created by a new migration without a `revoke truncate` line
+turns the build red.
+
+Left open: the application connects as the schema owner, that is, as the same
+role Flyway runs migrations with, and an owner grants revoked rights back to
+itself in one line. Real separation is a dedicated runtime role.
 
 ## Ports to the outside
 
