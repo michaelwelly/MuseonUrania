@@ -101,8 +101,9 @@ MuseonUrania/
 ├─ frontend/                Next.js 16, App Router, TypeScript, CSS Modules
 │  ├─ app/(site)/           the public site: nine routes
 │  ├─ app/(admin)/          the admin UI: dashboard, products, categories, news,
-│  │                        documents, leads, audit log. Its own root layout —
-│  │                        the site's chrome does not leak into it
+│  │                        documents, audit log; CRM — leads, clients, deals,
+│  │                        quotes, analytics. Its own root layout — the site's
+│  │                        chrome does not leak into it
 │  ├─ components/           Header, Footer, LeadForm, UraniaChat/Widget, AnimatedLogo, VedalMap…
 │  ├─ content/*.ts          ALL page text; unconfirmed facts marked «ожидает уточнения»
 │  ├─ lib/api.ts            public API: read at build time
@@ -607,7 +608,7 @@ upon request; infrastructure in Russia.
 ### 6.1 Backend — working
 
 136 Java files in the portal and 2 in the gateway, 23 test classes (155 portal
-tests, 4 gateway tests, all green; plus 37 frontend tests), 14 Flyway migrations,
+tests, 4 gateway tests, all green; plus 56 frontend tests), 14 Flyway migrations,
 18 controllers, 12 catalog items in the seed, 5 categories. The coverage gate is
 70% of instructions and 45% of branches against 72% and 47% achieved.
 Spring Boot 4.1.0 on Spring Framework 7, Java 25, Jackson 3,
@@ -673,8 +674,19 @@ Nine site routes: `/`, `/products`, `/products/[slug]`, `/production`,
 (R1 and R2 share one), five categories, animations, a preloader, an animated
 VEDAL mark, a map, tabs on the product page.
 
-Twelve admin routes: dashboard, products with a list and an edit form,
-categories, news, documents, leads, audit log, the Keycloak callback.
+Twenty-one admin routes. Site content: dashboard, products with a list and an
+edit form, categories, news, documents, audit log, the Keycloak callback. CRM:
+leads with conversion into a deal, clients, deals across three pipelines, quotes,
+analytics in four dimensions. The navigation is split into those two sections:
+a flat list of eleven items reads as a heap, while the sections match what the
+person is doing — an editor edits the catalog, a manager runs deals.
+
+The card version travels back in the edit form, and it is taken from the portal's
+response rather than from what was read when the card was opened: without that,
+a second save in a row gets a `409` out of nowhere. The version conflict itself
+is handled apart from other refusals: the editor needs "re-read the card", not
+"try again" — a retry would send the same stale version and get the same refusal
+in a loop.
 
 The site and the admin UI are separated by the `(site)` and `(admin)` route
 groups, each with its own root layout. A nested layout cannot remove the parent's

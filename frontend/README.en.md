@@ -40,14 +40,34 @@ Nine screens of the site, the Urania chat, the lead forms. The markup comes from
 [prototypes/urania-web-interface.html](../prototypes/urania-web-interface.html),
 the requirements from [docs/frontend](../docs/frontend).
 
+Twenty-one admin screens: site content (products, categories, news, documents,
+audit log) and CRM (leads with conversion into a deal, clients, deals across
+three pipelines, quotes, analytics in four dimensions).
+
 ## Structure
 
-- `app/` — routes and global styles.
+- `app/(site)/` — the public site.
+- `app/(admin)/` — the admin UI with its own root layout: the site's chrome does
+  not leak into it.
 - `components/` — header, footer, forms, assistant blocks.
 - `lib/api.ts` — reading the public API on the server.
 - `lib/submit.ts` — sending leads and Urania questions from the browser.
+- `lib/admin.ts` — the admin API: browser only, token only.
+- `lib/auth.ts` — Keycloak sign-in, authorization code with PKCE.
 - `content/*.ts` — all site text and the fallback data source. Unconfirmed facts
   are marked `AWAITING`.
+
+## Editing cards in the admin UI
+
+An editable card is served with a version, and that version must travel back in
+the edit form. The portal compares it and answers `409` if someone else edited
+the card between the read and the save — otherwise one edit silently overwrites
+another.
+
+The version must be taken **from the save response**, not from what was read
+when the card was opened: without that, a second save in a row gets a `409` out
+of nowhere. The refusal itself is shown apart from other errors — the editor
+needs "re-read the card", not "try again".
 
 ## Content rules
 
