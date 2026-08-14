@@ -1898,6 +1898,13 @@ components:
             нной руками."
         lostReason:
           type: string
+        lostStages:
+          type: array
+          description: "Стадии, которыми эта воронка заканчивается отказом. Перево\
+            д в такую стадию требует причины проигрыша: форма спрашивает её до наж\
+            атия, а не после отказа."
+          items:
+            type: string
         owner:
           type: string
         pipeline:
@@ -1921,6 +1928,11 @@ components:
           type: integer
           format: int64
           description: Версия карточки. Её надо вернуть в форме правки.
+        wonStages:
+          type: array
+          description: "Стадии, которыми эта воронка заканчивается успехом."
+          items:
+            type: string
     AdminDealAttach:
       type: object
       description: Приложить согласованный документ к сделке.
@@ -3009,10 +3021,22 @@ components:
     PipelineView:
       type: object
       properties:
+        lostStages:
+          type: array
+          description: "Стадии, которыми она заканчивается отказом. Чем воронка ко\
+            нчается — правило домена, и форма берёт его отсюда: список, переписанн\
+            ый в интерфейс, разъезжается с доменом на первой же новой воронке."
+          items:
+            type: string
         pipeline:
           type: string
         stages:
           type: array
+          items:
+            type: string
+        wonStages:
+          type: array
+          description: "Стадии, которыми эта воронка заканчивается успехом."
           items:
             type: string
     UploadedMedia:

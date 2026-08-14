@@ -51,6 +51,12 @@ constraint in the schema. In the domain it explains itself in words before the
 click; in the schema it cannot be bypassed by editing a controller, by an
 import, or by a console session.
 
+The outcomes travel outwards together with the list of stages: `wonStages` and
+`lostStages` are in `GET /deals/pipelines` and in the deal card alike. The
+admin UI needs them to ask for the loss reason before the click rather than
+after the portal refuses — and to avoid keeping a list of outcomes of its own,
+which a fourth pipeline would silently put out of step with the domain.
+
 ## What is deliberately not automated
 
 **Sending a quote does not move the deal to `quoted`, and an accepted quote
@@ -143,7 +149,7 @@ All in the admin group `/api/admin/v1/**`; none of them public.
 | `/leads/{id}/history` | history of a lead: read and append |
 | `/clients` | client base: search, card, edit |
 | `/clients/{id}/history` | history of a client |
-| `/deals/pipelines` | pipelines and their stages, so the form can draw a choice |
+| `/deals/pipelines` | pipelines, their stages and outcomes, so the form can draw a choice |
 | `/deals` | deals by page, filtered by pipeline, stage and client |
 | `POST /deals/{id}/stage` | move along the funnel; a loss requires a reason |
 | `/deals/{id}/attachments` | attach and detach an approved document |
