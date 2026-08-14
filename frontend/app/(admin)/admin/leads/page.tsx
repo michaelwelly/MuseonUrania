@@ -1,7 +1,23 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { lead, leadStatuses, leads, triageLead, type Lead, type LeadRow, type Page } from "@/lib/admin";
+import {
+  clients as loadClients,
+  convertLead,
+  lead,
+  leadStatuses,
+  leads,
+  pipelines as loadPipelines,
+  triageLead,
+  type ClientRow,
+  type Conversion,
+  type Lead,
+  type LeadRow,
+  type Page,
+  type Pipeline,
+} from "@/lib/admin";
+import History from "../History";
 import { Field, Note, message, useLoad, when } from "../ui";
 
 // Единственная страница админки, где на экране персональные данные.
@@ -235,8 +251,176 @@ function LeadCard({
               {saving ? "Сохраняем…" : "Сохранить разбор"}
             </button>
           </div>
+
+          <ConvertToDeal lead={data} onError={onError} />
         </>
       )}
+
+      <History of="leads" id={id} />
     </div>
   );
+}
+
+// Разбор заявки в сделку.
+//
+// Клиент либо указывается существующий, либо заводится из данных заявки.
+// Портал не ищет совпадения сам: слить две карточки потом можно, разделить
+// ошибочно слитые — уже нет. Заявка разбирается в сделку один раз — это
+// ограничение схемы, и повторная попытка вернётся отказом.
+function ConvertToDeal({
+  lead: source,
+  onError,
+}: {
+  lead: Lead;
+  onError: (message: string | null) => void;
+}) {
+  const router = useRouter();
+  const { data: funnels } = useLoad<Pipeline[]>(loadPipelines);
+
+  const [existing, setExisting] = useState(false);
+  const [typed, setTyped] = useState(source.company ?? source.name);
+  const [query, setQuery] = useState("");
+  const { data: found } = useLoad<Page<ClientRow>>(
+    () => (query ? loadClients(query, 0, 20) : Promise.resolve(empty())),
+    query,
+  );
+
+  const [form, setForm] = useState<Conversion>({
+    clientId: null,
+    pipeline: "sales",
+    title: null,
+    amount: null,
+    owner: source.owner ?? "",
+  });
+  const [converting, setConverting] = useState(false);
+
+  const set = <K extends keyof Conversion>(key: K, value: Conversion[K]) =>
+    setForm((f) => ({ ...f, [key]: value }));
+
+  async function convert() {
+    setConverting(true);
+    onError(null);
+    try {
+      const deal = await convertLead(source.id, {
+        ...form,
+        clientId: existing ? form.clientId : null,
+      });
+      router.push(`/admin/deals/${deal.id}/`);
+    } catch (e) {
+      onError(message(e));
+    } finally {
+      setConverting(false);
+    }
+  }
+
+  return (
+    <div className="convert">
+      <h3 className="admin-card__title">Разобрать в сделку</h3>
+      <p className="admin-hint" style={{ marginBottom: 14 }}>
+        Заявка разбирается в сделку один раз — это ограничение схемы, а не проверка формы.
+        Вместе со сделкой заводится карточка клиента, если не выбран существующий.
+      </p>
+
+      <div className="grid2">
+        <Field label="Воронка">
+          <select value={form.pipeline} onChange={(e) => set("pipeline", e.target.value)}>
+            {(funnels ?? []).map((f) => (
+              <option key={f.pipeline} value={f.pipeline}>
+                {f.pipeline}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="Ответственный">
+          <input value={form.owner} onChange={(e) => set("owner", e.target.value)} />
+        </Field>
+      </div>
+
+      <label className="field--row" style={{ marginBottom: 12 }}>
+        <input
+          type="checkbox"
+          checked={existing}
+          onChange={(e) => {
+            setExisting(e.target.checked);
+            if (!e.target.checked) set("clientId", null);
+          }}
+        />
+        <span style={{ fontSize: 13 }}>Клиент уже заведён — выбрать из базы</span>
+      </label>
+
+      {existing && (
+        <>
+          <div className="row" style={{ marginBottom: 10 }}>
+            <input
+              className="admin-search"
+              value={typed}
+              placeholder="Наименование или ИНН"
+              onChange={(e) => setTyped(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && setQuery(typed.trim())}
+            />
+            <button className="btn" onClick={() => setQuery(typed.trim())}>
+              Найти
+            </button>
+          </div>
+
+          {found && found.items.length > 0 && (
+            <div className="picker">
+              {found.items.map((c) => (
+                <label key={c.id} className="picker__row">
+                  <input
+                    type="radio"
+                    name={`client-${source.id}`}
+                    checked={form.clientId === c.id}
+                    onChange={() => set("clientId", c.id)}
+                  />
+                  <span>
+                    {c.name}
+                    {c.inn && <span className="mono"> · {c.inn}</span>}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+
+          {query && found?.items.length === 0 && (
+            <p className="admin-hint">
+              По этому запросу никого нет. Снимите галочку — карточка заведётся из заявки.
+            </p>
+          )}
+        </>
+      )}
+
+      <div className="grid2">
+        <Field label="Название сделки" hint="Пусто — портал соберёт из формы и изделия заявки.">
+          <input
+            value={form.title ?? ""}
+            onChange={(e) => set("title", e.target.value || null)}
+          />
+        </Field>
+
+        <Field label="Сумма" hint="Пусто — сумма ещё не названа.">
+          <input
+            type="number"
+            value={form.amount ?? ""}
+            onChange={(e) => set("amount", e.target.value === "" ? null : Number(e.target.value))}
+          />
+        </Field>
+      </div>
+
+      <div className="row row--end">
+        <button
+          className="btn btn--primary"
+          disabled={converting || (existing && !form.clientId)}
+          onClick={() => void convert()}
+        >
+          {converting ? "Заводим…" : "Завести сделку"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function empty(): Page<ClientRow> {
+  return { items: [], page: 0, size: 0, total: 0, pages: 0 };
 }

@@ -71,6 +71,18 @@ export function fieldErrors(e: unknown): Record<string, string> {
   return e instanceof AdminError ? (e.fields ?? {}) : {};
 }
 
+/**
+ * Отказ по версии.
+ *
+ * От остальных ошибок отличается тем, что делать редактору: не «повторите»,
+ * а «перечитайте карточку, вашей правки в ней нет». Показать 409 как общую
+ * неудачу значит предложить нажать «Сохранить» ещё раз — а он снова не
+ * сохранит, и так до тех пор, пока человек не решит, что портал сломан.
+ */
+export function isConflict(e: unknown): boolean {
+  return e instanceof AdminError && e.status === 409;
+}
+
 export function Note({ kind, children }: { kind: "error" | "ok"; children: React.ReactNode }) {
   if (!children) return null;
   return <p className={`note note--${kind}`}>{children}</p>;
@@ -111,6 +123,29 @@ export function when(iso: string | null): string {
   return Number.isNaN(date.valueOf())
     ? iso
     : date.toLocaleString("ru-RU", { dateStyle: "short", timeStyle: "short" });
+}
+
+/** Дата без времени: портал отдаёт `YYYY-MM-DD`, разбирать её как момент незачем. */
+export function day(value: string | null): string {
+  if (!value) return "—";
+  const [year, month, date] = value.split("-");
+  return date ? `${date}.${month}.${year}` : value;
+}
+
+/**
+ * Сумма с валютой.
+ *
+ * Разряды разделяются, копейки показываются всегда: «2650000» и «2 650 000,00 ₽»
+ * читаются по-разному, и в КП это разница между «два с половиной миллиона»
+ * и «двадцать шесть миллионов».
+ */
+export function money(amount: number | null, currency: string | null): string {
+  if (amount === null || amount === undefined) return "—";
+  const shown = amount.toLocaleString("ru-RU", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return currency ? `${shown} ${currency}` : shown;
 }
 
 export function Empty({ children }: { children: React.ReactNode }) {

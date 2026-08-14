@@ -270,6 +270,322 @@ export const leadStatuses = () => get<string[]>("/leads/statuses");
 export const lead = (id: string) => get<Lead>(`/leads/${id}`);
 export const triageLead = (id: string, status: string, owner: string | null) =>
   post<Lead>(`/leads/${id}/triage`, { status, owner });
+export const convertLead = (id: string, form: Conversion) =>
+  post<Deal>(`/leads/${id}/convert`, form);
+
+// ————— история переписки —————
+//
+// Одна на заявку, клиента и сделку: запись у них одинаковая, отличается
+// только тем, к чему она привязана. История дописывается и читается —
+// правки и удаления в API нет, и это решение бэка, а не пробел.
+
+export type Interaction = {
+  id: string;
+  dealId: string | null;
+  clientId: string | null;
+  leadId: string | null;
+  kind: string;
+  direction: string | null;
+  at: string;
+  subject: string | null;
+  body: string;
+  actor: string;
+};
+
+export type NewInteraction = {
+  kind: string;
+  direction: string | null;
+  /** Пусто — портал поставит сейчас. Звонок записывают после разговора. */
+  at: string | null;
+  subject: string;
+  body: string;
+};
+
+export type HistoryOf = "leads" | "clients" | "deals";
+
+export const history = (of: HistoryOf, id: string) =>
+  get<Interaction[]>(`/${of}/${id}/history`);
+export const addToHistory = (of: HistoryOf, id: string, entry: NewInteraction) =>
+  post<Interaction>(`/${of}/${id}/history`, entry);
+
+// ————— клиенты —————
+//
+// Самые чувствительные данные портала. Размер страницы ограничен сверху
+// на портале — по той же причине, что и у заявок.
+
+export type ClientRow = {
+  id: string;
+  name: string;
+  kind: string;
+  inn: string | null;
+  city: string | null;
+  owner: string | null;
+  /** Сколько сделок заведено по этому клиенту. */
+  deals: number;
+  updatedAt: string;
+};
+
+export type Client = {
+  id: string;
+  /** Версия карточки: уезжает обратно в форме правки, иначе `409`. */
+  version: number;
+  name: string;
+  kind: string;
+  inn: string | null;
+  kpp: string | null;
+  externalId: string | null;
+  country: string | null;
+  city: string | null;
+  email: string | null;
+  phone: string | null;
+  note: string | null;
+  owner: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+// Поля формы — строки, а не `string | null`: пустое поле ввода даёт "",
+// и портал принимает "" везде, где допускает пустое значение. Гонять
+// туда-обратно null ради того же смысла значит писать преобразование
+// в обе стороны на каждом поле.
+export type ClientForm = {
+  /** При создании не нужна. */
+  version: number | null;
+  name: string;
+  kind: string;
+  inn: string;
+  kpp: string;
+  externalId: string;
+  country: string;
+  city: string;
+  email: string;
+  phone: string;
+  note: string;
+  owner: string;
+};
+
+export const clients = (query: string, page = 0, size = 50) => {
+  const params = new URLSearchParams({ page: String(page), size: String(size) });
+  if (query) params.set("query", query);
+  return get<Page<ClientRow>>(`/clients?${params}`);
+};
+export const clientKinds = () => get<string[]>("/clients/kinds");
+export const client = (id: string) => get<Client>(`/clients/${id}`);
+export const createClient = (form: ClientForm) => post<Client>("/clients", form);
+export const updateClient = (id: string, form: ClientForm) =>
+  put<Client>(`/clients/${id}`, form);
+
+// ————— сделки —————
+
+export type Pipeline = { pipeline: string; stages: string[] };
+
+export type DealRow = {
+  id: string;
+  clientId: string;
+  clientName: string;
+  pipeline: string;
+  title: string;
+  stage: string;
+  amount: number | null;
+  currency: string;
+  productSlug: string | null;
+  owner: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Attachment = {
+  documentId: string;
+  slug: string;
+  title: string;
+  attachedBy: string;
+  attachedAt: string;
+};
+
+export type Deal = {
+  id: string;
+  version: number;
+  clientId: string;
+  clientName: string;
+  /** Заявка, из которой заведена сделка. Пусто у заведённой руками. */
+  leadId: string | null;
+  pipeline: string;
+  title: string;
+  stage: string;
+  /** Стадии этой воронки по порядку: форма рисует выбор из них. */
+  stages: string[];
+  amount: number | null;
+  currency: string;
+  productSlug: string | null;
+  owner: string | null;
+  closedAt: string | null;
+  lostReason: string | null;
+  attachments: Attachment[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type NewDeal = {
+  clientId: string;
+  pipeline: string;
+  title: string;
+  amount: number | null;
+  currency: string;
+  productSlug: string;
+  owner: string;
+};
+
+export type DealForm = {
+  version: number | null;
+  title: string;
+  amount: number | null;
+  currency: string;
+  productSlug: string;
+  owner: string;
+};
+
+/** Разбор заявки в сделку. Пустой `clientId` — завести клиента из заявки. */
+export type Conversion = {
+  clientId: string | null;
+  pipeline: string;
+  title: string | null;
+  amount: number | null;
+  owner: string;
+};
+
+export const pipelines = () => get<Pipeline[]>("/deals/pipelines");
+export const deals = (
+  filter: { pipeline?: string; stage?: string; clientId?: string },
+  page = 0,
+  size = 50,
+) => {
+  const params = new URLSearchParams({ page: String(page), size: String(size) });
+  if (filter.pipeline) params.set("pipeline", filter.pipeline);
+  if (filter.stage) params.set("stage", filter.stage);
+  if (filter.clientId) params.set("clientId", filter.clientId);
+  return get<Page<DealRow>>(`/deals?${params}`);
+};
+export const deal = (id: string) => get<Deal>(`/deals/${id}`);
+export const createDeal = (form: NewDeal) => post<Deal>("/deals", form);
+export const updateDeal = (id: string, form: DealForm) => put<Deal>(`/deals/${id}`, form);
+export const moveDeal = (id: string, stage: string, lostReason: string | null) =>
+  post<Deal>(`/deals/${id}/stage`, { stage, lostReason });
+export const attachToDeal = (id: string, documentId: string) =>
+  post<Deal>(`/deals/${id}/attachments`, { documentId });
+export const detachFromDeal = (id: string, documentId: string) =>
+  request<Deal>(`/deals/${id}/attachments/${documentId}`, { method: "DELETE" });
+export const dealQuotes = (id: string) => get<QuoteRow[]>(`/deals/${id}/quotes`);
+
+// ————— коммерческие предложения —————
+//
+// Единственное место портала, где цену называет человек. Наружу — на сайт,
+// в каталог, в ответы Урании — она не попадает никогда.
+
+export type QuoteRow = {
+  id: string;
+  dealId: string;
+  dealTitle: string;
+  number: string;
+  status: string;
+  total: number | null;
+  currency: string;
+  validUntil: string | null;
+  sentAt: string | null;
+  createdAt: string;
+};
+
+export type QuoteItem = {
+  productSlug: string | null;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  /** Считает портал: цена × количество не должна расходиться с сохранённой. */
+  amount: number;
+};
+
+export type Quote = {
+  id: string;
+  version: number;
+  dealId: string;
+  dealTitle: string;
+  number: string;
+  status: string;
+  total: number | null;
+  currency: string;
+  validUntil: string | null;
+  note: string | null;
+  items: QuoteItem[];
+  sentAt: string | null;
+  decidedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type QuoteItemForm = {
+  productSlug: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+};
+
+export type NewQuote = {
+  dealId: string;
+  currency: string;
+  validUntil: string | null;
+  note: string;
+  items: QuoteItemForm[];
+};
+
+export type QuoteForm = {
+  version: number | null;
+  currency: string;
+  validUntil: string | null;
+  note: string;
+  items: QuoteItemForm[];
+};
+
+export const quotes = (status: string, page = 0, size = 50) => {
+  const params = new URLSearchParams({ page: String(page), size: String(size) });
+  if (status) params.set("status", status);
+  return get<Page<QuoteRow>>(`/quotes?${params}`);
+};
+export const quoteStatuses = () => get<string[]>("/quotes/statuses");
+export const quote = (id: string) => get<Quote>(`/quotes/${id}`);
+export const createQuote = (form: NewQuote) => post<Quote>("/quotes", form);
+export const updateQuote = (id: string, form: QuoteForm) => put<Quote>(`/quotes/${id}`, form);
+export const sendQuote = (id: string) => post<Quote>(`/quotes/${id}/send`);
+export const decideQuote = (id: string, status: string) =>
+  post<Quote>(`/quotes/${id}/decision`, { status });
+
+// ————— аналитика воронки —————
+//
+// Считается по заявкам, а не по сделкам: атрибуция — свойство того,
+// откуда человек пришёл. Сделка, заведённая руками, в разрезы не попадает.
+
+export type AnalyticsRow = {
+  key: string;
+  leads: number;
+  deals: number;
+  won: number;
+  lost: number;
+  wonAmount: number | null;
+};
+
+export type Analytics = {
+  by: string;
+  from: string | null;
+  to: string | null;
+  rows: AnalyticsRow[];
+  totals: Omit<AnalyticsRow, "key">;
+};
+
+export const analyticsDimensions = () => get<string[]>("/analytics/dimensions");
+export const analytics = (by: string, from: string, to: string) => {
+  const params = new URLSearchParams({ by });
+  if (from) params.set("from", from);
+  if (to) params.set("to", to);
+  return get<Analytics>(`/analytics?${params}`);
+};
 
 // ————— журнал —————
 
