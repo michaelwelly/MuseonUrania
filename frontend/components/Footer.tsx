@@ -79,6 +79,13 @@ export default function Footer() {
         <span title="Текст политики ожидает уточнения">
           Политика обработки персональных данных
         </span>
+        {/* Дверь сотрудника. prefetch={false} обязателен: у сайта и админки
+            разные корневые layout'ы, переход всё равно перезагружает страницу
+            целиком, а предзагрузка тянула бы бандл админки каждому посетителю
+            сайта — ради ссылки, которой воспользуются несколько человек. */}
+        <Link className={styles.staff} href="/admin/" prefetch={false}>
+          Вход для сотрудников
+        </Link>
         <span className={styles.disclaimer}>{footer.disclaimer}</span>
       </div>
     </footer>

@@ -200,6 +200,14 @@ a.pill:hover {
   color: #fff;
 }
 
+/* Служебная ссылка, а не пункт меню: подчёркивание отличает её от юридических
+   строк рядом, которые никуда не ведут. */
+.staff {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(255, 255, 255, 0.28);
+}
+
 .disclaimer {
   margin-left: auto;
   max-width: 52ch;
