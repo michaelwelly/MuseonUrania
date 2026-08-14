@@ -1,6 +1,6 @@
 // Одноразовый генератор миграции V11 из frontend/content/documents.ts.
 // Запуск из корня репозитория:
-//   node backend/tools/seed-documents.mjs > backend/src/main/resources/db/migration/V11__document_seed.sql
+//   node backend/tools/seed-documents.mjs > backend/app/src/main/resources/db/migration/V11__document_seed.sql
 import { documents } from "../../frontend/content/documents.ts";
 import { products } from "../../frontend/content/products.ts";
 import { randomUUID } from "node:crypto";

@@ -1,6 +1,6 @@
 // Одноразовый генератор миграции V2 из frontend/content/products.ts.
 // Запуск из корня репозитория:
-//   node backend/tools/seed-catalog.mjs > backend/src/main/resources/db/migration/V2__catalog_seed.sql
+//   node backend/tools/seed-catalog.mjs > backend/app/src/main/resources/db/migration/V2__catalog_seed.sql
 import { products, categories } from "../../frontend/content/products.ts";
 import { randomUUID } from "node:crypto";
 import { slugify } from "./slug.mjs";
