@@ -6,12 +6,16 @@
 }
 
 /* ---------- hero ---------- */
+
+/* Первый экран белый — по референсу
+   assets/urania/urania-web-integration-mockup-v1.png. Граница с шапкой
+   не теряется: у .bar в Header.module.css своя нижняя линия. */
 .hero {
   position: relative;
   display: grid;
   grid-template-columns: 1fr 588px;
   min-height: 648px;
-  background: var(--deep);
+  background: var(--page);
 }
 
 .heroCopy {
@@ -49,7 +53,7 @@
   font-size: 60px;
   line-height: 1.02;
   letter-spacing: -0.035em;
-  color: #fff;
+  color: var(--ink);
 }
 
 .heroLead {
@@ -57,7 +61,7 @@
   max-width: 46ch;
   font-size: 18px;
   line-height: 1.6;
-  color: var(--on-dark-lead);
+  color: var(--muted);
 }
 
 .heroActions {
@@ -100,15 +104,23 @@
   color: #fff;
 }
 
-.btnGhost {
-  border: 1px solid var(--on-dark-ghost);
-  color: #fff;
+/* Вторая кнопка первого экрана: обводка, а не призрак. На белом призрачная
+   (белая рамка, белый текст) не видна вовсе, а на референсе здесь как раз
+   зелёный контур. Класс переименован из btnGhost: на главной он был ровно
+   в одном месте, и оставить старое имя значило бы соврать про приём. */
+.btnOutline {
+  border: 1px solid var(--green);
+  background: var(--page);
+  /* Рамка — брендовый зелёный, надпись на тон темнее. На белом --green даёт
+     контраст 3.6:1, а это подпись 16 px: для неё нужно 4.5:1. --green-dark
+     даёт 5.4:1 и на глаз от --green не отличается. */
+  color: var(--green-dark);
   font-weight: 500;
 }
 
-.btnGhost:hover {
-  border-color: #fff;
-  color: #fff;
+.btnOutline:hover {
+  border-color: var(--green-dark);
+  color: var(--green-dark);
 }
 
 .btnDark {
