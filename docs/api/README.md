@@ -11,6 +11,7 @@
 | `vedal-openapi.json` | То же, для Postman, Insomnia, генерации клиента, `editor.swagger.io` |
 | `vedal-admin-openapi.yaml` | Админское API: контракт админки на фронте |
 | `vedal-admin-openapi.json` | То же в JSON |
+| `vedal.postman_collection.json` | Все двери одним импортом в Postman: 16 папок, 73 запроса |
 
 ## Две группы, и это не удобство раскладки
 
@@ -76,6 +77,46 @@ Validation — то есть из тех же проверок, которые �
 только health. Контракт для интеграции берут отсюда или из dev, а не с боевого
 адреса.
 
+## Коллекция Postman
+
+`vedal.postman_collection.json` — импорт одним файлом: **File → Import**.
+Обе группы вместе, публичные двери и админские, разложены по папкам
+в порядке работы.
+
+Она собирается генератором из тех же `docs/api/*.json`, а не пишется руками:
+набитая вручную, она разошлась бы с дверями на первой правке контракта.
+Поэтому править её в этом каталоге так же бессмысленно, как выгрузку.
+
+Чем отличается от простого импорта OpenAPI в Postman:
+
+- **Токен вставлять не надо.** Скрипт коллекции берёт его в Keycloak
+  по `username`/`password` из переменных и обновляет, когда протух.
+  Токен живёт пятнадцать минут, и вставлять его руками на середине разбора
+  сделки — ровно то, что отвлекает.
+- **Идентификаторы едут между запросами.** «Отправить заявку» кладёт
+  `leadId`, «Разобрать заявку в сделку» — `dealId` и `clientId`,
+  «Завести КП» — `quoteId`. Папки работают по порядку сверху вниз,
+  подставлять UUID руками не нужно.
+- У публичных папок стоит `noauth`, форма заявки получает `Idempotency-Key`,
+  необязательные параметры запроса приезжают выключенными.
+
+Переменные коллекции — адрес шлюза, адрес Keycloak, учётная запись:
+
+| Переменная | По умолчанию |
+| --- | --- |
+| `gateway` | `http://localhost:8080` |
+| `keycloak` | `http://localhost:8180` |
+| `username` / `password` | `editor` / `editor-local` |
+
+Адрес по умолчанию — шлюз. Портал напрямую отвечает на `8081`, но тогда
+включится CORS, которого через шлюз нет.
+
+Прогнать без Postman, из командной строки:
+
+```bash
+npx newman run docs/api/vedal.postman_collection.json --folder "Формы" --folder "Админка: заявки"
+```
+
 ## Как обновить выгрузку
 
 ```bash
@@ -87,6 +128,12 @@ curl -s http://localhost:8081/v3/api-docs/vedal-public -o docs/api/vedal-openapi
 curl -s http://localhost:8081/v3/api-docs.yaml/vedal-public -o docs/api/vedal-openapi.yaml
 curl -s http://localhost:8081/v3/api-docs/vedal-admin -o docs/api/vedal-admin-openapi.json
 curl -s http://localhost:8081/v3/api-docs.yaml/vedal-admin -o docs/api/vedal-admin-openapi.yaml
+```
+
+Коллекция пересобирается следом — она читает эти же файлы:
+
+```bash
+node backend/tools/postman-collection.mjs > docs/api/vedal.postman_collection.json
 ```
 
 Без Docker приложение поднимается локально — `cd backend && ./mvnw spring-boot:run`,
