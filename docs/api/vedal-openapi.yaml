@@ -32,7 +32,7 @@ info:
   version: v1
 servers:
 - description: Generated server url
-  url: http://localhost:8081
+  url: http://localhost:8099
 tags:
 - description: "Опубликованные изделия и категории. Неопубликованного в ответах не\
     т: фильтр стоит в запросе, а не в разметке сайта."
@@ -453,6 +453,13 @@ components:
         Отказ по проверкам приходит как `400` с разбором по полям в расширении
         `fields`, чтобы форма показала ошибку рядом с полем.
       properties:
+        campaign:
+          type: string
+          description: "Кампания, приведшая посетителя: `utm_campaign` или её анал\
+            ог. Разрез аналитики, необязателен."
+          example: innoprom-2026
+          maxLength: 200
+          minLength: 0
         company:
           type: string
           description: Организация. Необязательно.
@@ -484,6 +491,18 @@ components:
           example: quote
           minLength: 1
           pattern: quote|catalog|consultation|service|partner
+        language:
+          type: string
+          description: |-
+            Язык страницы, с которой отправлена заявка: двухбуквенный код. Разрез
+            аналитики — без него «по языку» посчитать нечем. Необязателен: заявка
+            без него принимается и попадает в отчёт строкой «—».
+          enum:
+          - ru
+          - en
+          - zh
+          example: ru
+          pattern: "^$|^[a-zA-Z]{2}$"
         message:
           type: string
           description: "Текст обращения, не короче десяти символов."

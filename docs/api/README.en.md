@@ -18,9 +18,15 @@ portal's server side.
 What outsiders integrate against; read by people who have no portal account and
 never will. Nine operations, five sections.
 
-**`vedal-admin`** — `/api/admin/v1/**`. The editing doors: products, categories,
-news, documents with file upload, leads, audit log, images. Twenty-five
-operations.
+**`vedal-admin`** — `/api/admin/v1/**`. The editing and CRM doors: products,
+categories, news, documents with file upload, leads, clients, deals, quotes,
+correspondence history, funnel analytics, audit log, images. Forty-six routes,
+sixty-four operations.
+
+The CRM doors live here and nowhere else. The client base, deal amounts and
+quote prices belong to the closed contour: they are absent from the public
+group not because nobody listed them there, but because no public door to them
+exists.
 
 The split exists so the list of editing doors does not end up in the file handed
 to an external integrator. Mechanically it is `pathsToExclude` in `OpenApiConfig`

@@ -32,7 +32,7 @@ info:
   version: v1
 servers:
 - description: Generated server url
-  url: http://localhost:8081
+  url: http://localhost:8099
 tags:
 - description: "Опубликованные изделия и категории. Неопубликованного в ответах не\
     т: фильтр стоит в запросе, а не в разметке сайта."
@@ -50,6 +50,67 @@ tags:
     точников нет — ответа нет, есть передача человеку."
   name: Ассистент
 paths:
+  /api/admin/v1/analytics:
+    get:
+      description: |
+        Считается по заявкам с левым соединением на сделку: заявка, не ставшая
+        сделкой, обязана попасть в отчёт — иначе конверсия везде равна единице.
+
+        Незаполненное значение разреза показывается как «—», а не прячется:
+        заявки без кампании — это тоже ответ.
+      operationId: report
+      parameters:
+      - description: "Разрез: product, source, language или campaign."
+        in: query
+        name: by
+        required: false
+        schema:
+          type: string
+          default: source
+      - description: "Начало периода включительно, `YYYY-MM-DD`. Пусто — с начала."
+        in: query
+        name: from
+        required: false
+        schema:
+          type: string
+          format: date
+      - description: "Конец периода включительно, `YYYY-MM-DD`. Пусто — по сегодня\
+          ."
+        in: query
+        name: to
+        required: false
+        schema:
+          type: string
+          format: date
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CrmAnalytics"
+          description: OK
+      security:
+      - keycloak: []
+      summary: Воронка в одном разрезе за период
+      tags:
+      - "Админка: аналитика CRM"
+  /api/admin/v1/analytics/dimensions:
+    get:
+      operationId: dimensions
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  type: string
+          description: OK
+      security:
+      - keycloak: []
+      summary: Разрезы отчёта
+      tags:
+      - "Админка: аналитика CRM"
   /api/admin/v1/audit:
     get:
       operationId: entries
@@ -208,6 +269,491 @@ paths:
       summary: Правка категории
       tags:
       - "Админка: каталог"
+  /api/admin/v1/clients:
+    get:
+      operationId: clients
+      parameters:
+      - description: Поиск по наименованию и ИНН. Пусто — все.
+        in: query
+        name: query
+        required: false
+        schema:
+          type: string
+      - in: query
+        name: page
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - description: "Размер страницы, не больше 200."
+        in: query
+        name: size
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 50
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Page"
+          description: OK
+      security:
+      - keycloak: []
+      summary: "Клиенты постранично, по алфавиту"
+      tags:
+      - "Админка: клиенты"
+    post:
+      operationId: create_5
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminClientForm"
+        required: true
+      responses:
+        "201":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminClient"
+          description: Created
+      security:
+      - keycloak: []
+      summary: Завести клиента
+      tags:
+      - "Админка: клиенты"
+  /api/admin/v1/clients/kinds:
+    get:
+      operationId: kinds
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  type: string
+          description: OK
+      security:
+      - keycloak: []
+      summary: Виды клиента
+      tags:
+      - "Админка: клиенты"
+  /api/admin/v1/clients/{id}:
+    get:
+      operationId: client
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminClient"
+          description: OK
+      security:
+      - keycloak: []
+      summary: Карточка клиента
+      tags:
+      - "Админка: клиенты"
+    put:
+      description: "Форма отправляется вместе с версией прочитанной карточки. Расх\
+        ождение версий — `409`: сохранить вслепую значит затереть чужую правку."
+      operationId: update_5
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminClientForm"
+        required: true
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminClient"
+          description: OK
+      security:
+      - keycloak: []
+      summary: Править карточку клиента
+      tags:
+      - "Админка: клиенты"
+  /api/admin/v1/clients/{id}/history:
+    get:
+      operationId: history_2
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminInteraction"
+          description: OK
+      security:
+      - keycloak: []
+      summary: История переписки и звонков по клиенту
+      tags:
+      - "Админка: клиенты"
+    post:
+      description: "История только дописывается: правки и удаления здесь нет. Исто\
+        рию, которую можно поправить задним числом, незачем вести."
+      operationId: addToHistory_2
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminNewInteraction"
+        required: true
+      responses:
+        "201":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminInteraction"
+          description: Created
+      security:
+      - keycloak: []
+      summary: Дописать в историю клиента
+      tags:
+      - "Админка: клиенты"
+  /api/admin/v1/deals:
+    get:
+      operationId: deals
+      parameters:
+      - description: "Фильтр по воронке: sales, dealer, service. Пусто — все."
+        in: query
+        name: pipeline
+        required: false
+        schema:
+          type: string
+      - description: Фильтр по стадии. Работает вместе с воронкой.
+        in: query
+        name: stage
+        required: false
+        schema:
+          type: string
+      - description: Все сделки одного клиента. Перекрывает фильтр по воронке.
+        in: query
+        name: clientId
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: page
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - description: "Размер страницы, не больше 200."
+        in: query
+        name: size
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 50
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Page"
+          description: OK
+      security:
+      - keycloak: []
+      summary: "Сделки постранично, свежие сверху"
+      tags:
+      - "Админка: сделки"
+    post:
+      description: "Сделка из заявки заводится другой дверью — `POST /leads/{id}/convert`."
+      operationId: create_4
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminNewDeal"
+        required: true
+      responses:
+        "201":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminDeal"
+          description: Created
+      security:
+      - keycloak: []
+      summary: Завести сделку по существующему клиенту
+      tags:
+      - "Админка: сделки"
+  /api/admin/v1/deals/pipelines:
+    get:
+      description: "Набор стадий у каждой воронки свой. Форма рисует выбор из них\
+        , а стадию из чужой воронки не примет ни домен, ни схема."
+      operationId: pipelines
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PipelineView"
+          description: OK
+      security:
+      - keycloak: []
+      summary: Воронки и их стадии
+      tags:
+      - "Админка: сделки"
+  /api/admin/v1/deals/{id}:
+    get:
+      operationId: deal
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminDeal"
+          description: OK
+      security:
+      - keycloak: []
+      summary: Карточка сделки
+      tags:
+      - "Админка: сделки"
+    put:
+      description: "Стадия меняется отдельной дверью: перевод по воронке — это соб\
+        ытие, а не правка поля."
+      operationId: update_4
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminDealForm"
+        required: true
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminDeal"
+          description: OK
+      security:
+      - keycloak: []
+      summary: Править карточку сделки
+      tags:
+      - "Админка: сделки"
+  /api/admin/v1/deals/{id}/attachments:
+    post:
+      description: "Прикладывается ссылка на карточку документа, а не копия файла\
+        . Несогласованный документ приложить нельзя — `409` с разбором причины."
+      operationId: attach
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminDealAttach"
+        required: true
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminDeal"
+          description: OK
+      security:
+      - keycloak: []
+      summary: Приложить согласованный документ к сделке
+      tags:
+      - "Админка: сделки"
+  /api/admin/v1/deals/{id}/attachments/{documentId}:
+    delete:
+      operationId: detach
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: documentId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminDeal"
+          description: OK
+      security:
+      - keycloak: []
+      summary: Отцепить документ от сделки
+      tags:
+      - "Админка: сделки"
+  /api/admin/v1/deals/{id}/history:
+    get:
+      operationId: history_1
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminInteraction"
+          description: OK
+      security:
+      - keycloak: []
+      summary: История переписки и звонков по сделке
+      tags:
+      - "Админка: сделки"
+    post:
+      description: "История только дописывается: правки и удаления здесь нет."
+      operationId: addToHistory_1
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminNewInteraction"
+        required: true
+      responses:
+        "201":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminInteraction"
+          description: Created
+      security:
+      - keycloak: []
+      summary: Дописать в историю сделки
+      tags:
+      - "Админка: сделки"
+  /api/admin/v1/deals/{id}/quotes:
+    get:
+      operationId: quotes_1
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminQuoteRow"
+          description: OK
+      security:
+      - keycloak: []
+      summary: "КП по сделке, свежие сверху"
+      tags:
+      - "Админка: сделки"
+  /api/admin/v1/deals/{id}/stage:
+    post:
+      description: |
+        Стадия обязана быть из воронки этой сделки. Перевод в проигранную стадию
+        требует причины: воронка без причин показывает, сколько потеряли,
+        и молчит о том, почему.
+      operationId: moveTo
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminDealStage"
+        required: true
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminDeal"
+          description: OK
+      security:
+      - keycloak: []
+      summary: Перевести сделку на другую стадию
+      tags:
+      - "Админка: сделки"
   /api/admin/v1/documents:
     get:
       description: "Включая внутренние и конфиденциальные — их нет в публичном пер\
@@ -230,7 +776,7 @@ paths:
       - "Админка: документы"
     post:
       description: Создаётся без файла и без публикации.
-      operationId: create_2
+      operationId: create_3
       requestBody:
         content:
           application/json:
@@ -292,7 +838,7 @@ paths:
       tags:
       - "Админка: документы"
     put:
-      operationId: update_2
+      operationId: update_3
       parameters:
       - in: path
         name: id
@@ -445,7 +991,7 @@ paths:
       - "Админка: заявки"
   /api/admin/v1/leads/statuses:
     get:
-      operationId: statuses
+      operationId: statuses_1
       responses:
         "200":
           content:
@@ -480,6 +1026,93 @@ paths:
       security:
       - keycloak: []
       summary: "Заявка целиком, с текстом и версией согласия"
+      tags:
+      - "Админка: заявки"
+  /api/admin/v1/leads/{id}/convert:
+    post:
+      description: |
+        Заводит сделку в выбранной воронке. Клиент либо указывается существующий,
+        либо заводится из данных заявки — портал не ищет совпадения сам: слить
+        две карточки потом можно, разделить ошибочно слитые уже нет.
+
+        Заявка разбирается один раз. Повтор — `409`: две сделки по одному
+        обращению обе попали бы в аналитику.
+      operationId: convert
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLeadConversion"
+        required: true
+      responses:
+        "201":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminDeal"
+          description: Created
+      security:
+      - keycloak: []
+      summary: Разобрать заявку в сделку
+      tags:
+      - "Админка: заявки"
+  /api/admin/v1/leads/{id}/history:
+    get:
+      operationId: history
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminInteraction"
+          description: OK
+      security:
+      - keycloak: []
+      summary: История переписки и звонков по заявке
+      tags:
+      - "Админка: заявки"
+    post:
+      description: "История только дописывается: правки и удаления здесь нет."
+      operationId: addToHistory
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminNewInteraction"
+        required: true
+      responses:
+        "201":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminInteraction"
+          description: Created
+      security:
+      - keycloak: []
+      summary: Дописать в историю заявки
       tags:
       - "Админка: заявки"
   /api/admin/v1/leads/{id}/triage:
@@ -576,7 +1209,7 @@ paths:
       - "Админка: новости"
     post:
       description: Создаётся черновиком.
-      operationId: create_1
+      operationId: create_2
       requestBody:
         content:
           application/json:
@@ -656,7 +1289,7 @@ paths:
       tags:
       - "Админка: новости"
     put:
-      operationId: update_1
+      operationId: update_2
       parameters:
       - in: path
         name: id
@@ -747,7 +1380,7 @@ paths:
       - "Админка: каталог"
     post:
       description: Создаётся неопубликованным. Публикация — отдельным действием.
-      operationId: create
+      operationId: create_1
       requestBody:
         content:
           application/json:
@@ -791,7 +1424,7 @@ paths:
     put:
       description: "Переименование опубликованного изделия отклоняется: адрес карт\
         очки уже разослан и проиндексирован."
-      operationId: update
+      operationId: update_1
       parameters:
       - in: path
         name: id
@@ -862,6 +1495,194 @@ paths:
       summary: Снять изделие с публикации
       tags:
       - "Админка: каталог"
+  /api/admin/v1/quotes:
+    get:
+      operationId: quotes
+      parameters:
+      - description: Фильтр по статусу. Пусто — все.
+        in: query
+        name: status
+        required: false
+        schema:
+          type: string
+      - in: query
+        name: page
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - description: "Размер страницы, не больше 200."
+        in: query
+        name: size
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 50
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Page"
+          description: OK
+      security:
+      - keycloak: []
+      summary: "КП постранично, свежие сверху"
+      tags:
+      - "Админка: коммерческие предложения"
+    post:
+      description: "Новое КП — черновик со своим номером. Номер выдаёт последовате\
+        льность базы: двое, нажавшие «создать» одновременно, получат разные номера\
+        ."
+      operationId: create
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminNewQuote"
+        required: true
+      responses:
+        "201":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminQuote"
+          description: Created
+      security:
+      - keycloak: []
+      summary: Завести КП по сделке
+      tags:
+      - "Админка: коммерческие предложения"
+  /api/admin/v1/quotes/statuses:
+    get:
+      operationId: statuses
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  type: string
+          description: OK
+      security:
+      - keycloak: []
+      summary: Статусы КП
+      tags:
+      - "Админка: коммерческие предложения"
+  /api/admin/v1/quotes/{id}:
+    get:
+      operationId: quote
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminQuote"
+          description: OK
+      security:
+      - keycloak: []
+      summary: "КП целиком, вместе с позициями"
+      tags:
+      - "Админка: коммерческие предложения"
+    put:
+      description: |
+        Правится только черновик. Отправленное КП уже лежит у клиента в почте,
+        и правка задним числом означала бы, что портал и клиент держат разные
+        версии одного предложения. Нужны другие условия — заведите новое КП.
+
+        Позиции заменяются целиком: редактор видит их одним списком.
+      operationId: update
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminQuoteForm"
+        required: true
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminQuote"
+          description: OK
+      security:
+      - keycloak: []
+      summary: Править КП
+      tags:
+      - "Админка: коммерческие предложения"
+  /api/admin/v1/quotes/{id}/decision:
+    post:
+      description: "Только по отправленному: клиент не может согласиться с тем, че\
+        го не получал."
+      operationId: decide
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminQuoteDecision"
+        required: true
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminQuote"
+          description: OK
+      security:
+      - keycloak: []
+      summary: Решение клиента по КП
+      tags:
+      - "Админка: коммерческие предложения"
+  /api/admin/v1/quotes/{id}/send:
+    post:
+      description: |
+        Письмо портал пока не шлёт: `MailSender` пишет в лог, SMTP Яндекс 360 —
+        следующий шаг. Отметка фиксирует, что предложение ушло, и с этого момента
+        оно не правится.
+      operationId: send
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminQuote"
+          description: OK
+      security:
+      - keycloak: []
+      summary: Отметить КП отправленным
+      tags:
+      - "Админка: коммерческие предложения"
   /api/admin/v1/session:
     get:
       operationId: session
@@ -912,6 +1733,258 @@ components:
       required:
       - name
       - slug
+    AdminClient:
+      type: object
+      description: |
+        Карточка клиента вместе с контактами и реквизитами. Контакты —
+        персональные данные: дверь закрыта аутентификацией, и каждое
+        изменение попадает в журнал.
+      properties:
+        city:
+          type: string
+        country:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        email:
+          type: string
+        externalId:
+          type:
+          - string
+          - "null"
+          description: Идентификатор контрагента во внешней системе. Заведён под будущий
+            обмен с 1С; сам обмен не подтверждён.
+        id:
+          type: string
+          format: uuid
+        inn:
+          type: string
+        kind:
+          type: string
+        kpp:
+          type: string
+        name:
+          type: string
+        note:
+          type: string
+        owner:
+          type: string
+        phone:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          format: int64
+          description: "Версия карточки. Её надо вернуть в форме правки, иначе сох\
+            ранение затрёт чужую правку вслепую."
+    AdminClientForm:
+      type: object
+      description: Форма карточки клиента.
+      properties:
+        city:
+          type: string
+          maxLength: 200
+          minLength: 0
+        country:
+          type: string
+          maxLength: 100
+          minLength: 0
+        email:
+          type:
+          - string
+          - "null"
+          format: email
+          description: Почта для переписки.
+        externalId:
+          type: string
+          maxLength: 200
+          minLength: 0
+        inn:
+          type:
+          - string
+          - "null"
+          description: "ИНН: 10 цифр у организации, 12 у предпринимателя."
+          example: "5406826069"
+          pattern: "^$|^\\d{10}$|^\\d{12}$"
+        kind:
+          type: string
+          enum:
+          - company
+          - person
+          example: company
+          minLength: 1
+          pattern: company|person
+        kpp:
+          type:
+          - string
+          - "null"
+          description: "КПП: 9 цифр."
+          example: "540601001"
+          pattern: "^$|^\\d{9}$"
+        name:
+          type: string
+          description: Наименование организации или ФИО.
+          example: Областной перинатальный центр
+          maxLength: 300
+          minLength: 0
+        note:
+          type: string
+        owner:
+          type:
+          - string
+          - "null"
+          description: Логин ответственного. Пусто — снять ответственного.
+          maxLength: 200
+          minLength: 0
+        phone:
+          type: string
+          maxLength: 100
+          minLength: 0
+        version:
+          type:
+          - integer
+          - "null"
+          format: int64
+          description: Версия прочитанной карточки. При создании не нужна.
+      required:
+      - kind
+      - name
+    AdminDeal:
+      type: object
+      description: Карточка сделки вместе с вложениями.
+      properties:
+        amount:
+          type: number
+        attachments:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminDealAttachment"
+        clientId:
+          type: string
+          format: uuid
+        clientName:
+          type: string
+        closedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        currency:
+          type: string
+        id:
+          type: string
+          format: uuid
+        leadId:
+          type:
+          - string
+          - "null"
+          format: uuid
+          description: "Заявка, из которой заведена сделка. Пусто у сделки, заведё\
+            нной руками."
+        lostReason:
+          type: string
+        owner:
+          type: string
+        pipeline:
+          type: string
+        productSlug:
+          type: string
+        stage:
+          type: string
+        stages:
+          type: array
+          description: "Стадии этой воронки, по порядку. Форма рисует выбор из них\
+            , а не свободное поле."
+          items:
+            type: string
+        title:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          format: int64
+          description: Версия карточки. Её надо вернуть в форме правки.
+    AdminDealAttach:
+      type: object
+      description: Приложить согласованный документ к сделке.
+      properties:
+        documentId:
+          type: string
+          format: uuid
+      required:
+      - documentId
+    AdminDealAttachment:
+      type: object
+      description: |
+        Приложенный документ. Хранится ссылка на карточку, а не копия файла:
+        копия разошлась бы с оригиналом при замене ревизии.
+      properties:
+        attachedAt:
+          type: string
+          format: date-time
+        attachedBy:
+          type: string
+        documentId:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        title:
+          type: string
+    AdminDealForm:
+      type: object
+      description: Правка карточки сделки. Стадия меняется отдельно.
+      properties:
+        amount:
+          type: number
+          minimum: 0
+        currency:
+          type: string
+          pattern: "^$|^[A-Z]{3}$"
+        owner:
+          type: string
+          maxLength: 200
+          minLength: 0
+        productSlug:
+          type: string
+        title:
+          type: string
+          maxLength: 300
+          minLength: 0
+        version:
+          type:
+          - integer
+          - "null"
+          format: int64
+          description: Версия прочитанной карточки.
+      required:
+      - title
+    AdminDealStage:
+      type: object
+      description: |
+        Перевод сделки на другую стадию. Воронка не меняется: сделка,
+        переехавшая из продаж в сервис, — это две разные сделки.
+      properties:
+        lostReason:
+          type:
+          - string
+          - "null"
+          description: "Причина проигрыша. Обязательна при переводе в проигранную\
+            \ стадию: воронка без причин показывает, сколько потеряли, и молчит о\
+            \ том, почему."
+          maxLength: 500
+          minLength: 0
+        stage:
+          type: string
+          minLength: 1
+      required:
+      - stage
     AdminDocumentForm:
       type: object
       properties:
@@ -1035,10 +2108,46 @@ components:
           type: integer
           format: int64
           description: Версия карточки. Её надо вернуть в форме правки.
+    AdminInteraction:
+      type: object
+      description: |
+        Запись истории. Текст — персональные данные: наружу и в топики
+        не уходит, туда идёт только идентификатор.
+      properties:
+        actor:
+          type: string
+        at:
+          type: string
+          format: date-time
+        body:
+          type: string
+        clientId:
+          type: string
+          format: uuid
+        dealId:
+          type: string
+          format: uuid
+        direction:
+          type: string
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+        leadId:
+          type: string
+          format: uuid
+        subject:
+          type: string
     AdminLead:
       type: object
       description: "Заявка целиком, вместе с текстом и согласием."
       properties:
+        campaign:
+          type:
+          - string
+          - "null"
+          description: "Кампания, приведшая посетителя. Разрез аналитики."
         company:
           type: string
         consentAt:
@@ -1058,6 +2167,12 @@ components:
         createdAt:
           type: string
           format: date-time
+        dealId:
+          type:
+          - string
+          - "null"
+          format: uuid
+          description: "Сделка, в которую разобрана заявка."
         email:
           type: string
         form:
@@ -1065,6 +2180,13 @@ components:
         id:
           type: string
           format: uuid
+        language:
+          type:
+          - string
+          - "null"
+          description: "Язык страницы, с которой отправлена заявка. Разрез аналити\
+            ки."
+          example: ru
         message:
           type: string
         name:
@@ -1079,37 +2201,44 @@ components:
           type: string
         status:
           type: string
-    AdminLeadRow:
+    AdminLeadConversion:
       type: object
       description: |
-        Строка списка заявок. Телефон и почта здесь есть: это рабочий
-        инструмент менеджера, а не публичная выдача. Дверь закрыта
-        аутентификацией, и каждое изменение попадает в журнал.
+        Разбор заявки в сделку. Клиент либо указывается существующий,
+        либо заводится из данных заявки.
       properties:
-        company:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-        email:
-          type: string
-        form:
-          type: string
-        id:
-          type: string
+        amount:
+          type: number
+          minimum: 0
+        clientId:
+          type:
+          - string
+          - "null"
           format: uuid
-        name:
-          type: string
+          description: "Существующий клиент. Пусто — карточка клиента заводится из\
+            \ данных заявки. Портал не ищет совпадения сам: слить две карточки пот\
+            ом можно, разделить ошибочно слитые — уже нет."
         owner:
           type: string
-        phone:
+          maxLength: 200
+          minLength: 0
+        pipeline:
           type: string
-        productSlug:
-          type: string
-        source:
-          type: string
-        status:
-          type: string
+          enum:
+          - sales
+          - dealer
+          - service
+          example: sales
+          minLength: 1
+        title:
+          type:
+          - string
+          - "null"
+          description: Название сделки. Пусто — берётся из формы и изделия заявки.
+          maxLength: 300
+          minLength: 0
+      required:
+      - pipeline
     AdminLeadTriage:
       type: object
       description: "Разбор заявки: статус и ответственный."
@@ -1132,6 +2261,106 @@ components:
           minLength: 1
       required:
       - status
+    AdminNewDeal:
+      type: object
+      description: Новая сделка по уже заведённому клиенту.
+      properties:
+        amount:
+          type: number
+          minimum: 0
+        clientId:
+          type: string
+          format: uuid
+          description: "Клиент, по которому заводится сделка."
+        currency:
+          type: string
+          description: Трёхбуквенный код валюты. Пусто — RUB.
+          example: RUB
+          pattern: "^$|^[A-Z]{3}$"
+        owner:
+          type: string
+          maxLength: 200
+          minLength: 0
+        pipeline:
+          type: string
+          enum:
+          - sales
+          - dealer
+          - service
+          example: sales
+          minLength: 1
+        productSlug:
+          type: string
+        title:
+          type: string
+          maxLength: 300
+          minLength: 0
+      required:
+      - clientId
+      - pipeline
+      - title
+    AdminNewInteraction:
+      type: object
+      description: Новая запись истории.
+      properties:
+        at:
+          type:
+          - string
+          - "null"
+          format: date-time
+          description: "Когда это было. Пусто — сейчас. Звонок записывают после ра\
+            зговора, и время разговора важнее времени записи."
+        body:
+          type: string
+          minLength: 1
+        direction:
+          type:
+          - string
+          - "null"
+          description: "Направление: `in` — от клиента, `out` — клиенту. У заметки\
+            \ направления нет."
+          enum:
+          - in
+          - out
+          pattern: ^$|in|out
+        kind:
+          type: string
+          enum:
+          - call
+          - email
+          - meeting
+          - note
+          example: call
+          minLength: 1
+          pattern: call|email|meeting|note
+        subject:
+          type: string
+          maxLength: 300
+          minLength: 0
+      required:
+      - body
+      - kind
+    AdminNewQuote:
+      type: object
+      description: Новое КП по сделке.
+      properties:
+        currency:
+          type: string
+          pattern: "^$|^[A-Z]{3}$"
+        dealId:
+          type: string
+          format: uuid
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminQuoteItemForm"
+        note:
+          type: string
+        validUntil:
+          type: string
+          format: date
+      required:
+      - dealId
     AdminNews:
       type: object
       description: "Материал целиком, как его правит редактор."
@@ -1455,6 +2684,159 @@ components:
       required:
       - label
       - value
+    AdminQuote:
+      type: object
+      description: "КП целиком, вместе с позициями."
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+        currency:
+          type: string
+        dealId:
+          type: string
+          format: uuid
+        dealTitle:
+          type: string
+        decidedAt:
+          type: string
+          format: date-time
+        id:
+          type: string
+          format: uuid
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminQuoteItem"
+        note:
+          type: string
+        number:
+          type: string
+        sentAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+        total:
+          type: number
+        updatedAt:
+          type: string
+          format: date-time
+        validUntil:
+          type: string
+          format: date
+        version:
+          type: integer
+          format: int64
+          description: Версия карточки. Её надо вернуть в форме правки.
+    AdminQuoteDecision:
+      type: object
+      description: Решение клиента по отправленному КП.
+      properties:
+        status:
+          type: string
+          enum:
+          - accepted
+          - rejected
+          - expired
+          example: accepted
+          minLength: 1
+          pattern: accepted|rejected|expired
+      required:
+      - status
+    AdminQuoteForm:
+      type: object
+      description: |
+        Правка КП. Позиции заменяются целиком: редактор видит их одним
+        списком и удаляет строку удалением строки.
+      properties:
+        currency:
+          type: string
+          pattern: "^$|^[A-Z]{3}$"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminQuoteItemForm"
+          minItems: 1
+        note:
+          type: string
+        validUntil:
+          type: string
+          format: date
+        version:
+          type:
+          - integer
+          - "null"
+          format: int64
+          description: Версия прочитанной карточки.
+      required:
+      - items
+    AdminQuoteItem:
+      type: object
+      description: Позиция КП.
+      properties:
+        amount:
+          type: number
+        name:
+          type: string
+        productSlug:
+          type: string
+        quantity:
+          type: number
+        unitPrice:
+          type: number
+    AdminQuoteItemForm:
+      type: object
+      description: Позиция в форме КП. Сумму считает портал.
+      properties:
+        name:
+          type: string
+          maxLength: 300
+          minLength: 0
+        productSlug:
+          type:
+          - string
+          - "null"
+          description: "Позиция каталога. Пусто у монтажа, обучения и доставки."
+        quantity:
+          type: number
+          example: 2
+          minimum: 0.001
+        unitPrice:
+          type: number
+          example: 1250000.0
+          minimum: 0
+      required:
+      - name
+    AdminQuoteRow:
+      type: object
+      description: Строка списка КП.
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+        currency:
+          type: string
+        dealId:
+          type: string
+          format: uuid
+        dealTitle:
+          type: string
+        id:
+          type: string
+          format: uuid
+        number:
+          type: string
+        sentAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+        total:
+          type: number
+        validUntil:
+          type: string
+          format: date
     AdminSession:
       type: object
       properties:
@@ -1497,6 +2879,78 @@ components:
           type: string
         subjectId:
           type: string
+    CrmAnalytics:
+      type: object
+      description: Отчёт по одному разрезу за период.
+      properties:
+        by:
+          type: string
+          enum:
+          - product
+          - source
+          - language
+          - campaign
+        from:
+          type:
+          - string
+          - "null"
+          format: date
+          description: Начало периода включительно. Пусто — с самого начала.
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/CrmAnalyticsRow"
+        to:
+          type:
+          - string
+          - "null"
+          format: date
+          description: Конец периода включительно. Пусто — по сегодня.
+        totals:
+          $ref: "#/components/schemas/CrmAnalyticsTotals"
+    CrmAnalyticsRow:
+      type: object
+      description: "Строка отчёта: один разрез."
+      properties:
+        deals:
+          type: integer
+          format: int64
+        key:
+          type: string
+          description: "Значение разреза. «—», если оно не заполнено: заявки без к\
+            ампании — это тоже ответ, и прятать их значит завысить долю тех, у ког\
+            о кампания есть."
+        leads:
+          type: integer
+          format: int64
+        lost:
+          type: integer
+          format: int64
+        won:
+          type: integer
+          format: int64
+        wonAmount:
+          type: number
+          description: Сумма выигранных сделок. Коммерческие условия — наружу этот
+            отчёт не отдаётся ни в каком виде.
+    CrmAnalyticsTotals:
+      type: object
+      description: Итог по всем строкам отчёта.
+      properties:
+        deals:
+          type: integer
+          format: int64
+        leads:
+          type: integer
+          format: int64
+        lost:
+          type: integer
+          format: int64
+        won:
+          type: integer
+          format: int64
+        wonAmount:
+          type: number
     Page:
       type: object
       description: Страница списка.
@@ -1505,7 +2959,7 @@ components:
           type: array
           description: Строки страницы.
           items:
-            $ref: "#/components/schemas/AdminLeadRow"
+            $ref: "#/components/schemas/AdminQuoteRow"
         page:
           type: integer
           format: int32
@@ -1526,6 +2980,15 @@ components:
           format: int64
           description: Всего строк во всей выборке.
           example: 137
+    PipelineView:
+      type: object
+      properties:
+        pipeline:
+          type: string
+        stages:
+          type: array
+          items:
+            type: string
     UploadedMedia:
       type: object
       properties:
