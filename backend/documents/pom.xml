@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>ru.vedal</groupId>
+		<artifactId>portal</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+	<artifactId>portal-documents</artifactId>
+	<name>portal-documents</name>
+	<description>Документы, статусы публикации, объектное хранилище</description>
+
+	<dependencies>
+		<dependency>
+			<groupId>ru.vedal</groupId>
+			<artifactId>portal-common</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>ru.vedal</groupId>
+			<artifactId>portal-audit</artifactId>
+		</dependency>
+		<!-- Объектное хранилище. Клиент — AWS SDK, а не родная библиотека
+		     MinIO: локально это MinIO, в облаке будет Yandex Object Storage,
+		     и оба говорят на S3. С родной библиотекой переезд означал бы
+		     переписать клиент, с SDK — поменять адрес и ключи.
+
+		     netty-nio-client выброшен: асинхронный клиент здесь не
+		     используется, а тянет он половину Netty. Синхронный ходит
+		     через apache-client.
+
+		     Зависимость объявлена здесь, а не в родительском pom, и это
+		     весь смысл затеи: S3 нужен ровно одному модулю, и остальные
+		     одиннадцать больше против него не компилируются. -->
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>s3</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>software.amazon.awssdk</groupId>
+					<artifactId>netty-nio-client</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+	</dependencies>
+</project>
