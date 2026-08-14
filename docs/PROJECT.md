@@ -393,7 +393,7 @@ deal_document     deal_id, document_id, attached_by, attached_at
 из `frontend/content/products.ts`, а не пишется руками:
 
 ```bash
-node backend/tools/seed-catalog.mjs > backend/src/main/resources/db/migration/V2__catalog_seed.sql
+node backend/tools/seed-catalog.mjs > backend/app/src/main/resources/db/migration/V2__catalog_seed.sql
 ```
 
 Править `V2` вручную бессмысленно — перегенерировать и закоммитить заново.
