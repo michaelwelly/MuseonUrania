@@ -1,0 +1,86 @@
+# Статический разбор кода — CodeQL.
+#
+# Третья часть пункта 14 из раздела 7 PROJECT.md. Делит работу с двумя
+# соседями и не пересекается с ними: Dependabot смотрит на версии
+# зависимостей, Trivy — на пакеты внутри образа, CodeQL — на сам код.
+# Ни один из трёх не находит того, что находят другие два.
+#
+# Что он ищет здесь конкретно: подстановку в SQL, путь из параметра запроса
+# в файловую систему, утечку данных в лог, небезопасный разбор XML. Всё это
+# в проекте закрыто решениями — SQL параметризован, разрез аналитики берётся
+# из словаря известных колонок, персональные данные в лог не пишутся, — и
+# ровно поэтому проверка полезна: она сторожит уже принятые решения от
+# случайной правки, а не ищет то, о чём никто не думал.
+#
+# Раз в неделю помимо push: база правил CodeQL пополняется, и вчерашний
+# зелёный прогон не означает, что код зелёный сегодня.
+
+name: CodeQL
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  schedule:
+    - cron: "17 4 * * 1"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Разбор — ${{ matrix.language }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      # Результаты уезжают во вкладку Security, а не в лог, который никто
+      # не открывает.
+      security-events: write
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Java собирается руками: реактор и шлюз — две разные сборки,
+          # и autobuild нашёл бы только одну из них.
+          - language: java-kotlin
+            build-mode: manual
+          - language: javascript-typescript
+            build-mode: none
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JDK 25
+        if: matrix.language == 'java-kotlin'
+        uses: actions/setup-java@v4
+        with:
+          java-version: "25"
+          distribution: temurin
+          cache: maven
+
+      - name: Инициализация CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      # Тесты здесь не нужны: их гоняет работа «Бэкенд» в ci.yml, а CodeQL
+      # нужны только классы. Прогон Testcontainers удвоил бы время разбора
+      # ради того, что уже проверено рядом.
+      - name: Сборка портала и шлюза
+        if: matrix.language == 'java-kotlin'
+        run: |
+          set -e
+          (cd backend && ./mvnw --batch-mode -DskipTests package)
+          (cd backend/api-gateway && ./mvnw --batch-mode -DskipTests package)
+
+      - name: Разбор
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{ matrix.language }}
