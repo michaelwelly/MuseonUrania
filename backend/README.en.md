@@ -31,8 +31,50 @@ that were not in the original list — `content` and `assistant`. Eleven in tota
 | [assistant](assistant/README.en.md) | Urania: answers from published content, hard limits |
 | [audit](audit/README.en.md) | log of actions and document access |
 
-The code of each lives in `src/main/java/ru/vedal/portal/<module>/`. The folders
-next to this file remain documentation of module boundaries.
+Each is a **Maven module** with its own `pom.xml`, its own `src/` and its own
+README: `backend/crm/`, `backend/catalog/` and so on. Everything is built by a
+single reactor from `backend/pom.xml`.
+
+A module boundary is enforced by the build rather than by discipline. Previously
+all the code sat in one heap under `backend/src/`, the folders next to it held a
+README each, and nothing stopped `crm` from reaching into the guts of `catalog`
+— it could only be caught at review. Now such an import fails compilation.
+
+The dependencies between modules form a graph without a single cycle, and that
+same graph is written down in `pom.xml`:
+
+```
+common          ← фундамент, не зависит ни от кого
+iam             ← вход, не зависит ни от кого
+audit           ← common
+catalog         ← common, audit
+content         ← common, audit
+documents       ← common, audit
+crm             ← common, audit, documents
+gateway         ← common, crm
+notifications   ← common, crm
+assistant       ← common, audit, catalog, content, documents
+admin           ← common, audit, catalog, content, crm, documents
+app             ← собирает всё в одно приложение
+```
+
+A module sees only its neighbour's interface — `LeadIntake`, `CatalogQuery`,
+`DocumentQuery`, `*Admin`. That is the same rule the spec already stated, except
+it is now checked: `gateway` declares a dependency on `crm` and still cannot
+reach `LeadRepository`, because a module's public contract is what it shows to
+its neighbours.
+
+**The only module that turns into an application is `app`.** It declares the
+rest and holds the entry point, the configuration and the schema. There is still
+one container: "like microservices, but like a monolith" — the boundary lives in
+the build, the single process lives at runtime. The transactional outbox is
+untouched by this: the entity row and the event row commit in one `COMMIT`,
+because the database and the transaction are shared.
+
+[api-gateway](api-gateway/README.en.md) lives outside the reactor — that one is
+a genuine second service with its own container. It pins its own pair of Spring
+Boot and Spring Cloud Gateway versions, the only supported one, and a shared
+parent pom would collide with it.
 
 ## The path of a lead
 
@@ -287,7 +329,8 @@ The coverage check is a separate phase, `./mvnw verify`: the threshold lives in
 | Build | Maven + wrapper | A boring standard; the wrapper removes Maven installation from the machine |
 | Java | 25 | JDK 25 is installed on the system and Spring Boot 4.1 supports it |
 | Number of services | One application | 50 employees; modules are `ru.vedal.portal.*` package boundaries, not separate deployments |
-| Code layout | `backend/src/main/java/ru/vedal/portal/<module>/` | Standard Maven layout; the `app/`, `crm/` … folders next to it remain module documentation |
+| Code layout | Maven reactor: `backend/<module>/src/main/java/ru/vedal/portal/<module>/` | A module folder holds its code, its pom and its README. The boundary is checked by the build, not at review |
+| Number of deployments | One, assembled by `app` | Modules are a build boundary, not separate processes. Splitting them into services would cost the single `COMMIT` over entity and event — that is, lost leads |
 
 Spring Boot 4.1.0 on Spring Framework 7. Enabled: webmvc, validation, actuator,
 data-jpa, flyway, security, thymeleaf; Jackson 3.

@@ -28,3 +28,13 @@ seed: an empty feed returns `[]`, and the first record is added by an editor
 through the admin panel.
 
 A publication slug is restricted to Latin characters: it goes into the public URL.
+
+## Build module
+
+`portal-content` is a Maven module with its own `pom.xml` and its own `src/`.
+It depends on: `common`, `audit`.
+
+The boundary is enforced by the build rather than by discipline: importing
+from a module that is not among the dependencies fails compilation. Previously
+all the code sat in one heap under `backend/src/`, and the boundaries held
+only as long as someone was paying attention.

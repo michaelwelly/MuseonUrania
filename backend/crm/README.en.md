@@ -190,3 +190,16 @@ every form and every query, while adding them now costs almost nothing.
 
 **Letters for quotes.** `MailSender` writes to the log; the "sent" mark records
 the fact, not the delivery.
+
+## Build module
+
+`portal-crm` is a Maven module with its own `pom.xml` and its own `src/`.
+It depends on: `common`, `audit`, `documents`.
+
+The dependency on `documents` is `DocumentQuery`: deal attachments come only
+from approved documents.
+
+The boundary is enforced by the build rather than by discipline: importing
+from a module that is not among the dependencies fails compilation. Previously
+all the code sat in one heap under `backend/src/`, and the boundaries held
+only as long as someone was paying attention.

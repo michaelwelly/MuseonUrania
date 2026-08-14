@@ -24,3 +24,15 @@ Hard rules:
   Sensitive Data Split).
 
 Every request for a closed file is written to [audit](../audit/README.en.md).
+
+## Build module
+
+`portal-documents` is a Maven module with its own `pom.xml` and its own `src/`.
+It depends on: `common`, `audit`.
+
+External: the AWS SDK for S3 — the only module compiled against it.
+
+The boundary is enforced by the build rather than by discipline: importing
+from a module that is not among the dependencies fails compilation. Previously
+all the code sat in one heap under `backend/src/`, and the boundaries held
+only as long as someone was paying attention.

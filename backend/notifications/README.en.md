@@ -17,3 +17,16 @@ templates, the sending queue and delivery accounting.
 The confirmation text comes from
 [content_model.en.md](../../docs/frontend/content_model.en.md):
 "Спасибо. Специалист VEDAL свяжется с вами."
+
+## Build module
+
+`portal-notifications` is a Maven module with its own `pom.xml` and its own `src/`.
+It depends on: `common`, `crm`.
+
+The dependency on `crm` is `LeadContacts`: the recipient address is fetched by
+identifier so that personal data never reaches the topics.
+
+The boundary is enforced by the build rather than by discipline: importing
+from a module that is not among the dependencies fails compilation. Previously
+all the code sat in one heap under `backend/src/`, and the boundaries held
+only as long as someone was paying attention.

@@ -19,3 +19,13 @@ What is always recorded:
 
 Entries are append-only. Deletion and backdated edits are not provided for —
 otherwise the log is useless during an incident investigation.
+
+## Build module
+
+`portal-audit` is a Maven module with its own `pom.xml` and its own `src/`.
+It depends on: `common`.
+
+The boundary is enforced by the build rather than by discipline: importing
+from a module that is not among the dependencies fails compilation. Previously
+all the code sat in one heap under `backend/src/`, and the boundaries held
+only as long as someone was paying attention.
