@@ -81,30 +81,24 @@
   border-bottom: 1px solid var(--rule);
 }
 
+/* Размеры взяты с шапки сайта (Header.module.css): высота полосы, отступы
+   по краям и размер знака совпадают до пикселя. Это не подражание ради
+   похожести — сотрудник ходит по обеим половинам продукта, и полоса,
+   прыгающая по высоте при переходе, читается как переезд на чужой сайт. */
 .admin-top__bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 12px 30px;
+  gap: 36px;
+  height: 78px;
+  padding: 0 48px;
 }
 
 .admin-brand {
   display: inline-flex;
   align-items: center;
-  gap: 11px;
+  gap: 12px;
   text-decoration: none;
   color: inherit;
-}
-
-/* Плашка под знаком обязательна и на светлом тоже: надпись в знаке
-   чёрная, а фон карточки чуть теплее белого — без плашки знак
-   выглядит наклеенным. */
-.admin-brand__plate {
-  display: inline-flex;
-  padding: 5px 9px;
-  border-radius: 3px;
-  background: #fff;
 }
 
 .admin-brand__label {
@@ -115,8 +109,38 @@
   color: var(--muted);
 }
 
+.admin-tools {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* Кнопка на месте «Связаться с нами» и в тех же размерах. */
+.admin-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 2px;
+  background: var(--green-dark);
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.admin-cta:hover {
+  background: #0c6827;
+  color: #fff;
+}
+
 /* ————— кто вошёл ————— */
 
+/* Кто вошёл — на месте телефона в шапке сайта и в той же форме:
+   две строки с выключкой вправо. */
 .admin-who {
   display: flex;
   align-items: center;
@@ -144,22 +168,26 @@
 .admin-who__text {
   display: flex;
   flex-direction: column;
-  line-height: 1.25;
+  gap: 1px;
+  text-align: right;
   min-width: 0;
 }
 
+/* 16 против 18 у телефона: имя длиннее номера, а место то же. */
 .admin-who__name {
-  font-size: 13.5px;
+  font-size: 16px;
   font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--ink);
-  word-break: break-word;
+  white-space: nowrap;
 }
 
 .admin-who__meta {
   font-family: var(--font-mono), monospace;
-  font-size: 10.5px;
+  font-size: 11px;
   letter-spacing: 0.03em;
   color: var(--muted);
+  white-space: nowrap;
 }
 
 @media (max-width: 720px) {
@@ -173,11 +201,18 @@
 /* Второй ряд, а не тот же: одиннадцать разделов, знак и карточка
    сотрудника в одну строку на ноутбуке не помещаются — разделы начали бы
    сокращаться до огрызков или уезжать под «ещё». */
+/* Пункты набраны как в меню сайта: 15 px, шаг 26, цвет --text-2,
+   у текущего — вес и зелёная черта, прижатая к низу полосы. Разница
+   одна: пунктов одиннадцать против шести, поэтому ряд свой, а не общий
+   со знаком. В одну строку они с знаком и карточкой сотрудника не встают
+   на ноутбуке — начали бы сокращаться до огрызков. */
 .admin-top__nav {
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 0 26px;
+  gap: 26px;
+  padding: 0 48px;
+  font-size: 15px;
+  border-top: 1px solid var(--rule-soft);
   overflow-x: auto;
   scrollbar-width: thin;
 }
@@ -185,26 +220,33 @@
 .admin-top__nav a {
   flex: none;
   position: relative;
-  padding: 9px 11px 11px;
-  font-size: 13.5px;
-  line-height: 1.2;
+  padding: 13px 0 15px;
   color: var(--text-2);
+  font-weight: 500;
   text-decoration: none;
-  border-bottom: 2px solid transparent;
   white-space: nowrap;
 }
 
 .admin-top__nav a:hover {
-  color: var(--ink);
+  color: var(--green);
 }
 
-/* Текущий раздел подчёркнут, а не залит: залитая зелёным пилюля спорит
-   с зелёными кнопками действий на самой странице — глаз ищет, где здесь
-   можно нажать. */
+/* Текущий раздел — цвет, вес и полоса, как у активного пункта на сайте.
+   Не залитая пилюля: она спорила бы с зелёными кнопками действий
+   на самой странице, и глаз искал бы, где здесь можно нажать. */
 .admin-top__nav a[aria-current="page"] {
   color: var(--ink);
   font-weight: 600;
-  border-bottom-color: var(--green);
+}
+
+.admin-top__nav a[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--green);
 }
 
 /* Разделитель между содержимым сайта и CRM: два разных занятия, и без
@@ -273,16 +315,32 @@
   color: #fff;
 }
 
+@media (max-width: 1100px) {
+  .admin-top__bar,
+  .admin-top__nav,
+  .admin-foot {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
 @media (max-width: 720px) {
   .admin-top__bar,
+  .admin-top__nav,
   .admin-foot {
     padding-left: 16px;
     padding-right: 16px;
   }
 
-  .admin-top__nav {
-    padding-left: 12px;
-    padding-right: 12px;
+  .admin-top__bar {
+    height: 64px;
+    gap: 16px;
+  }
+
+  /* Кнопка «На сайт» уходит первой: из шапки на сайт можно попасть
+     и через футер, а имя вошедшего оттуда не узнать. */
+  .admin-cta {
+    display: none;
   }
 }
 

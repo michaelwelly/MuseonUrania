@@ -154,13 +154,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <header className="admin-top">
         <div className="admin-top__bar">
           <Link className="admin-brand" href="/admin/" aria-label="VEDAL Portal, сводка">
-            <span className="admin-brand__plate">
-              <AnimatedLogo height={30} />
-            </span>
+            {/* 42 — та же высота, что у знака в шапке сайта. */}
+            <AnimatedLogo height={42} />
             <span className="admin-brand__label">админка</span>
           </Link>
 
-          <Who who={state.who} />
+          <div className="admin-tools">
+            <Who who={state.who} />
+
+            {/* Зелёная кнопка на том же месте, где на сайте «Связаться
+                с нами». Действие другое, но роль та же: единственное,
+                что доступно всегда, на любой странице. */}
+            <Link className="admin-cta" href="/">
+              На сайт
+              <Arrow />
+            </Link>
+
+            <button className="btn btn--small" onClick={() => logout()}>
+              Выйти
+            </button>
+          </div>
         </div>
 
         <nav className="admin-top__nav" aria-label="Разделы админки">
@@ -219,19 +232,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 function Who({ who }: { who: Session }) {
   return (
     <div className="admin-who">
-      <span className="admin-who__mark" aria-hidden="true">
-        {initials(who.actor)}
-      </span>
+      {/* Две строки, выключка вправо — там же, где на сайте телефон
+          и часы работы. */}
       <span className="admin-who__text">
         <span className="admin-who__name">{who.actor}</span>
         <span className="admin-who__meta">
           {who.roles.length > 0 ? who.roles.join(" · ") : "без ролей"}
         </span>
       </span>
-      <button className="btn btn--small" onClick={() => logout()}>
-        Выйти
-      </button>
+      <span className="admin-who__mark" aria-hidden="true">
+        {initials(who.actor)}
+      </span>
     </div>
+  );
+}
+
+// Та же стрелка, что в кнопках сайта.
+function Arrow() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" />
+    </svg>
   );
 }
 
