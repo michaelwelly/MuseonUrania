@@ -54,7 +54,7 @@ crm             ← common, audit, documents
 gateway         ← common, crm
 notifications   ← common, crm
 assistant       ← common, audit, catalog, content, documents
-admin           ← common, audit, catalog, content, crm, documents
+admin           ← common, audit, catalog, content, crm, documents, iam
 app             ← собирает всё в одно приложение
 ```
 
@@ -226,7 +226,7 @@ panel.
 | `GET /api/public/v1/documents/{slug}/file` | visitor | the file; closed returns 404 and the request is logged |
 | `POST /api/forms/v1/leads` | website forms | lead intake, `Idempotency-Key` header, `202` response; the optional `language` and `campaign` carry attribution for analytics |
 | `POST /api/assistant/v1/ask` | Urania | an answer from published content with links; no sources means handoff to a human |
-| `/api/admin/v1/**` | admin UI | forty-six routes, sixty-four operations: products, categories, news, documents, leads, clients, deals, quotes, correspondence history, funnel analytics, audit log, images, session |
+| `/api/admin/v1/**` | admin UI | forty-seven routes, sixty-five operations: products, categories, news, documents, leads, clients, deals, quotes, correspondence history, funnel analytics, audit log, images, session, staff |
 
 There is no public door to the CRM: the client base, deal amounts and quote
 prices belong to the closed contour.

@@ -53,7 +53,7 @@ crm             ← common, audit, documents
 gateway         ← common, crm
 notifications   ← common, crm
 assistant       ← common, audit, catalog, content, documents
-admin           ← common, audit, catalog, content, crm, documents
+admin           ← common, audit, catalog, content, crm, documents, iam
 app             ← собирает всё в одно приложение
 ```
 
@@ -219,7 +219,7 @@ VEDAL_ADMIN_USER=editor VEDAL_ADMIN_PASSWORD=<пароль> ./mvnw spring-boot:r
 | `GET /api/public/v1/documents/{slug}/file` | посетитель | файл; закрытый — 404, обращение пишется в журнал |
 | `POST /api/forms/v1/leads` | формы сайта | приём заявки, заголовок `Idempotency-Key`, ответ `202`; необязательные `language` и `campaign` — атрибуция для аналитики |
 | `POST /api/assistant/v1/ask` | Урания | ответ по опубликованному со ссылками; нет источников — передача человеку |
-| `/api/admin/v1/**` | админка | сорок шесть маршрутов, шестьдесят четыре операции: продукция, категории, новости, документы, заявки, клиенты, сделки, КП, история переписки, аналитика воронки, журнал, изображения, сессия |
+| `/api/admin/v1/**` | админка | сорок семь маршрутов, шестьдесят пять операций: продукция, категории, новости, документы, заявки, клиенты, сделки, КП, история переписки, аналитика воронки, журнал, изображения, сессия, сотрудники |
 
 Публичной двери к CRM нет: клиентская база, суммы сделок и цены КП — закрытый
 контур.

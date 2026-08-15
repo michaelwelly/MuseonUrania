@@ -152,7 +152,7 @@ MuseonUrania/
 | --- | --- |
 | [app](../backend/app/README.md) | сборка Spring Boot, конфигурация, точка входа |
 | [common](../backend/common/README.md) | общие типы, ошибки, валидация, outbox, лимиты частоты |
-| [iam](../backend/iam/README.md) | учётные записи, роли, доступ |
+| [iam](../backend/iam/README.md) | учётные записи, роли, доступ, справочник сотрудников |
 | [catalog](../backend/catalog/README.md) | продукция и категории, публичное API |
 | [content](../backend/content/README.md) | новости и пресс-центр |
 | [documents](../backend/documents/README.md) | документы, статусы публикации, объектное хранилище |
@@ -185,7 +185,7 @@ catalog, content, documents → common, audit
 crm → common, audit, documents
 gateway, notifications → common, crm
 assistant → common, audit, catalog, content, documents
-admin → common, audit, catalog, content, crm, documents
+admin → common, audit, catalog, content, crm, documents, iam
 app → всё вышеперечисленное
 ```
 
@@ -652,9 +652,9 @@ VPN — периметр, а не авторизация. Вход, роли и 
 
 ### 6.1 Бэкенд — работает
 
-136 файлов Java в портале и 2 в шлюзе, 24 тестовых класса (164 теста портала,
-4 шлюза, все зелёные; плюс 57 тестов фронтенда), 15 миграций Flyway,
-18 контроллеров, 12 позиций каталога в сиде, 5 категорий. Планка покрытия —
+141 файл Java в портале и 2 в шлюзе, 25 тестовых классов (169 тестов портала,
+4 шлюза, все зелёные; плюс 62 теста фронтенда), 15 миграций Flyway,
+19 контроллеров, 12 позиций каталога в сиде, 5 категорий. Планка покрытия —
 инструкции 70%, ветки 45% при достигнутых 72% и 47%.
 Spring Boot 4.1.0 на Spring Framework 7, Java 25, Jackson 3, PostgreSQL 16,
 Testcontainers. Шлюз — Spring Boot 4.0.7 и Spring Cloud Gateway 5.0.2:
@@ -691,8 +691,9 @@ Testcontainers. Шлюз — Spring Boot 4.0.7 и Spring Cloud Gateway 5.0.2:
 | `/api/admin/v1/audit` | админка | журнал с фильтрами и цепочка по `correlation_id` |
 | `/api/admin/v1/media` | админка | загрузка снимков в открытый бакет |
 | `/api/admin/v1/session` | админка | кто вошёл и какие роли разобрал портал |
+| `/api/admin/v1/staff` | админка | сотрудники для выбора ответственного; только чтение |
 
-Сорок шесть маршрутов и шестьдесят четыре операции админского API описаны
+Сорок семь маршрутов и шестьдесят пять операций админского API описаны
 отдельной группой спецификации —
 [docs/api/vedal-admin-openapi.yaml](api/vedal-admin-openapi.yaml).
 
