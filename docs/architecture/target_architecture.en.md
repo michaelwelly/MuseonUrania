@@ -167,7 +167,15 @@ Worked out from the code rather than from intentions. Details in
 - dependencies, code and images are scanned in CI: Dependabot, CodeQL, Trivy —
   three checks, none of which finds what the other two find;
 - the log is closed against `TRUNCATE` by a trigger, and `TRUNCATE` is revoked
-  from the application role on every table (migration `V15`).
+  from the application role on every table (migration `V15`);
+- the application runs under a role that does not own the schema (migration
+  `V16`): DDL, disabling the audit-log trigger and granting back what was
+  revoked are all unavailable to it. The migration role is separate and lives
+  in its own pair of variables;
+- the portal starts in the same sign-in mode the deployed environment uses, and
+  the build checks it: before `StaffDirectoryKeycloakTest` the `keycloak`-mode
+  beans had never been wired in tests, and the application failed at startup
+  while the build stayed green.
 
 **Not closed — mandatory before deployment:**
 
