@@ -18,6 +18,7 @@ import {
   type Pipeline,
 } from "@/lib/admin";
 import History from "../History";
+import OwnerField from "../OwnerField";
 import { Field, Note, message, useLoad, when } from "../ui";
 
 // Единственная страница админки, где на экране персональные данные.
@@ -239,12 +240,11 @@ function LeadCard({
                 ))}
               </select>
             </Field>
-            <Field label="Ответственный" hint="Пусто — снять ответственного.">
-              <input
-                value={owner ?? data.owner ?? ""}
-                onChange={(e) => setOwner(e.target.value)}
-              />
-            </Field>
+            <OwnerField
+              value={owner ?? data.owner ?? ""}
+              onChange={setOwner}
+              hint="Пусто — снять ответственного."
+            />
           </div>
 
           <div className="row row--end">
@@ -333,9 +333,7 @@ function ConvertToDeal({
           </select>
         </Field>
 
-        <Field label="Ответственный">
-          <input value={form.owner} onChange={(e) => set("owner", e.target.value)} />
-        </Field>
+        <OwnerField value={form.owner} onChange={(login) => set("owner", login)} />
       </div>
 
       <label className="field--row" style={{ marginBottom: 12 }}>

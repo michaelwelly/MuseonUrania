@@ -9,6 +9,7 @@ import {
   type ClientForm,
 } from "@/lib/admin";
 import { Field, Note, fieldErrors, isConflict, message } from "../ui";
+import OwnerField from "../OwnerField";
 
 // Карточка клиента. Одна форма на создание и на правку: поля и правила
 // у них общие, разница — куда уходит сохранение.
@@ -136,9 +137,7 @@ export default function ClientEditor({
             <input value={form.phone} onChange={(e) => set("phone", e.target.value)} />
           </Field>
 
-          <Field label="Ответственный" error={errors.owner} hint="Логин. Пусто — снять.">
-            <input value={form.owner} onChange={(e) => set("owner", e.target.value)} />
-          </Field>
+          <OwnerField value={form.owner} onChange={(login) => set("owner", login)} />
 
           <Field
             label="Идентификатор в 1С"

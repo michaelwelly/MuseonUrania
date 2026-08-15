@@ -18,6 +18,7 @@ import {
   type QuoteRow,
 } from "@/lib/admin";
 import History from "../../History";
+import OwnerField from "../../OwnerField";
 import { Field, Note, day, fieldErrors, isConflict, message, money, useLoad, when } from "../../ui";
 
 // Карточка сделки: правка, перевод по воронке, вложения, КП и история.
@@ -148,9 +149,7 @@ function DealFields({ deal, onSaved }: { deal: Deal; onSaved: () => void }) {
           <input value={form.productSlug} onChange={(e) => set("productSlug", e.target.value)} />
         </Field>
 
-        <Field label="Ответственный" error={errors.owner}>
-          <input value={form.owner} onChange={(e) => set("owner", e.target.value)} />
-        </Field>
+        <OwnerField value={form.owner} onChange={(login) => set("owner", login)} />
       </div>
 
       <div className="row row--end">
