@@ -560,6 +560,40 @@ start. The first administrator of the local mode is created only if both
 `VEDAL_ADMIN_USER` and `VEDAL_ADMIN_PASSWORD` are set, otherwise the account
 simply does not exist; with `vedal.iam.mode=keycloak` accounts live in Keycloak.
 
+**The site in a container, but with edits visible at once.** The ordinary `site`
+service builds its pages at container start from what was baked into the image:
+showing a colour change means rebuilding the image, and until then port `3000`
+serves yesterday's code. The `compose.dev.yaml` overlay runs the site in
+development mode with the `frontend` directory bind-mounted — an edit shows up
+immediately, while the address and the network stay the same:
+
+```bash
+docker compose -f backend/compose.yaml -f backend/compose.dev.yaml --profile app up -d site
+```
+
+Back to the ordinary mode:
+
+```bash
+docker compose -f backend/compose.yaml --profile app up -d --build site
+```
+
+Three pitfalls that shape the overlay:
+
+- **Anonymous volumes on `node_modules` and `.next` are mandatory.** Otherwise
+  the host's modules, built for Windows, shadow the Linux ones from the image.
+- **`.next` is created in the image owned by `node`.** Docker creates an empty
+  volume as root when the image has no such directory, and the run under `node`
+  fails on `mkdir /app/.next/dev` with `EACCES`.
+- **Development mode runs on webpack, not Turbopack.** Filesystem events do not
+  cross a Windows bind mount into the container; polling fixes that, but
+  `WATCHPACK_POLLING` is understood by webpack and not by Turbopack, so the
+  container keeps serving the old page while the file inside is already new.
+
+**This does not replace the check before handing work over.** Development mode
+builds pages on request, the ordinary mode builds them ahead, and differences
+between the two surface only in the ordinary one. Show a result as finished from
+the plain stack, without the overlay.
+
 The tests run against a real PostgreSQL through Testcontainers and **require a
 running Docker**. H2 is not used: dialect differences should surface here, not in
 production.
