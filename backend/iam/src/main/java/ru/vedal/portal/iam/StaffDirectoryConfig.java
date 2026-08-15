@@ -31,8 +31,8 @@ public class StaffDirectoryConfig {
             @Value("${vedal.iam.admin-url:}") String adminUrl,
             @Value("${vedal.iam.issuer:}") String issuer,
             @Value("${vedal.iam.realm:vedal}") String realm,
-            @Value("${vedal.iam.client-id:vedal-portal}") String clientId,
-            @Value("${vedal.iam.client-secret:}") String clientSecret,
+            @Value("${vedal.iam.service-client-id:vedal-portal-svc}") String clientId,
+            @Value("${vedal.iam.service-client-secret:}") String clientSecret,
             AdminUserRepository users) {
 
         // Секрет не задан — значит, служебной учётной записи нет, и спрашивать
@@ -41,7 +41,7 @@ public class StaffDirectoryConfig {
         // иначе отсутствие одной необязательной переменной кладёт весь портал
         // вместе с сайтом и формами.
         if (clientSecret.isBlank()) {
-            log.warn("Справочник сотрудников: VEDAL_OIDC_CLIENT_SECRET не задан, "
+            log.warn("Справочник сотрудников: VEDAL_OIDC_SVC_CLIENT_SECRET не задан, "
                     + "ответственные берутся из таблицы admin_user. Чтобы читать их "
                     + "из Keycloak, заведите служебную учётную запись клиента с правом "
                     + "view-users и задайте секрет.");
