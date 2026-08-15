@@ -28,6 +28,10 @@ public class RequiredEnvironmentCheck {
 
     private static final List<String> DEPLOYED = List.of(
             "VEDAL_DB_URL", "VEDAL_DB_USER", "VEDAL_DB_PASSWORD",
+            // Роль, которой Flyway накатывает миграции. Она отдельная от той,
+            // под которой приложение работает: рантайм не владеет схемой, иначе
+            // отзыв прав из V15 и V16 он возвращает себе одной строкой.
+            "VEDAL_DB_MIGRATION_USER", "VEDAL_DB_MIGRATION_PASSWORD",
             "VEDAL_PORTAL_URL", "VEDAL_STORAGE_ROOT", "VEDAL_ALLOWED_ORIGINS");
 
     private static final Map<String, List<String>> REQUIRED = Map.of(
@@ -58,6 +62,29 @@ public class RequiredEnvironmentCheck {
                                 + ". Значения по умолчанию есть только для локальной разработки — "
                                 + "подставлять их в развёрнутой среде нельзя.");
             }
+
+            if (DEPLOYED.equals(required)) verifyIdentityProvider(environment, profile);
+        }
+    }
+
+    // Режим входа проверяется по значению, а не по наличию переменной, и это
+    // разные проверки. vedal.iam.mode по умолчанию — 'local', то есть Basic
+    // поверх учётных записей в базе; развёрнутая среда, где переменную забыли,
+    // поднялась бы на нём молча. Проверка «переменная задана» такой прод пропустит
+    // ровно один раз — когда в ней окажется 'local'.
+    //
+    // Запасной режим 'local' остаётся, но живёт в lab и на машине разработчика:
+    // там, где нет провайдера идентичности. В прод он не едет, потому что MFA
+    // настраивается в realm'е Keycloak, а у Basic её не бывает вовсе.
+    private static void verifyIdentityProvider(Environment environment, String profile) {
+        var mode = environment.getProperty("vedal.iam.mode", "local");
+
+        if (!"keycloak".equals(mode)) {
+            throw new IllegalStateException(
+                    "Профиль '" + profile + "' требует vedal.iam.mode=keycloak, задано '" + mode
+                            + "'. Режим 'local' — это Basic поверх учётных записей в базе, "
+                            + "без второго фактора: он для разработки, не для развёрнутой среды. "
+                            + "Задайте VEDAL_IAM_MODE=keycloak.");
         }
     }
 }
