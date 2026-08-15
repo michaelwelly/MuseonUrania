@@ -159,7 +159,7 @@ Eleven modules plus `app`, which assembles them:
 | --- | --- |
 | [app](../backend/app/README.en.md) | Spring Boot assembly, configuration, entry point |
 | [common](../backend/common/README.en.md) | shared types, errors, validation, outbox, rate limits |
-| [iam](../backend/iam/README.en.md) | accounts, roles, access |
+| [iam](../backend/iam/README.en.md) | accounts, roles, access, the staff directory |
 | [catalog](../backend/catalog/README.en.md) | products and categories, public API |
 | [content](../backend/content/README.en.md) | news and press centre |
 | [documents](../backend/documents/README.en.md) | documents, publication statuses, object storage |
@@ -194,7 +194,7 @@ catalog, content, documents → common, audit
 crm → common, audit, documents
 gateway, notifications → common, crm
 assistant → common, audit, catalog, content, documents
-admin → common, audit, catalog, content, crm, documents
+admin → common, audit, catalog, content, crm, documents, iam
 app → всё вышеперечисленное
 ```
 
@@ -675,9 +675,9 @@ upon request; infrastructure in Russia.
 
 ### 6.1 Backend — working
 
-136 Java files in the portal and 2 in the gateway, 24 test classes (164 portal
-tests, 4 gateway tests, all green; plus 57 frontend tests), 15 Flyway migrations,
-18 controllers, 12 catalog items in the seed, 5 categories. The coverage gate is
+141 Java files in the portal and 2 in the gateway, 25 test classes (169 portal
+tests, 4 gateway tests, all green; plus 62 frontend tests), 15 Flyway migrations,
+19 controllers, 12 catalog items in the seed, 5 categories. The coverage gate is
 70% of instructions and 45% of branches against 72% and 47% achieved.
 Spring Boot 4.1.0 on Spring Framework 7, Java 25, Jackson 3,
 PostgreSQL 16, Testcontainers. The gateway runs Spring Boot 4.0.7 with Spring
@@ -714,8 +714,9 @@ Working routes:
 | `/api/admin/v1/audit` | admin UI | the log with filters and the chain by `correlation_id` |
 | `/api/admin/v1/media` | admin UI | image upload into the read-open bucket |
 | `/api/admin/v1/session` | admin UI | who signed in and which roles the portal parsed |
+| `/api/admin/v1/staff` | admin UI | employees to pick an owner from; read only |
 
-The forty-six routes and sixty-four operations of the admin API are described by
+The forty-seven routes and sixty-five operations of the admin API are described by
 a separate specification group —
 [docs/api/vedal-admin-openapi.yaml](api/vedal-admin-openapi.yaml).
 

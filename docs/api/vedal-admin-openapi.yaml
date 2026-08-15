@@ -1698,6 +1698,30 @@ paths:
       summary: Кто вошёл
       tags:
       - "Админка: сессия"
+  /api/admin/v1/staff:
+    get:
+      description: |
+        Список из провайдера идентичности: в режиме `keycloak` — пользователи
+        realm'а, в запасном `local` — таблица `admin_user`.
+
+        Отключённые остаются в списке: на них есть старые заявки и сделки,
+        и прятать их значит терять историю. Форма предлагает их выбирать
+        только тем записям, где они уже стоят.
+      operationId: staff
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminStaffMember"
+          description: OK
+      security:
+      - keycloak: []
+      summary: Сотрудники для выбора ответственного
+      tags:
+      - "Админка: сотрудники"
 components:
   schemas:
     AdminCategory:
@@ -2889,6 +2913,26 @@ components:
           description: "Роли, которые портал разобрал в токене."
           items:
             type: string
+    AdminStaffMember:
+      type: object
+      description: |
+        Сотрудник, на которого можно записать заявку, клиента или сделку.
+      properties:
+        enabled:
+          type: boolean
+          description: "Отключённые остаются в списке: на них есть старые сделки,\
+            \ и прятать их значит терять историю. Новое на них записать нельзя."
+        login:
+          type: string
+          description: Логин. Он же попадает в поле «ответственный».
+          example: editor
+        name:
+          type:
+          - string
+          - "null"
+          description: Как показывать в списке. Пусто у учётной записи без имени и
+            фамилии — тогда показывается логин.
+          example: Анна Фёдорова
     AuditEntry:
       type: object
       description: Запись журнала.
