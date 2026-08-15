@@ -7,10 +7,13 @@
 }
 
 /* ---------- hero-сплит ---------- */
+/* Белый вслед за остальными шапками разделов. Линия снизу отделяет её
+   от содержимого — раньше это делал перепад с тёмного на белое. */
 .hero {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  background: var(--deep-2);
+  background: var(--page);
+  border-bottom: 1px solid var(--line);
 }
 
 .heroCopy {
@@ -18,7 +21,7 @@
   flex-direction: column;
   justify-content: center;
   padding: 56px 48px;
-  color: #fff;
+  color: var(--ink);
 }
 
 .crumbs {
@@ -26,11 +29,11 @@
   font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--muted);
 }
 
 .crumbs a:hover {
-  color: #fff;
+  color: var(--green-dark);
 }
 
 .h1 {
@@ -46,7 +49,7 @@
   max-width: 50ch;
   font-size: 17px;
   line-height: 1.6;
-  color: var(--on-dark-lead);
+  color: var(--muted);
 }
 
 .photo {
