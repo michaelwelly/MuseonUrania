@@ -30,6 +30,7 @@ const mocks = vi.hoisted(() => {
     dealQuotes: vi.fn(),
     documents: vi.fn(),
     history: vi.fn(),
+    staff: vi.fn(),
     push: vi.fn(),
   };
 });
@@ -46,6 +47,7 @@ vi.mock("@/lib/admin", () => ({
   dealQuotes: mocks.dealQuotes,
   documents: mocks.documents,
   history: mocks.history,
+  staff: mocks.staff,
   attachToDeal: vi.fn(),
   detachFromDeal: vi.fn(),
   createQuote: vi.fn(),
@@ -103,6 +105,7 @@ beforeEach(() => {
   mocks.dealQuotes.mockReset().mockResolvedValue([]);
   mocks.documents.mockReset().mockResolvedValue([]);
   mocks.history.mockReset().mockResolvedValue([]);
+  mocks.staff.mockReset().mockResolvedValue([{ login: "editor", name: "Анна Фёдорова", enabled: true }]);
   mocks.push.mockReset();
 });
 

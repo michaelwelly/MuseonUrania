@@ -12,6 +12,7 @@ import {
   type Pipeline,
 } from "@/lib/admin";
 import { Field, Note, fieldErrors, message, useLoad } from "../../ui";
+import OwnerField from "../../OwnerField";
 
 // Сделка заводится по уже существующему клиенту. Сделка из заявки заводится
 // другой дверью — разбором на странице заявок: там вместе со сделкой
@@ -137,9 +138,7 @@ function NewDealForm() {
             </select>
           </Field>
 
-          <Field label="Ответственный" error={errors.owner}>
-            <input value={form.owner} onChange={(e) => set("owner", e.target.value)} />
-          </Field>
+          <OwnerField value={form.owner} onChange={(login) => set("owner", login)} />
         </div>
 
         <Field label="Название" error={errors.title} hint="Например: поставка двух систем VEDAL R2.">

@@ -598,6 +598,22 @@ export const analytics = (by: string, from: string, to: string) => {
   return get<Analytics>(`/analytics?${params}`);
 };
 
+// ————— сотрудники —————
+//
+// Список ответственных приходит из провайдера идентичности: в режиме
+// keycloak — пользователи realm'а, в запасном local — таблица admin_user.
+// Только чтение: завести человека и выдать роль — работа консоли Keycloak.
+
+export type StaffMember = {
+  login: string;
+  /** Как показывать. Пусто у учётной записи без имени — тогда логин. */
+  name: string | null;
+  /** Отключённые остаются в списке: на них висят старые сделки. */
+  enabled: boolean;
+};
+
+export const staff = () => get<StaffMember[]>("/staff");
+
 // ————— журнал —————
 
 export type AuditEntry = {
