@@ -14,10 +14,14 @@
 }
 
 /* ---------- hero-сплит ---------- */
+/* Белый вслед за первым экраном главной и шапками остальных разделов.
+   Линия снизу отделяет шапку от содержимого: раньше это делал перепад
+   с тёмного на белое. */
 .hero {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  background: var(--deep);
+  background: var(--page);
+  border-bottom: 1px solid var(--line);
 }
 
 .heroCopy {
@@ -25,7 +29,7 @@
   flex-direction: column;
   justify-content: center;
   padding: 64px 48px;
-  color: #fff;
+  color: var(--ink);
 }
 
 .crumbs {
@@ -33,11 +37,11 @@
   font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--muted);
 }
 
 .crumbs a:hover {
-  color: #fff;
+  color: var(--green-dark);
 }
 
 .h1 {
@@ -53,7 +57,7 @@
   max-width: 48ch;
   font-size: 17px;
   line-height: 1.6;
-  color: var(--on-dark-lead);
+  color: var(--muted);
 }
 
 .heroActions {
@@ -85,15 +89,18 @@
   color: #fff;
 }
 
+/* Кнопка стоит теперь на белом: призрачная белая рамка с белым текстом
+   на нём не видна. Обводка зелёная, надпись на тон темнее — --green
+   на белом даёт 3.6:1, а это подпись 15 px. */
 .btnGhost {
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: #fff;
+  border: 1px solid var(--green);
+  color: var(--green-dark);
   font-weight: 500;
 }
 
 .btnGhost:hover {
-  border-color: #fff;
-  color: #fff;
+  border-color: var(--green-dark);
+  color: var(--green-dark);
 }
 
 .btnDark {
