@@ -2,7 +2,6 @@
   "realm": "vedal",
   "enabled": true,
   "displayName": "VEDAL Portal",
-
   "sslRequired": "none",
   "registrationAllowed": false,
   "resetPasswordAllowed": false,
@@ -10,11 +9,9 @@
   "verifyEmail": false,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
-
   "accessTokenLifespan": 900,
   "ssoSessionIdleTimeout": 1800,
   "ssoSessionMaxLifespan": 36000,
-
   "roles": {
     "realm": [
       {
@@ -27,7 +24,6 @@
       }
     ]
   },
-
   "clients": [
     {
       "clientId": "vedal-admin-ui",
@@ -74,9 +70,21 @@
       "bearerOnly": true,
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false
+    },
+    {
+      "clientId": "vedal-portal-svc",
+      "name": "VEDAL Portal (служебная учётная запись)",
+      "description": "Портал ходит этим клиентом в административное API Keycloak за списком сотрудников. Право ровно одно — view-users.",
+      "enabled": true,
+      "publicClient": false,
+      "bearerOnly": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "vedal-portal-svc-local"
     }
   ],
-
   "users": [
     {
       "username": "editor",
@@ -92,7 +100,19 @@
           "temporary": false
         }
       ],
-      "realmRoles": ["portal-admin"]
+      "realmRoles": [
+        "portal-admin"
+      ]
+    },
+    {
+      "username": "service-account-vedal-portal-svc",
+      "enabled": true,
+      "serviceAccountClientId": "vedal-portal-svc",
+      "clientRoles": {
+        "realm-management": [
+          "view-users"
+        ]
+      }
     }
   ]
 }
