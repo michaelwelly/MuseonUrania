@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import AnimatedLogo from "@/components/AnimatedLogo";
 import { accessToken, authConfigured, login, logout } from "@/lib/auth";
 import { adminConfigured, session, type Session } from "@/lib/admin";
+import { site } from "@/content/site";
 import { message } from "./ui";
 import Entry from "./Entry";
 
@@ -145,56 +147,100 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="admin-shell">
-      <nav className="admin-nav">
-        <div className="admin-nav__mark">VEDAL</div>
-        <div className="admin-nav__sub">portal · админка</div>
-        {NAV.map((item, i) =>
-          "group" in item ? (
-            <div key={`group-${i}`} className="admin-nav__group">
-              {item.group}
-            </div>
-          ) : (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={current(pathname, item.href) ? "page" : undefined}
-            >
-              {item.label}
-            </Link>
-          ),
-        )}
-        <div className="admin-nav__foot">
-          <span className="admin-circuit">закрытый контур</span>
-
-          <div className="admin-who">
-            <span className="admin-who__name">{state.who.actor}</span>
-            {/* Роли показываются те, что разобрал портал, а не те, что лежат
-                в токене: расходятся они ровно тогда, когда что-то настроено
-                не так, и увидеть это надо здесь, а не в отказе на действии. */}
-            <span className="admin-who__meta">
-              {state.who.roles.length > 0 ? state.who.roles.join(" · ") : "без ролей"}
+    <div className="admin-app">
+      {/* Шапка в два ряда. В один одиннадцать разделов, знак и карточка
+          сотрудника не помещаются на ноутбуке: либо разделы начинают
+          сокращаться до непонятных огрызков, либо уезжают под «ещё». */}
+      <header className="admin-top">
+        <div className="admin-top__bar">
+          <Link className="admin-brand" href="/admin/" aria-label="VEDAL Portal, сводка">
+            <span className="admin-brand__plate">
+              <AnimatedLogo height={30} />
             </span>
-            <span className="admin-who__meta">вход: {state.who.authentication}</span>
-          </div>
+            <span className="admin-brand__label">админка</span>
+          </Link>
 
-          <div className="row">
-            {/* Переход между группами маршрутов перезагружает страницу
-                целиком — у сайта и админки разные корневые layout'ы. Next
-                делает это сам, Link здесь нужен ради предзагрузки и того,
-                чтобы правило проверки ссылок не спотыкалось. */}
-            <Link className="btn btn--small" href="/">
-              На сайт
-            </Link>
-            <button className="btn btn--small" onClick={() => logout()}>
-              Выйти
-            </button>
-          </div>
+          <Who who={state.who} />
         </div>
-      </nav>
+
+        <nav className="admin-top__nav" aria-label="Разделы админки">
+          {NAV.map((item, i) =>
+            "group" in item ? (
+              <span key={`sep-${i}`} className="admin-top__sep" aria-hidden="true" />
+            ) : (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={current(pathname, item.href) ? "page" : undefined}
+              >
+                {item.label}
+              </Link>
+            ),
+          )}
+        </nav>
+      </header>
+
       <main className="admin-main">{children}</main>
+
+      <footer className="admin-foot">
+        <div className="admin-foot__left">
+          <span className="admin-brand__plate">
+            <AnimatedLogo height={26} />
+          </span>
+          <span>
+            © {new Date().getFullYear()} {site.legalName}
+          </span>
+        </div>
+
+        <div className="admin-foot__right">
+          <span className="admin-circuit">закрытый контур</span>
+          {/* Переход между группами маршрутов перезагружает страницу целиком —
+              у сайта и админки разные корневые layout'ы. Next делает это сам,
+              Link здесь ради предзагрузки и того, чтобы правило проверки
+              ссылок не спотыкалось. */}
+          <Link href="/">На сайт</Link>
+        </div>
+      </footer>
     </div>
   );
+}
+
+/**
+ * Кто вошёл — в правом верхнем углу.
+ *
+ * Значок собирается из первых букв самого имени, а не берётся картинкой:
+ * фотографий сотрудников у портала нет и не будет — он знает про человека
+ * ровно то, что отдал Keycloak.
+ *
+ * Роли показываются те, что разобрал портал, а не те, что лежат в токене:
+ * расходятся они ровно тогда, когда что-то настроено не так, и увидеть это
+ * надо здесь, а не в отказе на первом же действии.
+ */
+function Who({ who }: { who: Session }) {
+  return (
+    <div className="admin-who">
+      <span className="admin-who__mark" aria-hidden="true">
+        {initials(who.actor)}
+      </span>
+      <span className="admin-who__text">
+        <span className="admin-who__name">{who.actor}</span>
+        <span className="admin-who__meta">
+          {who.roles.length > 0 ? who.roles.join(" · ") : "без ролей"}
+        </span>
+      </span>
+      <button className="btn btn--small" onClick={() => logout()}>
+        Выйти
+      </button>
+    </div>
+  );
+}
+
+/** Две первые буквы имени: «Анна Фёдорова» → «АФ», «editor» → «ED». */
+function initials(actor: string): string {
+  const parts = actor.trim().split(/[\s._-]+/).filter(Boolean);
+  if (parts.length === 0) return "—";
+  const letters = parts.length > 1 ? parts[0][0] + parts[1][0] : parts[0].slice(0, 2);
+  return letters.toUpperCase();
 }
 
 // Сводка подсвечивается только на самой сводке: иначе она горит на каждой
