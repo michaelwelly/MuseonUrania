@@ -148,33 +148,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="admin-app">
-      {/* Шапка в два ряда. В один одиннадцать разделов, знак и карточка
-          сотрудника не помещаются на ноутбуке: либо разделы начинают
-          сокращаться до непонятных огрызков, либо уезжают под «ещё». */}
+      {/* Один ряд: знак, разделы, кто вошёл. Всё, что можно было убрать
+          отсюда, убрано — «На сайт» и «Выйти» переехали в футер, подпись
+          «админка» снята за ненадобностью: человек и так знает, куда
+          вошёл, а место она занимала как полтора раздела. */}
       <header className="admin-top">
-        <div className="admin-top__bar">
-          <Link className="admin-brand" href="/admin/" aria-label="VEDAL Portal, сводка">
-            {/* 42 — та же высота, что у знака в шапке сайта. */}
-            <AnimatedLogo height={42} />
-            <span className="admin-brand__label">админка</span>
-          </Link>
-
-          <div className="admin-tools">
-            <Who who={state.who} />
-
-            {/* Зелёная кнопка на том же месте, где на сайте «Связаться
-                с нами». Действие другое, но роль та же: единственное,
-                что доступно всегда, на любой странице. */}
-            <Link className="admin-cta" href="/">
-              На сайт
-              <Arrow />
-            </Link>
-
-            <button className="btn btn--small" onClick={() => logout()}>
-              Выйти
-            </button>
-          </div>
-        </div>
+        <Link className="admin-brand" href="/admin/" aria-label="VEDAL Portal, сводка">
+          {/* 42 — та же высота, что у знака в шапке сайта. */}
+          <AnimatedLogo height={42} />
+        </Link>
 
         <nav className="admin-top__nav" aria-label="Разделы админки">
           {NAV.map((item, i) =>
@@ -191,6 +173,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             ),
           )}
         </nav>
+
+        <Who who={state.who} />
       </header>
 
       <main className="admin-main">{children}</main>
@@ -212,6 +196,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               Link здесь ради предзагрузки и того, чтобы правило проверки
               ссылок не спотыкалось. */}
           <Link href="/">На сайт</Link>
+          {/* Выход убран из шапки, но не из продукта: выйти надо чем-то,
+              и место рядом с «На сайт» ему подходит — оба увода отсюда. */}
+          <button className="admin-foot__exit" onClick={() => logout()}>
+            Выйти
+          </button>
         </div>
       </footer>
     </div>
@@ -247,14 +236,6 @@ function Who({ who }: { who: Session }) {
   );
 }
 
-// Та же стрелка, что в кнопках сайта.
-function Arrow() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" />
-    </svg>
-  );
-}
 
 /** Две первые буквы имени: «Анна Фёдорова» → «АФ», «editor» → «ED». */
 function initials(actor: string): string {
