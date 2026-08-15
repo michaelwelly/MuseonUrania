@@ -113,11 +113,64 @@
 /* ————— кто вошёл ————— */
 
 /* Кто вошёл — на месте телефона в шапке сайта и в той же форме:
-   две строки с выключкой вправо. */
+   две строки с выключкой вправо.
+ *
+ * Она же кнопка выхода: футера с ним больше нет, а выходить надо чем-то.
+ * Чтобы нажатие не оказалось сюрпризом, вторая строка при наведении
+ * подменяется словом «Выйти» — что случится, написано до того, как нажали. */
 .admin-who {
   display: flex;
   align-items: center;
   gap: 11px;
+  padding: 4px 6px 4px 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.admin-who:hover,
+.admin-who:focus-visible {
+  border-color: var(--rule);
+  background: var(--paper);
+}
+
+/* Две строки в одной клетке сетки — лежат друг на друге, меняются
+   прозрачностью. Высота при этом не скачет. */
+.admin-who__swap {
+  display: grid;
+}
+
+.admin-who__swap > * {
+  grid-area: 1 / 1;
+}
+
+.admin-who__exit {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--green-dark);
+  opacity: 0;
+  text-align: right;
+}
+
+.admin-who:hover .admin-who__meta,
+.admin-who:focus-visible .admin-who__meta {
+  opacity: 0;
+}
+
+.admin-who:hover .admin-who__exit,
+.admin-who:focus-visible .admin-who__exit {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .admin-who__meta,
+  .admin-who__exit {
+    transition: opacity 0.12s ease;
+  }
 }
 
 /* Значок из букв имени: фотографий сотрудников у портала нет и не будет —
@@ -243,25 +296,6 @@
   background: var(--rule);
 }
 
-/* Кнопка выхода в футере. Не .btn: на тёмном фоне светлая кнопка
-   выглядит главным действием страницы, а это увод отсюда. */
-.admin-foot__exit {
-  font: inherit;
-  font-size: 12.5px;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--on-dark-2);
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  text-decoration-color: var(--on-dark-line);
-}
-
-.admin-foot__exit:hover {
-  color: #fff;
-}
-
 /* Метка контура. Не украшение: человек должен видеть, что он внутри
    закрытого контура, где на экране бывают персональные данные. */
 .admin-circuit {
@@ -281,640 +315,6 @@
   height: 6px;
   border-radius: 50%;
   background: currentColor;
-}
-
-/* ————— футер ————— */
-
-/* Тёмный, как на сайте: та же пара «светлая шапка — тёмный низ», и по ней
-   видно, что это один продукт. */
-.admin-foot {
-  margin-top: auto;
-  background: var(--nav);
-  color: var(--on-dark-3);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  flex-wrap: wrap;
-  padding: 18px 30px;
-  font-size: 12.5px;
-}
-
-.admin-foot__left,
-.admin-foot__right {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-/* Плашка под знаком обязательна: надпись в знаке чёрная, а футер тёмный —
-   без неё знак пропадает целиком. Тот же приём и по той же причине,
-   что в футере сайта. */
-.admin-brand__plate {
-  display: inline-flex;
-  padding: 5px 9px;
-  border-radius: 3px;
-  background: #fff;
-}
-
-.admin-foot a {
-  color: var(--on-dark-2);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  text-decoration-color: var(--on-dark-line);
-}
-
-.admin-foot a:hover {
-  color: #fff;
-}
-
-@media (max-width: 1100px) {
-  .admin-top,
-  .admin-foot {
-    padding-left: 24px;
-    padding-right: 24px;
-  }
-
-  .admin-top {
-    gap: 20px;
-  }
-
-  .admin-top__nav {
-    gap: 16px;
-  }
-}
-
-@media (max-width: 720px) {
-  .admin-top,
-  .admin-foot {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-
-  .admin-top {
-    height: 64px;
-    gap: 14px;
-  }
-}
-
-/* ————— рабочая поверхность ————— */
-
-.admin-main {
-  flex: 1;
-  width: 100%;
-  max-width: 1240px;
-  /* По центру: панель теперь сверху во всю ширину, и содержимое,
-     прижатое к левому краю на широком мониторе, оставляет справа
-     пустое поле в треть экрана. */
-  margin: 0 auto;
-  padding: 26px 30px 64px;
-  min-width: 0;
-}
-
-@media (max-width: 900px) {
-  .admin-main {
-    padding: 20px 16px 44px;
-  }
-}
-
-.admin-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
-}
-
-.admin-head h1 {
-  font-family: var(--font-display), system-ui, sans-serif;
-  font-size: 25px;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-}
-
-/* Пояснение под заголовком. Здесь живёт «почему так устроено» — правило,
-   которое иначе объяснять пришлось бы на словах каждому новому редактору. */
-.admin-hint {
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.55;
-  margin-bottom: 20px;
-  max-width: 76ch;
-}
-
-/* Экран с персональными данными. Заявки и клиенты — единственные два
-   места продукта, где они на виду, и это стоит сказать вслух. */
-.admin-pd {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 12px;
-  margin-bottom: 18px;
-  border: 1px solid var(--state-wait-line);
-  background: var(--state-wait-bg);
-  border-radius: 8px;
-  font-size: 12.5px;
-  color: var(--state-wait);
-}
-
-.admin-pd::before {
-  content: "ПДн";
-  font-family: var(--font-mono), monospace;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: var(--state-wait);
-  color: #fff;
-}
-
-/* ————— карточка ————— */
-
-.admin-card {
-  background: var(--surface);
-  border: 1px solid var(--rule);
-  border-radius: 10px;
-  padding: 20px;
-  margin-bottom: 16px;
-}
-
-.admin-card__head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.admin-card__title {
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  margin-bottom: 12px;
-}
-
-/* ————— таблица ————— */
-
-.admin-scroll {
-  overflow-x: auto;
-  /* Полоса прокрутки не должна прыгать под курсором на длинных таблицах. */
-  scrollbar-gutter: stable;
-}
-
-.admin-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  font-size: 13.5px;
-  background: var(--surface);
-  border: 1px solid var(--rule);
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-/* Шапка липнет при прокрутке: в списке на двести строк заголовок столбца
-   нужен именно тогда, когда он уже уехал вверх. */
-.admin-table th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  text-align: left;
-  font-family: var(--font-mono), monospace;
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--muted);
-  font-weight: 500;
-  padding: 10px 13px;
-  background: var(--paper);
-  border-bottom: 1px solid var(--rule);
-  white-space: nowrap;
-}
-
-.admin-table td {
-  padding: 10px 13px;
-  border-bottom: 1px solid var(--rule-soft);
-  vertical-align: top;
-  line-height: 1.45;
-}
-
-.admin-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.admin-table tbody tr:hover td {
-  background: var(--paper);
-}
-
-.admin-table td.tight {
-  white-space: nowrap;
-  /* Цифры в колонках выравниваются по разрядам. */
-  font-variant-numeric: tabular-nums;
-}
-
-.admin-table a {
-  color: var(--ink);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  text-decoration-color: var(--line-3);
-}
-
-.admin-table a:hover {
-  text-decoration-color: var(--green);
-  color: var(--green-dark);
-}
-
-/* ————— бейджи ————— */
-
-/* Форма несёт столько же смысла, сколько цвет: у «опубликовано» заливка,
-   у «черновика» пустой фон и пунктир, у «ждёт» сплошная рамка. */
-.badge {
-  display: inline-block;
-  font-family: var(--font-mono), monospace;
-  font-size: 10.5px;
-  letter-spacing: 0.04em;
-  padding: 3px 8px;
-  border-radius: 5px;
-  border: 1px solid var(--line-3);
-  color: var(--text-2);
-  background: var(--surface);
-  white-space: nowrap;
-}
-
-.badge--on {
-  background: var(--state-ok-bg);
-  color: var(--state-ok);
-  border-color: var(--state-ok-line);
-  font-weight: 600;
-}
-
-.badge--off {
-  background: transparent;
-  color: var(--muted);
-  border-style: dashed;
-}
-
-.badge--warn {
-  background: var(--state-wait-bg);
-  color: var(--state-wait);
-  border-color: var(--state-wait-line);
-  font-weight: 600;
-}
-
-/* ————— формы ————— */
-
-.field {
-  display: block;
-  margin-bottom: 15px;
-}
-
-.field > span {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-2);
-  margin-bottom: 5px;
-}
-
-.field input,
-.field select,
-.field textarea {
-  width: 100%;
-  font: inherit;
-  font-size: 14px;
-  color: var(--ink);
-  background: var(--surface);
-  border: 1px solid var(--line-3);
-  border-radius: 7px;
-  padding: 9px 11px;
-}
-
-.field input:hover,
-.field select:hover,
-.field textarea:hover {
-  border-color: var(--muted);
-}
-
-.field input:focus,
-.field select:focus,
-.field textarea:focus {
-  outline: 2px solid var(--green);
-  outline-offset: -1px;
-  border-color: var(--green);
-}
-
-.field textarea {
-  min-height: 96px;
-  resize: vertical;
-  line-height: 1.55;
-}
-
-.field small {
-  display: block;
-  margin-top: 5px;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.field--error input,
-.field--error select,
-.field--error textarea {
-  border-color: var(--state-stop);
-}
-
-.field--error small {
-  color: var(--state-stop);
-  font-weight: 500;
-}
-
-.field--row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.field--row input {
-  width: auto;
-}
-
-.grid2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 18px;
-}
-
-@media (max-width: 720px) {
-  .grid2 {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Поля фильтров живут вне .field: у них нет подписи сверху, они стоят
-   в строку и не должны растягиваться на всю ширину. */
-
-.admin-search,
-.admin-select {
-  font: inherit;
-  font-size: 13.5px;
-  color: var(--ink);
-  background: var(--surface);
-  border: 1px solid var(--line-3);
-  border-radius: 7px;
-  padding: 8px 10px;
-}
-
-.admin-search {
-  min-width: 240px;
-  flex: 0 1 320px;
-}
-
-.admin-search:hover,
-.admin-select:hover {
-  border-color: var(--muted);
-}
-
-.admin-search:focus,
-.admin-select:focus {
-  outline: 2px solid var(--green);
-  outline-offset: -1px;
-  border-color: var(--green);
-}
-
-.admin-select:disabled {
-  opacity: 0.5;
-  background: var(--paper);
-}
-
-/* ————— кнопки ————— */
-
-.btn {
-  font: inherit;
-  font-size: 13.5px;
-  font-weight: 500;
-  padding: 8px 15px;
-  border-radius: 7px;
-  border: 1px solid var(--line-3);
-  background: var(--surface);
-  color: var(--ink);
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-block;
-  white-space: nowrap;
-}
-
-.btn:hover:not(:disabled) {
-  border-color: var(--muted);
-  background: var(--paper);
-}
-
-.btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.btn--primary {
-  background: var(--green-dark);
-  border-color: var(--green-dark);
-  color: #fff;
-  font-weight: 600;
-}
-
-.btn--primary:hover:not(:disabled) {
-  background: #0c6827;
-  border-color: #0c6827;
-  color: #fff;
-}
-
-.btn--danger {
-  color: var(--state-stop);
-  border-color: var(--state-stop-line);
-}
-
-.btn--danger:hover:not(:disabled) {
-  background: var(--state-stop-bg);
-  border-color: var(--state-stop);
-}
-
-.btn--small {
-  font-size: 12.5px;
-  padding: 5px 10px;
-}
-
-.row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.row--end {
-  justify-content: flex-end;
-}
-
-/* ————— сообщения ————— */
-
-.note {
-  border-radius: 9px;
-  padding: 11px 13px;
-  font-size: 13.5px;
-  line-height: 1.55;
-  margin-bottom: 14px;
-  border: 1px solid var(--rule);
-  background: var(--surface);
-}
-
-.note--error {
-  background: var(--state-stop-bg);
-  border-color: var(--state-stop-line);
-  color: #7d2114;
-}
-
-.note--ok {
-  background: var(--state-ok-bg);
-  border-color: var(--state-ok-line);
-  color: var(--state-ok);
-}
-
-.mono {
-  font-family: var(--font-mono), monospace;
-  font-size: 11.5px;
-  color: var(--text-2);
-  font-variant-numeric: tabular-nums;
-  word-break: break-all;
-}
-
-.muted {
-  color: var(--muted);
-}
-
-/* ————— вход ————— */
-
-/* Две половины: слева куда попал, справа как войти. Голая карточка
-   «Войти через Keycloak» посреди пустого экрана не отвечает ни на один
-   вопрос человека, который видит систему впервые. */
-.login {
-  min-height: 100vh;
-  display: grid;
-  grid-template-columns: 1.1fr 1fr;
-  background: var(--nav);
-  color: #fff;
-}
-
-@media (max-width: 900px) {
-  .login {
-    grid-template-columns: 1fr;
-    min-height: 0;
-  }
-}
-
-.login__about {
-  padding: 56px 48px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 22px;
-}
-
-.login__mark {
-  font-family: var(--font-display), system-ui, sans-serif;
-  font-size: 22px;
-  letter-spacing: 0.04em;
-}
-
-.login__lead {
-  font-size: 16px;
-  line-height: 1.6;
-  color: var(--on-dark-lead);
-  max-width: 46ch;
-}
-
-.login__list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 11px;
-  font-size: 13.5px;
-  color: var(--on-dark-2);
-  max-width: 46ch;
-}
-
-.login__list li {
-  display: flex;
-  gap: 11px;
-  align-items: baseline;
-}
-
-.login__list li::before {
-  content: "";
-  flex: none;
-  width: 14px;
-  height: 1px;
-  background: var(--green-on-dark);
-  transform: translateY(-4px);
-}
-
-.login__panel {
-  background: var(--paper);
-  color: var(--ink);
-  padding: 56px 48px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 18px;
-}
-
-@media (max-width: 640px) {
-  .login__about,
-  .login__panel {
-    padding: 34px 20px;
-  }
-}
-
-.login__card {
-  max-width: 400px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.login__card h1 {
-  font-family: var(--font-display), system-ui, sans-serif;
-  font-size: 22px;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-}
-
-.login__card p {
-  color: var(--text-2);
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.login__card code {
-  font-family: var(--font-mono), monospace;
-  font-size: 12.5px;
-  background: var(--rule-soft);
-  padding: 1px 5px;
-  border-radius: 4px;
-}
-
-.login__big {
-  font-size: 15px;
-  font-weight: 600;
-  padding: 12px 22px;
-  align-self: flex-start;
-}
-
-/* Строка состояния входа: что именно не так — не настроено, не вошли,
-   токен не принят. Три разных случая, и лечатся они по-разному. */
-.login__state {
-  font-family: var(--font-mono), monospace;
-  font-size: 10.5px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
 }
 
 /* ————— плитки сводки ————— */
