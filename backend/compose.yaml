@@ -27,6 +27,11 @@ services:
       POSTGRES_DB: ${VEDAL_DB_NAME:-vedal}
       POSTGRES_USER: ${VEDAL_DB_USER:-vedal}
       POSTGRES_PASSWORD: ${VEDAL_DB_PASSWORD:-vedal}
+      # Роль рантайма заводит init-скрипт ниже. POSTGRES_USER остаётся
+      # владельцем схемы: под ним накатывает Flyway и работает коннектор
+      # Debezium, которому нужна репликация.
+      VEDAL_RUNTIME_USER: ${VEDAL_RUNTIME_USER:-vedal_app}
+      VEDAL_RUNTIME_PASSWORD: ${VEDAL_RUNTIME_PASSWORD:-vedal-app-local}
     # Логическая репликация — требование Debezium: без wal_level=logical
     # коннектор не поднимется вовсе. Слоты и отправители нужны по одному
     # на коннектор, запас взят на будущие.
@@ -41,12 +46,21 @@ services:
     ports:
       - "${VEDAL_DB_PORT:-5434}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vedal -d vedal"]
+      # Имя роли и базы берутся из тех же переменных, что и выше. Прошитое
+      # «vedal» врало бы при изменённом VEDAL_DB_USER: проверка ходила бы
+      # к несуществующей роли, контейнер никогда не становился бы healthy,
+      # и всё, что ждёт service_healthy, стояло бы без объяснения причины.
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 3s
       retries: 12
     volumes:
       - vedal-db:/var/lib/postgresql/data
+      # Скрипты выполняются entrypoint'ом при создании кластера. На уже
+      # существующем томе они не запустятся, и миграция V16 остановит накат
+      # с требованием завести роль руками — молча работать владельцем схемы
+      # приложение не будет.
+      - ./db/init:/docker-entrypoint-initdb.d:ro
 
   # KRaft, без ZooKeeper: один брокер он же контроллер. Для разработки этого
   # достаточно, в облаке будет Managed Kafka.
@@ -306,8 +320,19 @@ services:
         condition: service_healthy
     environment:
       VEDAL_DB_URL: jdbc:postgresql://db:5432/${VEDAL_DB_NAME:-vedal}
-      VEDAL_DB_USER: ${VEDAL_DB_USER:-vedal}
-      VEDAL_DB_PASSWORD: ${VEDAL_DB_PASSWORD:-vedal}
+
+      # Приложение работает под ролью рантайма, а не под владельцем схемы.
+      # Локальный стек здесь намеренно повторяет развёрнутую среду: разойдись
+      # они, нехватка права выяснялась бы не на машине разработчика, а на
+      # редакторе, сохраняющем карточку изделия в проде.
+      VEDAL_DB_USER: ${VEDAL_RUNTIME_USER:-vedal_app}
+      VEDAL_DB_PASSWORD: ${VEDAL_RUNTIME_PASSWORD:-vedal-app-local}
+
+      # Flyway ходит владельцем: рантайм схему менять не может, в этом и смысл.
+      # Переменные SPRING_* биндятся напрямую в свойства, поэтому отдельных
+      # строк в application.properties для локального стека не нужно.
+      SPRING_FLYWAY_USER: ${VEDAL_DB_USER:-vedal}
+      SPRING_FLYWAY_PASSWORD: ${VEDAL_DB_PASSWORD:-vedal}
 
       # Строки outbox читает коннектор, а не relay.
       VEDAL_EVENTS_PUBLISHER: debezium

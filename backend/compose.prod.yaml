@@ -30,6 +30,12 @@ services:
       POSTGRES_DB: ${VEDAL_DB_NAME:?задайте VEDAL_DB_NAME}
       POSTGRES_USER: ${VEDAL_DB_USER:?задайте VEDAL_DB_USER}
       POSTGRES_PASSWORD: ${VEDAL_DB_PASSWORD:?задайте VEDAL_DB_PASSWORD}
+      # Пароль роли рантайма — без значения по умолчанию, как и остальные
+      # секреты здесь. Роль заводится init-скриптом при создании кластера;
+      # на существующем томе её надо создать руками, иначе миграция V16
+      # остановит накат и скажет об этом.
+      VEDAL_RUNTIME_USER: ${VEDAL_RUNTIME_USER:-vedal_app}
+      VEDAL_RUNTIME_PASSWORD: ${VEDAL_RUNTIME_PASSWORD:?задайте VEDAL_RUNTIME_PASSWORD}
     ports: !override []
     restart: unless-stopped
     logging: &logging
@@ -104,8 +110,17 @@ services:
       # до создания datasource и называет их поимённо.
       SPRING_PROFILES_ACTIVE: prod
       VEDAL_DB_URL: jdbc:postgresql://db:5432/${VEDAL_DB_NAME:?задайте VEDAL_DB_NAME}
-      VEDAL_DB_USER: ${VEDAL_DB_USER:?}
-      VEDAL_DB_PASSWORD: ${VEDAL_DB_PASSWORD:?}
+
+      # Рантайм — не владелец схемы. Он меняет данные, но не может изменить
+      # ни схему, ни права, ни журнал: миграция V16 и RuntimeRolePrivilegesTest.
+      VEDAL_DB_USER: ${VEDAL_RUNTIME_USER:-vedal_app}
+      VEDAL_DB_PASSWORD: ${VEDAL_RUNTIME_PASSWORD:?задайте VEDAL_RUNTIME_PASSWORD}
+
+      # Владелец схемы — только для наката миграций. Профиль prod требует обе
+      # переменные поимённо: без них старт останавливается до создания
+      # datasource, а не падает потом на непонятной ошибке Flyway.
+      VEDAL_DB_MIGRATION_USER: ${VEDAL_DB_USER:?задайте VEDAL_DB_USER}
+      VEDAL_DB_MIGRATION_PASSWORD: ${VEDAL_DB_PASSWORD:?задайте VEDAL_DB_PASSWORD}
       VEDAL_S3_ACCESS_KEY: ${VEDAL_S3_ACCESS_KEY:?}
       VEDAL_S3_SECRET_KEY: ${VEDAL_S3_SECRET_KEY:?}
       VEDAL_OIDC_ISSUER: ${VEDAL_KEYCLOAK_URL:?}/realms/vedal
