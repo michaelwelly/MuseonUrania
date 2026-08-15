@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { completeLogin } from "@/lib/auth";
 import { message } from "../ui";
+import Entry from "../Entry";
 
 // Возврат из Keycloak. Здесь код авторизации меняется на токены и браузер
 // уходит туда, откуда начинали.
@@ -15,7 +16,7 @@ export default function CallbackPage() {
   // в динамический рендер, а она статическая — данные приезжают из адреса
   // в браузере.
   return (
-    <Suspense fallback={<Screen title="Заканчиваем вход" />}>
+    <Suspense fallback={<Entry state="обмен кода" title="Заканчиваем вход" />}>
       <Callback />
     </Suspense>
   );
@@ -48,24 +49,25 @@ function Callback() {
   }, [code, denial]);
 
   return (
-    <Screen title={error ? "Войти не удалось" : "Заканчиваем вход"}>
-      {error && <p>{error}</p>}
-      {error && (
-        <a className="btn btn--primary" href="/admin/">
-          Попробовать снова
-        </a>
+    <Entry
+      state={error ? "обмен кода не удался" : "обмен кода"}
+      title={error ? "Войти не удалось" : "Заканчиваем вход"}
+    >
+      {error ? (
+        <>
+          <p>{error}</p>
+          <p>
+            Код авторизации одноразовый и живёт минуту: чаще всего он просто устарел, пока
+            страница висела открытой. Начните вход заново.
+          </p>
+          <a className="btn btn--primary login__big" href="/admin/">
+            Начать заново
+          </a>
+        </>
+      ) : (
+        <p>Меняем код авторизации на токен и возвращаем вас туда, откуда начинали.</p>
       )}
-    </Screen>
+    </Entry>
   );
 }
 
-function Screen({ title, children }: { title: string; children?: React.ReactNode }) {
-  return (
-    <div className="login">
-      <div className="login__card">
-        <h1>{title}</h1>
-        {children}
-      </div>
-    </div>
-  );
-}

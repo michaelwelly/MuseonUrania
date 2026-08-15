@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { accessToken, authConfigured, login, logout } from "@/lib/auth";
 import { adminConfigured, session, type Session } from "@/lib/admin";
 import { message } from "./ui";
+import Entry from "./Entry";
 
 // Оболочка админки: вход и навигация.
 //
@@ -79,49 +80,67 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (!adminConfigured || !authConfigured) {
     return (
-      <Screen title="Админка не настроена">
+      <Entry state="не настроено" title="Админке некуда ходить">
         <p>
           Не заданы переменные сборки: {!adminConfigured && <code>NEXT_PUBLIC_API_URL</code>}
           {!adminConfigured && !authConfigured && ", "}
-          {!authConfigured && <code>NEXT_PUBLIC_OIDC_ISSUER</code>}. Пока их нет, админке некуда
-          ходить и негде получать токен.
+          {!authConfigured && <code>NEXT_PUBLIC_OIDC_ISSUER</code>}.
         </p>
-      </Screen>
+        <p>
+          Это не поломка входа: без адреса портала запрашивать нечего, без адреса realm&apos;а
+          негде получить токен. Задаются в окружении — в контейнере их ставит{" "}
+          <code>compose.yaml</code>, на машине — <code>.env.local</code>.
+        </p>
+      </Entry>
     );
   }
 
   if (state.kind === "checking") {
-    return <Screen title="Проверяем вход">{null}</Screen>;
+    return (
+      <Entry state="проверяем токен" title="Секунду">
+        <p>Смотрим, есть ли действующий токен и принимает ли его портал.</p>
+      </Entry>
+    );
   }
 
   if (state.kind === "anonymous") {
     return (
-      <Screen title="Вход в админку">
+      <Entry state="вход не выполнен" title="Вход для сотрудников">
         <p>
           Пароли и второй фактор живут в Keycloak. Портал их не хранит и не проверяет — он
-          проверяет выданный токен.
+          проверяет уже выданный токен и разбирает роли из него.
         </p>
-        <button className="btn btn--primary" onClick={() => void login(pathname ?? "/admin/")}>
+        <button
+          className="btn btn--primary login__big"
+          onClick={() => void login(pathname ?? "/admin/")}
+        >
           Войти через Keycloak
         </button>
-      </Screen>
+        <p className="muted" style={{ fontSize: 13 }}>
+          Вернётесь сюда же, на страницу, с которой ушли.
+        </p>
+      </Entry>
     );
   }
 
+  // Токен есть, а портал его не принял. Это отдельный случай, а не «войдите
+  // ещё раз»: повторный вход выдаст тот же токен и получит тот же отказ.
   if (state.kind === "refused") {
     return (
-      <Screen title="Портал не принял токен">
+      <Entry state="токен не принят" title="Портал отказал">
         <p>{state.reason}</p>
         <p>
-          Чаще всего это значит, что у учётной записи нет роли <code>portal-admin</code> или{" "}
-          <code>portal-editor</code> в realm&apos;е.
+          Вход в Keycloak прошёл — иначе токена не было бы вовсе. Отказал уже портал, и чаще
+          всего потому, что у учётной записи нет роли <code>portal-admin</code> или{" "}
+          <code>portal-editor</code> в realm&apos;е. Роль выдаёт тот, кто держит Keycloak;
+          повторный вход ничего не изменит, токен будет тот же.
         </p>
-        <div className="row" style={{ justifyContent: "center" }}>
+        <div className="row">
           <button className="btn" onClick={() => logout()}>
-            Выйти
+            Выйти и войти другой учётной записью
           </button>
         </div>
-      </Screen>
+      </Entry>
     );
   }
 
@@ -146,11 +165,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           ),
         )}
         <div className="admin-nav__foot">
-          <div>
-            {state.who.actor}
-            <br />
-            <span style={{ opacity: 0.7 }}>вход: {state.who.authentication}</span>
+          <span className="admin-circuit">закрытый контур</span>
+
+          <div className="admin-who">
+            <span className="admin-who__name">{state.who.actor}</span>
+            {/* Роли показываются те, что разобрал портал, а не те, что лежат
+                в токене: расходятся они ровно тогда, когда что-то настроено
+                не так, и увидеть это надо здесь, а не в отказе на действии. */}
+            <span className="admin-who__meta">
+              {state.who.roles.length > 0 ? state.who.roles.join(" · ") : "без ролей"}
+            </span>
+            <span className="admin-who__meta">вход: {state.who.authentication}</span>
           </div>
+
           <div className="row">
             {/* Переход между группами маршрутов перезагружает страницу
                 целиком — у сайта и админки разные корневые layout'ы. Next
@@ -175,15 +202,4 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 function current(pathname: string | null, href: string): boolean {
   if (!pathname) return false;
   return href === "/admin/" ? pathname === "/admin/" : pathname.startsWith(href);
-}
-
-function Screen({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="login">
-      <div className="login__card">
-        <h1>{title}</h1>
-        {children}
-      </div>
-    </div>
-  );
 }
