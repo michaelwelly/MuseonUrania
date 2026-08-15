@@ -20,5 +20,20 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
 		</dependency>
+		<!-- Справочник сотрудников ходит в административное API Keycloak
+		     клиентом RestClient. Класс RestClient приезжает со spring-web,
+		     поэтому без этой строки модуль КОМПИЛИРУЕТСЯ, а собранное
+		     приложение падает на старте: автоконфигурация, заводящая бин
+		     RestClient.Builder, живёт в отдельном артефакте Spring Boot 4
+		     и транзитивно ниоткуда не приходит.
+
+		     Ровно тот случай, ради которого модули разведены по pom'ам:
+		     зависимость объявляется там, где используется. Сторожит это
+		     StaffDirectoryKeycloakTest — он поднимает контекст в боевом
+		     режиме, а не в режиме по умолчанию. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-restclient</artifactId>
+		</dependency>
 	</dependencies>
 </project>
