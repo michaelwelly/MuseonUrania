@@ -1,13 +1,60 @@
-/* Оформление админки. Не CSS Module, а обычный файл: это глобальные правила
-   рабочего интерфейса, и разносить их по модулям пришлось бы копированием
-   одних и тех же таблиц и кнопок в каждую страницу.
-
-   Токены берутся те же, что на сайте (globals.css), — админка часть того же
-   продукта, и вводить ей отдельную палитру значит однажды поймать два разных
-   зелёных на одном экране. */
+/* Оформление админки.
+ *
+ * Не CSS Module, а обычный файл: это глобальные правила рабочего интерфейса,
+ * и разносить их по модулям пришлось бы копированием одних и тех же таблиц
+ * и кнопок в каждую страницу.
+ *
+ * Замысел. Админка — не витрина и не панель мониторинга, а рабочее место
+ * закрытого контура, и она устроена как два разных мира. Оболочка тёмная
+ * и приборная: кто вошёл, в какой контур попал, куда идти. Рабочая
+ * поверхность светлая и плотная, как хорошо набранный бланк: менеджер
+ * смотрит в список сделок весь день, и каждый лишний отступ — это строка,
+ * которая не поместилась на экран.
+ *
+ * Три правила, из которых всё остальное следует.
+ *
+ * 1. Данные набираются моноширинным. Суммы, даты, идентификаторы, счётчики
+ *    выравниваются по разрядам — «2 650 000» и «265 000» должны отличаться
+ *    длиной, а не вниманием читающего.
+ *
+ * 2. Смысловые цвета отделены от фирменного. Зелёный VEDAL означает
+ *    «фирменный», а не «всё хорошо»: опубликовано, ждёт и отказано красятся
+ *    своими цветами, иначе бренд начинает означать статус.
+ *
+ * 3. Состояние читается без цвета. У бейджей разная форма заливки и рамки,
+ *    у строк таблицы — полоска слева. Восемь процентов мужчин не различают
+ *    красный и зелёный, и «красная строка = проблема» для них не работает.
+ *
+ * Токены сайта (globals.css) остаются в силе — админка часть того же
+ * продукта. Здесь добавлены только те, которых на сайте нет.
+ */
 
 .admin-body {
-  background: var(--soft);
+  /* Рабочая поверхность чуть теплее чистого белого: страница целиком
+     из #fff под лампой дневного света звенит, а таблицы на ней теряют
+     края. */
+  --paper: #fbfcfb;
+  --surface: #ffffff;
+  --rule: #e2e9e5;
+  --rule-soft: #eef3f0;
+
+  --nav: #08211d;
+  --nav-2: #0d3229;
+
+  /* Смысловые цвета: опубликовано, ждёт действия, отказано. */
+  --state-ok: #0f7c30;
+  --state-ok-bg: #eaf6ee;
+  --state-ok-line: #c3e3ce;
+
+  --state-wait: #8a5310;
+  --state-wait-bg: #fdf4e8;
+  --state-wait-line: #f0dcc0;
+
+  --state-stop: #9c2718;
+  --state-stop-bg: #fdf1ef;
+  --state-stop-line: #e8c8c2;
+
+  background: var(--paper);
   color: var(--ink);
   font-family: var(--font-body), system-ui, sans-serif;
   min-height: 100vh;
@@ -15,7 +62,7 @@
 
 .admin-shell {
   display: grid;
-  grid-template-columns: 232px 1fr;
+  grid-template-columns: 244px 1fr;
   min-height: 100vh;
 }
 
@@ -28,75 +75,139 @@
 /* ————— навигация ————— */
 
 .admin-nav {
-  background: var(--deep);
+  background: var(--nav);
   color: #fff;
-  padding: 24px 16px;
+  padding: 22px 14px 18px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
+  /* Панель остаётся на месте при прокрутке длинного списка: уходить
+     наверх за навигацией — это два действия вместо одного. */
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+@media (max-width: 900px) {
+  .admin-nav {
+    position: static;
+    height: auto;
+  }
 }
 
 .admin-nav__mark {
   font-family: var(--font-display), system-ui, sans-serif;
-  font-size: 18px;
+  font-size: 17px;
   letter-spacing: 0.04em;
-  margin-bottom: 4px;
+  padding: 0 10px;
 }
 
 .admin-nav__sub {
   font-family: var(--font-mono), monospace;
-  font-size: 11px;
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   color: var(--on-dark-label);
-  margin-bottom: 20px;
+  padding: 3px 10px 0;
+  margin-bottom: 22px;
 }
 
+/* Текущий пункт отмечен полосой слева, а не залитой пилюлей: залитый
+   зелёным пункт спорит с зелёными кнопками действий на самой странице —
+   глаз ищет, где здесь можно нажать. */
 .admin-nav a {
+  position: relative;
   color: var(--on-dark-2);
   text-decoration: none;
-  padding: 9px 12px;
-  border-radius: 8px;
+  padding: 8px 10px 8px 13px;
+  border-radius: 6px;
   font-size: 14px;
+  line-height: 1.35;
+  border-left: 3px solid transparent;
 }
 
 .admin-nav a:hover {
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.06);
   color: #fff;
 }
 
 .admin-nav a[aria-current="page"] {
-  background: var(--green);
+  background: rgba(255, 255, 255, 0.08);
+  border-left-color: var(--green);
   color: #fff;
+  font-weight: 500;
 }
 
 .admin-nav__group {
   font-family: var(--font-mono), monospace;
   font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   color: var(--on-dark-label);
-  margin: 14px 12px 4px;
-  padding-top: 12px;
+  margin: 16px 13px 6px;
+  padding-top: 14px;
   border-top: 1px solid var(--on-dark-line);
 }
 
 .admin-nav__foot {
   margin-top: auto;
-  padding-top: 20px;
+  padding: 16px 10px 0;
   border-top: 1px solid var(--on-dark-line);
   font-size: 12px;
   color: var(--on-dark-3);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
-/* ————— содержимое ————— */
+.admin-who {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.admin-who__name {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.admin-who__meta {
+  font-family: var(--font-mono), monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--on-dark-label);
+}
+
+/* Метка контура. Не украшение: человек должен видеть, что он внутри
+   закрытого контура, где на экране бывают персональные данные. */
+.admin-circuit {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--green-on-dark);
+}
+
+.admin-circuit::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* ————— рабочая поверхность ————— */
 
 .admin-main {
-  padding: 28px 32px 64px;
-  max-width: 1180px;
+  padding: 26px 30px 72px;
+  max-width: 1240px;
+  min-width: 0;
 }
 
 @media (max-width: 900px) {
@@ -111,72 +222,60 @@
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .admin-head h1 {
   font-family: var(--font-display), system-ui, sans-serif;
-  font-size: 26px;
+  font-size: 25px;
   font-weight: 500;
+  letter-spacing: -0.01em;
 }
 
+/* Пояснение под заголовком. Здесь живёт «почему так устроено» — правило,
+   которое иначе объяснять пришлось бы на словах каждому новому редактору. */
 .admin-hint {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.55;
   margin-bottom: 20px;
-  max-width: 72ch;
+  max-width: 76ch;
 }
 
-/* ————— карточка и таблица ————— */
+/* Экран с персональными данными. Заявки и клиенты — единственные два
+   места продукта, где они на виду, и это стоит сказать вслух. */
+.admin-pd {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  margin-bottom: 18px;
+  border: 1px solid var(--state-wait-line);
+  background: var(--state-wait-bg);
+  border-radius: 8px;
+  font-size: 12.5px;
+  color: var(--state-wait);
+}
+
+.admin-pd::before {
+  content: "ПДн";
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--state-wait);
+  color: #fff;
+}
+
+/* ————— карточка ————— */
 
 .admin-card {
-  background: var(--page);
-  border: 1px solid var(--line);
-  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
   padding: 20px;
-  margin-bottom: 18px;
-}
-
-.admin-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-  background: var(--page);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.admin-table th {
-  text-align: left;
-  font-family: var(--font-mono), monospace;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-  font-weight: 500;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--line);
-  background: var(--soft);
-}
-
-.admin-table td {
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--line-2);
-  vertical-align: top;
-}
-
-.admin-table tr:last-child td {
-  border-bottom: none;
-}
-
-.admin-table td.tight {
-  white-space: nowrap;
-}
-
-.admin-scroll {
-  overflow-x: auto;
+  margin-bottom: 16px;
 }
 
 .admin-card__head {
@@ -188,85 +287,133 @@
 }
 
 .admin-card__title {
-  font-size: 15px;
-  font-weight: 500;
-  margin-bottom: 10px;
-}
-
-/* Поля фильтров живут вне .field: у них нет подписи сверху, они стоят
-   в строку и не должны растягиваться на всю ширину. */
-
-.admin-search,
-.admin-select {
-  font: inherit;
   font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  margin-bottom: 12px;
+}
+
+/* ————— таблица ————— */
+
+.admin-scroll {
+  overflow-x: auto;
+  /* Полоса прокрутки не должна прыгать под курсором на длинных таблицах. */
+  scrollbar-gutter: stable;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13.5px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* Шапка липнет при прокрутке: в списке на двести строк заголовок столбца
+   нужен именно тогда, когда он уже уехал вверх. */
+.admin-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  text-align: left;
+  font-family: var(--font-mono), monospace;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  font-weight: 500;
+  padding: 10px 13px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+}
+
+.admin-table td {
+  padding: 10px 13px;
+  border-bottom: 1px solid var(--rule-soft);
+  vertical-align: top;
+  line-height: 1.45;
+}
+
+.admin-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-table tbody tr:hover td {
+  background: var(--paper);
+}
+
+.admin-table td.tight {
+  white-space: nowrap;
+  /* Цифры в колонках выравниваются по разрядам. */
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-table a {
   color: var(--ink);
-  background: var(--page);
-  border: 1px solid var(--line-3);
-  border-radius: 8px;
-  padding: 8px 10px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: var(--line-3);
 }
 
-.admin-search {
-  min-width: 260px;
-  flex: 0 1 320px;
-}
-
-.admin-search:focus,
-.admin-select:focus {
-  outline: 2px solid var(--green);
-  outline-offset: -1px;
-  border-color: var(--green);
-}
-
-.admin-select:disabled {
-  opacity: 0.55;
+.admin-table a:hover {
+  text-decoration-color: var(--green);
+  color: var(--green-dark);
 }
 
 /* ————— бейджи ————— */
 
+/* Форма несёт столько же смысла, сколько цвет: у «опубликовано» заливка,
+   у «черновика» пустой фон и пунктир, у «ждёт» сплошная рамка. */
 .badge {
   display: inline-block;
   font-family: var(--font-mono), monospace;
-  font-size: 11px;
-  letter-spacing: 0.03em;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: 5px;
   border: 1px solid var(--line-3);
   color: var(--text-2);
+  background: var(--surface);
   white-space: nowrap;
 }
 
 .badge--on {
-  background: var(--ok-bg);
-  color: var(--ok-fg);
-  border-color: var(--ok-line);
+  background: var(--state-ok-bg);
+  color: var(--state-ok);
+  border-color: var(--state-ok-line);
+  font-weight: 600;
 }
 
 .badge--off {
-  background: #fff;
+  background: transparent;
   color: var(--muted);
+  border-style: dashed;
 }
 
 .badge--warn {
-  background: #fdf3e7;
-  color: #9a5b12;
-  border-color: #f0dcc0;
+  background: var(--state-wait-bg);
+  color: var(--state-wait);
+  border-color: var(--state-wait-line);
+  font-weight: 600;
 }
 
 /* ————— формы ————— */
 
 .field {
   display: block;
-  margin-bottom: 16px;
+  margin-bottom: 15px;
 }
 
 .field > span {
   display: block;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-2);
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
 .field input,
@@ -276,10 +423,16 @@
   font: inherit;
   font-size: 14px;
   color: var(--ink);
-  background: var(--page);
+  background: var(--surface);
   border: 1px solid var(--line-3);
-  border-radius: 8px;
+  border-radius: 7px;
   padding: 9px 11px;
+}
+
+.field input:hover,
+.field select:hover,
+.field textarea:hover {
+  border-color: var(--muted);
 }
 
 .field input:focus,
@@ -293,6 +446,7 @@
 .field textarea {
   min-height: 96px;
   resize: vertical;
+  line-height: 1.55;
 }
 
 .field small {
@@ -306,11 +460,12 @@
 .field--error input,
 .field--error select,
 .field--error textarea {
-  border-color: #c0392b;
+  border-color: var(--state-stop);
 }
 
 .field--error small {
-  color: #c0392b;
+  color: var(--state-stop);
+  font-weight: 500;
 }
 
 .field--row {
@@ -335,50 +490,95 @@
   }
 }
 
+/* Поля фильтров живут вне .field: у них нет подписи сверху, они стоят
+   в строку и не должны растягиваться на всю ширину. */
+
+.admin-search,
+.admin-select {
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line-3);
+  border-radius: 7px;
+  padding: 8px 10px;
+}
+
+.admin-search {
+  min-width: 240px;
+  flex: 0 1 320px;
+}
+
+.admin-search:hover,
+.admin-select:hover {
+  border-color: var(--muted);
+}
+
+.admin-search:focus,
+.admin-select:focus {
+  outline: 2px solid var(--green);
+  outline-offset: -1px;
+  border-color: var(--green);
+}
+
+.admin-select:disabled {
+  opacity: 0.5;
+  background: var(--paper);
+}
+
 /* ————— кнопки ————— */
 
 .btn {
   font: inherit;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 500;
-  padding: 9px 16px;
-  border-radius: 8px;
+  padding: 8px 15px;
+  border-radius: 7px;
   border: 1px solid var(--line-3);
-  background: var(--page);
+  background: var(--surface);
   color: var(--ink);
   cursor: pointer;
   text-decoration: none;
   display: inline-block;
+  white-space: nowrap;
 }
 
 .btn:hover:not(:disabled) {
   border-color: var(--muted);
+  background: var(--paper);
 }
 
 .btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
 .btn--primary {
-  background: var(--green);
-  border-color: var(--green);
+  background: var(--green-dark);
+  border-color: var(--green-dark);
   color: #fff;
+  font-weight: 600;
 }
 
 .btn--primary:hover:not(:disabled) {
-  background: var(--green-dark);
-  border-color: var(--green-dark);
+  background: #0c6827;
+  border-color: #0c6827;
+  color: #fff;
 }
 
 .btn--danger {
-  color: #c0392b;
-  border-color: #e3c3bf;
+  color: var(--state-stop);
+  border-color: var(--state-stop-line);
+}
+
+.btn--danger:hover:not(:disabled) {
+  background: var(--state-stop-bg);
+  border-color: var(--state-stop);
 }
 
 .btn--small {
-  font-size: 13px;
-  padding: 6px 11px;
+  font-size: 12.5px;
+  padding: 5px 10px;
 }
 
 .row {
@@ -395,31 +595,32 @@
 /* ————— сообщения ————— */
 
 .note {
-  border-radius: 10px;
-  padding: 12px 14px;
-  font-size: 14px;
+  border-radius: 9px;
+  padding: 11px 13px;
+  font-size: 13.5px;
   line-height: 1.55;
-  margin-bottom: 16px;
-  border: 1px solid var(--line);
-  background: var(--page);
+  margin-bottom: 14px;
+  border: 1px solid var(--rule);
+  background: var(--surface);
 }
 
 .note--error {
-  background: #fdf1ef;
-  border-color: #e8c8c2;
-  color: #8f2c1d;
+  background: var(--state-stop-bg);
+  border-color: var(--state-stop-line);
+  color: #7d2114;
 }
 
 .note--ok {
-  background: var(--ok-bg);
-  border-color: var(--ok-line);
-  color: var(--ok-fg);
+  background: var(--state-ok-bg);
+  border-color: var(--state-ok-line);
+  color: var(--state-ok);
 }
 
 .mono {
   font-family: var(--font-mono), monospace;
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--text-2);
+  font-variant-numeric: tabular-nums;
   word-break: break-all;
 }
 
@@ -429,42 +630,254 @@
 
 /* ————— вход ————— */
 
+/* Две половины: слева куда попал, справа как войти. Голая карточка
+   «Войти через Keycloak» посреди пустого экрана не отвечает ни на один
+   вопрос человека, который видит систему впервые. */
 .login {
   min-height: 100vh;
   display: grid;
-  place-items: center;
-  padding: 24px;
+  grid-template-columns: 1.1fr 1fr;
+  background: var(--nav);
+  color: #fff;
+}
+
+@media (max-width: 900px) {
+  .login {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+}
+
+.login__about {
+  padding: 56px 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 22px;
+}
+
+.login__mark {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+}
+
+.login__lead {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--on-dark-lead);
+  max-width: 46ch;
+}
+
+.login__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  font-size: 13.5px;
+  color: var(--on-dark-2);
+  max-width: 46ch;
+}
+
+.login__list li {
+  display: flex;
+  gap: 11px;
+  align-items: baseline;
+}
+
+.login__list li::before {
+  content: "";
+  flex: none;
+  width: 14px;
+  height: 1px;
+  background: var(--green-on-dark);
+  transform: translateY(-4px);
+}
+
+.login__panel {
+  background: var(--paper);
+  color: var(--ink);
+  padding: 56px 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+}
+
+@media (max-width: 640px) {
+  .login__about,
+  .login__panel {
+    padding: 34px 20px;
+  }
 }
 
 .login__card {
-  background: var(--page);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 32px;
-  max-width: 440px;
-  text-align: center;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .login__card h1 {
   font-family: var(--font-display), system-ui, sans-serif;
   font-size: 22px;
   font-weight: 500;
-  margin-bottom: 10px;
+  letter-spacing: -0.01em;
 }
 
 .login__card p {
-  color: var(--muted);
+  color: var(--text-2);
   font-size: 14px;
   line-height: 1.6;
-  margin-bottom: 20px;
+}
+
+.login__card code {
+  font-family: var(--font-mono), monospace;
+  font-size: 12.5px;
+  background: var(--rule-soft);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.login__big {
+  font-size: 15px;
+  font-weight: 600;
+  padding: 12px 22px;
+  align-self: flex-start;
+}
+
+/* Строка состояния входа: что именно не так — не настроено, не вошли,
+   токен не принят. Три разных случая, и лечатся они по-разному. */
+.login__state {
+  font-family: var(--font-mono), monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ————— плитки сводки ————— */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  gap: 12px;
+  margin-bottom: 26px;
+}
+
+.tile {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 15px 16px 17px;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.tile:hover {
+  border-color: var(--green);
+}
+
+.tile__num {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 27px;
+  font-weight: 500;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.tile__label {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+.tile__note {
+  font-size: 11.5px;
+  color: var(--state-wait);
+  margin-top: 7px;
+}
+
+/* ————— очередь работы на сводке ————— */
+
+/* Список того, что ждёт человека, а не витрина чисел. Число само по себе
+   не говорит, надо ли что-то делать: «12 документов» — это норма, а «3 без
+   файла» — это работа на сегодня. */
+.queue {
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.queue__row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--rule-soft);
+  text-decoration: none;
+  color: inherit;
+}
+
+.queue__row:last-child {
+  border-bottom: none;
+}
+
+.queue__row:hover {
+  background: var(--paper);
+}
+
+.queue__count {
+  flex: none;
+  min-width: 40px;
+  font-family: var(--font-mono), monospace;
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--state-wait);
+}
+
+.queue__what {
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.queue__why {
+  display: block;
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.queue__go {
+  flex: none;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.queue__row:hover .queue__go {
+  color: var(--green-dark);
+}
+
+/* Пусто — это результат, а не отсутствие данных. */
+.queue--clear {
+  padding: 18px 16px;
+  font-size: 14px;
+  color: var(--state-ok);
+  background: var(--state-ok-bg);
+  border-color: var(--state-ok-line);
 }
 
 /* ————— выбор из списка: клиент, документ ————— */
 
 .picker {
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  margin-bottom: 16px;
+  border: 1px solid var(--rule);
+  border-radius: 9px;
+  margin-bottom: 15px;
   max-height: 240px;
   overflow-y: auto;
 }
@@ -474,8 +887,8 @@
   align-items: center;
   gap: 10px;
   padding: 9px 12px;
-  border-bottom: 1px solid var(--line-2);
-  font-size: 14px;
+  border-bottom: 1px solid var(--rule-soft);
+  font-size: 13.5px;
   cursor: pointer;
 }
 
@@ -484,20 +897,35 @@
 }
 
 .picker__row:hover {
-  background: var(--soft);
+  background: var(--paper);
 }
 
 /* ————— история переписки ————— */
 
 .history {
   list-style: none;
-  border-left: 2px solid var(--line);
+  border-left: 2px solid var(--rule);
   padding-left: 16px;
-  margin-bottom: 22px;
+  margin-bottom: 20px;
 }
 
 .history li {
-  margin-bottom: 18px;
+  margin-bottom: 17px;
+  position: relative;
+}
+
+/* Точка на линии: запись истории — это момент, и лента должна читаться
+   как лента, а не как список абзацев. */
+.history li::before {
+  content: "";
+  position: absolute;
+  left: -21px;
+  top: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--line-3);
+  border: 2px solid var(--surface);
 }
 
 .history__head {
@@ -505,26 +933,26 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  font-size: 12px;
-  margin-bottom: 5px;
+  font-size: 11.5px;
+  margin-bottom: 4px;
 }
 
 .history__subject {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 13.5px;
+  font-weight: 600;
   margin-bottom: 3px;
 }
 
 .history__body {
-  font-size: 14px;
+  font-size: 13.5px;
   line-height: 1.6;
   white-space: pre-wrap;
 }
 
 .history__form,
 .convert {
-  border-top: 1px solid var(--line);
-  padding-top: 18px;
+  border-top: 1px solid var(--rule);
+  padding-top: 17px;
   margin-top: 4px;
 }
 
@@ -546,59 +974,26 @@
 
 .quote-item input {
   font: inherit;
-  font-size: 14px;
+  font-size: 13.5px;
   padding: 8px 10px;
   border: 1px solid var(--line-3);
-  border-radius: 8px;
-  background: var(--page);
+  border-radius: 7px;
+  background: var(--surface);
   color: var(--ink);
   min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.quote-item input:focus {
+  outline: 2px solid var(--green);
+  outline-offset: -1px;
+  border-color: var(--green);
 }
 
 .quote-item__sum {
   font-family: var(--font-mono), monospace;
-  font-size: 13px;
+  font-size: 12.5px;
   text-align: right;
   color: var(--text-2);
-}
-
-/* ————— плитки на главной ————— */
-
-.tiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 14px;
-}
-
-.tile {
-  background: var(--page);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 18px;
-  text-decoration: none;
-  color: inherit;
-  display: block;
-}
-
-.tile:hover {
-  border-color: var(--green);
-}
-
-.tile__num {
-  font-family: var(--font-display), system-ui, sans-serif;
-  font-size: 30px;
-  font-weight: 500;
-  line-height: 1.1;
-}
-
-.tile__label {
-  font-size: 13px;
-  color: var(--muted);
-  margin-top: 4px;
-}
-
-.tile__note {
-  font-size: 12px;
-  color: var(--green-dark);
-  margin-top: 8px;
+  font-variant-numeric: tabular-nums;
 }
