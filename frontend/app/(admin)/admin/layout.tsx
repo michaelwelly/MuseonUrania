@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import AnimatedLogo from "@/components/AnimatedLogo";
 import { accessToken, authConfigured, login, logout } from "@/lib/auth";
 import { adminConfigured, session, type Session } from "@/lib/admin";
-import { site } from "@/content/site";
 import { message } from "./ui";
 import Entry from "./Entry";
 
@@ -148,10 +147,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="admin-app">
-      {/* Один ряд: знак, разделы, кто вошёл. Всё, что можно было убрать
-          отсюда, убрано — «На сайт» и «Выйти» переехали в футер, подпись
-          «админка» снята за ненадобностью: человек и так знает, куда
-          вошёл, а место она занимала как полтора раздела. */}
+      {/* Один ряд и больше ничего: знак, разделы, кто вошёл. Футера нет,
+          подписи «админка» нет, отдельных кнопок нет — всё это занимало
+          место, которое нужно одиннадцати разделам. Выход остался, но
+          переехал на карточку сотрудника: нажатие на неё и есть выход. */}
       <header className="admin-top">
         <Link className="admin-brand" href="/admin/" aria-label="VEDAL Portal, сводка">
           {/* 42 — та же высота, что у знака в шапке сайта. */}
@@ -178,31 +177,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </header>
 
       <main className="admin-main">{children}</main>
-
-      <footer className="admin-foot">
-        <div className="admin-foot__left">
-          <span className="admin-brand__plate">
-            <AnimatedLogo height={26} />
-          </span>
-          <span>
-            © {new Date().getFullYear()} {site.legalName}
-          </span>
-        </div>
-
-        <div className="admin-foot__right">
-          <span className="admin-circuit">закрытый контур</span>
-          {/* Переход между группами маршрутов перезагружает страницу целиком —
-              у сайта и админки разные корневые layout'ы. Next делает это сам,
-              Link здесь ради предзагрузки и того, чтобы правило проверки
-              ссылок не спотыкалось. */}
-          <Link href="/">На сайт</Link>
-          {/* Выход убран из шапки, но не из продукта: выйти надо чем-то,
-              и место рядом с «На сайт» ему подходит — оба увода отсюда. */}
-          <button className="admin-foot__exit" onClick={() => logout()}>
-            Выйти
-          </button>
-        </div>
-      </footer>
     </div>
   );
 }
@@ -219,20 +193,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
  * надо здесь, а не в отказе на первом же действии.
  */
 function Who({ who }: { who: Session }) {
+  const roles = who.roles.length > 0 ? who.roles.join(" · ") : "без ролей";
+
   return (
-    <div className="admin-who">
+    <button className="admin-who" onClick={() => logout()} title="Выйти из админки">
       {/* Две строки, выключка вправо — там же, где на сайте телефон
           и часы работы. */}
       <span className="admin-who__text">
         <span className="admin-who__name">{who.actor}</span>
-        <span className="admin-who__meta">
-          {who.roles.length > 0 ? who.roles.join(" · ") : "без ролей"}
+        {/* Роли и «Выйти» лежат друг на друге и меняются местами при
+            наведении. Так карточка остаётся карточкой, а не превращается
+            в кнопку с подписью, но нажатие перестаёт быть сюрпризом:
+            то, что случится, написано до того, как нажали. */}
+        <span className="admin-who__swap">
+          <span className="admin-who__meta">{roles}</span>
+          <span className="admin-who__exit">Выйти</span>
         </span>
       </span>
       <span className="admin-who__mark" aria-hidden="true">
         {initials(who.actor)}
       </span>
-    </div>
+    </button>
   );
 }
 
