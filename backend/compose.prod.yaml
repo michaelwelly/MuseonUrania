@@ -74,6 +74,16 @@ services:
       KC_DB_URL: jdbc:postgresql://db:5432/${VEDAL_KEYCLOAK_DB_NAME:-keycloak}
       KC_DB_USERNAME: ${VEDAL_DB_USER:?задайте VEDAL_DB_USER}
       KC_DB_PASSWORD: ${VEDAL_DB_PASSWORD:?задайте VEDAL_DB_PASSWORD}
+      # Секрет служебного клиента подставляется в realm при импорте:
+      # в файле стоит ${VEDAL_OIDC_SVC_CLIENT_SECRET}, а не значение.
+      VEDAL_OIDC_SVC_CLIENT_SECRET: ${VEDAL_OIDC_SVC_CLIENT_SECRET:?задайте VEDAL_OIDC_SVC_CLIENT_SECRET}
+    volumes: !override
+      # Другой realm, не тот, что на машине разработчика. В нём политика
+      # паролей, обязательный второй фактор, защита от перебора и sslRequired,
+      # и в нём нет ни одного пользователя: сотрудников заводит тот, кто держит
+      # Keycloak, а не файл в репозитории.
+      - ./keycloak/prod:/opt/keycloak/data/import:ro
+      - vedal-keycloak:/opt/keycloak/data
     ports: !override []
     restart: unless-stopped
     logging: *logging
