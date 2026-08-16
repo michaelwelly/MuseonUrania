@@ -269,6 +269,170 @@ paths:
       summary: Правка категории
       tags:
       - "Админка: каталог"
+  /api/admin/v1/chats:
+    get:
+      description: Последние сверху.
+      operationId: all
+      parameters:
+      - in: query
+        name: page
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - in: query
+        name: size
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageCard"
+          description: OK
+      security:
+      - keycloak: []
+      summary: Все разговоры
+      tags:
+      - "Админка: чат"
+  /api/admin/v1/chats/queue:
+    get:
+      description: |
+        Разговоры в состоянии `waiting`, дольше ждущие первыми. Это и есть
+        работа: разговор попадает сюда, когда Урания не нашла ответа
+        и передала человеку.
+      operationId: queue
+      parameters:
+      - in: query
+        name: page
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - in: query
+        name: size
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageCard"
+          description: OK
+      security:
+      - keycloak: []
+      summary: "Очередь: кто ждёт живого ответа"
+      tags:
+      - "Админка: чат"
+  /api/admin/v1/chats/stream:
+    get:
+      description: |
+        Поток событий (`text/event-stream`) для рабочего места: приходит
+        `changed` с идентификатором разговора, в котором что-то изменилось.
+        Ни текста, ни автора — их сотрудник забирает обычным запросом ленты,
+        который проходит проверку прав.
+
+        Нужен, чтобы очередь не приходилось перезагружать руками: разговор,
+        попавший в ожидание, должен появиться на экране сам.
+      operationId: stream
+      responses:
+        "200":
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/SseEmitter"
+          description: OK
+      security:
+      - keycloak: []
+      summary: Поток обновлений по всем разговорам
+      tags:
+      - "Админка: чат"
+  /api/admin/v1/chats/{id}:
+    get:
+      operationId: thread
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "404":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Thread"
+          description: Разговора нет.
+      security:
+      - keycloak: []
+      summary: Лента разговора
+      tags:
+      - "Админка: чат"
+  /api/admin/v1/chats/{id}/close:
+    post:
+      description: "Посетитель, написав снова, заведёт новый."
+      operationId: close
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "404":
+          description: Разговора нет.
+      security:
+      - keycloak: []
+      summary: Закрыть разговор
+      tags:
+      - "Админка: чат"
+  /api/admin/v1/chats/{id}/messages:
+    post:
+      description: |
+        Ответ и есть взятие разговора: сотрудник становится ответственным,
+        состояние переходит в `attended`. Отдельной кнопки «взять» нет
+        намеренно — взятый, но не отвеченный разговор пропадает из очереди,
+        а посетитель ждёт ровно так же, как ждал.
+
+        С этого момента Урания в разговоре молчит.
+      operationId: reply
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatReply"
+        required: true
+      responses:
+        "404":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Thread"
+          description: Разговора нет.
+      security:
+      - keycloak: []
+      summary: Ответить посетителю
+      tags:
+      - "Админка: чат"
   /api/admin/v1/clients:
     get:
       operationId: clients
@@ -2961,6 +3125,38 @@ components:
           type: string
         subjectId:
           type: string
+    Card:
+      type: object
+      properties:
+        campaign:
+          type: string
+        id:
+          type: string
+          format: uuid
+        language:
+          type: string
+        lastAt:
+          type: string
+          format: date-time
+        owner:
+          type: string
+        page:
+          type: string
+        startedAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+    ChatReply:
+      type: object
+      description: Ответ сотрудника.
+      properties:
+        text:
+          type: string
+          maxLength: 4000
+          minLength: 0
+      required:
+      - text
     CrmAnalytics:
       type: object
       description: Отчёт по одному разрезу за период.
@@ -3033,6 +3229,18 @@ components:
           format: int64
         wonAmount:
           type: number
+    Line:
+      type: object
+      properties:
+        actor:
+          type: string
+        at:
+          type: string
+          format: date-time
+        author:
+          type: string
+        body:
+          type: string
     Page:
       type: object
       description: Страница списка.
@@ -3062,6 +3270,56 @@ components:
           format: int64
           description: Всего строк во всей выборке.
           example: 137
+    PageCard:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/Card"
+        empty:
+          type: boolean
+        first:
+          type: boolean
+        last:
+          type: boolean
+        number:
+          type: integer
+          format: int32
+        numberOfElements:
+          type: integer
+          format: int32
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        size:
+          type: integer
+          format: int32
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    PageableObject:
+      type: object
+      properties:
+        offset:
+          type: integer
+          format: int64
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        paged:
+          type: boolean
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        unpaged:
+          type: boolean
     PipelineView:
       type: object
       properties:
@@ -3083,6 +3341,33 @@ components:
           description: "Стадии, которыми эта воронка заканчивается успехом."
           items:
             type: string
+    SortObject:
+      type: object
+      properties:
+        empty:
+          type: boolean
+        sorted:
+          type: boolean
+        unsorted:
+          type: boolean
+    SseEmitter:
+      type: object
+      properties:
+        timeout:
+          type: integer
+          format: int64
+    Thread:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Line"
+        status:
+          type: string
     UploadedMedia:
       type: object
       properties:
