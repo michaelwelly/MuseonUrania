@@ -163,6 +163,41 @@ paths:
       summary: Прочитать разговор
       tags:
       - Ассистент
+  /api/assistant/v1/chat/{visitorKey}/stream:
+    get:
+      description: |
+        Поток событий (`text/event-stream`). Приходит событие `changed`
+        с идентификатором разговора — и только оно: ни текста, ни автора.
+        Текст забирается следующим запросом `GET /chat/{visitorKey}`,
+        который проходит обычную проверку.
+
+        Так сделано намеренно: положи мы тело сообщения в событие, и
+        рассылка стала бы вторым местом, где решается, кому что видно.
+
+        Разговора ещё нет — поток открывается и молчит: посетитель мог
+        открыть виджет до первого сообщения, и отказ здесь означал бы,
+        что виджету надо самому решать, когда подписываться.
+
+        Соединение живёт полчаса, после чего браузер переподключается сам.
+      operationId: stream
+      parameters:
+      - in: path
+        name: visitorKey
+        required: true
+        schema:
+          type: string
+          maxLength: 64
+          minLength: 0
+      responses:
+        "200":
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/SseEmitter"
+          description: Поток событий.
+      summary: Поток обновлений разговора
+      tags:
+      - Ассистент
   /api/forms/v1/leads:
     post:
       description: |
@@ -905,6 +940,12 @@ components:
           type: string
           description: "Значение как его показывает сайт, вместе с единицами."
           example: 1185 × 740 × 1840 мм
+    SseEmitter:
+      type: object
+      properties:
+        timeout:
+          type: integer
+          format: int64
     Thread:
       type: object
       properties:
