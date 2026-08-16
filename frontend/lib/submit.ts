@@ -148,3 +148,100 @@ async function readProblem(response: Response): Promise<Problem> {
     return {};
   }
 }
+
+// ————— разговор —————
+//
+// Отличие от `askUrania` одно, но оно меняет всё: разговор помнит. Урания
+// отвечает, пока может; когда источников нет, разговор встаёт в очередь
+// к человеку, и дальше отвечает сотрудник — а Урания молчит.
+//
+// Дверь та же, `/api/assistant/v1`: она уже принимает свободный текст от
+// анонима и уже стоит под лимитом частоты. Четвёртой двери не заводится.
+
+export type ChatAuthor = "visitor" | "assistant" | "staff";
+
+export type ChatLine = {
+  author: ChatAuthor;
+  /** Имя сотрудника. У Урании и у самого посетителя пусто. */
+  actor: string | null;
+  body: string;
+  at: string;
+};
+
+export type ChatThread = {
+  id: string | null;
+  status: "open" | "waiting" | "attended" | "closed";
+  messages: ChatLine[];
+};
+
+const VISITOR_KEY = "vedal.chat.visitor";
+
+/**
+ * Ключ вкладки. Случайный, живёт в браузере, о человеке не сообщает ничего —
+ * по нему находится разговор после перезагрузки страницы.
+ *
+ * Хранилище может быть недоступно: приватный режим, запрет сторонних данных.
+ * Тогда ключ живёт до перезагрузки — разговор не потеряется в пределах сеанса,
+ * а исключение не должно ронять виджет.
+ */
+export function visitorKey(): string {
+  const fresh = () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2));
+  try {
+    const saved = localStorage.getItem(VISITOR_KEY);
+    if (saved) return saved;
+    const key = fresh();
+    localStorage.setItem(VISITOR_KEY, key);
+    return key;
+  } catch {
+    return fresh();
+  }
+}
+
+export async function sayInChat(
+  visitor: string,
+  text: string,
+): Promise<ChatThread | { error: string }> {
+  if (!apiConfigured) return { error: NOT_CONFIGURED };
+
+  let response: Response;
+  try {
+    response = await fetch(`${apiUrl}/api/assistant/v1/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        visitorKey: visitor,
+        text,
+        // Атрибуция снимается при отправке первого сообщения: язык страницы
+        // и метка кампании — свойство того, откуда человек пришёл, и позже
+        // взять их уже неоткуда.
+        language: document.documentElement.lang || null,
+        campaign: new URLSearchParams(location.search).get("utm_campaign"),
+        page: location.pathname,
+      }),
+    });
+  } catch {
+    return { error: UNREACHABLE };
+  }
+
+  if (response.ok) return (await response.json()) as ChatThread;
+
+  const problem = await readProblem(response);
+  return { error: problem.title ?? problem.detail ?? `Чат недоступен (${response.status}).` };
+}
+
+export async function chatThread(visitor: string): Promise<ChatThread | null> {
+  if (!apiConfigured) return null;
+  try {
+    const response = await fetch(`${apiUrl}/api/assistant/v1/chat/${encodeURIComponent(visitor)}`);
+    return response.ok ? ((await response.json()) as ChatThread) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Адрес потока обновлений. Подписка живёт в компоненте — ей нужен его срок жизни. */
+export function chatStreamUrl(visitor: string): string | null {
+  return apiConfigured
+    ? `${apiUrl}/api/assistant/v1/chat/${encodeURIComponent(visitor)}/stream`
+    : null;
+}

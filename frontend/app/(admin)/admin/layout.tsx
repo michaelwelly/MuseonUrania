@@ -28,6 +28,7 @@ const NAV = [
   { href: "/admin/news/", label: "Новости" },
   { href: "/admin/documents/", label: "Документы" },
   { group: "CRM" },
+  { href: "/admin/chats/", label: "Разговоры" },
   { href: "/admin/leads/", label: "Заявки" },
   { href: "/admin/clients/", label: "Клиенты" },
   { href: "/admin/deals/", label: "Сделки" },

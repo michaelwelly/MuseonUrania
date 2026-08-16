@@ -634,3 +634,46 @@ export const audit = (filter: { subject?: string; actor?: string }, page = 0, si
   if (filter.actor) query.set("actor", filter.actor);
   return get<Page<AuditEntry>>(`/audit?${query}`);
 };
+
+// ————— разговоры посетителей —————
+//
+// Две выборки, а не одна с фильтром. Очередь — «кому надо ответить прямо
+// сейчас»: только ждущие, дольше ждущие первыми. Список — «что вообще
+// происходит». Смешав их, получаем экран, где закрытые разговоры недельной
+// давности стоят вперемешку с теми, кто ждёт третью минуту.
+
+export type ChatStatus = "open" | "waiting" | "attended" | "closed";
+
+export type ChatCard = {
+  id: string;
+  status: ChatStatus;
+  owner: string | null;
+  language: string | null;
+  campaign: string | null;
+  page: string | null;
+  startedAt: string;
+  lastAt: string;
+};
+
+export type ChatLine = {
+  author: "visitor" | "assistant" | "staff";
+  actor: string | null;
+  body: string;
+  at: string;
+};
+
+export type ChatThread = { id: string | null; status: ChatStatus; messages: ChatLine[] };
+
+export const chatQueue = (page = 0, size = 20) =>
+  get<Page<ChatCard>>(`/chats/queue?page=${page}&size=${size}`);
+
+export const chatsAll = (page = 0, size = 20) =>
+  get<Page<ChatCard>>(`/chats?page=${page}&size=${size}`);
+
+export const chatThread = (id: string) => get<ChatThread>(`/chats/${id}`);
+
+/** Ответ и есть взятие разговора: сотрудник становится ответственным. */
+export const replyInChat = (id: string, text: string) =>
+  post<ChatThread>(`/chats/${id}/messages`, { text });
+
+export const closeChat = (id: string) => post<void>(`/chats/${id}/close`, {});
