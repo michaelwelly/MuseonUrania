@@ -38,6 +38,7 @@
 		<module>gateway</module>
 		<module>notifications</module>
 		<module>assistant</module>
+		<module>chat</module>
 		<module>admin</module>
 		<!-- Сборка: единственный модуль, который превращается в приложение. -->
 		<module>app</module>
@@ -110,6 +111,11 @@
 			<dependency>
 				<groupId>ru.vedal</groupId>
 				<artifactId>portal-assistant</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>ru.vedal</groupId>
+				<artifactId>portal-chat</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>

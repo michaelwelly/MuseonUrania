@@ -53,6 +53,10 @@
 		</dependency>
 		<dependency>
 			<groupId>ru.vedal</groupId>
+			<artifactId>portal-chat</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>ru.vedal</groupId>
 			<artifactId>portal-gateway</artifactId>
 		</dependency>
 		<dependency>

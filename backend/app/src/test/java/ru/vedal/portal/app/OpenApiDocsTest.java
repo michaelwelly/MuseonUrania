@@ -52,7 +52,12 @@ class OpenApiDocsTest extends PostgresTestBase {
                 "/api/public/v1/documents",
                 "/api/public/v1/documents/{slug}/file",
                 "/api/forms/v1/leads",
-                "/api/assistant/v1/ask")));
+                "/api/assistant/v1/ask",
+                // Разговор живёт под дверью ассистента, а не заводит четвёртую:
+                // /ask уже принимает свободный текст от анонима и уже стоит
+                // под лимитом частоты. Периметр проверяется там же, где и был.
+                "/api/assistant/v1/chat",
+                "/api/assistant/v1/chat/{visitorKey}")));
     }
 
     // Тот же список, но собранный из настоящих маршрутов приложения: список выше
