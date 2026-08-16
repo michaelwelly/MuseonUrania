@@ -10,12 +10,14 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import ru.vedal.portal.common.RateLimit;
 import ru.vedal.portal.common.TooManyRequestsException;
 
@@ -104,5 +106,27 @@ public class PublicChatController {
     @GetMapping("/{visitorKey}")
     public ChatDesk.Thread thread(@PathVariable @Size(max = 64) String visitorKey) {
         return desk.threadFor(visitorKey);
+    }
+
+    @Operation(summary = "Поток обновлений разговора",
+            description = """
+                    Поток событий (`text/event-stream`). Приходит событие `changed`
+                    с идентификатором разговора — и только оно: ни текста, ни автора.
+                    Текст забирается следующим запросом `GET /chat/{visitorKey}`,
+                    который проходит обычную проверку.
+
+                    Так сделано намеренно: положи мы тело сообщения в событие, и
+                    рассылка стала бы вторым местом, где решается, кому что видно.
+
+                    Разговора ещё нет — поток открывается и молчит: посетитель мог
+                    открыть виджет до первого сообщения, и отказ здесь означал бы,
+                    что виджету надо самому решать, когда подписываться.
+
+                    Соединение живёт полчаса, после чего браузер переподключается сам.
+                    """)
+    @ApiResponse(responseCode = "200", description = "Поток событий.")
+    @GetMapping(value = "/{visitorKey}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter stream(@PathVariable @Size(max = 64) String visitorKey) {
+        return desk.watch(visitorKey);
     }
 }

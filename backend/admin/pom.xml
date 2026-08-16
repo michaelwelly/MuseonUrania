@@ -37,6 +37,14 @@
 			<groupId>ru.vedal</groupId>
 			<artifactId>portal-crm</artifactId>
 		</dependency>
+		<!-- Разговоры посетителей: очередь, ответ, закрытие. Дверь сотрудника
+		     живёт здесь, а не в chat, по тому же правилу, что и остальные:
+		     все двери правки собраны в одном модуле, и ограничить их на проксе
+		     можно одним правилом. -->
+		<dependency>
+			<groupId>ru.vedal</groupId>
+			<artifactId>portal-chat</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>ru.vedal</groupId>
 			<artifactId>portal-documents</artifactId>

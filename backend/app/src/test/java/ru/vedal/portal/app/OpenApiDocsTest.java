@@ -57,7 +57,8 @@ class OpenApiDocsTest extends PostgresTestBase {
                 // /ask уже принимает свободный текст от анонима и уже стоит
                 // под лимитом частоты. Периметр проверяется там же, где и был.
                 "/api/assistant/v1/chat",
-                "/api/assistant/v1/chat/{visitorKey}")));
+                "/api/assistant/v1/chat/{visitorKey}",
+                "/api/assistant/v1/chat/{visitorKey}/stream")));
     }
 
     // Тот же список, но собранный из настоящих маршрутов приложения: список выше

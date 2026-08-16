@@ -1,9 +1,14 @@
 package ru.vedal.portal.chat;
 
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.vedal.portal.assistant.AssistantService;
 import ru.vedal.portal.audit.AuditLog;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import ru.vedal.portal.common.NotFoundException;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
@@ -37,14 +42,31 @@ public class ChatDesk {
     private final AssistantService assistant;
     private final AuditLog audit;
     private final ObjectMapper json;
+    private final ApplicationEventPublisher bus;
+    private final ChatStream stream;
 
     public ChatDesk(ConversationRepository conversations, ChatMessageRepository messages,
-                    AssistantService assistant, AuditLog audit, ObjectMapper json) {
+                    AssistantService assistant, AuditLog audit, ObjectMapper json,
+                    ApplicationEventPublisher bus, ChatStream stream) {
         this.conversations = conversations;
         this.messages = messages;
         this.assistant = assistant;
         this.audit = audit;
         this.json = json;
+        this.bus = bus;
+        this.stream = stream;
+    }
+
+    /**
+     * Подписка посетителя на свой разговор.
+     *
+     * <p>Разговора ещё нет — поток всё равно открывается и молчит. Виджет может
+     * подписаться до первого сообщения, и отказ здесь означал бы, что он сам
+     * должен догадываться, когда подписываться, и переподписываться после
+     * первой же отправки.
+     */
+    public SseEmitter watch(String visitorKey) {
+        return stream.watch(visitorKey);
     }
 
     /** Откуда пришёл посетитель. Снимается при первом сообщении и больше не меняется. */
@@ -93,6 +115,80 @@ public class ChatDesk {
                 .orElseGet(Thread::empty);
     }
 
+    // ————— сторона сотрудника —————
+
+    /**
+     * Очередь: кто ждёт живого ответа, дольше ждущие первыми.
+     *
+     * <p>Отдельный метод, а не фильтр в общем списке, потому что это разные
+     * вопросы. «Что вообще происходит» — обзор; «кому надо ответить прямо
+     * сейчас» — работа. Смешав их, получаем список, в котором закрытые
+     * разговоры недельной давности стоят вперемешку с ждущими.
+     */
+    @Transactional(readOnly = true)
+    public Page<Card> queue(int page, int size) {
+        return conversations
+                .findByStatusOrderByLastAtAsc(Conversation.WAITING, PageRequest.of(page, size))
+                .map(this::card);
+    }
+
+    /** Все разговоры, последние сверху. */
+    @Transactional(readOnly = true)
+    public Page<Card> all(int page, int size) {
+        return conversations.findByOrderByLastAtDesc(PageRequest.of(page, size)).map(this::card);
+    }
+
+    @Transactional(readOnly = true)
+    public Thread threadOf(UUID id) {
+        return thread(find(id));
+    }
+
+    /**
+     * Сотрудник ответил.
+     *
+     * <p>Ответ и есть взятие разговора: отдельной кнопки «взять» нет намеренно.
+     * Взятый, но не отвеченный разговор — это разговор, который пропал из
+     * очереди и по которому никто не написал; посетитель ждёт ровно так же,
+     * как ждал, а система считает, что им занимаются.
+     */
+    @Transactional
+    public Thread reply(UUID id, String actor, String text) {
+        var conversation = find(id);
+
+        append(conversation, ChatMessage.STAFF, actor, text, null);
+        conversation.setOwner(actor);
+        conversation.setStatus(Conversation.ATTENDED);
+
+        audit.record(actor, "chat.replied", "conversation", id.toString(), Map.of());
+        return thread(conversation);
+    }
+
+    /** Разговор закончен. Посетитель, написав снова, заведёт новый. */
+    @Transactional
+    public void close(UUID id, String actor) {
+        var conversation = find(id);
+        conversation.setStatus(Conversation.CLOSED);
+        // Владелец остаётся: «закрыт неизвестно кем» бесполезно при разборе.
+        if (conversation.getOwner() == null) conversation.setOwner(actor);
+
+        audit.record(actor, "chat.closed", "conversation", id.toString(), Map.of());
+        bus.publishEvent(new ChatStream.Changed(id, conversation.getVisitorKey()));
+    }
+
+    private Conversation find(UUID id) {
+        return conversations.findById(id)
+                .orElseThrow(() -> new NotFoundException("Разговор не найден"));
+    }
+
+    private Card card(Conversation c) {
+        return new Card(c.getId(), c.getStatus(), c.getOwner(), c.getLanguage(),
+                c.getCampaign(), c.getPage(), c.getStartedAt(), c.getLastAt());
+    }
+
+    /** Строка списка разговоров. Без текста: список читают глазами, а не вчитываются. */
+    public record Card(UUID id, String status, String owner, String language,
+                       String campaign, String page, Instant startedAt, Instant lastAt) {}
+
     private Conversation openFor(String visitorKey, Context context) {
         return conversations.findByVisitorKeyAndStatusNot(visitorKey, Conversation.CLOSED)
                 .orElseGet(() -> start(visitorKey, context));
@@ -126,6 +222,15 @@ public class ChatDesk {
         messages.save(message);
 
         conversation.setLastAt(Instant.now());
+
+        // Рассылка объявляется здесь, а не в вызывающих: сообщение, о котором
+        // забыли сообщить, — это сообщение, которое собеседник увидит только
+        // после перезагрузки страницы. Забыть строку в одном из трёх мест
+        // легко, в одном — некуда.
+        //
+        // Само событие уйдёт подписчикам после COMMIT: разослав его сейчас,
+        // мы отправили бы читателя за сообщением, которого он ещё не увидит.
+        bus.publishEvent(new ChatStream.Changed(conversation.getId(), conversation.getVisitorKey()));
     }
 
     private Thread thread(Conversation conversation) {
