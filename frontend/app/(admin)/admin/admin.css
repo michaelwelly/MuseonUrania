@@ -1192,3 +1192,141 @@
     padding: 36px 20px 44px;
   }
 }
+
+/* ————— разговоры ————— */
+
+/* Список слева, лента справа. На узком экране — друг под другом, и первым
+   идёт список: выбрать разговор надо раньше, чем его читать. */
+.chats {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .chats {
+    grid-template-columns: 1fr;
+  }
+}
+
+.chats__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.chats__row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--surface);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.chats__row:hover {
+  border-color: var(--green);
+}
+
+/* Выбранный — зелёной чертой слева, а не заливкой: заливка спорила бы
+   с бейджами состояния внутри самой строки. */
+.chats__row--open {
+  border-color: var(--green);
+  box-shadow: inset 3px 0 0 var(--green);
+}
+
+.chats__where {
+  font-size: 12px;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chats__thread {
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 16px;
+  min-height: 320px;
+}
+
+.thread {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 52vh;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-bottom: 14px;
+}
+
+/* Три вида автора различаются положением И оформлением, а не одним цветом:
+   посетитель обязан быть отличим от Урании, а Урания — от сотрудника.
+   Одним оттенком это не передать тому, кто цвета не различает. */
+.bubble {
+  max-width: 78%;
+  padding: 9px 12px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.bubble--visitor {
+  align-self: flex-start;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+}
+
+.bubble--assistant {
+  align-self: flex-start;
+  background: var(--surface);
+  border: 1px dashed var(--line-3);
+}
+
+.bubble--staff {
+  align-self: flex-end;
+  background: var(--state-ok-bg);
+  border: 1px solid var(--state-ok-line);
+}
+
+.bubble__who {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+
+.bubble__body {
+  white-space: pre-wrap;
+}
+
+.thread__reply textarea {
+  width: 100%;
+  min-height: 78px;
+  font: inherit;
+  font-size: 13.5px;
+  line-height: 1.55;
+  padding: 10px 12px;
+  border: 1px solid var(--line-3);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ink);
+  resize: vertical;
+  margin-bottom: 10px;
+}
+
+.thread__reply textarea:focus {
+  outline: 2px solid var(--green);
+  outline-offset: -1px;
+  border-color: var(--green);
+}
