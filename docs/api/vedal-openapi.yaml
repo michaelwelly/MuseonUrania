@@ -93,6 +93,76 @@ paths:
       summary: Спросить Уранию
       tags:
       - Ассистент
+  /api/assistant/v1/chat:
+    post:
+      description: |
+        Заводит разговор при первом сообщении и отвечает Уранией по тем же
+        правилам, что и `POST /ask`: только по опубликованному, без диагнозов
+        и цен, без ответа при отсутствии источников.
+
+        Когда ответа нет, разговор переходит в состояние `waiting` — ждёт
+        сотрудника. С этого момента Урания молчит: машина, отвечающая поверх
+        человека, выглядит как сотрудник, который не читает, что ему пишут.
+
+        Возвращается вся лента разговора, а не одно новое сообщение: дописывание
+        требует, чтобы клиент и сервер одинаково понимали, где кончилось прошлое
+        состояние, а при обрыве связи они понимают это по-разному.
+
+        Лимит частоты общий с `ask` — 20 обращений за 10 минут с адреса.
+      operationId: say
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatSay"
+        required: true
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Thread"
+          description: Лента разговора вместе с ответом.
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Пустое сообщение или длиннее 1000 символов.
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Превышен лимит частоты.
+      summary: Написать в чат
+      tags:
+      - Ассистент
+  /api/assistant/v1/chat/{visitorKey}:
+    get:
+      description: |
+        Лента по ключу браузера. Разговора нет — пустая лента, а не 404:
+        для виджета «ещё не писали» и «не нашли» это одно и то же состояние,
+        и различать их незачем.
+      operationId: thread
+      parameters:
+      - in: path
+        name: visitorKey
+        required: true
+        schema:
+          type: string
+          maxLength: 64
+          minLength: 0
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Thread"
+          description: "Лента разговора, возможно пустая."
+      summary: Прочитать разговор
+      tags:
+      - Ассистент
   /api/forms/v1/leads:
     post:
       description: |
@@ -356,6 +426,48 @@ components:
           type: string
           description: Идентификатор в URL.
           example: неонатология
+    ChatSay:
+      type: object
+      description: Сообщение посетителя.
+      properties:
+        campaign:
+          type:
+          - string
+          - "null"
+          description: "Метка кампании, с которой пришёл посетитель."
+          maxLength: 128
+          minLength: 0
+        language:
+          type:
+          - string
+          - "null"
+          description: "Язык страницы, с которой пишут."
+          maxLength: 8
+          minLength: 0
+        page:
+          type:
+          - string
+          - "null"
+          description: "Страница, с которой открыт виджет."
+          maxLength: 512
+          minLength: 0
+        text:
+          type: string
+          description: Текст сообщения.
+          maxLength: 1000
+          minLength: 0
+        visitorKey:
+          type: string
+          description: |
+            Случайный ключ, который виджет заводит в браузере и хранит между
+            страницами. По нему находится разговор. О посетителе не сообщает
+            ничего: это идентификатор вкладки, а не человека.
+          example: b1f0c2de-9a7e-4d21-8c33-0f2a5e6d7b48
+          maxLength: 64
+          minLength: 0
+      required:
+      - text
+      - visitorKey
     DocumentCard:
       type: object
       description: "Строка перечня документов. В перечень попадают и те документы\
@@ -536,6 +648,18 @@ components:
       - message
       - name
       - phone
+    Line:
+      type: object
+      properties:
+        actor:
+          type: string
+        at:
+          type: string
+          format: date-time
+        author:
+          type: string
+        body:
+          type: string
     NewsArticle:
       type: object
       description: Материал ленты целиком.
@@ -781,6 +905,18 @@ components:
           type: string
           description: "Значение как его показывает сайт, вместе с единицами."
           example: 1185 × 740 × 1840 мм
+    Thread:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Line"
+        status:
+          type: string
   securitySchemes:
     keycloak:
       bearerFormat: JWT
