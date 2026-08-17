@@ -1,7 +1,6 @@
 package ru.vedal.portal.chat;
 
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,6 +8,7 @@ import ru.vedal.portal.assistant.AssistantService;
 import ru.vedal.portal.assistant.LlmEngine;
 import ru.vedal.portal.audit.AuditLog;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import ru.vedal.portal.common.PageView;
 import ru.vedal.portal.common.NotFoundException;
 import tools.jackson.databind.ObjectMapper;
 
@@ -156,16 +156,20 @@ public class ChatDesk {
      * разговоры недельной давности стоят вперемешку с ждущими.
      */
     @Transactional(readOnly = true)
-    public Page<Card> queue(int page, int size) {
-        return conversations
-                .findByStatusOrderByLastAtAsc(Conversation.WAITING, PageRequest.of(page, size))
-                .map(this::card);
+    public PageView<Card> queue(int page, int size) {
+        // PageView, а не Page из Spring Data: тот сериализуется вместе
+        // с внутренностями пейджера, и контракт админки от них не зависит.
+        // Так отдают списки все остальные двери админки.
+        return PageView.of(conversations
+                .findByStatusOrderByLastAtAsc(Conversation.WAITING, PageRequest.of(page, size)),
+                this::card);
     }
 
     /** Все разговоры, последние сверху. */
     @Transactional(readOnly = true)
-    public Page<Card> all(int page, int size) {
-        return conversations.findByOrderByLastAtDesc(PageRequest.of(page, size)).map(this::card);
+    public PageView<Card> all(int page, int size) {
+        return PageView.of(
+                conversations.findByOrderByLastAtDesc(PageRequest.of(page, size)), this::card);
     }
 
     /**

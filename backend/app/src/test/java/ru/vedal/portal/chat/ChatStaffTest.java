@@ -36,8 +36,8 @@ class ChatStaffTest extends PostgresTestBase {
 
         var queue = desk.queue(0, 50);
 
-        assertThat(queue.getContent()).extracting(ChatDesk.Card::id).contains(waiting);
-        assertThat(queue.getContent()).allMatch(c -> Conversation.WAITING.equals(c.status()));
+        assertThat(queue.items()).extracting(ChatDesk.Card::id).contains(waiting);
+        assertThat(queue.items()).allMatch(c -> Conversation.WAITING.equals(c.status()));
     }
 
     // Ответ и есть взятие: отдельной кнопки «взять» нет намеренно. Взятый,
@@ -54,7 +54,7 @@ class ChatStaffTest extends PostgresTestBase {
         assertThat(last.author()).isEqualTo(ChatMessage.STAFF);
         assertThat(last.actor()).isEqualTo("anna");
 
-        assertThat(desk.queue(0, 50).getContent())
+        assertThat(desk.queue(0, 50).items())
                 .as("Отвеченный разговор обязан уйти из очереди")
                 .extracting(ChatDesk.Card::id)
                 .doesNotContain(id);
