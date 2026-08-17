@@ -19,8 +19,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ru" className={fontVariables}>
-      <body>
+    // Та же причина, что и в админке: расширения браузера дописывают свои
+    // атрибуты в <html> и <body> раньше, чем отрисуется React. Подавление
+    // действует только на атрибуты этих узлов и не распространяется на детей —
+    // расхождение внутри страницы отловится как обычно.
+    <html lang="ru" className={fontVariables} suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <LogoPreloader />
         <Motion />
         <div className="frame">
