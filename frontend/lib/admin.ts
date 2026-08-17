@@ -665,6 +665,8 @@ export type ChatLine = {
   body: string;
   /** Чем отвечала Урания. Сотруднику это важно: он видит, что уже сказали. */
   sources: { title: string; url: string; kind?: string }[];
+  /** Когда прочитано посетителем. null — ещё нет. */
+  readAt: string | null;
   at: string;
 };
 
@@ -696,3 +698,7 @@ export const eraseClientData = (id: string) =>
 
 export const eraseChatData = (id: string) =>
   del<{ result: string }>(`/chats/${id}/personal-data`);
+
+/** Сообщить посетителю, что сотрудник печатает. Подсказка, а не действие. */
+export const pingTypingInChat = (id: string) =>
+  post<void>(`/chats/${id}/typing`, {}).catch(() => {});

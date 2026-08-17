@@ -7,6 +7,7 @@ import {
   chatsAll,
   closeChat,
   eraseChatData,
+  pingTypingInChat,
   replyInChat,
   type ChatCard,
   type ChatThread,
@@ -44,7 +45,23 @@ export default function ChatsPage() {
     `${tab}:${beat}`,
   );
 
-  useLiveUpdates(useCallback(() => setBeat((b) => b + 1), []), setError);
+  // Кто печатает прямо сейчас: идентификатор разговора и когда пришло событие.
+  // Надпись живёт секунды и гаснет сама — сообщения «перестал печатать» нет
+  // и быть не может: человек может просто закрыть вкладку.
+  const [typingIn, setTypingIn] = useState<string | null>(null);
+  const fade = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const onTyping = useCallback((conversationId: string) => {
+    setTypingIn(conversationId);
+    if (fade.current) clearTimeout(fade.current);
+    fade.current = setTimeout(() => setTypingIn(null), 5000);
+  }, []);
+
+  useEffect(() => () => {
+    if (fade.current) clearTimeout(fade.current);
+  }, []);
+
+  useLiveUpdates(useCallback(() => setBeat((b) => b + 1), []), onTyping, setError);
 
   return (
     <>
@@ -102,7 +119,13 @@ export default function ChatsPage() {
 
         <div className="chats__thread">
           {open ? (
-            <Thread key={open} id={open} beat={beat} onDone={() => setBeat((b) => b + 1)} />
+            <Thread
+              key={open}
+              id={open}
+              beat={beat}
+              typing={typingIn === open}
+              onDone={() => setBeat((b) => b + 1)}
+            />
           ) : (
             <p className="admin-hint">Выберите разговор слева.</p>
           )}
@@ -112,11 +135,32 @@ export default function ChatsPage() {
   );
 }
 
-function Thread({ id, beat, onDone }: { id: string; beat: number; onDone: () => void }) {
+function Thread({
+  id,
+  beat,
+  typing,
+  onDone,
+}: {
+  id: string;
+  beat: number;
+  /** Посетитель печатает прямо сейчас. */
+  typing: boolean;
+  onDone: () => void;
+}) {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const { data, error, setError } = useLoad<ChatThread>(() => chatThread(id), `${id}:${beat}`);
   const bottom = useRef<HTMLDivElement>(null);
+  // Когда последний раз сообщали, что сотрудник печатает. Не на каждую букву:
+  // получился бы поток запросов ради надписи, которая и так не меняется.
+  const pinged = useRef(0);
+
+  function announceTyping() {
+    const now = Date.now();
+    if (now - pinged.current < 3000) return;
+    pinged.current = now;
+    void pingTypingInChat(id);
+  }
 
   // Лента прокручивается к последнему сообщению: разговор читают с конца,
   // и открывать его в начале значит заставлять листать при каждом ответе.
@@ -152,8 +196,25 @@ function Thread({ id, beat, onDone }: { id: string; beat: number; onDone: () => 
               <span className="muted"> · {when(m.at)}</span>
             </div>
             <div className="bubble__body">{m.body}</div>
+
+            {/* Галочка только у своих реплик: «прочитано» отвечает на вопрос
+                «дошёл ли мой ответ», а не «видел ли я чужое сообщение». */}
+            {m.author === "staff" && (
+              <div className={`bubble__read${m.readAt ? " bubble__read--seen" : ""}`}>
+                {m.readAt ? "прочитано" : "доставлено"}
+              </div>
+            )}
           </div>
         ))}
+
+        {/* Надпись живёт секунды и приходит потоком, а не из ленты: в базе
+            её нет и быть не должно. */}
+        {typing && (
+          <div className="bubble bubble--visitor bubble--typing" aria-live="polite">
+            Посетитель печатает…
+          </div>
+        )}
+
         <div ref={bottom} />
       </div>
 
@@ -166,7 +227,10 @@ function Thread({ id, beat, onDone }: { id: string; beat: number; onDone: () => 
           <textarea
             value={draft}
             placeholder="Ответ посетителю"
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => {
+              setDraft(e.target.value);
+              if (e.target.value.trim()) announceTyping();
+            }}
             // Enter отправляет, Shift+Enter переносит строку: в переписке
             // сообщения короткие, и тянуться к кнопке на каждое — это лишнее
             // движение сотни раз в день.
@@ -211,7 +275,11 @@ function Thread({ id, beat, onDone }: { id: string; beat: number; onDone: () => 
  * с заголовком, а разбор формата — три строки: событий одного вида, и в них
  * нет ничего, кроме идентификатора разговора.
  */
-function useLiveUpdates(onChange: () => void, onError: (message: string | null) => void) {
+function useLiveUpdates(
+  onChange: () => void,
+  onTyping: (conversationId: string) => void,
+  onError: (message: string | null) => void,
+) {
   useEffect(() => {
     if (!apiUrl) return;
     const abort = new AbortController();
@@ -231,12 +299,36 @@ function useLiveUpdates(onChange: () => void, onError: (message: string | null) 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
 
+        // Кусок может прийти разрезанным посередине события, поэтому хвост
+        // без завершающей пустой строки остаётся до следующего чтения.
+        let tail = "";
+
         while (alive) {
           const { done, value } = await reader.read();
           if (done) break;
-          // Любая строка данных означает «что-то изменилось»: тела в событии
-          // нет намеренно, и разбирать в нём нечего.
-          if (decoder.decode(value, { stream: true }).includes("data:")) onChange();
+
+          tail += decoder.decode(value, { stream: true });
+          const events = tail.split("\n\n");
+          tail = events.pop() ?? "";
+
+          for (const event of events) {
+            if (!event.includes("data:")) continue;
+
+            if (event.includes("event:typing")) {
+              // Событие несёт разговор и того, кто печатает. Нас интересует
+              // только посетитель: «сотрудник печатает» — это мы сами.
+              const data = event.slice(event.indexOf("data:") + 5).trim();
+              try {
+                const parsed = JSON.parse(data) as { conversationId: string; who: string };
+                if (parsed.who === "visitor") onTyping(parsed.conversationId);
+              } catch {
+                // Событие незнакомого вида — не повод рвать поток.
+              }
+              continue;
+            }
+
+            onChange();
+          }
         }
       } catch (e) {
         // Обрыв при уходе со страницы — не ошибка.
@@ -250,5 +342,5 @@ function useLiveUpdates(onChange: () => void, onError: (message: string | null) 
       alive = false;
       abort.abort();
     };
-  }, [onChange, onError]);
+  }, [onChange, onTyping, onError]);
 }

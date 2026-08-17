@@ -8,6 +8,7 @@ import {
   apiConfigured,
   chatStreamUrl,
   chatThread,
+  pingTyping,
   sayInChat,
   visitorKey,
   type ChatLine,
@@ -60,6 +61,12 @@ export default function UraniaChat({ onClose }: { onClose?: () => void }) {
   const [draft, setDraft] = useState("");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const visitor = useRef<string>("");
+  // Сотрудник печатает. Живёт секунды и гаснет само: события «перестал»
+  // не существует, человек волен просто закрыть вкладку.
+  const [staffTyping, setStaffTyping] = useState(false);
+  const fade = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Когда последний раз сообщали, что посетитель печатает.
+  const pinged = useRef(0);
 
   // Таймер ответа сбрасываем и при новом вопросе, и при размонтировании —
   // иначе быстрые клики по чипам наложат несколько ответов друг на друга.
@@ -92,9 +99,24 @@ export default function UraniaChat({ onClose }: { onClose?: () => void }) {
     const stream = new EventSource(url);
     stream.onmessage = refresh;
 
+    // Сотрудник печатает. Отдельный вид события, потому что перечитывать
+    // ленту здесь незачем: в базе этого факта нет и не будет.
+    stream.addEventListener("typing", (event) => {
+      try {
+        const parsed = JSON.parse((event as MessageEvent).data) as { who: string };
+        if (parsed.who !== "staff" || !alive) return;
+        setStaffTyping(true);
+        if (fade.current) clearTimeout(fade.current);
+        fade.current = setTimeout(() => setStaffTyping(false), 5000);
+      } catch {
+        // Событие незнакомого вида — не повод рвать поток.
+      }
+    });
+
     return () => {
       alive = false;
       stream.close();
+      if (fade.current) clearTimeout(fade.current);
     };
   }, []);
 
@@ -237,6 +259,16 @@ export default function UraniaChat({ onClose }: { onClose?: () => void }) {
           </p>
         )}
 
+        {/* Отвечает человек — и это надо сказать словом, а не теми же точками,
+            что у Урании. Разница между «машина думает» и «специалист пишет»
+            для ждущего посетителя существенная: во втором случае он готов
+            подождать дольше. */}
+        {staffTyping && (
+          <p className={`${styles.msg} ${styles.staff} ${styles.staffTyping}`} aria-live="polite">
+            Специалист печатает…
+          </p>
+        )}
+
         <div className={styles.chips}>
           {quickReplies.map((q) => (
             <button
@@ -262,7 +294,17 @@ export default function UraniaChat({ onClose }: { onClose?: () => void }) {
         <input
           className={styles.input}
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            // Не на каждую букву: раз в три секунды, пока поле не пустое.
+            if (e.target.value.trim() && apiConfigured) {
+              const now = Date.now();
+              if (now - pinged.current >= 3000) {
+                pinged.current = now;
+                pingTyping(visitor.current);
+              }
+            }
+          }}
           placeholder={urania.placeholder}
           aria-label={`Сообщение ассистенту ${urania.name}`}
         />

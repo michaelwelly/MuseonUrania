@@ -167,6 +167,8 @@ export type ChatLine = {
   body: string;
   /** Материалы, на которых построен ответ Урании. У остальных пусто. */
   sources: Source[];
+  /** Когда прочитано собеседником. null — ещё нет. */
+  readAt: string | null;
   at: string;
 };
 
@@ -246,4 +248,17 @@ export function chatStreamUrl(visitor: string): string | null {
   return apiConfigured
     ? `${apiUrl}/api/assistant/v1/chat/${encodeURIComponent(visitor)}/stream`
     : null;
+}
+
+/**
+ * Сообщить, что посетитель печатает.
+ *
+ * Ничего не возвращает и ошибок не поднимает: это подсказка, а не действие.
+ * Не дошла — сотрудник просто не увидит надписи, и ничего не сломается.
+ */
+export function pingTyping(visitor: string): void {
+  if (!apiConfigured) return;
+  void fetch(`${apiUrl}/api/assistant/v1/chat/${encodeURIComponent(visitor)}/typing`, {
+    method: "POST",
+  }).catch(() => {});
 }
