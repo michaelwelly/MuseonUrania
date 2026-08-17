@@ -11,6 +11,7 @@ import {
   type Page,
   type Pipeline,
 } from "@/lib/admin";
+import { PIPELINE, label } from "../../labels";
 import { Field, Note, fieldErrors, message, useLoad } from "../../ui";
 import OwnerField from "../../OwnerField";
 
@@ -132,7 +133,7 @@ function NewDealForm() {
             <select value={form.pipeline} onChange={(e) => set("pipeline", e.target.value)}>
               {(funnels ?? []).map((f) => (
                 <option key={f.pipeline} value={f.pipeline}>
-                  {f.pipeline}
+                  {label(PIPELINE, f.pipeline)}
                 </option>
               ))}
             </select>

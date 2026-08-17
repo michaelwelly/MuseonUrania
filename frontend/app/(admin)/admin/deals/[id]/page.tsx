@@ -19,6 +19,7 @@ import {
 } from "@/lib/admin";
 import History from "../../History";
 import OwnerField from "../../OwnerField";
+import { PIPELINE, QUOTE_STATUS as QS, STAGE, label } from "../../labels";
 import { Field, Note, day, fieldErrors, isConflict, message, money, useLoad, when } from "../../ui";
 
 // Карточка сделки: правка, перевод по воронке, вложения, КП и история.
@@ -26,14 +27,6 @@ import { Field, Note, day, fieldErrors, isConflict, message, money, useLoad, whe
 // Перевод стадии сделан отдельным действием, а не полем формы, потому что
 // это и есть отдельное действие: правка опечатки в названии не должна
 // заодно закрывать сделку.
-
-const QUOTE_STATUS: Record<string, string> = {
-  draft: "черновик",
-  sent: "отправлено",
-  accepted: "принято",
-  rejected: "отклонено",
-  expired: "истекло",
-};
 
 export default function DealCard({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -45,8 +38,8 @@ export default function DealCard({ params }: { params: Promise<{ id: string }> }
         <h1>{data?.title ?? "Сделка"}</h1>
         {data && (
           <div className="row">
-            <span className="badge">{data.pipeline}</span>
-            <span className="badge badge--on">{data.stage}</span>
+            <span className="badge">{label(PIPELINE, data.pipeline)}</span>
+            <span className="badge badge--on">{label(STAGE, data.stage)}</span>
             <span className="mono">версия {data.version}</span>
           </div>
         )}
@@ -402,7 +395,7 @@ function Quotes({ deal, onError }: { deal: Deal; onError: (message: string | nul
                     <Link href={`/admin/quotes/${q.id}/`}>{q.number}</Link>
                   </td>
                   <td className="tight">
-                    <span className="badge">{QUOTE_STATUS[q.status] ?? q.status}</span>
+                    <span className="badge">{label(QS, q.status)}</span>
                   </td>
                   <td className="tight">{money(q.total, q.currency)}</td>
                   <td className="tight">{day(q.validUntil)}</td>

@@ -8,6 +8,7 @@ import {
   type Interaction,
   type NewInteraction,
 } from "@/lib/admin";
+import { DIRECTION, INTERACTION_KIND, label } from "./labels";
 import { Field, Note, message, useLoad, when } from "./ui";
 
 // История переписки и звонков. Одна на заявку, клиента и сделку: запись
@@ -17,18 +18,6 @@ import { Field, Note, message, useLoad, when } from "./ui";
 // Дверь портала их не открывает: история, которую можно поправить задним
 // числом, перестаёт быть историей ровно тогда, когда она нужна — при разборе
 // спора о том, что клиенту обещали.
-
-const KIND_LABEL: Record<string, string> = {
-  call: "звонок",
-  email: "письмо",
-  meeting: "встреча",
-  note: "заметка",
-};
-
-const DIRECTION_LABEL: Record<string, string> = {
-  in: "от клиента",
-  out: "клиенту",
-};
 
 const EMPTY: NewInteraction = { kind: "call", direction: "in", at: null, subject: "", body: "" };
 
@@ -80,9 +69,9 @@ export default function History({ of, id }: { of: HistoryOf; id: string }) {
           {data.map((row) => (
             <li key={row.id}>
               <div className="history__head">
-                <span className="badge">{KIND_LABEL[row.kind] ?? row.kind}</span>
+                <span className="badge">{label(INTERACTION_KIND, row.kind)}</span>
                 {row.direction && (
-                  <span className="muted">{DIRECTION_LABEL[row.direction] ?? row.direction}</span>
+                  <span className="muted">{label(DIRECTION, row.direction)}</span>
                 )}
                 <span className="muted">{when(row.at)}</span>
                 <span className="muted">· {row.actor}</span>
@@ -98,7 +87,7 @@ export default function History({ of, id }: { of: HistoryOf; id: string }) {
         <div className="grid2">
           <Field label="Вид записи">
             <select value={entry.kind} onChange={(e) => set("kind", e.target.value)}>
-              {Object.entries(KIND_LABEL).map(([value, label]) => (
+              {Object.entries(INTERACTION_KIND).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
                 </option>

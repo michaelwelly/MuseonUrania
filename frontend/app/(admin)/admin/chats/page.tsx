@@ -15,6 +15,7 @@ import {
 import { accessToken } from "@/lib/auth";
 import { apiUrl } from "@/lib/submit";
 import EraseData from "../EraseData";
+import { CHAT_STATUS, label } from "../labels";
 import { Note, message, useLoad, when } from "../ui";
 
 // Разговоры посетителей.
@@ -23,13 +24,6 @@ import { Note, message, useLoad, when } from "../ui";
 // вкладками, а не фильтром: это разные вопросы. «Кому ответить прямо сейчас» —
 // работа; «что вообще происходит» — обзор. Смешав их, получаем экран, где
 // закрытые разговоры недельной давности стоят вперемешку с ждущими ответа.
-
-const STATUS: Record<string, string> = {
-  open: "с Уранией",
-  waiting: "ждёт ответа",
-  attended: "в работе",
-  closed: "закрыт",
-};
 
 const BADGE: Record<string, string> = {
   waiting: "badge--warn",
@@ -96,7 +90,7 @@ export default function ChatsPage() {
             >
               <span className="row" style={{ justifyContent: "space-between" }}>
                 <span className={`badge ${BADGE[c.status] ?? ""}`}>
-                  {STATUS[c.status] ?? c.status}
+                  {label(CHAT_STATUS, c.status)}
                 </span>
                 <span className="muted" style={{ fontSize: 12 }}>{when(c.lastAt)}</span>
               </span>

@@ -4,17 +4,12 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { deals, pipelines as loadPipelines, type DealRow, type Page, type Pipeline } from "@/lib/admin";
+import { PIPELINE, STAGE, label } from "../labels";
 import { Note, money, useLoad, when } from "../ui";
 
 // Сделки всех трёх воронок в одном списке. Три таблицы здесь были бы тремя
 // одинаковыми экранами: у сделок общая карточка, общий ответственный,
 // общая история и общая аналитика — различается только набор стадий.
-
-const PIPELINE_LABEL: Record<string, string> = {
-  sales: "продажи",
-  dealer: "дилерская",
-  service: "сервисная",
-};
 
 // useSearchParams требует границы Suspense: без неё страница, собранная
 // заранее, падает на сборке, а не в браузере.
@@ -76,7 +71,7 @@ function Deals() {
           <option value="">все воронки</option>
           {(funnels ?? []).map((f) => (
             <option key={f.pipeline} value={f.pipeline}>
-              {PIPELINE_LABEL[f.pipeline] ?? f.pipeline}
+              {label(PIPELINE, f.pipeline)}
             </option>
           ))}
         </select>
@@ -129,9 +124,9 @@ function Deals() {
                       <Link href={`/admin/clients/${row.clientId}/`}>{row.clientName}</Link>
                     </td>
                     <td className="tight">
-                      <span className="badge">{PIPELINE_LABEL[row.pipeline] ?? row.pipeline}</span>
+                      <span className="badge">{label(PIPELINE, row.pipeline)}</span>
                     </td>
-                    <td className="tight">{row.stage}</td>
+                    <td className="tight">{label(STAGE, row.stage)}</td>
                     <td className="tight">{money(row.amount, row.currency)}</td>
                     <td className="tight">{row.owner || <span className="muted">—</span>}</td>
                     <td className="tight muted">{when(row.updatedAt)}</td>

@@ -3,19 +3,12 @@
 import Link from "next/link";
 import { useState } from "react";
 import { quoteStatuses, quotes, type Page, type QuoteRow } from "@/lib/admin";
+import { QUOTE_STATUS, label } from "../labels";
 import { Note, day, money, useLoad, when } from "../ui";
 
 // Коммерческие предложения по всем сделкам сразу. Заводятся они на карточке
 // сделки — КП без сделки не бывает, и заводить его отсюда значило бы сначала
 // спросить, к чему оно относится.
-
-const STATUS_LABEL: Record<string, string> = {
-  draft: "черновик",
-  sent: "отправлено",
-  accepted: "принято",
-  rejected: "отклонено",
-  expired: "истекло",
-};
 
 export default function QuotesPage() {
   const [status, setStatus] = useState("");
@@ -42,7 +35,7 @@ export default function QuotesPage() {
           <option value="">все статусы</option>
           {(statuses ?? []).map((s) => (
             <option key={s} value={s}>
-              {STATUS_LABEL[s] ?? s}
+              {label(QUOTE_STATUS, s)}
             </option>
           ))}
         </select>
@@ -82,7 +75,7 @@ export default function QuotesPage() {
                     </td>
                     <td className="tight">
                       <span className={`badge ${row.status === "accepted" ? "badge--on" : ""}`}>
-                        {STATUS_LABEL[row.status] ?? row.status}
+                        {label(QUOTE_STATUS, row.status)}
                       </span>
                     </td>
                     <td className="tight">{money(row.total, row.currency)}</td>
