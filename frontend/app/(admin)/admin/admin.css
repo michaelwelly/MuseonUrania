@@ -60,54 +60,124 @@
   min-height: 100vh;
 }
 
-/* Колонка на всю высоту: футер прижат к низу и на коротких страницах,
-   иначе он висит посреди экрана и читается как конец содержимого. */
+/* ═══════════ ОБОЛОЧКА: рабочее место, а не страница ═══════════
+ *
+ * Раньше админка была устроена как обычный сайт: шапка, под ней всё подряд,
+ * страница растёт вниз без предела. На длинном списке сделок уезжали и
+ * разделы, и карточка вошедшего, и чтобы перейти в другой раздел, надо было
+ * прокрутить экран обратно наверх — то есть сделать лишнее движение сотню
+ * раз за день.
+ *
+ * Теперь высота фиксирована по окну, а прокручиваются области ВНУТРИ. Так
+ * устроены почта, мессенджер и любая CRM, и не из подражания: инструмент,
+ * которым работают весь день, обязан держать навигацию на месте.
+ *
+ * Отсюда правило для страниц: длинные списки живут в своей прокрутке, а не
+ * растягивают документ. Прокрутка страницы целиком здесь считается ошибкой
+ * вёрстки, а не поведением по умолчанию.
+ */
 .admin-app {
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  /* Прокрутка запрещена именно здесь: любая прокрутка обязана принадлежать
+     конкретной области, а не документу. */
+  overflow: hidden;
+}
+
+/* ————— левая колонка ————— */
+
+/* Тёмная, потому что это закрытый контур: человек должен видеть периметр,
+   в котором работает, боковым зрением, а не читая подпись.
+ *
+ * Ширина числом, а не долей: разделы не должны прыгать при смене страницы,
+ * а самое длинное слово («Аналитика») укладывается в одну строку. */
+.admin-side {
   display: flex;
   flex-direction: column;
-}
-
-/* ————— верхняя панель ————— */
-
-/* Шапка светлая и с нижней линией — тот же приём, что у шапки сайта:
-   админка часть того же продукта, и въезжать в неё из другого мира
-   человеку незачем. */
-.admin-top {
-  position: sticky;
-  top: 0;
-  z-index: 40;
-  background: var(--surface);
-  border-bottom: 1px solid var(--rule);
-}
-
-/* Кто вошёл — справа, и ужиматься ему нельзя: имя и роли либо влезают
-   целиком, либо не показываются вовсе (на узком экране). Ужимается
-   ряд разделов — у него для этого есть прокрутка. */
-.admin-top > .admin-who {
-  flex: none;
-  margin-left: auto;
-}
-
-/* Размеры взяты с шапки сайта (Header.module.css): высота полосы, отступы
-   по краям и размер знака совпадают до пикселя. Это не подражание ради
-   похожести — сотрудник ходит по обеим половинам продукта, и полоса,
-   прыгающая по высоте при переходе, читается как переезд на чужой сайт.
-   Всё в одну строку: знак, одиннадцать разделов, кто вошёл. */
-.admin-top {
-  display: flex;
-  align-items: center;
-  gap: 28px;
-  height: 78px;
-  padding: 0 48px;
+  gap: 18px;
+  padding: 20px 14px 16px;
+  background: linear-gradient(180deg, var(--nav) 0%, var(--nav-2) 100%);
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 
 .admin-brand {
-  flex: none;
   display: inline-flex;
   align-items: center;
+  padding: 0 8px;
   text-decoration: none;
   color: inherit;
+}
+
+.admin-side__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-side__group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+/* Подпись группы, а не безымянная черта: двенадцать пунктов подряд читаются
+   как свалка, в которой ищут глазами каждый раз заново. */
+.admin-side__title {
+  padding: 0 10px 6px;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--on-dark-label);
+}
+
+.admin-side__nav a {
+  padding: 8px 10px;
+  border-radius: 7px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--on-dark-2);
+  text-decoration: none;
+}
+
+.admin-side__nav a:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+/* Текущий раздел — заливка, а не подчёркивание: в колонке подчёркивание
+   читается как ссылка, а не как «вы здесь». */
+.admin-side__nav a[aria-current="page"] {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ————— правая часть ————— */
+
+.admin-work {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  /* Тоже hidden: прокрутка принадлежит .admin-main, а не этой колонке. */
+  overflow: hidden;
+}
+
+/* Узкая полоса: в ней осталась только карточка вошедшего. Разделы уехали
+   в колонку, и держать ради них 78 пикселей высоты больше незачем —
+   это две строки таблицы на каждом экране. */
+.admin-top {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 56px;
+  padding: 0 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--rule);
 }
 
 /* ————— кто вошёл ————— */
@@ -222,79 +292,6 @@
   }
 }
 
-/* ————— разделы ————— */
-
-/* Второй ряд, а не тот же: одиннадцать разделов, знак и карточка
-   сотрудника в одну строку на ноутбуке не помещаются — разделы начали бы
-   сокращаться до огрызков или уезжать под «ещё». */
-/* Пункты набраны как в меню сайта: цвет --text-2, у текущего — вес
-   и зелёная черта, прижатая к низу полосы.
-
-   Кегль и шаг чуть меньше сайтовых (14 против 15, 20 против 26):
-   разделов одиннадцать против шести, и в одну строку со знаком
-   и карточкой сотрудника они на ноутбуке иначе не встают. Ряд —
-   единственное, что здесь ужимается, и у него есть прокрутка:
-   на узком экране разделы уезжают вбок, а не переносятся вниз
-   и не режут имя вошедшего. */
-.admin-top__nav {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  align-self: stretch;
-  gap: 20px;
-  font-size: 14px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.admin-top__nav::-webkit-scrollbar {
-  display: none;
-}
-
-.admin-top__nav a {
-  flex: none;
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  height: 100%;
-  color: var(--text-2);
-  font-weight: 500;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.admin-top__nav a:hover {
-  color: var(--green);
-}
-
-/* Текущий раздел — цвет, вес и полоса, как у активного пункта на сайте.
-   Не залитая пилюля: она спорила бы с зелёными кнопками действий
-   на самой странице, и глаз искал бы, где здесь можно нажать. */
-.admin-top__nav a[aria-current="page"] {
-  color: var(--ink);
-  font-weight: 600;
-}
-
-.admin-top__nav a[aria-current="page"]::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 2px;
-  background: var(--green);
-}
-
-/* Разделитель между содержимым сайта и CRM: два разных занятия, и без
-   границы одиннадцать слов читаются как один список. */
-.admin-top__sep {
-  flex: none;
-  width: 1px;
-  height: 16px;
-  margin: 0 2px;
-  background: var(--rule);
-}
 
 /* Метка контура. Не украшение: человек должен видеть, что он внутри
    закрытого контура, где на экране бывают персональные данные. */
@@ -584,10 +581,15 @@
    на телефоне — это поля, 16 на широком мониторе — это прижатая к стеклу
    таблица. */
 
+/* Единственная область, которая прокручивается. Не документ: прокрутка
+   документа уносит вместе с содержимым и навигацию, и карточку вошедшего. */
 .admin-main {
   flex: 1;
+  min-height: 0;
   width: 100%;
-  padding: 26px 48px 64px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 22px 28px 40px;
 }
 
 /* Крупные мониторы: поля растут, содержимое всё равно во всю ширину. */
@@ -1357,4 +1359,69 @@
   color: var(--muted);
   margin: 0;
   padding-top: 14px;
+}
+
+/* ————— узкие экраны ————— */
+
+/* На планшете и телефоне колонка разделов уезжает наверх горизонтальной
+   лентой: 232 пикселя слева на экране в 375 — это половина рабочей области.
+ *
+ * Фиксированная высота при этом сохраняется, и прокрутка остаётся внутри:
+ * на телефоне это важнее, чем на мониторе — там страница-простыня означает
+ * прокрутку большим пальцем через весь список ради одной кнопки наверху. */
+@media (max-width: 900px) {
+  .admin-app {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .admin-side {
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 14px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+
+  .admin-side::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Метка контура на узком экране занимает место разделов, а сам факт
+     закрытого контура читается по тёмной полосе. */
+  .admin-side > .admin-circuit {
+    display: none;
+  }
+
+  .admin-side__nav {
+    flex-direction: row;
+    gap: 14px;
+  }
+
+  .admin-side__group {
+    flex-direction: row;
+    gap: 4px;
+  }
+
+  /* Подписи групп в ленте не помещаются и не нужны: в строке порядок
+     разделов и так виден. */
+  .admin-side__title {
+    display: none;
+  }
+
+  .admin-side__nav a {
+    white-space: nowrap;
+  }
+
+  .admin-brand {
+    flex: none;
+  }
+}
+
+/* Метка контура в тёмной колонке: цвет уже задан в .admin-circuit,
+   здесь только отступ под общий ритм колонки. */
+.admin-side > .admin-circuit {
+  padding: 0 10px;
 }

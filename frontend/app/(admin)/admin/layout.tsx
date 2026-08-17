@@ -21,21 +21,39 @@ import Entry from "./Entry";
 // Плоский список из одиннадцати пунктов читается как свалка, а разделы
 // совпадают с тем, чем человек занят: редактор правит каталог, менеджер
 // ведёт сделки.
+// Разделы сгруппированы и подписаны, а не разделены безымянной чертой.
+// Двенадцать пунктов подряд читаются как свалка, в которой ищут глазами
+// каждый раз заново; три названные группы совпадают с тем, чем человек занят:
+// редактор правит содержимое, менеджер ведёт клиентов, журнал смотрят,
+// когда что-то расследуют.
 const NAV = [
-  { href: "/admin/", label: "Сводка" },
-  { href: "/admin/products/", label: "Продукция" },
-  { href: "/admin/categories/", label: "Категории" },
-  { href: "/admin/news/", label: "Новости" },
-  { href: "/admin/documents/", label: "Документы" },
-  { group: "CRM" },
-  { href: "/admin/chats/", label: "Разговоры" },
-  { href: "/admin/leads/", label: "Заявки" },
-  { href: "/admin/clients/", label: "Клиенты" },
-  { href: "/admin/deals/", label: "Сделки" },
-  { href: "/admin/quotes/", label: "КП" },
-  { href: "/admin/analytics/", label: "Аналитика" },
-  { group: "" },
-  { href: "/admin/audit/", label: "Журнал" },
+  {
+    title: "Содержимое сайта",
+    items: [
+      { href: "/admin/", label: "Сводка" },
+      { href: "/admin/products/", label: "Продукция" },
+      { href: "/admin/categories/", label: "Категории" },
+      { href: "/admin/news/", label: "Новости" },
+      { href: "/admin/documents/", label: "Документы" },
+    ],
+  },
+  {
+    title: "Работа с клиентами",
+    items: [
+      // Разговоры первыми: это единственный раздел, где человек ждёт ответа
+      // прямо сейчас. Остальное подождёт до конца дня, а он — нет.
+      { href: "/admin/chats/", label: "Разговоры" },
+      { href: "/admin/leads/", label: "Заявки" },
+      { href: "/admin/clients/", label: "Клиенты" },
+      { href: "/admin/deals/", label: "Сделки" },
+      { href: "/admin/quotes/", label: "КП" },
+      { href: "/admin/analytics/", label: "Аналитика" },
+    ],
+  },
+  {
+    title: "Контроль",
+    items: [{ href: "/admin/audit/", label: "Журнал" }],
+  },
 ] as const;
 
 type State =
@@ -154,38 +172,50 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
+  // Рабочее место, а не страница.
+  //
+  // Раньше админка была устроена как обычный сайт: шапка, под ней всё подряд,
+  // страница растёт вниз без предела. Из-за этого на длинном списке сделок
+  // уезжали и разделы, и кто вошёл, а чтобы перейти в другой раздел, надо было
+  // сначала прокрутить экран обратно наверх.
+  //
+  // Теперь высота фиксирована по окну, а прокручиваются области внутри.
+  // Так устроены почта, мессенджер и любая CRM, и не из подражания: инструмент,
+  // которым работают весь день, обязан держать навигацию на месте.
   return (
     <div className="admin-app">
-      {/* Один ряд и больше ничего: знак, разделы, кто вошёл. Футера нет,
-          подписи «админка» нет, отдельных кнопок нет — всё это занимало
-          место, которое нужно одиннадцати разделам. Выход остался, но
-          переехал на карточку сотрудника: нажатие на неё и есть выход. */}
-      <header className="admin-top">
+      <aside className="admin-side">
         <Link className="admin-brand" href="/admin/" aria-label="VEDAL Portal, сводка">
-          {/* 42 — та же высота, что у знака в шапке сайта. */}
-          <AnimatedLogo height={42} />
+          <AnimatedLogo height={38} />
         </Link>
 
-        <nav className="admin-top__nav" aria-label="Разделы админки">
-          {NAV.map((item, i) =>
-            "group" in item ? (
-              <span key={`sep-${i}`} className="admin-top__sep" aria-hidden="true" />
-            ) : (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={current(pathname, item.href) ? "page" : undefined}
-              >
-                {item.label}
-              </Link>
-            ),
-          )}
+        <div className="admin-circuit">закрытый контур</div>
+
+        <nav className="admin-side__nav" aria-label="Разделы админки">
+          {NAV.map((group) => (
+            <div key={group.title} className="admin-side__group">
+              <div className="admin-side__title">{group.title}</div>
+              {group.items.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={current(pathname, item.href) ? "page" : undefined}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          ))}
         </nav>
+      </aside>
 
-        <Who who={state.who} />
-      </header>
+      <div className="admin-work">
+        <header className="admin-top">
+          <Who who={state.who} />
+        </header>
 
-      <main className="admin-main">{children}</main>
+        <main className="admin-main">{children}</main>
+      </div>
     </div>
   );
 }
