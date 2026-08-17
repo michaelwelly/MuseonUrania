@@ -198,6 +198,31 @@ paths:
       summary: Поток обновлений разговора
       tags:
       - Ассистент
+  /api/assistant/v1/chat/{visitorKey}/typing:
+    post:
+      description: |
+        Сообщает сотруднику, что человек печатает. Ничего не записывает
+        и ничего не возвращает: факт живёт секунды и интересен только тому,
+        кто смотрит в экран прямо сейчас.
+
+        Виджет шлёт это не на каждую букву, а раз в несколько секунд, пока
+        поле не пустое: на каждое нажатие получился бы поток запросов
+        ради надписи, которая и так не меняется.
+      operationId: typing
+      parameters:
+      - in: path
+        name: visitorKey
+        required: true
+        schema:
+          type: string
+          maxLength: 64
+          minLength: 0
+      responses:
+        "204":
+          description: Принято.
+      summary: Посетитель набирает текст
+      tags:
+      - Ассистент
   /api/forms/v1/leads:
     post:
       description: |
@@ -695,6 +720,9 @@ components:
           type: string
         body:
           type: string
+        readAt:
+          type: string
+          format: date-time
         sources:
           type: array
           items:
