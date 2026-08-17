@@ -1,0 +1,156 @@
+# Наложение для машины, на которой уже живёт чужой сайт.
+#
+#   docker compose -f backend/compose.yaml -f backend/compose.host.yaml \
+#     --profile app up -d --build
+#
+# Зачем оно, если есть compose.prod.yaml. Тот рассчитан на машину, целиком
+# отданную порталу: поднимает свой Caddy на портах 80 и 443 и берёт realm
+# с `sslRequired: all`. На машине с соседом это два выстрела в ногу подряд —
+# 80 и 443 уже заняты его веб-сервером, и захват этих портов роняет соседа
+# в ту же секунду, а realm без TLS не работает вовсе, и TLS взять неоткуда,
+# пока нет домена.
+#
+# Здесь другая задача: поставить стек так, чтобы сосед не заметил.
+#
+# 1. Наружу не публикуется ничего. Порты привязаны к 127.0.0.1, и попасть
+#    внутрь можно только через SSH-туннель. Это не перестраховка: docker
+#    публикует порты правилом DNAT в nftables, которое обходит ufw, — строка
+#    «8080:8080» на такой машине означает открытый в интернет шлюз, даже если
+#    фаервол настроен и включён.
+#
+# 2. Память ограничена поимённо. Стек занимает около четырёх гигабайт, и без
+#    предела он их берёт у того, кто на машине уже был: убийца по нехватке
+#    памяти выбирает самый жирный процесс, а не самый новый. Предел превращает
+#    нашу нехватку памяти в нашу же поломку.
+#
+# 3. Секреты обязательны. Значения по умолчанию из compose.yaml рассчитаны
+#    на машину разработчика: пароль «vedal» на сервере, пусть даже слушающем
+#    только петлю, — это пароль «vedal».
+#
+# Чем это НЕ является. Это лабораторная установка, а не прод: realm остаётся
+# тем же, что на машине разработчика (с учётной записью `editor`), TLS нет,
+# домена нет, единственная граница — SSH. Пускать сюда настоящие персональные
+# данные нельзя, и в `lab` по разделу 5.8 PROJECT.md они и не пускаются.
+#
+# ————— адреса и почему они такие —————
+#
+# В `.env` пишутся адреса, которые видит БРАУЗЕР, то есть локальные концы
+# туннеля, а не порты на сервере:
+#
+#   VEDAL_PUBLIC_URL=http://localhost:8080
+#   VEDAL_KEYCLOAK_URL=http://localhost:8180
+#
+# Порты на сервере при этом любые свободные (по умолчанию 18080 и 18180),
+# и туннель сводит одно с другим:
+#
+#   ssh -N -L 8080:127.0.0.1:18080 -L 8180:127.0.0.1:18180 ubuntu@<адрес>
+#
+# Так сделано не из любви к туннелям. Адрес Keycloak попадает в поле `iss`
+# выданного токена, и портал сверяет его буквально; realm разрешает возврат
+# после входа только на `http://localhost:8080/*`. Совпади мы портами
+# на сервере — пришлось бы править realm, то есть держать его копию
+# под каждую машину. Совпадение обеспечивает туннель, и не правится ничего.
+
+services:
+  # ————— окружение: наружу не видно, память ограничена —————
+
+  db:
+    environment:
+      POSTGRES_DB: ${VEDAL_DB_NAME:?задайте VEDAL_DB_NAME}
+      POSTGRES_USER: ${VEDAL_DB_USER:?задайте VEDAL_DB_USER}
+      POSTGRES_PASSWORD: ${VEDAL_DB_PASSWORD:?задайте VEDAL_DB_PASSWORD}
+      VEDAL_RUNTIME_USER: ${VEDAL_RUNTIME_USER:-vedal_app}
+      VEDAL_RUNTIME_PASSWORD: ${VEDAL_RUNTIME_PASSWORD:?задайте VEDAL_RUNTIME_PASSWORD}
+    ports: !override []
+    restart: unless-stopped
+    mem_limit: 640m
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  kafka:
+    ports: !override []
+    restart: unless-stopped
+    # Kafka без предела разъедается на буферах страничного кэша. Гигабайта
+    # хватает одному брокеру с пятью топиками и парой десятков событий в день.
+    mem_limit: 1g
+    logging: *logging
+
+  minio:
+    environment:
+      MINIO_ROOT_USER: ${VEDAL_S3_ACCESS_KEY:?задайте VEDAL_S3_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${VEDAL_S3_SECRET_KEY:?задайте VEDAL_S3_SECRET_KEY}
+    ports: !override []
+    restart: unless-stopped
+    mem_limit: 384m
+    logging: *logging
+
+  minio-init:
+    environment:
+      MINIO_ROOT_USER: ${VEDAL_S3_ACCESS_KEY:?задайте VEDAL_S3_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${VEDAL_S3_SECRET_KEY:?задайте VEDAL_S3_SECRET_KEY}
+
+  keycloak:
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${VEDAL_KEYCLOAK_ADMIN:?задайте VEDAL_KEYCLOAK_ADMIN}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${VEDAL_KEYCLOAK_ADMIN_PASSWORD:?задайте VEDAL_KEYCLOAK_ADMIN_PASSWORD}
+    # Единственный порт окружения, который выставлен наружу контейнера,
+    # и то на петлю: за токеном ходит браузер, а он у нас на другом конце
+    # туннеля. Внутренние обращения портала идут мимо — по имени keycloak.
+    ports: !override
+      - "127.0.0.1:${VEDAL_KEYCLOAK_HOST_PORT:-18180}:8080"
+    restart: unless-stopped
+    mem_limit: 768m
+    logging: *logging
+
+  connect:
+    environment:
+      VEDAL_DB_NAME: ${VEDAL_DB_NAME:?задайте VEDAL_DB_NAME}
+      VEDAL_DB_USER: ${VEDAL_DB_USER:?задайте VEDAL_DB_USER}
+      VEDAL_DB_PASSWORD: ${VEDAL_DB_PASSWORD:?задайте VEDAL_DB_PASSWORD}
+    ports: !override []
+    restart: unless-stopped
+    mem_limit: 768m
+    logging: *logging
+
+  # ————— приложения —————
+
+  portal:
+    environment:
+      VEDAL_DB_URL: jdbc:postgresql://db:5432/${VEDAL_DB_NAME:?}
+      VEDAL_DB_USER: ${VEDAL_RUNTIME_USER:-vedal_app}
+      VEDAL_DB_PASSWORD: ${VEDAL_RUNTIME_PASSWORD:?}
+      SPRING_FLYWAY_USER: ${VEDAL_DB_USER:?}
+      SPRING_FLYWAY_PASSWORD: ${VEDAL_DB_PASSWORD:?}
+      VEDAL_S3_ACCESS_KEY: ${VEDAL_S3_ACCESS_KEY:?}
+      VEDAL_S3_SECRET_KEY: ${VEDAL_S3_SECRET_KEY:?}
+      VEDAL_OIDC_SVC_CLIENT_SECRET: ${VEDAL_OIDC_SVC_CLIENT_SECRET:-vedal-portal-svc-local}
+    ports: !override []
+    restart: unless-stopped
+    # Предел на контейнер, а не на кучу: в образе стоит MaxRAMPercentage=75,
+    # и JVM сама возьмёт три четверти от этого числа. Задавать -Xmx отдельно
+    # значит завести второе место, где живёт одно и то же число.
+    mem_limit: 1g
+    stop_grace_period: 40s
+    logging: *logging
+
+  api-gateway:
+    # Единственная дверь внутрь, и та на петле. Сайт, публичное API, формы
+    # и админка ходят через неё же — источник один, CORS не участвует.
+    ports: !override
+      - "127.0.0.1:${VEDAL_GATEWAY_HOST_PORT:-18080}:8080"
+    restart: unless-stopped
+    mem_limit: 512m
+    stop_grace_period: 40s
+    logging: *logging
+
+  site:
+    ports: !override []
+    restart: unless-stopped
+    # Полтора гигабайта — не про работу, а про сборку: образ собирает страницы
+    # при старте контейнера, и пик приходится на неё. Урезать до гигабайта
+    # значит получить падение сборки на машине, где всё остальное в порядке.
+    mem_limit: 1536m
+    logging: *logging
