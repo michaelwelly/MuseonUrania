@@ -473,6 +473,31 @@ paths:
       summary: Уничтожить персональные данные разговора
       tags:
       - "Админка: персональные данные"
+  /api/admin/v1/chats/{id}/typing:
+    post:
+      description: |
+        Показывает посетителю «отвечают…». Ничего не записывает: факт живёт
+        секунды. Уходит только тому посетителю, чей это разговор.
+
+        Нужно ровно для одного — чтобы человек не ушёл со страницы за те
+        полминуты, пока сотрудник формулирует. Молчание в чате читается
+        как «меня не слышат».
+      operationId: typing
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: Принято.
+      security:
+      - keycloak: []
+      summary: Сотрудник набирает ответ
+      tags:
+      - "Админка: чат"
   /api/admin/v1/clients:
     get:
       operationId: clients
@@ -3373,6 +3398,9 @@ components:
           type: string
         body:
           type: string
+        readAt:
+          type: string
+          format: date-time
         sources:
           type: array
           items:
