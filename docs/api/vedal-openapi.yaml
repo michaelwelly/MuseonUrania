@@ -695,6 +695,10 @@ components:
           type: string
         body:
           type: string
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/Source"
     NewsArticle:
       type: object
       description: Материал ленты целиком.
