@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
@@ -21,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import ru.vedal.portal.common.PageView;
 import ru.vedal.portal.chat.ChatDesk;
 import ru.vedal.portal.chat.ChatStream;
 
@@ -56,14 +56,14 @@ public class AdminChatApi {
                     и передала человеку.
                     """)
     @GetMapping("/queue")
-    public Page<ChatDesk.Card> queue(@RequestParam(defaultValue = "0") int page,
+    public PageView<ChatDesk.Card> queue(@RequestParam(defaultValue = "0") int page,
                                      @RequestParam(defaultValue = "20") int size) {
         return desk.queue(page, size);
     }
 
     @Operation(summary = "Все разговоры", description = "Последние сверху.")
     @GetMapping
-    public Page<ChatDesk.Card> all(@RequestParam(defaultValue = "0") int page,
+    public PageView<ChatDesk.Card> all(@RequestParam(defaultValue = "0") int page,
                                    @RequestParam(defaultValue = "20") int size) {
         return desk.all(page, size);
     }
