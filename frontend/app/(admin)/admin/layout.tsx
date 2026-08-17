@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AnimatedLogo from "@/components/AnimatedLogo";
 import { accessToken, authConfigured, login, logout } from "@/lib/auth";
 import { adminConfigured, session, type Session } from "@/lib/admin";
@@ -16,21 +16,35 @@ import Entry from "./Entry";
 // показать, вошёл ли человек и принял ли портал его токен. Это разные вещи,
 // и различить их важно: подписанный токен без роли портала проходит проверку
 // подписи и получает 403, а «данных нет» выглядит так же, как «доступа нет».
+//
+// ───────────────────────────────────────────────────────────────────────────
+// Почему разделы наверху, а не сбоку
+//
+// Тёмная колонка слева честно показывала периметр, но делала админку вторым
+// продуктом: сайт — белая липкая шапка с логотипом слева, навигацией по центру
+// и телефоном справа, админка — тёмная панель на 232 пикселя. Один и тот же
+// человек ходит и туда, и туда, и каждый переход стоил ему перестройки.
+//
+// Теперь раскладка совпадает с сайтом до размеров: полоса 78 пикселей, поля
+// по 48, знак слева, разделы 15 пикселей с зелёной чертой под текущим, справа
+// — две строки на месте телефона и зелёная кнопка на месте «Связаться».
+//
+// Двенадцать пунктов в одну строку не помещаются и читаются как свалка,
+// поэтому уровня два: в шапке четыре раздела, под ней — вкладки текущего.
+// Это та же полоса вкладок, что на карточке изделия (`products/[slug]`),
+// а не изобретённый для админки элемент.
 
-// Два раздела с разделителем: содержимое сайта и работа с клиентами.
-// Плоский список из одиннадцати пунктов читается как свалка, а разделы
-// совпадают с тем, чем человек занят: редактор правит каталог, менеджер
-// ведёт сделки.
-// Разделы сгруппированы и подписаны, а не разделены безымянной чертой.
-// Двенадцать пунктов подряд читаются как свалка, в которой ищут глазами
-// каждый раз заново; три названные группы совпадают с тем, чем человек занят:
-// редактор правит содержимое, менеджер ведёт клиентов, журнал смотрят,
-// когда что-то расследуют.
-const NAV = [
+type Item = { href: string; label: string };
+type Section = { label: string; href: string; items: readonly Item[] };
+
+// `href` раздела — куда ведёт клик по нему в шапке. У разделов со вкладками
+// это первая вкладка: раздел без своей страницы не должен вести в никуда.
+const NAV: readonly Section[] = [
+  { label: "Сводка", href: "/admin/", items: [] },
   {
-    title: "Содержимое сайта",
+    label: "Содержимое сайта",
+    href: "/admin/products/",
     items: [
-      { href: "/admin/", label: "Сводка" },
       { href: "/admin/products/", label: "Продукция" },
       { href: "/admin/categories/", label: "Категории" },
       { href: "/admin/news/", label: "Новости" },
@@ -38,7 +52,8 @@ const NAV = [
     ],
   },
   {
-    title: "Работа с клиентами",
+    label: "Работа с клиентами",
+    href: "/admin/chats/",
     items: [
       // Разговоры первыми: это единственный раздел, где человек ждёт ответа
       // прямо сейчас. Остальное подождёт до конца дня, а он — нет.
@@ -50,10 +65,7 @@ const NAV = [
       { href: "/admin/analytics/", label: "Аналитика" },
     ],
   },
-  {
-    title: "Контроль",
-    items: [{ href: "/admin/audit/", label: "Журнал" }],
-  },
+  { label: "Журнал", href: "/admin/audit/", items: [] },
 ] as const;
 
 type State =
@@ -65,6 +77,8 @@ type State =
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [state, setState] = useState<State>({ kind: "checking" });
+  const [menu, setMenu] = useState(false);
+  const nav = useRef<HTMLDivElement>(null);
 
   // Возврат из Keycloak разбирает своя страница: там ещё нет токена,
   // и оболочка отправила бы человека на вход по кругу.
@@ -95,6 +109,29 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       alive = false;
     };
   }, [isCallback, pathname]);
+
+  // Высота липкой навигации — числом в CSS-переменную.
+  //
+  // Под неё подстраивается липкая шапка таблиц: без отступа заголовки колонок
+  // уезжают под разделы, с отступом «на глаз» — повисают в воздухе, и строки
+  // проезжают над ними. Числом в стилях это не задать честно: полоса вкладок
+  // есть не на каждом разделе, а сама шапка меняет высоту на трёх порогах и
+  // переносится на две строки. Наблюдатель меряет то, что получилось, вместо
+  // шести догадок, которые расходятся с вёрсткой по одной.
+  useEffect(() => {
+    const node = nav.current;
+    if (!node) return;
+
+    const measure = () =>
+      document.documentElement.style.setProperty("--chrome", `${node.offsetHeight}px`);
+
+    measure();
+    const watch = new ResizeObserver(measure);
+    watch.observe(node);
+    return () => watch.disconnect();
+    // Пересобирается при смене состояния входа: до входа узла нет вовсе,
+    // и наблюдать нечего.
+  }, [state.kind]);
 
   if (isCallback) return <>{children}</>;
 
@@ -172,102 +209,251 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  // Рабочее место, а не страница.
-  //
-  // Раньше админка была устроена как обычный сайт: шапка, под ней всё подряд,
-  // страница растёт вниз без предела. Из-за этого на длинном списке сделок
-  // уезжали и разделы, и кто вошёл, а чтобы перейти в другой раздел, надо было
-  // сначала прокрутить экран обратно наверх.
-  //
-  // Теперь высота фиксирована по окну, а прокручиваются области внутри.
-  // Так устроены почта, мессенджер и любая CRM, и не из подражания: инструмент,
-  // которым работают весь день, обязан держать навигацию на месте.
+  const active = section(pathname);
+  // Последняя крошка: вкладка, на которой человек стоит. У раздела без
+  // вкладок это он сам — «Админка / Сводка» вместо «Админка».
+  const here =
+    active && active.items.length > 0
+      ? active.items.find((item) => within(pathname ?? "", item.href))
+      : active;
+
   return (
-    <div className="admin-app">
-      <aside className="admin-side">
-        <Link className="admin-brand" href="/admin/" aria-label="VEDAL Portal, сводка">
-          <AnimatedLogo height={38} />
-        </Link>
+    <div className="admin-shell">
+      {/* Обе полосы в одной липкой обёртке, а не по отдельности: высота шапки
+          меняется на трёх брейкпоинтах, и «top: 78px» у вкладок разъехался бы
+          ровно там, где полоса переносится на две строки. */}
+      <div className="admin-nav" ref={nav}>
+        <div className="admin-bar">
+          <Link className="admin-brand" href="/admin/" aria-label="VEDAL Portal, сводка">
+            {/* 42 — та же высота знака, что в шапке сайта. */}
+            <AnimatedLogo height={42} />
+          </Link>
 
-        <div className="admin-circuit">закрытый контур</div>
+          {/* Метка контура. Не украшение: человек должен видеть, что он внутри
+              закрытого контура, где на экране бывают персональные данные. */}
+          <span className="admin-circuit">закрытый контур</span>
 
-        <nav className="admin-side__nav" aria-label="Разделы админки">
-          {NAV.map((group) => (
-            <div key={group.title} className="admin-side__group">
-              <div className="admin-side__title">{group.title}</div>
-              {group.items.map((item) => (
+          <nav className="admin-sections" aria-label="Разделы админки">
+            {NAV.map((s) => (
+              <Link
+                key={s.label}
+                href={s.href}
+                className={`admin-section${s === active ? " admin-section--on" : ""}`}
+                aria-current={s === active ? "page" : undefined}
+              >
+                {s.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="admin-tools">
+            <Who who={state.who} />
+
+            {/* Выход — обведённой кнопкой на месте кнопки-телефона в шапке
+                сайта. Отдельной кнопкой, а не действием карточки: выход
+                не должен случаться от промаха по имени. */}
+            <button
+              type="button"
+              className="admin-exit"
+              onClick={() => logout()}
+              aria-label="Выйти из админки"
+              title="Выйти из админки"
+            >
+              <ExitIcon />
+            </button>
+
+            {/* На месте «Связаться» — переход на сайт. Это то действие, ради
+                которого редактор чаще всего уходит из админки: посмотреть,
+                как опубликованное выглядит снаружи. В новой вкладке, чтобы
+                несохранённая форма не пропала. */}
+            <a
+              className="admin-cta"
+              href="/"
+              target="_blank"
+              rel="noreferrer"
+              title="Публичный сайт в новой вкладке"
+            >
+              Открыть сайт
+              <Arrow />
+            </a>
+
+            <button
+              type="button"
+              className="admin-burger"
+              aria-label="Разделы"
+              aria-expanded={menu}
+              onClick={() => setMenu((v) => !v)}
+            >
+              <span className="admin-burger__lines" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* Вкладки раздела — та же полоса, что на карточке изделия. Разделу
+            из одного пункта полоса не нужна: она повторяла бы заголовок. */}
+        {active && active.items.length > 1 && (
+          <nav className="admin-tabs" aria-label={active.label}>
+            {active.items.map((item) => {
+              const on = within(pathname, item.href);
+              return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  aria-current={current(pathname, item.href) ? "page" : undefined}
+                  className={`admin-tab${on ? " admin-tab--on" : ""}`}
+                  aria-current={on ? "page" : undefined}
                 >
                   {item.label}
                 </Link>
-              ))}
-            </div>
-          ))}
-        </nav>
-      </aside>
+              );
+            })}
+          </nav>
+        )}
 
-      <div className="admin-work">
-        <header className="admin-top">
-          <Who who={state.who} />
-        </header>
-
-        <main className="admin-main">{children}</main>
+        {/* На телефоне два уровня превращаются в один список: разделы
+            подписаны, вкладки под ними. Искать вкладку, сначала попав
+            в раздел, на маленьком экране дороже, чем пролистать двенадцать
+            строк один раз. */}
+        {menu && (
+          <nav className="admin-menu" aria-label="Разделы админки">
+            {NAV.map((s) => (
+              <div key={s.label} className="admin-menu__group">
+                <div className="admin-menu__title">{s.label}</div>
+                {/* Меню закрывается выбором, а не только повторным нажатием
+                    на бургер: иначе оно остаётся поверх страницы, которую
+                    человек только что открыл. */}
+                {(s.items.length === 0 ? [{ href: s.href, label: s.label }] : s.items).map(
+                  (item) => {
+                    const on = within(pathname, item.href);
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={on ? "admin-menu__on" : undefined}
+                        aria-current={on ? "page" : undefined}
+                        onClick={() => setMenu(false)}
+                      >
+                        {item.label}
+                      </Link>
+                    );
+                  },
+                )}
+              </div>
+            ))}
+          </nav>
+        )}
       </div>
+
+      <main className="admin-main">
+        {/* Хлебные крошки — как на внутренней странице сайта: моноширинная
+            строка над заголовком, в той же белой полосе. Они же отвечают
+            на вопрос, которого не было при колонке слева: раздел теперь
+            свёрнут в четыре слова наверху, и «где я» должно читаться
+            в самом содержимом, а не только по подсветке вкладки. */}
+        <div className="admin-crumbs">
+          <Link href="/admin/">Админка</Link>
+          {active && active.items.length > 0 && (
+            <>
+              <span aria-hidden="true"> / </span>
+              <Link href={active.href}>{active.label}</Link>
+            </>
+          )}
+          {here && (
+            <>
+              <span aria-hidden="true"> / </span>
+              <span className="admin-crumbs__here">{here.label}</span>
+            </>
+          )}
+        </div>
+
+        {children}
+      </main>
+
+      {/* Тонкая полоса вместо футера сайта: ссылки сайта здесь не нужны,
+          а напоминание про периметр — нужно, и оно должно быть на экране
+          и внизу длинного списка, а не только в шапке. */}
+      <footer className="admin-foot">
+        <span className="admin-foot__circuit">закрытый контур</span>
+        <span>Персональные данные не выносятся за периметр — ни снимком экрана, ни письмом.</span>
+        <a className="admin-foot__link" href="/" target="_blank" rel="noreferrer">
+          Публичный сайт →
+        </a>
+      </footer>
     </div>
   );
 }
 
 /**
- * Кто вошёл — в правом верхнем углу.
- *
- * Значок собирается из первых букв самого имени, а не берётся картинкой:
- * фотографий сотрудников у портала нет и не будет — он знает про человека
- * ровно то, что отдал Keycloak.
+ * Кто вошёл — в правом верхнем углу, на месте телефона в шапке сайта
+ * и в той же форме: две строки с выключкой вправо.
  *
  * Роли показываются те, что разобрал портал, а не те, что лежат в токене:
  * расходятся они ровно тогда, когда что-то настроено не так, и увидеть это
  * надо здесь, а не в отказе на первом же действии.
+ *
+ * Роли набраны моноширинным: `portal-admin` — идентификатор, а не слово,
+ * и читается он как идентификатор.
  */
 function Who({ who }: { who: Session }) {
-  const roles = who.roles.length > 0 ? who.roles.join(" · ") : "без ролей";
-
   return (
-    <button className="admin-who" onClick={() => logout()} title="Выйти из админки">
-      {/* Две строки, выключка вправо — там же, где на сайте телефон
-          и часы работы. */}
-      <span className="admin-who__text">
-        <span className="admin-who__name">{who.actor}</span>
-        {/* Роли и «Выйти» лежат друг на друге и меняются местами при
-            наведении. Так карточка остаётся карточкой, а не превращается
-            в кнопку с подписью, но нажатие перестаёт быть сюрпризом:
-            то, что случится, написано до того, как нажали. */}
-        <span className="admin-who__swap">
-          <span className="admin-who__meta">{roles}</span>
-          <span className="admin-who__exit">Выйти</span>
-        </span>
+    <div className="admin-who">
+      <span className="admin-who__name">{who.actor}</span>
+      <span className="admin-who__meta">
+        {who.roles.length > 0 ? who.roles.join(" · ") : "без ролей"}
       </span>
-      <span className="admin-who__mark" aria-hidden="true">
-        {initials(who.actor)}
-      </span>
-    </button>
+    </div>
   );
 }
 
-
-/** Две первые буквы имени: «Анна Фёдорова» → «АФ», «editor» → «ED». */
-function initials(actor: string): string {
-  const parts = actor.trim().split(/[\s._-]+/).filter(Boolean);
-  if (parts.length === 0) return "—";
-  const letters = parts.length > 1 ? parts[0][0] + parts[1][0] : parts[0].slice(0, 2);
-  return letters.toUpperCase();
+/** Стрелка кнопки — та же, что в шапке сайта. */
+function Arrow() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" />
+    </svg>
+  );
 }
 
-// Сводка подсвечивается только на самой сводке: иначе она горит на каждой
-// странице, потому что её адрес — префикс всех остальных.
-function current(pathname: string | null, href: string): boolean {
-  if (!pathname) return false;
-  return href === "/admin/" ? pathname === "/admin/" : pathname.startsWith(href);
+function ExitIcon() {
+  return (
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M14 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8M17 8l4 4-4 4M21 12H10"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="square"
+      />
+    </svg>
+  );
+}
+
+/**
+ * Раздел текущей страницы.
+ *
+ * Сводка подсвечивается только на самой сводке: иначе она горит на каждой
+ * странице, потому что её адрес — префикс всех остальных. Поэтому она стоит
+ * первой и сверяется на точное совпадение, а не на префикс.
+ */
+function section(pathname: string | null): Section | undefined {
+  if (!pathname) return undefined;
+  return NAV.find(
+    (s) => within(pathname, s.href) || s.items.some((item) => within(pathname, item.href)),
+  );
+}
+
+/**
+ * Страница внутри ветки адреса.
+ *
+ * Сравнение по префиксу без завершающего слеша: у вкладки адрес
+ * `/admin/clients/`, а открытая карточка — `/admin/clients/42`, и это
+ * одна и та же вкладка. Сводка — исключение: её адрес префикс всему.
+ */
+function within(pathname: string, href: string): boolean {
+  const path = pathname.replace(/\/+$/, "");
+  const base = href.replace(/\/+$/, "");
+  if (base === "/admin") return path === "/admin";
+  return path === base || path.startsWith(`${base}/`);
 }
