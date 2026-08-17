@@ -1,0 +1,42 @@
+{
+  "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+
+  "database.hostname": "db",
+  "database.port": "5432",
+
+  "config.providers": "env",
+  "config.providers.env.class": "org.apache.kafka.common.config.provider.EnvVarConfigProvider",
+
+  "database.user": "${env:VEDAL_DB_USER}",
+  "database.password": "${env:VEDAL_DB_PASSWORD}",
+  "database.dbname": "${env:VEDAL_DB_NAME}",
+
+  "plugin.name": "pgoutput",
+  "slot.name": "vedal_outbox",
+  "publication.name": "vedal_outbox_pub",
+
+  "topic.prefix": "vedal.cdc",
+  "table.include.list": "public.outbox",
+
+  "snapshot.mode": "no_data",
+
+  "skipped.operations": "u,d,t",
+
+  "tombstones.on.delete": "false",
+
+  "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+  "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+  "value.converter.schemas.enable": "false",
+
+  "transforms": "outbox",
+  "transforms.outbox.type": "io.debezium.transforms.outbox.EventRouter",
+  "transforms.outbox.table.field.event.id": "id",
+  "transforms.outbox.table.field.event.key": "aggregate_id",
+  "transforms.outbox.table.field.event.type": "type",
+  "transforms.outbox.table.field.event.payload": "payload",
+  "transforms.outbox.table.expand.json.payload": "true",
+  "transforms.outbox.table.fields.additional.placement": "aggregate:header:aggregate,correlation_id:header:correlationId",
+  "transforms.outbox.route.by.field": "type",
+  "transforms.outbox.route.topic.replacement": "${routedByValue}",
+  "transforms.outbox.table.op.invalid.behavior": "warn"
+}

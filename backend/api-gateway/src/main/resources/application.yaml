@@ -1,0 +1,84 @@
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+          # Порядок маршрутов важен: /api/admin/** подходит и под /api/**.
+          # Список разбирается сверху вниз, поэтому частное идёт первым.
+          routes:
+            # Двери правки. Токен проверяется ещё и здесь, на периметре, —
+            # см. GatewaySecurityConfig. Портал проверит его повторно.
+            - id: portal-admin-api
+              uri: ${VEDAL_PORTAL_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/admin/**
+              filters:
+                # Двадцать мегабайт на файл плюс запас на поля формы.
+                # Значение согласовано с vedal.storage.max-file-size портала:
+                # меньший лимит здесь роняет загрузку с 413 до приложения,
+                # и редактор видит страницу шлюза вместо внятного отказа.
+                - name: RequestSize
+                  args:
+                    maxSize: 21MB
+
+            # Публичные двери: каталог, новости, документы, формы, ассистент.
+            - id: portal-public-api
+              uri: ${VEDAL_PORTAL_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/**
+
+            # Спецификация и Swagger UI. Отдельным маршрутом, а не под /api/**:
+            # springdoc обслуживает их вне этого префикса.
+            - id: portal-openapi
+              uri: ${VEDAL_PORTAL_URL:http://localhost:8081}
+              predicates:
+                - Path=/v3/api-docs/**,/v3/api-docs.yaml/**,/swagger-ui/**,/swagger-ui.html
+
+            # Маршрута на серверные страницы админки здесь нет, потому что
+            # их больше нет вовсе: у портала не осталось ни одной страницы
+            # для браузера, и вместе с ними ушли форма входа, cookie-сессия
+            # и CSRF-токен. Вход идёт в Keycloak напрямую.
+
+            # Всё остальное — сайт, включая /admin/** на Next.js. Предикат
+            # самый широкий, поэтому маршрут последний.
+            - id: site
+              uri: ${VEDAL_SITE_URL:http://localhost:3000}
+              predicates:
+                - Path=/**
+
+vedal:
+  gateway:
+    # Проверять ли токен на периметре. false — шлюз пропускает Authorization
+    # дальше не глядя, и решение принимает портал. Это рабочий режим, пока
+    # Keycloak нет; порталу от этого не легче и не тяжелее — он проверяет
+    # токен в любом случае.
+    #
+    # true — отказ приходит на границе, и запрос без токена не доходит
+    # до приложения вовсе.
+    verify-tokens: ${VEDAL_GATEWAY_VERIFY_TOKENS:false}
+    oidc-issuer: ${VEDAL_OIDC_ISSUER:}
+
+server:
+  port: ${VEDAL_GATEWAY_PORT:8080}
+  # Шлюз может стоять за внешним балансировщиком (в облаке — ALB). Без этого
+  # он подставит порталу адрес балансировщика, и дальше по цепочке лимит
+  # частоты посчитает всех посетителей одним клиентом, а аудит запишет
+  # не тот адрес.
+  forward-headers-strategy: framework
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # Только health: перечень маршрутов шлюза — карта системы.
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO

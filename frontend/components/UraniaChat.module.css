@@ -113,12 +113,53 @@
   overflow-y: auto;
 }
 
+/* Ход диалога: сообщение плюс источники и передача человеку под ним.
+   Выравнивание живёт здесь, а не на .msg — иначе список источников уезжает
+   в противоположную сторону от реплики. */
+.turn {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.turnBot {
+  align-items: flex-start;
+}
+
+.turnMe {
+  align-items: flex-end;
+}
+
 .msg {
   max-width: 82%;
   padding: 12px 14px;
   font-size: 14.5px;
   line-height: 1.5;
   animation: u-in 0.28s ease both;
+}
+
+.sources,
+.handoff {
+  max-width: 82%;
+  margin: 0;
+  padding: 0 0 0 14px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.sources {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  list-style: none;
+}
+
+.sources a,
+.handoff a {
+  color: var(--green);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 @keyframes u-in {
@@ -261,4 +302,41 @@
   font-size: 11.5px;
   line-height: 1.45;
   color: var(--muted);
+}
+
+/* Ответ сотрудника.
+ *
+ * Отличается от ответа Урании заливкой И сплошной рамкой, а не одним оттенком:
+ * посетитель обязан различать машину и человека, а восемь процентов мужчин
+ * не различают красный и зелёный — одним цветом это не передать.
+ *
+ * Слева, как и Урания: это входящее сообщение. Правая сторона занята
+ * собственными репликами посетителя, и переносить туда чужой ответ значит
+ * ломать главный признак, по которому лента читается без чтения.
+ */
+.staff {
+  background: var(--ok-bg);
+  border: 1px solid var(--ok-line);
+  color: var(--ink);
+}
+
+/* Имя специалиста над его сообщением. Мелко и приглушённо: это подпись,
+   а не заголовок, — но она обязана быть, иначе человек неотличим от машины. */
+.who {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ok-fg);
+  margin-bottom: 3px;
+}
+
+/* «Специалист печатает…» — словом, а не точками.
+ *
+ * У Урании точки означают «машина думает», и ждать её человек готов пару
+ * секунд. Здесь другое: отвечает живой специалист, и ради этого посетитель
+ * останется на странице дольше — но только если понимает, кого ждёт. */
+.staffTyping {
+  font-style: italic;
+  opacity: 0.85;
 }

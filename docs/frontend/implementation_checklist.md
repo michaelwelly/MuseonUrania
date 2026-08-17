@@ -1,51 +1,53 @@
-# Frontend Implementation Checklist
+# Чек-лист реализации фронтенда
 
-## Before Design
+**Русский** · [English](implementation_checklist.en.md)
 
-- Confirm NN answers for site quiz.
-- Confirm final product list.
-- Confirm public document rules.
-- Confirm assistant name Urania.
-- Confirm avatar direction.
-- Confirm whether Urania appears in hero, floating button, or both.
-- Confirm Smart Solution wording.
+## До дизайна
 
-## Design Package
+- Получить ответы НН по опроснику о сайте.
+- Утвердить финальный список продукции.
+- Утвердить правила публикации документов.
+- Утвердить имя ассистента — Урания.
+- Утвердить направление аватара.
+- Утвердить, где появляется Урания: первый экран, плавающая кнопка или и то и другое.
+- Утвердить формулировку про Smart Solution.
 
-- Sitemap approved.
-- Page briefs approved.
-- Content model approved.
-- Product card model approved.
-- Urania assistant states approved.
-- Three frontend variants prepared.
-- One variant selected for implementation.
+## Пакет дизайна
 
-## Frontend Build
+- Карта сайта согласована.
+- Брифы страниц согласованы.
+- Модель контента согласована.
+- Модель карточки изделия согласована.
+- Состояния ассистента согласованы.
+- Подготовлены три варианта фронтенда.
+- Один вариант выбран в реализацию.
 
-- Responsive header.
-- Home hero with CTA.
-- Urania hero card.
-- Urania floating button.
-- Products page.
-- Product detail template.
-- Documents page.
-- Press page.
-- Service form.
-- Contact forms.
-- Footer.
+## Сборка фронтенда
 
-## Integration Readiness
+- Адаптивная шапка.
+- Первый экран главной с призывом к действию.
+- Карточка Урании на первом экране.
+- Плавающая кнопка Урании.
+- Страница продукции.
+- Шаблон карточки изделия.
+- Страница документов.
+- Страница пресс-центра.
+- Форма сервиса.
+- Контактные формы.
+- Подвал.
 
-- Forms structured for CRM handoff.
-- Media fields structured for S3 URLs.
-- Documents marked public/internal/confidential.
-- Product metadata present.
-- Analytics events named.
-- Urania quick actions wired to frontend states.
+## Готовность к интеграции
 
-## Analytics Events
+- Формы устроены под передачу в CRM.
+- Поля медиа устроены под ссылки S3.
+- Документы размечены как публичные, внутренние, конфиденциальные.
+- Метаданные изделий заполнены.
+- События аналитики названы.
+- Быстрые действия Урании связаны с состояниями фронтенда.
 
-Suggested event names:
+## События аналитики
+
+Предлагаемые имена событий:
 
 - `hero_quote_click`
 - `hero_catalog_click`
@@ -58,21 +60,21 @@ Suggested event names:
 - `quote_form_submit`
 - `catalog_form_submit`
 
-## Safety QA
+## Проверка безопасности контента
 
-- No invented prices.
-- No invented certificates.
-- No unapproved clinical claims.
-- No private documents in public UI.
-- Urania does not answer as a doctor.
-- Urania routes uncertain questions to a human.
-- Consent/privacy text present before form submission.
+- Нет выдуманных цен.
+- Нет выдуманных сертификатов.
+- Нет несогласованных клинических заявлений.
+- Нет закрытых документов в публичном интерфейсе.
+- Урания не отвечает как врач.
+- Урания передаёт спорные вопросы человеку.
+- Текст согласия и политики приватности показан до отправки формы.
 
-## Visual QA
+## Визуальная проверка
 
-- Text fits on mobile and desktop.
-- Hero does not hide the product/production message behind Urania.
-- Urania is visible but secondary.
-- Smart Solution is secondary to VEDAL.
-- Product cards do not shift layout when content is missing.
-- Buttons and forms are accessible.
+- Текст помещается и на мобильном, и на десктопе.
+- Первый экран не прячет сообщение о продукции и производстве за Уранией.
+- Урания заметна, но вторична.
+- Smart Solution вторичен по отношению к VEDAL.
+- Карточки изделий не съезжают, когда часть данных отсутствует.
+- Кнопки и формы доступны.

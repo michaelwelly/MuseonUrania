@@ -1,93 +1,113 @@
-# Competitor And Reference Notes
+# Заметки по конкурентам и референсам
 
-## VEDAL Public Baseline
+**Русский** · [English](competitor_notes.en.md)
 
-`vedal-med.ru` currently communicates:
+## Что VEDAL говорит о себе сейчас
 
-- Russian medical equipment for neonatology and resuscitation.
-- Own production.
-- Product directions: ventilation, anesthesia, patient monitors, neonatal incubators, neonatal resuscitation systems, thermoregulation.
-- Production page and R&D/technology page.
-- Partners: Divisy and Morus MS.
+`vedal-med.ru` на сегодня сообщает:
 
-Current weakness:
+- российское медицинское оборудование для неонатологии и реанимации;
+- собственное производство;
+- продуктовые направления: ИВЛ, анестезия, мониторы пациента, инкубаторы для
+  новорождённых, реанимационные системы для новорождённых, терморегуляция;
+- страница производства и страница разработок и технологий;
+- партнёры: Divisy и Morus MS.
 
-- Product catalog is too shallow for sales.
-- Limited proof blocks: cases, documents, certificates, service, procurement support.
-- No obvious multilingual commercial structure.
-- Needs stronger lead capture and analytics.
+Слабые места:
 
-## Partner References
+- каталог продукции слишком поверхностный для продаж;
+- мало блоков-доказательств: кейсы, документы, сертификаты, сервис, поддержка
+  закупок;
+- нет очевидной мультиязычной коммерческой структуры;
+- нужен более сильный сбор заявок и аналитика.
+
+## Партнёрские референсы
 
 ### Morus MS
 
-`morus-ms.ru` positions Morus as a medical systems company formed in 2023, focused on development of a domestic high-tech MRI line and localization.
+`morus-ms.ru` позиционирует Morus как компанию медицинских систем, созданную в
+2023 году и сосредоточенную на разработке отечественной высокотехнологичной
+линейки МРТ и локализации.
 
-Potential relevance:
+Чем полезно:
 
-- Manufacturing ecosystem narrative.
-- Shared medical equipment credibility.
-- MRI/R&D positioning.
+- рассказ о производственной экосистеме;
+- общая репутация в медицинском оборудовании;
+- позиционирование в МРТ и R&D.
 
 ### Divisy
 
-`divisy.ru` positions Divisy as an integrator with more than 30 years on the market, focused on integrated solutions for medicine, business, education, science, production, software, and telemedicine/video systems.
+`divisy.ru` позиционирует Divisy как интегратора с более чем 30-летним стажем на
+рынке, работающего над комплексными решениями для медицины, бизнеса,
+образования, науки, производства, программного обеспечения, телемедицины и
+видеосистем.
 
-Potential relevance:
+Чем полезно:
 
-- Telemedicine and internal video conference infrastructure.
-- Integrated medical complexes.
-- AI-in-medicine narrative.
-- Partner credibility for closed contours and communication systems.
+- телемедицина и внутренняя инфраструктура видеоконференций;
+- комплексные медицинские комплексы;
+- сюжет про ИИ в медицине;
+- репутация партнёра по закрытым контурам и системам связи.
 
-## Competitor References
+## Конкурентные референсы
 
 ### Dixion
 
-`dixion.ru` is a strong reference for broad medical equipment catalog, spare parts, categories, warehouse/promotional blocks, and equipment for intensive care and many other directions.
+`dixion.ru` — сильный референс по широкому каталогу медицинского оборудования,
+запчастям, категориям, складским и промо-блокам, оборудованию для интенсивной
+терапии и множеству других направлений.
 
-Useful patterns:
+Полезные приёмы:
 
-- Dense catalog.
-- Category navigation.
-- Commercial calls to action.
-- Spare parts/service positioning.
+- плотный каталог;
+- навигация по категориям;
+- коммерческие призывы к действию;
+- позиционирование по запчастям и сервису.
 
 ### Stormoff
 
-`stormoff.ru` is a strong reference for complex equipment supply, many medical directions, service, metrology, and long-term market trust.
+`stormoff.ru` — сильный референс по комплексным поставкам оборудования, широкому
+списку медицинских направлений, сервису, метрологии и долгому доверию на рынке.
 
-Useful patterns:
+Полезные приёмы:
 
-- "Complex equipment supply" narrative.
-- Industry directions.
-- Service and metrology.
-- Trust proof through years, scope, and partner/manufacturer network.
+- сюжет «комплексная поставка оборудования»;
+- отраслевые направления;
+- сервис и метрология;
+- доказательство доверия через годы работы, охват и сеть партнёров и
+  производителей.
 
 ### Leadcore
 
-`leadcore.ru` is relevant because it is a Russian manufacturer of general hospital-use medical equipment in Yekaterinburg.
+`leadcore.ru` интересен тем, что это российский производитель медицинского
+оборудования общебольничного назначения в Екатеринбурге.
 
-Useful patterns:
+Полезные приёмы:
 
-- Manufacturer positioning.
-- Service request paths.
-- Training/support direction.
-- Local industrial credibility.
+- позиционирование производителя;
+- пути подачи сервисной заявки;
+- направление обучения и поддержки;
+- локальная промышленная репутация.
 
-## Ambiguous Domains From Handwritten Notes
+## Неоднозначные домены из рукописных заметок
 
-Need confirmation:
+Требуют подтверждения:
 
-- `smorf` likely means `stormoff.ru`.
-- `liad` may be `leadcore.ru` or another domain/company.
-- `kor.ru` appears unrelated in search results; it may be shorthand/mishearing for another medical company.
-- `vedal_med.ru` in voice input likely means `vedal-med.ru`; image also shows `vedal-med.ru`.
+- `smorf` — скорее всего `stormoff.ru`;
+- `liad` — возможно `leadcore.ru` или другой домен или компания;
+- `kor.ru` в поиске выглядит несвязанным; вероятно, это сокращение или
+  недослышанное название другой медицинской компании;
+- `vedal_med.ru` в устном вводе, скорее всего, означает `vedal-med.ru`; на фото
+  тоже `vedal-med.ru`.
 
-## Site Lessons To Apply
+## Какие выводы применить к сайту
 
-- VEDAL should not look like only a brochure. It needs a practical product catalog and lead workflow.
-- Trust matters: quality system, production photos, registration status, real contacts, partners, service.
-- B2B medical equipment buyers need documents fast: catalog, certificates, specs, manuals, КП request.
-- SEO should be product/category-based, not only company-based.
-- Internal knowledge search can become a sales advantage if approved technical knowledge is structured and accessible.
+- VEDAL не должен выглядеть как один буклет. Нужен рабочий каталог продукции и
+  рабочий процесс сбора заявок.
+- Доверие важно: система качества, фотографии производства, статус регистрации,
+  настоящие контакты, партнёры, сервис.
+- B2B-покупателю медицинского оборудования документы нужны быстро: каталог,
+  сертификаты, характеристики, руководства, запрос КП.
+- SEO должно строиться вокруг изделий и категорий, а не только вокруг компании.
+- Внутренний поиск по знаниям может стать преимуществом в продажах, если
+  согласованные технические знания структурированы и доступны.

@@ -1,0 +1,10 @@
+node_modules
+.next
+.vercel
+tsconfig.tsbuildinfo
+
+# Локальные настройки разработчика. Адреса API и хранилища контейнер
+# получает из окружения compose, и подсунутый .env.local перекрыл бы их
+# молча — сайт в контейнере ходил бы на localhost машины разработчика.
+.env.local
+.env*.local

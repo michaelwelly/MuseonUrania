@@ -1,20 +1,28 @@
-# Egor Handoff Tasks
+# Задачи Егора и разделение работ
 
-## Purpose
+**Русский** · [English](egor_handoff_tasks.en.md)
 
-This document defines the current handoff for Egor and separates frontend delivery from backend/CMS and AI closed-contour work.
+## Назначение
 
-Egor owns UX/UI and frontend implementation. Mikhail owns backend/CMS, infrastructure, AI architecture, frontend architecture guardrails, and final integration acceptance.
+Документ фиксирует текущую передачу работ Егору и отделяет поставку фронтенда от
+работ по бэкенду, CMS и закрытому AI-контуру.
 
-## Working Agreement
+Егор отвечает за UX/UI и реализацию фронтенда. Михаил отвечает за бэкенд и CMS,
+инфраструктуру, архитектуру ИИ, архитектурные ограничения фронтенда и итоговую
+приёмку интеграции.
 
-- Egor writes the frontend using the approved visual direction and this repository as the source package.
-- Mikhail provides architecture, API contracts, content structure, backend/CMS scope, and integration review.
-- NN approves the structure and business wording from the customer side.
-- Public medical-device claims, prices, certificates, and registration status must not be invented.
-- Missing content is marked as `ожидает уточнения`.
+## Договорённость о работе
 
-## Start Package For Egor
+- Егор пишет фронтенд по утверждённому визуальному направлению, опираясь на этот
+  репозиторий как на исходный пакет.
+- Михаил даёт архитектуру, контракты API, структуру контента, объём работ по
+  бэкенду и CMS и ревью интеграции.
+- НН утверждает структуру и деловые формулировки со стороны заказчика.
+- Публичные заявления о медицинских изделиях, цены, сертификаты и статус
+  регистрации выдумывать нельзя.
+- Недостающий контент помечается как `ожидает уточнения`.
+
+## Стартовый пакет для Егора
 
 - `HANDOFF.md`
 - `docs/frontend/README.md`
@@ -28,187 +36,197 @@ Egor owns UX/UI and frontend implementation. Mikhail owns backend/CMS, infrastru
 - `assets/urania/urania-avatar-middle-v1.png`
 - `assets/urania/urania-web-integration-mockup-v1.png`
 
-## Frontend Tasks For Egor
+## Задачи фронтенда для Егора
 
-### P0: First Screen And Navigation
+### P0. Первый экран и навигация
 
-- Rebuild the title page from the approved PNG visual reference.
-- Keep VEDAL as the primary brand and Smart Solution as a secondary integration layer.
-- Add `Войти` button to the left of the VEDAL logo.
-- Add `Новости` in the header between `Документы` and `Контакты`.
-- Add `Сервис` near `Продукция`.
-- Keep phone and primary contact CTA visible in desktop header.
-- Prepare responsive mobile header.
+- Пересобрать первый экран по утверждённому визуальному референсу PNG.
+- Сохранить VEDAL основным брендом, Smart Solution — вторичным интеграционным слоем.
+- Добавить кнопку `Войти` слева от знака VEDAL.
+- Добавить `Новости` в шапку между `Документы` и `Контакты`.
+- Добавить `Сервис` рядом с `Продукция`.
+- Сохранить телефон и основной призыв к действию видимыми в десктопной шапке.
+- Подготовить адаптивную мобильную шапку.
 
-### P0: Urania Public Assistant UI
+### P0. Интерфейс публичного ассистента Урания
 
-- Use the second/middle Urania avatar variant.
-- Add Urania card on the first screen.
-- Add floating Urania button in the lower-right corner.
-- Public mode label: `AI-поиск по открытым документам`.
-- Quick actions:
+- Использовать второй, средний вариант аватара Урании.
+- Добавить карточку Урании на первый экран.
+- Добавить плавающую кнопку Урании в правом нижнем углу.
+- Подпись публичного режима: `AI-поиск по открытым документам`.
+- Быстрые действия:
   - `Подобрать оборудование`
   - `Найти документ`
   - `Запросить КП`
   - `Сервис и поддержка`
   - `Получить каталог`
-- Public assistant UI must not imply medical diagnosis, treatment recommendations, or clinical decision support.
+- Интерфейс публичного ассистента не должен подразумевать диагностику,
+  рекомендации по лечению или поддержку клинических решений.
 
-### P0: Core Pages
+### P0. Основные страницы
 
-- Home/title page.
-- Product catalog page.
-- Product detail template.
-- Service/warranty page.
-- Documents page.
-- News page with Innoprom release placeholder.
-- Contacts page.
+- Главная.
+- Страница каталога продукции.
+- Шаблон карточки изделия.
+- Страница сервиса и гарантии.
+- Страница документов.
+- Страница новостей с заглушкой под релиз Иннопрома.
+- Страница контактов.
 
-### P1: Forms
+### P1. Формы
 
-- Quote request form.
-- Catalog request form.
-- Service request form.
-- Consultation/contact form.
-- Partnership request form, if approved.
-- Forms must be structured for backend/CRM handoff.
-- Each form must include consent/privacy text before submission.
+- Форма запроса КП.
+- Форма запроса каталога.
+- Форма заявки на сервис.
+- Форма консультации и обратной связи.
+- Форма партнёрского обращения, если будет согласована.
+- Формы должны быть устроены под передачу в бэкенд и CRM.
+- В каждой форме должен быть текст согласия и приватности до отправки.
 
-### P1: Content Structure
+### P1. Структура контента
 
-- Product cards support 10 products.
-- Product data fields use placeholders until NN confirms the catalog.
-- Documents display only public materials.
-- News supports at least one Innoprom press release.
-- Service page includes warranty/service conditions only after customer approval.
+- Карточки поддерживают 10 изделий.
+- Поля данных изделия используют заглушки, пока НН не утвердит каталог.
+- В документах показываются только публичные материалы.
+- Новости поддерживают как минимум один пресс-релиз Иннопрома.
+- Условия гарантии и сервиса появляются на странице сервиса только после
+  утверждения заказчиком.
 
-### P1: SEO And Analytics Readiness
+### P1. Готовность к SEO и аналитике
 
-- Page title, description, h1, canonical, OG fields.
-- Structured URLs for products, documents, news, and service.
-- Frontend event names aligned with `docs/frontend/implementation_checklist.md`.
-- Prepare hooks for Yandex Metrica events.
+- Заголовок страницы, описание, h1, canonical, поля OG.
+- Структурированные адреса для продукции, документов, новостей и сервиса.
+- Имена событий фронтенда согласованы с
+  [чек-листом реализации](../frontend/implementation_checklist.md).
+- Подготовить точки подключения событий Яндекс Метрики.
 
-### Acceptance Criteria For Egor
+### Критерии приёмки для Егора
 
-- Desktop and mobile layouts are stable.
-- Header items do not wrap awkwardly.
-- Urania is visible but does not overpower product/production message.
-- Product/category cards do not shift layout when content is missing.
-- All buttons have clear states.
-- Forms have validation states and success/error states.
-- No fake prices, certificates, clinical claims, or private documents.
+- Десктопная и мобильная раскладки стабильны.
+- Пункты шапки не переносятся некрасиво.
+- Урания заметна, но не перебивает сообщение о продукции и производстве.
+- Карточки изделий и категорий не съезжают, когда часть контента отсутствует.
+- У всех кнопок есть внятные состояния.
+- У форм есть состояния валидации, успеха и ошибки.
+- Нет фальшивых цен, сертификатов, клинических заявлений и закрытых документов.
 
-## Backend / CMS Scope For Mikhail
+## Объём работ по бэкенду и CMS для Михаила
 
-### CMS/Admin
+### CMS и админка
 
-- Admin login and closed-contour access.
-- Manage pages.
-- Manage products.
-- Manage documents.
-- Manage news.
-- Manage SEO metadata.
-- Manage public/private visibility flags.
-- Prepare editor roles and audit trail.
+- Вход администратора и доступ в закрытый контур.
+- Управление страницами.
+- Управление продукцией.
+- Управление документами.
+- Управление новостями.
+- Управление SEO-метаданными.
+- Управление флагами публичной и закрытой видимости.
+- Подготовить роли редакторов и журнал аудита.
 
 ### API
 
-- Swagger/OpenAPI contract.
-- Public API for published site content.
-- Forms API for quote/catalog/service/contact requests.
-- Admin API for CMS operations.
-- Assistant API for Urania public and authenticated modes.
-- Health checks and basic monitoring endpoints.
+- Контракт Swagger/OpenAPI.
+- Публичное API для опубликованного контента сайта.
+- Forms API для заявок на КП, каталог, сервис и обратную связь.
+- Admin API для операций CMS.
+- Assistant API для публичного и авторизованного режимов Урании.
+- Проверки живости и базовые endpoint'ы мониторинга.
 
-### Storage
+### Хранилище
 
-- S3-compatible storage.
-- Public bucket/namespace for images, public documents, catalogs, and press materials.
-- Private bucket/namespace for internal documentation.
-- Metadata in database for document type, access scope, language, product relation, and publication status.
+- S3-совместимое хранилище.
+- Публичный бакет или пространство имён для изображений, публичных документов,
+  каталогов и пресс-материалов.
+- Приватный бакет или пространство имён для внутренней документации.
+- Метаданные в базе: тип документа, область доступа, язык, связь с изделием,
+  статус публикации.
 
-### Auth And Closed Contour
+### Аутентификация и закрытый контур
 
-- Authentication for admin and employee access.
-- Role-based access to internal pages/documents.
-- Public website separated from admin, internal documents, and AI search.
-- Store personal data and business data in Russian Federation infrastructure.
+- Аутентификация для админов и сотрудников.
+- Ролевой доступ к внутренним страницам и документам.
+- Публичный сайт отделён от админки, внутренних документов и AI-поиска.
+- Персональные и деловые данные хранятся в инфраструктуре Российской Федерации.
 
-### CRM Handoff
+### Передача в CRM
 
-- Lead model for quote requests, catalog requests, consultation requests, service requests, and partner requests.
-- Email notification fallback.
-- Export/integration-ready payload for future CRM.
-- UTM/source fields for advertising and analytics.
+- Модель лида для запросов КП, каталога, консультации, сервиса и партнёрства.
+- Резервное уведомление по почте.
+- Готовый к выгрузке и интеграции формат данных под будущую CRM.
+- Поля UTM и источника для рекламы и аналитики.
 
-## AI / Closed-Contour Scope For Mikhail
+## Объём работ по ИИ и закрытому контуру для Михаила
 
-### Public Urania
+### Публичная Урания
 
-- Public Urania answers only from approved public pages and public documents.
-- It can navigate products, documents, service, and commercial next steps.
-- It routes requests to forms or human specialists when confidence is low.
-- It must provide source links where possible.
+- Публичная Урания отвечает только по согласованным публичным страницам и
+  документам.
+- Она умеет вести по продукции, документам, сервису и коммерческим шагам.
+- При низкой уверенности направляет обращение в форму или к живому специалисту.
+- Даёт ссылки на источники там, где это возможно.
 
-### Authenticated Urania
+### Авторизованная Урания
 
-- After login, Urania can search internal documents and databases.
-- Answers are filtered by user role and document permissions.
-- Internal answers must not leak into public mode.
-- All internal AI interactions should be auditable.
+- После входа Урания может искать по внутренним документам и базам.
+- Ответы фильтруются по роли пользователя и правам на документы.
+- Внутренние ответы не должны просачиваться в публичный режим.
+- Все внутренние обращения к ИИ должны быть пригодны для аудита.
 
-### Document Processing
+### Обработка документов
 
-- Classify documents as `public`, `internal`, `confidential`, `service`, `production`, or `R&D`.
-- Extract text from documents.
-- Split into chunks with metadata.
-- Create embeddings.
-- Store/search via PostgreSQL + pgvector or equivalent approved stack.
-- Preserve links to source documents and versions.
+- Классифицировать документы как `public`, `internal`, `confidential`, `service`,
+  `production` или `R&D`.
+- Извлекать текст из документов.
+- Нарезать на чанки с метаданными.
+- Строить эмбеддинги.
+- Хранить и искать через PostgreSQL + pgvector или другой согласованный стек.
+- Сохранять ссылки на исходные документы и версии.
 
-### Hard Safety Rules
+### Жёсткие правила безопасности
 
-- No diagnosis.
-- No treatment recommendations.
-- No invented prices.
-- No invented certificates or registration status.
-- No invented delivery dates or availability.
-- No public use of private/internal documents.
-- No answers from unapproved R&D or confidential production materials.
+- Никаких диагнозов.
+- Никаких рекомендаций по лечению.
+- Никаких выдуманных цен.
+- Никаких выдуманных сертификатов и статусов регистрации.
+- Никаких выдуманных сроков поставки и наличия.
+- Никакого публичного использования закрытых и внутренних документов.
+- Никаких ответов из несогласованных R&D-материалов и конфиденциальных
+  производственных материалов.
 
-## Backlog Split
+## Разделение бэклога
 
 ### MVP
 
-- Public site redesign.
-- Header/navigation updates.
-- Product catalog structure.
-- Public documents/news/service pages.
-- Urania public UI shell.
-- Forms and CRM handoff structure.
-- CMS/admin minimal viable scope.
-- Yandex Metrica and consent banner.
+- Редизайн публичного сайта.
+- Обновление шапки и навигации.
+- Структура каталога продукции.
+- Страницы публичных документов, новостей и сервиса.
+- Оболочка публичного интерфейса Урании.
+- Формы и структура передачи в CRM.
+- Минимально достаточный объём CMS и админки.
+- Яндекс Метрика и баннер согласия.
 
-### Phase 2
+### Фаза 2
 
-- Full CRM integration.
-- Full S3 document lifecycle.
-- Authenticated internal document search.
-- RAG quality evaluation.
-- Employee access matrix.
-- Multilingual RU/EN/ZH content.
+- Полная интеграция с CRM.
+- Полный жизненный цикл документов в S3.
+- Авторизованный поиск по внутренним документам.
+- Оценка качества RAG.
+- Матрица доступа сотрудников.
+- Мультиязычный контент на русском, английском и китайском.
 
-### Phase 3
+### Фаза 3
 
-- Local/private LLM deployment.
-- VLM pilot for service and production.
-- Advanced internal analytics.
-- Full corporate IT contour for 60 employees.
+- Локальное или приватное развёртывание LLM.
+- Пилот VLM для сервиса и производства.
+- Расширенная внутренняя аналитика.
+- Полный корпоративный ИТ-контур на 60 сотрудников.
 
-## Immediate Next Steps
+## Ближайшие шаги
 
-1. Egor starts frontend from the approved first-screen visual and checklist.
-2. Mikhail prepares API contracts and CMS data model.
-3. NN confirms product list, documents, service conditions, and public wording.
-4. Team reviews the first deployed stand before moving deeper into backend integration.
+1. Егор начинает фронтенд с утверждённого первого экрана и чек-листа.
+2. Михаил готовит контракты API и модель данных CMS.
+3. НН подтверждает список продукции, документы, условия сервиса и публичные
+   формулировки.
+4. Команда смотрит первый развёрнутый стенд до того, как уходить глубже в
+   интеграцию с бэкендом.

@@ -11,17 +11,119 @@
 	<groupId>ru.vedal</groupId>
 	<artifactId>portal</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
+	<packaging>pom</packaging>
 	<name>portal</name>
 	<description>VEDAL Portal backend</description>
+
+	<!-- Один деплой, но границы модулей проверяет сборка, а не дисциплина.
+	     Раньше все одиннадцать модулей лежали в одной куче исходников, папки
+	     backend/crm/ и остальные содержали по README, а импортировать чужие
+	     внутренности не мешало ничто. Теперь у каждого свой pom, и `crm`,
+	     потянувшийся в потроха `catalog`, роняет сборку.
+
+	     Порядок здесь не важен — Maven строит модули по графу зависимостей,
+	     а не по этому списку. Он записан слоями просто чтобы читался. -->
+	<modules>
+		<!-- Фундамент: не зависят ни от кого. -->
+		<module>common</module>
+		<module>iam</module>
+		<!-- Журнал: нужен всем доменам. -->
+		<module>audit</module>
+		<!-- Домены. -->
+		<module>catalog</module>
+		<module>content</module>
+		<module>documents</module>
+		<module>crm</module>
+		<!-- Двери и потребители. -->
+		<module>gateway</module>
+		<module>notifications</module>
+		<module>assistant</module>
+		<module>chat</module>
+		<module>admin</module>
+		<!-- Сборка: единственный модуль, который превращается в приложение. -->
+		<module>app</module>
+	</modules>
 
 	<properties>
 		<java.version>25</java.version>
 		<!-- Spring Boot 4.1 не тянет testcontainers-bom, версию держим сами. -->
 		<testcontainers.version>1.21.4</testcontainers.version>
+		<!-- Ветка 3.x springdoc собрана под Spring Boot 4; 2.x — под Boot 3
+		     и в этом проекте не поднимется. Версию держим сами: в BOM
+		     Spring Boot springdoc не входит. -->
+		<springdoc.version>3.1.0</springdoc.version>
+		<!-- Клиент объектного хранилища. В BOM Spring Boot не входит. -->
+		<awssdk.version>2.52.1</awssdk.version>
+		<jacoco.version>0.8.13</jacoco.version>
 	</properties>
 
 	<dependencyManagement>
 		<dependencies>
+			<!-- Свои модули: версия задаётся один раз здесь, в зависимостях
+			     модулей её нет. Иначе при следующем поднятии версии половина
+			     poms остаётся со старой, и это обнаруживается сборкой,
+			     собравшей два разных crm. -->
+			<dependency>
+				<groupId>ru.vedal</groupId>
+				<artifactId>portal-common</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>ru.vedal</groupId>
+				<artifactId>portal-iam</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>ru.vedal</groupId>
+				<artifactId>portal-audit</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>ru.vedal</groupId>
+				<artifactId>portal-catalog</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>ru.vedal</groupId>
+				<artifactId>portal-content</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>ru.vedal</groupId>
+				<artifactId>portal-documents</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>ru.vedal</groupId>
+				<artifactId>portal-crm</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>ru.vedal</groupId>
+				<artifactId>portal-gateway</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>ru.vedal</groupId>
+				<artifactId>portal-notifications</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>ru.vedal</groupId>
+				<artifactId>portal-assistant</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>ru.vedal</groupId>
+				<artifactId>portal-chat</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>ru.vedal</groupId>
+				<artifactId>portal-admin</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 			<dependency>
 				<groupId>org.testcontainers</groupId>
 				<artifactId>testcontainers-bom</artifactId>
@@ -29,17 +131,37 @@
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
+			<dependency>
+				<groupId>software.amazon.awssdk</groupId>
+				<artifactId>bom</artifactId>
+				<version>${awssdk.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.springdoc</groupId>
+				<artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
+				<version>${springdoc.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springdoc</groupId>
+				<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+				<version>${springdoc.version}</version>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 
+	<!-- Общее для всех модулей, и только оно.
+	     Здесь лежит то, без чего не обходится ни один: контекст Spring,
+	     доступ к базе, веб-слой, проверки полей и аннотации спецификации.
+	     Всё остальное — Kafka, объектное хранилище, безопасность, Flyway —
+	     объявляет тот модуль, которому оно нужно. Иначе `notifications`
+	     компилируется против S3, а `catalog` против Kafka, и вопрос
+	     «кто чем пользуется» снова решается чтением импортов. -->
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-actuator</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-validation</artifactId>
+			<artifactId>spring-boot-starter</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -47,41 +169,18 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
-		<!-- Именно starter, а не flyway-core: в Boot 4 автоконфигурации разнесены
-		     по модулям, и с одним flyway-core миграции молча не применяются. -->
+		<!-- Аннотации контракта живут рядом с DTO, поэтому нужны каждому
+		     модулю с дверью. Здесь вариант без Swagger UI: сам интерфейс
+		     подключает только app, он его и отдаёт. -->
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-flyway</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.flywaydb</groupId>
-			<artifactId>flyway-database-postgresql</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-security</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-thymeleaf</artifactId>
-		</dependency>
-		<!-- Публикация событий из outbox. Включается свойством
-		     vedal.events.publisher=kafka; по умолчанию события уходят в лог,
-		     и брокер не нужен для работы приложения.
-
-		     Именно стартер Boot, а не голый spring-kafka: автоконфигурации
-		     в Boot 4 разнесены по модулям, и без стартера нет ни KafkaTemplate,
-		     ни создания топиков — ровно как с flyway-core. -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-kafka</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.postgresql</groupId>
-			<artifactId>postgresql</artifactId>
-			<scope>runtime</scope>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
 		</dependency>
 
 		<dependency>
@@ -89,48 +188,43 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-		<!-- Именно стартер Boot, а не голый spring-security-test: в Boot 4
-		     тестовые автоконфигурации разнесены по модулям, и без него
-		     springSecurity() к MockMvc не применяется — @WithMockUser молча
-		     не аутентифицирует запрос, а тест с andExpect(is3xxRedirection())
-		     проходит на редиректе к форме входа, ничего не проверив. -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-security-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-testcontainers</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.testcontainers</groupId>
-			<artifactId>postgresql</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-actuator-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-validation-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-webmvc-test</artifactId>
-			<scope>test</scope>
-		</dependency>
 	</dependencies>
 
 	<build>
+		<pluginManagement>
+			<plugins>
+				<!-- Покрытие тестами. Планка стоит чуть ниже достигнутого
+				     и работает как храповик: она ловит модуль, приехавший
+				     вообще без тестов, и не даёт покрытию сползать.
+
+				     Агент собирает данные в каждом модуле, а сводятся они
+				     в app: тесты, поднимающие приложение, живут там, а классы
+				     — по всем модулям, и мерять их по отдельности значит
+				     получить одиннадцать нулей и одну сотню.
+
+				     Выкручивать планку в потолок незачем. Требование «80%
+				     веток» на этом коде выполняется написанием тестов
+				     на геттеры — они ничего не проверяют и создают видимость
+				     надёжности. -->
+				<plugin>
+					<groupId>org.jacoco</groupId>
+					<artifactId>jacoco-maven-plugin</artifactId>
+					<version>${jacoco.version}</version>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 		<plugins>
 			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>подготовить-агент</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

@@ -1,98 +1,101 @@
-# Content And SEO Plan
+# План по контенту и SEO
 
-## Site Structure
+**Русский** · [English](content_and_seo_plan.en.md)
 
-Recommended public structure:
+## Структура сайта
 
-- `/`: value proposition, product categories, production, certificates, partners, news, CTA.
-- `/products/`: catalog overview.
-- `/products/<slug>/`: individual product pages.
-- `/production/`: factory, quality system, process, photos.
-- `/technology/`: R&D, engineering, registration/testing status.
-- `/documents/`: approved public certificates, catalog, brochures, manuals.
-- `/press/`: press releases, Innoprom, exhibitions, media kit.
-- `/partners/`: Divisy, Morus MS, dealers/integrators.
-- `/service/`: service support and request form.
-- `/contacts/`: contacts and forms.
+Рекомендованная публичная структура:
 
-## Multilingual Plan
+- `/` — ценностное предложение, категории продукции, производство, сертификаты, партнёры, новости, призыв к действию;
+- `/products/` — обзор каталога;
+- `/products/<slug>/` — отдельные страницы изделий;
+- `/production/` — производство, система качества, процесс, фотографии;
+- `/technology/` — разработки, инженерия, статус регистрации и испытаний;
+- `/documents/` — согласованные публичные сертификаты, каталог, буклеты, руководства;
+- `/press/` — пресс-релизы, Иннопром, выставки, медиакит;
+- `/partners/` — Divisy, Morus MS, дилеры и интеграторы;
+- `/service/` — сервисная поддержка и форма заявки;
+- `/contacts/` — контакты и формы.
 
-Languages:
+## План по языкам
 
-- Russian: primary.
-- English: international B2B and partners.
-- Chinese: manufacturing/partner/international market fit.
-- Hindi: later stage for India market entry.
+Языки:
 
-Implementation:
+- русский — основной;
+- английский — международный B2B и партнёры;
+- китайский — производственный и партнёрский контур, международный рынок;
+- хинди — более поздний этап, выход на рынок Индии.
 
-- Use stable language routes: `/ru/`, `/en/`, `/zh/`, `/hi/`.
-- Translate only approved public facts.
-- Keep regulatory claims conservative and jurisdiction-specific.
-- Store source language and approval state in content metadata.
+Реализация:
 
-## SEO Priorities
+- использовать устойчивые языковые маршруты: `/ru/`, `/en/`, `/zh/`, `/hi/`;
+- переводить только согласованные публичные факты;
+- заявления, связанные с регулированием, держать консервативными и привязанными
+  к конкретной юрисдикции;
+- хранить исходный язык и статус согласования в метаданных контента.
 
-Primary topic clusters:
+## Приоритеты SEO
 
-- Производство медицинского оборудования.
-- Медицинское оборудование для неонатологии.
-- Реанимационные системы для новорожденных.
-- Инкубаторы для новорожденных.
-- Аппараты ИВЛ для интенсивной терапии.
-- Медицинские изделия российского производства.
-- Оснащение перинатальных центров.
-- Анестезиология и реанимация оборудование.
+Основные тематические кластеры:
 
-Technical SEO:
+- производство медицинского оборудования;
+- медицинское оборудование для неонатологии;
+- реанимационные системы для новорождённых;
+- инкубаторы для новорождённых;
+- аппараты ИВЛ для интенсивной терапии;
+- медицинские изделия российского производства;
+- оснащение перинатальных центров;
+- оборудование для анестезиологии и реанимации.
 
-- Sitemap and robots.txt.
-- Product schema.org markup where appropriate.
-- Organization schema.
-- Breadcrumbs.
-- Clean title/description per product.
-- Optimized images with descriptive alt text.
-- Fast image delivery via CDN/S3.
-- Consent-aware analytics.
+Техническое SEO:
 
-## Content Inventory To Request
+- карта сайта и `robots.txt`;
+- разметка schema.org для изделий там, где уместно;
+- разметка Organization;
+- хлебные крошки;
+- чистые заголовок и описание для каждого изделия;
+- оптимизированные изображения с осмысленным alt;
+- быстрая доставка изображений через CDN и S3;
+- аналитика, учитывающая согласие пользователя.
 
-- Product catalog from Innoprom.
-- Product photos, renders, and videos.
-- Production/factory photos.
-- Certificates, registration status, ISO 13485 proof.
-- Product specifications.
-- Manuals and service documents.
-- Press releases and exhibition materials.
-- Brand assets: logo, colors, typography, product naming rules.
-- Approved legal entity data.
+## Какой контент запросить
 
-## Sensitive Data Split
+- каталог продукции с Иннопрома;
+- фотографии изделий, рендеры и видео;
+- фотографии производства;
+- сертификаты, статус регистрации, подтверждение ISO 13485;
+- характеристики изделий;
+- руководства и сервисные документы;
+- пресс-релизы и выставочные материалы;
+- бренд-материалы: знак, цвета, шрифты, правила написания названий изделий;
+- согласованные данные юридического лица.
 
-Public candidates:
+## Разделение по чувствительности
 
-- Product overview.
-- Approved specifications.
-- Certificates/registration information.
-- Production story and non-sensitive photos.
-- Press releases.
-- Partner descriptions.
+Кандидаты в публичное:
 
-Internal-only candidates:
+- обзор изделия;
+- согласованные характеристики;
+- сведения о сертификатах и регистрации;
+- рассказ о производстве и нечувствительные фотографии;
+- пресс-релизы;
+- описания партнёров.
 
-- Service manuals.
-- Detailed engineering documentation.
-- Firmware/software details.
-- Supplier lists.
-- Costing and pricing logic.
-- R&D notes.
-- Manufacturing process details.
-- Unreleased product roadmap.
+Кандидаты только во внутренний контур:
 
-Requires legal/management decision:
+- сервисные руководства;
+- подробная инженерная документация;
+- детали прошивок и программного обеспечения;
+- списки поставщиков;
+- себестоимость и логика ценообразования;
+- заметки R&D;
+- детали производственных процессов;
+- невыпущенный продуктовый роадмап.
 
-- Clinical claims.
-- Test protocols and results.
-- Detailed regulatory correspondence.
-- Customer/project references.
-- Any patient/clinic data.
+Требуют решения юристов и руководства:
+
+- клинические заявления;
+- протоколы и результаты испытаний;
+- подробная переписка с регуляторами;
+- референсы заказчиков и проектов;
+- любые данные пациентов и клиник.

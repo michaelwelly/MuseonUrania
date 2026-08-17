@@ -35,3 +35,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Отчёт покрытия JaCoCo
+target/site/
+
+# Настройки локального стека с паролями. Образец — backend/.env.example.
+.env

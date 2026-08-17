@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import AnimatedLogo from "./AnimatedLogo";
 import styles from "./LogoPreloader.module.css";
 
@@ -11,33 +11,65 @@ const HOLD_MS = 3400;
 const MAX_MS = 3600;
 const KEY = "vedal:preloader-shown";
 
+// Показывать ли оверлей, решает sessionStorage, которого при серверном рендере
+// нет. Держим ответ во внешнем хранилище и читаем его через
+// useSyncExternalStore: серверу отдаётся «не показывать», клиент переспрашивает
+// сам после гидратации. Так разметка сервера и первый рендер клиента совпадают,
+// а состояние меняется из колбэков таймеров, а не синхронно внутри эффекта.
+let visible = false;
+let started = false;
+const listeners = new Set<() => void>();
+
+function setVisible(next: boolean) {
+  if (visible === next) return;
+  visible = next;
+  for (const listener of listeners) listener();
+}
+
+function getSnapshot() {
+  return visible;
+}
+
+function getServerSnapshot() {
+  return false;
+}
+
+// Запускается один раз за загрузку страницы, из subscribe — то есть уже на
+// клиенте и после гидратации. Повторный вызов (StrictMode монтирует дважды)
+// гасится флагом started, иначе второй проход увидел бы выставленный ключ
+// сессии и прелоадер не показался бы ни разу.
+function ensureStarted() {
+  if (started) return;
+  started = true;
+
+  if (sessionStorage.getItem(KEY)) return;
+  sessionStorage.setItem(KEY, "1");
+  setVisible(true);
+
+  const startedAt = performance.now();
+
+  const finish = () => {
+    const left = Math.max(0, HOLD_MS - (performance.now() - startedAt));
+    window.setTimeout(() => setVisible(false), left);
+  };
+
+  if (document.readyState === "complete") finish();
+  else window.addEventListener("load", finish, { once: true });
+
+  // Страховка: скрываем, даже если load так и не наступил.
+  window.setTimeout(() => setVisible(false), MAX_MS);
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  ensureStarted();
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
 export default function LogoPreloader() {
-  const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    if (sessionStorage.getItem(KEY)) return;
-    sessionStorage.setItem(KEY, "1");
-    setShow(true);
-
-    const start = performance.now();
-    let timer: number;
-
-    const finish = () => {
-      const left = Math.max(0, HOLD_MS - (performance.now() - start));
-      timer = window.setTimeout(() => setShow(false), left);
-    };
-
-    if (document.readyState === "complete") finish();
-    else window.addEventListener("load", finish, { once: true });
-
-    const hardStop = window.setTimeout(() => setShow(false), MAX_MS);
-
-    return () => {
-      window.clearTimeout(timer);
-      window.clearTimeout(hardStop);
-      window.removeEventListener("load", finish);
-    };
-  }, []);
+  const show = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   if (!show) return null;
 

@@ -1,0 +1,150 @@
+# Обратный прокси развёрнутой среды. Единственный контейнер с портами наружу.
+#
+# Caddy получает и продлевает сертификаты Let's Encrypt сам — ради этого он
+# здесь и стоит. У nginx та же работа делается сертботом и таймером, то есть
+# двумя лишними местами, где всё ломается молча и обнаруживается через
+# девяносто дней.
+
+{
+	# Адрес для писем Let's Encrypt: туда придёт предупреждение, если
+	# продление перестанет работать.
+	email {$VEDAL_ACME_EMAIL:admin@localhost}
+}
+
+# ————— сайт, API и админка —————
+
+{$VEDAL_DOMAIN} {
+	encode zstd gzip
+
+	# Лимит тела. Согласован с vedal.storage.max-file-size портала (20 МБ
+	# на файл) и с фильтром RequestSize на шлюзе (21 МБ). Меньшее значение
+	# здесь уронит загрузку документа раньше приложения, и редактор увидит
+	# страницу прокси вместо разбора причины.
+	request_body {
+		max_size 21MB
+	}
+
+	header {
+		# Год HSTS с поддоменами. Включать только когда TLS работает
+		# на всех поддоменах: откатить это нельзя — браузер запомнил.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+
+		# Содержимое сайта своё, картинки из хранилища, вход в Keycloak.
+		# unsafe-inline для стилей — цена CSS-модулей Next; для скриптов
+		# его нет, и это главное.
+		Content-Security-Policy "default-src 'self'; img-src 'self' data: https://{$VEDAL_MEDIA_DOMAIN}; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' https://{$VEDAL_KEYCLOAK_DOMAIN}; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://{$VEDAL_KEYCLOAK_DOMAIN}"
+
+		# Заголовок сервера ничего не защищает, но и сообщать версию незачем.
+		-Server
+	}
+
+	# ————— дверь правки —————
+	#
+	# Админка и её API — единственная дверь, через которую содержимое меняется,
+	# и до этого правила она держалась только на токене. Токен — хорошая защита,
+	# но одна: утёкший пароль редактора без второго фактора открывает клиентскую
+	# базу целиком, и до появления MFA в realm'е между интернетом и правкой
+	# не стоит ничего.
+	#
+	# Дверь одна — поэтому и правило одно. В этом весь выигрыш от «трёх дверей»:
+	# ограничение пишется здесь, а не в девятнадцати контроллерах.
+	#
+	# По умолчанию дверь доступна только из частных сетей, то есть через VPN
+	# или бастион. Это ответ «закрываем по сети» из открытого вопроса 12.3,
+	# и он выбран значением по умолчанию не потому, что решён, а потому что
+	# из двух вариантов он безопаснее: неверно закрытая дверь ломает работу
+	# редактора и это видно за минуту, неверно открытая не ломает ничего
+	# и не видна никогда.
+	#
+	# Второй вариант того же вопроса — «оставить за паролем и MFA» — это одна
+	# строка в окружении:
+	#
+	#   VEDAL_ADMIN_ALLOW="0.0.0.0/0 ::/0"
+	#
+	# Включать её осмысленно только после того, как MFA в realm'е включён:
+	# до этого она означает пароль редактора против интернета.
+	@admin path /admin /admin/* /api/admin/*
+	handle @admin {
+		@allowed remote_ip {$VEDAL_ADMIN_ALLOW:private_ranges}
+		handle @allowed {
+			reverse_proxy api-gateway:8080 {
+				header_up X-Forwarded-For {remote_host}
+				header_up X-Forwarded-Proto {scheme}
+				header_up X-Forwarded-Host {host}
+			}
+		}
+		# 403, а не 404: скрывать наличие админки незачем — её адрес стоит
+		# в открытом коде сайта, — а оператору, разбирающему жалобу редактора
+		# «не пускает», важно отличить запрет от опечатки в адресе.
+		respond "Дверь правки доступна только из доверенной сети." 403
+	}
+
+	# ————— всё остальное —————
+
+	reverse_proxy api-gateway:8080 {
+		# Настоящий адрес клиента доезжает до портала: без него лимит частоты
+		# считает всех посетителей одним, а аудит пишет адрес прокси.
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Forwarded-Host {host}
+	}
+}
+
+# ————— Keycloak —————
+#
+# Отдельным именем, а не путём на основном домене: так у него своя cookie
+# и свой источник, и сессия провайдера идентичности не смешивается
+# с сессией сайта.
+
+{$VEDAL_KEYCLOAK_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	reverse_proxy keycloak:8080 {
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Forwarded-Host {host}
+	}
+}
+
+# ————— медиа —————
+#
+# Снимки изделий и иллюстрации новостей. Отдаются мимо приложения: гонять
+# картинки через портал значит класть на него трафик, который должен идти
+# в CDN.
+#
+# Домен отдельный и это существенно: содержимое сюда кладут редакторы,
+# и держать его на домене сайта значит делить с ним источник и куки.
+
+{$VEDAL_MEDIA_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		# Здесь лежат только файлы. Загруженное содержимое не должно
+		# выполняться как страница ни при каких обстоятельствах.
+		Content-Security-Policy "default-src 'none'; img-src 'self'; sandbox"
+		Cache-Control "public, max-age=604800"
+		-Server
+	}
+
+	# Только чтение и только каталог снимков: бакет закрытых документов
+	# сюда не выставляется никогда — файл оттуда отдаёт портал, проверив
+	# публикацию и записав обращение в журнал.
+	@onlyReads method GET HEAD OPTIONS
+	handle @onlyReads {
+		reverse_proxy minio:9000
+	}
+	respond 405
+}

@@ -1,0 +1,1649 @@
+/* Оформление админки.
+ *
+ * Не CSS Module, а обычный файл: это глобальные правила рабочего интерфейса,
+ * и разносить их по модулям пришлось бы копированием одних и тех же таблиц
+ * и кнопок в каждую страницу.
+ *
+ * Замысел. Админка — не второй продукт, а закрытая часть того же. Раньше это
+ * было не так: сайт встречал белой липкой шапкой, админка — тёмной колонкой
+ * на 232 пикселя слева, и один и тот же человек перестраивался на каждом
+ * переходе. Теперь оболочка повторяет шапку сайта до размеров — полоса 78,
+ * поля 48, знак слева, разделы 15 пикселей с зелёной чертой под текущим,
+ * справа две строки на месте телефона и зелёная кнопка на месте «Связаться»,
+ * — а рабочая поверхность остаётся плотной, как хорошо набранный бланк:
+ * менеджер смотрит в список сделок весь день, и каждый лишний отступ — это
+ * строка, которая не поместилась на экран.
+ *
+ * Отсюда же радиусы и линии: 3 пикселя у карточек, 2 у кнопок и полей,
+ * граница `--line` — ровно те значения, которыми набран сайт. Свои скругления
+ * в 8–12 пикселей админка потеряла: они и были главным, что выдавало в ней
+ * чужой интерфейс.
+ *
+ * Три правила, из которых следует остальное.
+ *
+ * 1. Данные набираются моноширинным. Суммы, даты, идентификаторы, счётчики
+ *    выравниваются по разрядам — «2 650 000» и «265 000» должны отличаться
+ *    длиной, а не вниманием читающего.
+ *
+ * 2. Смысловые цвета отделены от фирменного. Зелёный VEDAL означает
+ *    «фирменный», а не «всё хорошо»: опубликовано, ждёт и отказано красятся
+ *    своими цветами, иначе бренд начинает означать статус.
+ *
+ * 3. Состояние читается без цвета. У бейджей разная форма заливки и рамки,
+ *    у строк таблицы — полоска слева. Восемь процентов мужчин не различают
+ *    красный и зелёный, и «красная строка = проблема» для них не работает.
+ *
+ * Токены сайта (globals.css) остаются в силе — админка часть того же
+ * продукта. Здесь добавлены только те, которых на сайте нет.
+ */
+
+.admin-body {
+  /* Рабочая поверхность — тот же приглушённый тон, которым на сайте залиты
+     секции между белыми: страница целиком из #fff под лампой дневного света
+     звенит, а таблицы на ней теряют края. */
+  --surface: #ffffff;
+  --paper: #f7faf8; /* подсветка строки под курсором */
+  --rule: var(--line);
+  --rule-soft: var(--line-2);
+
+  /* Смысловые цвета: опубликовано, ждёт действия, отказано. */
+  --state-ok: #0f7c30;
+  --state-ok-bg: #eaf6ee;
+  --state-ok-line: #c3e3ce;
+
+  --state-wait: #8a5310;
+  --state-wait-bg: #fdf4e8;
+  --state-wait-line: #f0dcc0;
+
+  --state-stop: #9c2718;
+  --state-stop-bg: #fdf1ef;
+  --state-stop-line: #e8c8c2;
+
+  /* Тёмный фон остался только на экране до входа: там перепад с тёмного
+     на светлое означает дверь в закрытый контур. */
+  --nav: #08211d;
+  --nav-2: #0d3229;
+
+  background: var(--soft);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+/* ═══════════ ОБОЛОЧКА: та же шапка, что на сайте ═══════════
+ *
+ * Прокручивается документ, а не область внутри него, — как на сайте. Шапка
+ * при этом липкая, поэтому исходное требование выполнено прежним способом:
+ * навигация остаётся на месте на любом списке сделок. Внутренняя прокрутка
+ * ради этого больше не нужна, а вместе с ней ушли её издержки — двойные
+ * полосы прокрутки, потерянный «Home» и печать, обрезанная первым экраном.
+ */
+
+.admin-shell {
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Обе полосы навигации в одной липкой обёртке, а не по отдельности: высота
+   шапки меняется на трёх брейкпоинтах, и «top: 78px» у вкладок разъехался бы
+   ровно там, где полоса переносится на две строки.
+ *
+ * z-index ниже 60: сверху на сайте лежит индикатор прокрутки из motion.css.
+ * В админке его нет, но общий порядок слоёв держим один. */
+.admin-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--page);
+}
+
+/* ————— верхняя полоса ————— */
+
+/* Размеры из Header.module.css: 78 пикселей высоты, поля по 48, зазор 36. */
+.admin-bar {
+  display: flex;
+  align-items: center;
+  gap: 36px;
+  height: 78px;
+  padding: 0 48px;
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-brand {
+  flex: none;
+  display: flex;
+  align-items: center;
+}
+
+/* Метка контура рядом со знаком. Не украшение: человек должен видеть, что он
+   внутри закрытого контура, где на экране бывают персональные данные. */
+.admin-circuit {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.admin-circuit::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+/* На тёмной половине экрана входа та же метка светится зелёным на тёмном. */
+.login__about .admin-circuit {
+  color: var(--green-on-dark);
+}
+
+.login__about .admin-circuit::before {
+  background: currentColor;
+}
+
+/* ————— разделы ————— */
+
+.admin-sections {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  font-size: 15px;
+}
+
+.admin-section {
+  position: relative;
+  padding: 28px 0;
+  white-space: nowrap;
+  color: var(--text-2);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.admin-section:hover {
+  color: var(--green);
+}
+
+/* Текущий раздел: цвет, вес и полоса, прижатая к низу полосы, — как в шапке
+   сайта. Заливка осталась в прошлой, колоночной раскладке: в строке она
+   читалась бы как нажатая кнопка. */
+.admin-section--on {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.admin-section--on::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--green);
+}
+
+/* ————— правый край: кто вошёл, выход, сайт ————— */
+
+.admin-tools {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+/* Две строки с выключкой вправо — ровно там же и в том же виде, что телефон
+   с часами работы в шапке сайта. */
+.admin-who {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  text-align: right;
+  min-width: 0;
+}
+
+.admin-who__name {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+/* Моноширинный вместо обычного: `portal-admin` — идентификатор, а не слово. */
+.admin-who__meta {
+  font-family: var(--font-mono), monospace;
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* Выход — обведённая кнопка на месте кнопки-телефона: те же 44 пикселя,
+   та же рамка, тот же зелёный знак. */
+.admin-exit {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--page);
+  color: var(--green);
+  cursor: pointer;
+}
+
+.admin-exit:hover {
+  border-color: var(--green);
+  background: var(--soft);
+}
+
+/* Зелёная кнопка на месте «Связаться»: те же 48 пикселей высоты и радиус 2. */
+.admin-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 22px;
+  border-radius: 2px;
+  background: var(--green);
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.admin-cta:hover {
+  background: var(--green-dark);
+  color: #fff;
+}
+
+/* ————— вкладки раздела ————— */
+
+/* Та же полоса, что на карточке изделия: зазор 34, поля 48, черта под
+   текущей. Отдельного элемента для админки не заводим — у одного продукта
+   один способ показывать вкладки. */
+.admin-tabs {
+  display: flex;
+  gap: 34px;
+  padding: 0 48px;
+  background: var(--page);
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.admin-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.admin-tab {
+  padding: 16px 0;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.admin-tab:hover {
+  color: var(--green);
+}
+
+.admin-tab--on {
+  border-bottom-color: var(--green);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* ————— бургер и мобильное меню ————— */
+
+.admin-burger {
+  display: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 2px;
+  background: var(--green);
+  cursor: pointer;
+}
+
+.admin-burger__lines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-burger__lines span {
+  height: 2px;
+  background: #fff;
+}
+
+.admin-burger__lines span:nth-child(1),
+.admin-burger__lines span:nth-child(2) {
+  width: 18px;
+}
+
+.admin-burger__lines span:nth-child(3) {
+  width: 12px;
+}
+
+/* Меню рисуется только при открытии, но правило видимости всё равно нужно:
+   окно можно расширить с открытым меню, и на широком экране оно оказалось бы
+   поверх обеих полос, которые и так всё показывают. */
+.admin-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 12px 18px 20px;
+  border-bottom: 1px solid var(--line);
+  background: var(--page);
+}
+
+@media (min-width: 641px) {
+  .admin-menu {
+    display: none;
+  }
+}
+
+.admin-menu__group {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-menu__title {
+  padding-bottom: 6px;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.admin-menu a {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line-2);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-2);
+  text-decoration: none;
+}
+
+.admin-menu__group a:last-child {
+  border-bottom: 0;
+}
+
+.admin-menu__on {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* ————— нижняя полоса ————— */
+
+/* Тонкая строка вместо футера сайта: ссылки сайта здесь не нужны,
+   а напоминание про периметр — нужно, и оно должно быть и внизу длинного
+   списка, а не только в шапке. */
+.admin-foot {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  padding: 18px 48px;
+  border-top: 1px solid var(--line);
+  background: var(--page);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.admin-foot__circuit {
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.admin-foot__link {
+  margin-left: auto;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.admin-foot__link:hover {
+  color: var(--green-dark);
+}
+
+/* ————— оболочка на узких экранах ————— */
+
+/* Пороги те же, что у шапки сайта, и по той же причине: ниже 1320 разделы
+   не помещаются в одну строку с телефоном и кнопкой. */
+@media (max-width: 1320px) {
+  .admin-bar {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 12px 24px 0;
+    gap: 16px 24px;
+  }
+
+  .admin-sections {
+    order: 3;
+    flex-basis: 100%;
+    gap: 20px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .admin-sections::-webkit-scrollbar {
+    display: none;
+  }
+
+  .admin-section {
+    padding: 14px 0;
+  }
+
+  .admin-tabs,
+  .admin-foot {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+@media (max-width: 820px) {
+  /* Роли уходят первыми: имя отвечает на вопрос «под кем я работаю»,
+     роли — на вопрос настройщика. */
+  .admin-who__meta {
+    display: none;
+  }
+}
+
+/* Телефон: знак, выход, бургер. Разделы уезжают в меню целиком — вместе
+   со вкладками, потому что двухуровневый поиск на маленьком экране дороже,
+   чем один список из двенадцати строк. */
+@media (max-width: 640px) {
+  .admin-bar {
+    flex-wrap: nowrap;
+    gap: 12px;
+    height: 62px;
+    padding: 0 18px;
+  }
+
+  /* Прежние 34px от 42px: знак масштабируется целиком, чтобы слои
+     анимации не разъезжались между собой. */
+  .admin-brand > span {
+    transform: scale(0.81);
+    transform-origin: left center;
+  }
+
+  .admin-circuit,
+  .admin-sections,
+  .admin-tabs,
+  .admin-who,
+  .admin-cta {
+    display: none;
+  }
+
+  .admin-tools {
+    margin-left: auto;
+    gap: 10px;
+  }
+
+  .admin-burger {
+    display: grid;
+  }
+
+  .admin-foot {
+    padding: 16px 18px 22px;
+  }
+
+  .admin-foot__link {
+    margin-left: 0;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   РАБОЧАЯ ПОВЕРХНОСТЬ
+   ═══════════════════════════════════════════════════════════════════════
+
+   Устройство ширины. Рабочая область тянется на весь экран, а не упирается
+   в колонку по центру: менеджер смотрит в таблицу сделок весь день, и на
+   мониторе 27 дюймов пустые поля по бокам — это четыре колонки, которые
+   не поместились. Ограничение по ширине остаётся только у сплошного текста
+   (подсказки), потому что строка в двести знаков не читается ни на каком
+   мониторе.
+
+   Поле по краям — одна переменная `--gutter`, и она же управляет выносом
+   заголовка на всю ширину. Задавать их числами по отдельности значит однажды
+   поменять одно и не поменять другое: белая полоса заголовка перестанет
+   совпадать с краем экрана, и это будет видно. */
+
+.admin-main {
+  --gutter: 48px;
+  flex: 1;
+  min-width: 0;
+  padding: 0 var(--gutter) 64px;
+}
+
+/* Крупные мониторы: поля растут, содержимое всё равно во всю ширину. */
+@media (min-width: 1800px) {
+  .admin-main {
+    --gutter: 64px;
+  }
+}
+
+@media (max-width: 1320px) {
+  .admin-main {
+    --gutter: 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-main {
+    --gutter: 18px;
+  }
+}
+
+/* ————— хлебные крошки ————— */
+
+/* Верхняя строка белой полосы заголовка: та же моноширинная разрядка, что
+   на внутренней странице сайта. Полоса набирается двумя блоками — крошки
+   рисует оболочка, заголовок приносит страница, — и оба вынесены за поля
+   одинаково, поэтому шва между ними не видно. */
+.admin-crumbs {
+  margin: 0 calc(-1 * var(--gutter));
+  padding: 24px var(--gutter) 0;
+  background: var(--page);
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.admin-crumbs a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.admin-crumbs a:hover {
+  color: var(--green-dark);
+}
+
+.admin-crumbs__here {
+  color: var(--text-2);
+}
+
+@media (max-width: 640px) {
+  .admin-crumbs {
+    padding-top: 16px;
+    font-size: 10px;
+  }
+}
+
+/* ————— заголовок страницы ————— */
+
+/* Шапка раздела повторяет шапку внутренней страницы сайта: белая полоса
+   во всю ширину, крупный заголовок, линия снизу. Вынос за поля через
+   отрицательное поле — иначе полоса оборвалась бы там же, где содержимое,
+   и вместо шапки получилась бы карточка с заголовком.
+ *
+ * Действия прижаты к низу заголовка, а не к его середине: кнопка «Добавить»
+ * должна стоять на той же линии, что и слово, а не парить рядом с ним. */
+.admin-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 24px;
+  flex-wrap: wrap;
+  margin: 0 calc(-1 * var(--gutter)) 26px;
+  padding: 14px var(--gutter) 22px;
+  background: var(--page);
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-head h1 {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 36px;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+  margin: 0;
+}
+
+@media (max-width: 1100px) {
+  .admin-head {
+    padding-bottom: 18px;
+  }
+
+  .admin-head h1 {
+    font-size: 30px;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-head {
+    padding-top: 10px;
+    margin-bottom: 20px;
+  }
+
+  .admin-head h1 {
+    font-size: 25px;
+  }
+}
+
+/* Подсказка под заголовком: почему всё устроено так, а не иначе. Ширина
+   ограничена — это сплошной текст, и он читается строкой, а не полосой
+   во весь монитор. */
+.admin-hint {
+  max-width: 76ch;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 0 0 20px;
+}
+
+/* Предупреждение «на экране персональные данные». Не украшение: человек
+   должен видеть, что перед ним данные, за которые отвечают по закону,
+   до того как сделает снимок экрана для переписки. */
+.admin-pd {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 6px 12px 6px 10px;
+  border: 1px solid var(--state-wait-line);
+  background: var(--state-wait-bg);
+  color: var(--state-wait);
+  border-radius: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.admin-pd::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+/* ————— карточка ————— */
+
+/* Радиус 3 и граница `--line` — карточка изделия на сайте набрана так же. */
+.admin-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 20px 22px 22px;
+  margin-bottom: 18px;
+}
+
+@media (max-width: 720px) {
+  .admin-card {
+    padding: 16px 14px 18px;
+  }
+}
+
+.admin-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.admin-card__title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  margin: 0 0 12px;
+}
+
+.admin-card__head .admin-card__title {
+  margin: 0;
+}
+
+/* ————— таблица ————— */
+
+/* Обёртка с прокруткой: у сделок и КП колонок больше, чем влезает в ноутбук,
+   и уезжать вбок должна таблица, а не страница целиком. Горизонтальная
+   прокрутка всей страницы ломает и шапку, и позиционирование. */
+.admin-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+/* Шапка таблицы липнет к верху окна, а не к верху страницы: прокручивается
+   документ, и над таблицей стоит липкая полоса навигации. Отступ под неё —
+   `--chrome`, измеренная высота этой полосы: полосы вкладок на разделе может
+   не быть, а сама шапка переносится на две строки на узком экране. Число
+   здесь разъехалось бы с вёрсткой в первый же такой переход. Запасное
+   значение — на случай, если наблюдатель ещё не отработал. */
+.admin-table th {
+  position: sticky;
+  top: var(--chrome, 79px);
+  z-index: 1;
+  background: var(--surface);
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-table td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--rule-soft);
+  vertical-align: top;
+  line-height: 1.45;
+}
+
+.admin-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-table tbody tr:hover td {
+  background: var(--paper);
+}
+
+/* Колонка, которой не нужна ширина: дата, бейдж, кнопка. Без этого
+   браузер раздаёт место поровну, и «Когда» получает столько же, сколько
+   текст обращения. */
+.admin-table td.tight,
+.admin-table th.tight {
+  width: 1%;
+  white-space: nowrap;
+}
+
+/* ————— кнопки ————— */
+
+/* Форма кнопки взята с сайта: прямые углы с радиусом 2, зелёная заливка
+   у основной, рамка у вторичной. Опасная не заливается: сплошной красный
+   прямоугольник читается как предупреждение системы, а не как то, что
+   человек может нажать. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid var(--line-3);
+  border-radius: 2px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--green);
+  color: var(--green-dark);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+  font-weight: 600;
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--green-dark);
+  border-color: var(--green-dark);
+  color: #fff;
+}
+
+.btn--small {
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 12.5px;
+}
+
+.btn--danger {
+  border-color: var(--state-stop-line);
+  color: var(--state-stop);
+}
+
+.btn--danger:hover:not(:disabled) {
+  border-color: var(--state-stop);
+  background: var(--state-stop-bg);
+  color: var(--state-stop);
+}
+
+/* На узком экране кнопка перестаёт быть мелкой мишенью: промах по «Удалить»
+   дороже лишнего места. */
+@media (max-width: 720px) {
+  .btn {
+    min-height: 46px;
+  }
+
+  .btn--small {
+    min-height: 38px;
+  }
+}
+
+/* ————— ряд кнопок ————— */
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.row--end {
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+/* ————— поля ————— */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 14px;
+  min-width: 0;
+}
+
+.field > span {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-2);
+}
+
+.field > small {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.field--error > small {
+  color: var(--state-stop);
+}
+
+.field input,
+.field select,
+.field textarea,
+.admin-select,
+.admin-search {
+  font: inherit;
+  font-size: 14px;
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid var(--line-3);
+  border-radius: 2px;
+  background: var(--surface);
+  color: var(--ink);
+  width: 100%;
+  min-width: 0;
+}
+
+.field textarea {
+  min-height: 96px;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus,
+.admin-select:focus,
+.admin-search:focus {
+  outline: 2px solid var(--green);
+  outline-offset: -1px;
+  border-color: var(--green);
+}
+
+.field--error input,
+.field--error select,
+.field--error textarea {
+  border-color: var(--state-stop-line);
+}
+
+/* Поле с флажком: подпись справа, а не сверху — иначе галочка отрывается
+   от того, что она включает. */
+.field--row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+}
+
+.field--row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  flex: none;
+  accent-color: var(--green);
+}
+
+.admin-search {
+  max-width: 340px;
+}
+
+/* Числа в полях выравниваются по разрядам — то же правило, что и в таблицах. */
+.field input[type="number"] {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ————— две колонки ————— */
+
+/* Пары полей: статус и ответственный, название и сумма. На узком экране
+   в одну колонку — два поля по 150 пикселей не заполняются, а угадываются. */
+.grid2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0 18px;
+}
+
+/* ————— бейдж ————— */
+
+/* Состояние читается без цвета: у каждого своя заливка И своя рамка,
+   а не только оттенок текста. Форма — прямоугольная пилюля с сайта:
+   круглые концы читались как чужой элемент рядом с квадратными кнопками. */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--soft);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.badge--on {
+  background: var(--state-ok-bg);
+  border-color: var(--state-ok-line);
+  color: var(--state-ok);
+}
+
+.badge--off {
+  background: var(--surface);
+  border-color: var(--line-3);
+  color: var(--muted);
+}
+
+.badge--warn {
+  background: var(--state-wait-bg);
+  border-color: var(--state-wait-line);
+  color: var(--state-wait);
+}
+
+/* ————— сообщения ————— */
+
+.note {
+  max-width: 76ch;
+  padding: 11px 14px;
+  border-radius: 3px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
+.note--error {
+  background: var(--state-stop-bg);
+  border: 1px solid var(--state-stop-line);
+  color: var(--state-stop);
+}
+
+.note--ok {
+  background: var(--state-ok-bg);
+  border: 1px solid var(--state-ok-line);
+  color: var(--state-ok);
+}
+
+/* ————— мелочи текста ————— */
+
+.muted {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.mono {
+  font-family: var(--font-mono), monospace;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* ————— плитки сводки ————— */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  gap: 12px;
+  margin-bottom: 26px;
+}
+
+.tile {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 15px 16px 17px;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.tile:hover {
+  border-color: var(--green);
+}
+
+.tile__num {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.tile__label {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 5px;
+  line-height: 1.4;
+}
+
+.tile__note {
+  font-size: 11.5px;
+  color: var(--state-wait);
+  margin-top: 7px;
+}
+
+/* ————— очередь работы на сводке ————— */
+
+/* Список того, что ждёт человека, а не витрина чисел. Число само по себе
+   не говорит, надо ли что-то делать: «12 документов» — это норма, а «3 без
+   файла» — это работа на сегодня. */
+.queue {
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.queue__row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--rule-soft);
+  text-decoration: none;
+  color: inherit;
+}
+
+.queue__row:last-child {
+  border-bottom: none;
+}
+
+.queue__row:hover {
+  background: var(--paper);
+}
+
+.queue__count {
+  flex: none;
+  min-width: 40px;
+  font-family: var(--font-mono), monospace;
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--state-wait);
+}
+
+.queue__what {
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.queue__why {
+  display: block;
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.queue__go {
+  flex: none;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.queue__row:hover .queue__go {
+  color: var(--green-dark);
+}
+
+/* Пусто — это результат, а не отсутствие данных. */
+.queue--clear {
+  padding: 18px 16px;
+  font-size: 14px;
+  color: var(--state-ok);
+  background: var(--state-ok-bg);
+  border-color: var(--state-ok-line);
+}
+
+/* ————— выбор из списка: клиент, документ ————— */
+
+.picker {
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  margin-bottom: 15px;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--surface);
+}
+
+.picker__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--rule-soft);
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.picker__row:last-child {
+  border-bottom: none;
+}
+
+.picker__row:hover {
+  background: var(--paper);
+}
+
+/* ————— история переписки ————— */
+
+.history {
+  list-style: none;
+  border-left: 2px solid var(--line);
+  padding-left: 16px;
+  margin-bottom: 20px;
+}
+
+.history li {
+  margin-bottom: 17px;
+  position: relative;
+}
+
+/* Точка на линии: запись истории — это момент, и лента должна читаться
+   как лента, а не как список абзацев. */
+.history li::before {
+  content: "";
+  position: absolute;
+  left: -21px;
+  top: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--line-3);
+  border: 2px solid var(--surface);
+}
+
+.history__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 11.5px;
+  margin-bottom: 4px;
+}
+
+.history__subject {
+  font-size: 13.5px;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+
+.history__body {
+  font-size: 13.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.history__form,
+.convert {
+  border-top: 1px solid var(--line);
+  padding-top: 17px;
+  margin-top: 4px;
+}
+
+/* ————— позиции КП ————— */
+
+.quote-item {
+  display: grid;
+  grid-template-columns: minmax(180px, 2fr) minmax(110px, 1fr) 90px 130px 150px auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 900px) {
+  .quote-item {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.quote-item input {
+  font: inherit;
+  font-size: 13.5px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-3);
+  border-radius: 2px;
+  background: var(--surface);
+  color: var(--ink);
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.quote-item input:focus {
+  outline: 2px solid var(--green);
+  outline-offset: -1px;
+  border-color: var(--green);
+}
+
+.quote-item__sum {
+  font-family: var(--font-mono), monospace;
+  font-size: 12.5px;
+  text-align: right;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ЭКРАН ДО ВХОДА
+   ═══════════════════════════════════════════════════════════════════════
+
+   Две половины: слева — куда человек попал, справа — что делать. Слева тёмно,
+   потому что это закрытый контур, и въезд в него должен ощущаться как дверь,
+   а не как ещё одна страница сайта. Это единственное место, где тёмный фон
+   остался: за дверью человек уже внутри, и напоминать ему цветом незачем.
+
+   На узком экране половины становятся друг под другом, и первой идёт та,
+   где кнопка: объяснение можно дочитать после, а войти надо сейчас. */
+
+.login {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+}
+
+.login__about {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 26px;
+  padding: 56px 5vw;
+  background: linear-gradient(160deg, var(--nav) 0%, var(--nav-2) 100%);
+  color: #fff;
+}
+
+.login__mark {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(26px, 3vw, 38px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.login__lead {
+  max-width: 46ch;
+  font-size: clamp(15px, 1.3vw, 17px);
+  line-height: 1.65;
+  color: var(--on-dark-lead);
+  margin: 0;
+}
+
+.login__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  max-width: 52ch;
+}
+
+.login__list li {
+  position: relative;
+  padding-left: 20px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--on-dark-2);
+}
+
+.login__list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 9px;
+  width: 7px;
+  height: 1px;
+  background: var(--green-on-dark);
+}
+
+.login__panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 5vw;
+  background: var(--soft);
+}
+
+.login__card {
+  width: 100%;
+  max-width: 420px;
+}
+
+/* Случай назван словом, а не кодом: «вход не выполнен» и «токен не принят» —
+   разные беды с разным лечением, и надпись «ошибка входа» на обе отправляет
+   человека по кругу. */
+.login__state {
+  display: inline-block;
+  margin-bottom: 12px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--surface);
+  font-family: var(--font-mono), monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.login__card h1 {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(24px, 2.4vw, 31px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin: 0 0 14px;
+}
+
+.login__card p {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text-2);
+  margin: 0 0 16px;
+}
+
+.login__card code {
+  font-family: var(--font-mono), monospace;
+  font-size: 12.5px;
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+/* Кнопка входа — во всю ширину карточки и заметно выше обычной: это
+   единственное действие на экране, и искать его глазами человек не должен. */
+.login__big {
+  width: 100%;
+  min-height: 52px;
+  font-size: 15px;
+  margin-bottom: 14px;
+}
+
+@media (max-width: 900px) {
+  .login {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  /* Кнопка первой: объяснение дочитывается после, а войти надо сейчас. */
+  .login__panel {
+    order: -1;
+    padding: 40px 20px;
+    min-height: 62vh;
+  }
+
+  .login__about {
+    padding: 36px 20px 44px;
+  }
+}
+
+/* ————— разговоры ————— */
+
+/* Список слева, лента справа. На узком экране — друг под другом, и первым
+   идёт список: выбрать разговор надо раньше, чем его читать. */
+.chats {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .chats {
+    grid-template-columns: 1fr;
+  }
+}
+
+.chats__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.chats__row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.chats__row:hover {
+  border-color: var(--green);
+}
+
+/* Выбранный — зелёной чертой слева, а не заливкой: заливка спорила бы
+   с бейджами состояния внутри самой строки. */
+.chats__row--open {
+  border-color: var(--green);
+  box-shadow: inset 3px 0 0 var(--green);
+}
+
+.chats__where {
+  font-size: 12px;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chats__thread {
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+  padding: 16px;
+  min-height: 320px;
+}
+
+.thread {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 52vh;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-bottom: 14px;
+}
+
+/* Три вида автора различаются положением И оформлением, а не одним цветом:
+   посетитель обязан быть отличим от Урании, а Урания — от сотрудника.
+   Одним оттенком это не передать тому, кто цвета не различает. */
+.bubble {
+  max-width: 78%;
+  padding: 9px 12px;
+  border-radius: 3px;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.bubble--visitor {
+  align-self: flex-start;
+  background: var(--soft);
+  border: 1px solid var(--line);
+}
+
+.bubble--assistant {
+  align-self: flex-start;
+  background: var(--surface);
+  border: 1px dashed var(--line-3);
+}
+
+.bubble--staff {
+  align-self: flex-end;
+  background: var(--state-ok-bg);
+  border: 1px solid var(--state-ok-line);
+}
+
+.bubble__who {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+
+.bubble__body {
+  white-space: pre-wrap;
+}
+
+.thread__reply textarea {
+  width: 100%;
+  min-height: 78px;
+  font: inherit;
+  font-size: 13.5px;
+  line-height: 1.55;
+  padding: 10px 12px;
+  border: 1px solid var(--line-3);
+  border-radius: 2px;
+  background: var(--surface);
+  color: var(--ink);
+  resize: vertical;
+  margin-bottom: 10px;
+}
+
+.thread__reply textarea:focus {
+  outline: 2px solid var(--green);
+  outline-offset: -1px;
+  border-color: var(--green);
+}
+
+/* ————— отметка прочтения ————— */
+
+/* Словом, а не галочками. Одна галочка против двух — соглашение, которое надо
+   знать; «доставлено» и «прочитано» понятны с первого раза и не требуют
+   объяснения новому сотруднику.
+ *
+ * Мелко и приглушённо: это служебная строка, а не часть сообщения. */
+.bubble__read {
+  margin-top: 4px;
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  text-align: right;
+}
+
+/* Прочитанное — тем же зелёным, что и сама реплика сотрудника: это не новое
+   состояние в ленте, а уточнение к уже сказанному. */
+.bubble__read--seen {
+  color: var(--state-ok);
+  font-weight: 600;
+}
+
+/* «Печатает…» — реплика, которой нет в ленте: она приходит потоком и гаснет
+   сама через несколько секунд. Сообщения «перестал печатать» не существует
+   и не может: человек волен просто закрыть вкладку. */
+.bubble--typing {
+  color: var(--muted);
+  font-style: italic;
+  opacity: 0.85;
+}
+
+/* ————— уничтожение персональных данных ————— */
+
+/* Отделено чертой сверху: это не ещё одно действие в ряду, а операция другого
+   рода — необратимая и по внешнему обращению. Ставить её рядом с «Сохранить»
+   значит однажды получить промах уставшей рукой. */
+.erase {
+  border-top: 1px solid var(--line);
+  margin-top: 18px;
+  padding-top: 14px;
+}
+
+.erase__warn {
+  max-width: 68ch;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--state-stop);
+  margin: 0 0 10px;
+}
+
+/* Исполненное обращение — не ошибка и не тревога: спокойная серая строка.
+   Красным здесь было бы «что-то сломалось», а сломалось ничего. */
+.erase--done {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin: 0;
+  padding-top: 14px;
+}

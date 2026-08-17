@@ -1,0 +1,279 @@
+# Сборка и проверки. Всё, что здесь, должно проходить и на машине
+# разработчика — CI не место для проверок, которые нельзя повторить локально.
+#
+# Три работы, независимые друг от друга: бэкенд, фронтенд, образы. Разбить их
+# так стоит потому, что падение фронта не должно скрывать состояние бэка,
+# а сборка образов — самая долгая — не должна задерживать ответ по тестам.
+
+name: Сборка и проверки
+
+on:
+  push:
+    branches: [main, dev, db, back, front, infra, docs]
+  pull_request:
+    # `infra` здесь потому, что туда приходят PR от Dependabot: без него
+    # обновление зависимости проверялось бы уже после мержа.
+    branches: [main, dev, infra]
+
+# Новый коммит в ту же ветку отменяет предыдущий запуск: пока он досчитывает,
+# его результат уже неинтересен.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Бэкенд — тесты и покрытие
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: "25"
+          distribution: temurin
+          cache: maven
+
+      # Тесты идут на настоящем PostgreSQL через Testcontainers. Сервис базы
+      # здесь не поднимается: контейнер заводит сам тест, и это правильно —
+      # так же он работает на машине разработчика. Docker на ubuntu-latest
+      # уже есть.
+      - name: Портал
+        working-directory: backend
+        run: ./mvnw --batch-mode verify
+
+      # Планка покрытия. Работает как храповик: ловит модуль, приехавший
+      # вообще без тестов, и не даёт покрытию сползать.
+      #
+      # Считается здесь, а не целью jacoco:check в сборке, и это вынужденно:
+      # check меряет один модуль по его собственным классам, а классы лежат
+      # в двенадцати модулях, тесты же, которые их проходят, — в app.
+      # Помодульная проверка дала бы одиннадцать нулей и одну сотню.
+      # Сводный отчёт строит report-aggregate, порог проверяется по нему.
+      - name: Порог покрытия
+        working-directory: backend
+        run: |
+          csv=app/target/site/jacoco-aggregate/jacoco.csv
+          test -f "$csv" || { echo "нет сводного отчёта $csv"; exit 1; }
+          awk -F, -v min_i=70 -v min_b=45 '
+            NR>1 { im+=$4; ic+=$5; bm+=$6; bc+=$7 }
+            END {
+              i = 100*ic/(im+ic); b = 100*bc/(bm+bc);
+              printf "инструкции %.1f%% (порог %d%%), ветки %.1f%% (порог %d%%)\n", i, min_i, b, min_b;
+              if (i < min_i || b < min_b) {
+                print "покрытие ниже планки"; exit 1
+              }
+            }' "$csv"
+
+      - name: Шлюз
+        working-directory: backend/api-gateway
+        run: ./mvnw --batch-mode verify
+
+      # Отчёт покрытия нужен, когда сборка упала на пороге: без него причина
+      # выглядит как «не сошлось число».
+      - name: Отчёт покрытия
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: покрытие-портала
+          path: backend/app/target/site/jacoco-aggregate/
+          if-no-files-found: ignore
+
+  frontend:
+    name: Фронтенд — типы, линтер, тесты, сборка
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Зависимости
+        working-directory: frontend
+        run: npm ci
+
+      - name: Типы
+        working-directory: frontend
+        run: npx tsc --noEmit
+
+      - name: Линтер
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Тесты
+        working-directory: frontend
+        run: npm test
+
+      # Сборка без адреса API: каталог берётся из content/*.ts. Живой портал
+      # здесь поднимать незачем — эта работа проверяет, что фронтенд
+      # собирается, а связку проверяет работа stack.
+      - name: Сборка
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: ""
+          NEXT_PUBLIC_MEDIA_URL: ""
+        run: npm run build
+
+  images:
+    name: Образы собираются и сканируются
+    runs-on: ubuntu-latest
+    # Собирать образы имеет смысл только после того, как тесты прошли:
+    # иначе они собираются из заведомо сломанного дерева.
+    needs: [backend, frontend]
+
+    permissions:
+      contents: read
+      # Отчёт Trivy уезжает во вкладку Security, а не в лог, который никто
+      # не открывает.
+      security-events: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # load: true оставляет образ в локальном демоне — без этого сканировать
+      # нечего: push отключён, и образ существует только внутри buildx.
+      - name: Образ портала
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: false
+          load: true
+          tags: vedal/portal:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Образ шлюза
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend/api-gateway
+          push: false
+          load: true
+          tags: vedal/api-gateway:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Образ сайта
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: false
+          load: true
+          tags: vedal/site:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Trivy смотрит внутрь образа: пакеты базового слоя и джарники рядом
+      # с ними. Dependabot этого не видит — там нет ни одного pom.xml.
+      #
+      # Порог разнесён надвое намеренно. HIGH уезжает в отчёт и виден, но
+      # сборку не роняет: постоянно красный CI перестают читать через неделю.
+      # CRITICAL с готовым исправлением сборку роняет — это уже не «однажды
+      # посмотрим», а «оно уже чинится одной строкой».
+      #
+      # ignore-unfixed отсекает то, для чего исправления не выпущено:
+      # такая запись говорит не о нашей нерасторопности, а о состоянии мира,
+      # и рычага у неё нет.
+      - name: Уязвимости в образах — отчёт
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: vedal/portal:ci
+          format: sarif
+          output: trivy-portal.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+
+      - name: Отчёт в Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-portal.sarif
+          category: trivy-portal
+
+      - name: Критические уязвимости роняют сборку
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: vedal/portal:ci
+          format: table
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Критические уязвимости в шлюзе
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: vedal/api-gateway:ci
+          format: table
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Критические уязвимости в образе сайта
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: vedal/site:ci
+          format: table
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+  stack:
+    name: Стек поднимается целиком
+    runs-on: ubuntu-latest
+    needs: [images]
+    # Только на интеграционной ветке и в запросах на слияние: работа долгая,
+    # а на слоевых ветках половина стека всё равно не собрана вместе.
+    if: github.ref == 'refs/heads/dev' || github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      # Та же команда, которой стек поднимает человек на чистой машине.
+      # Если она перестанет работать, узнать об этом должен CI, а не тестировщик.
+      - name: Поднять
+        run: ./scripts/up.sh
+
+      # Проверка не «контейнеры запустились», а «конвейер работает»:
+      # заявка проходит весь путь COMMIT → журнал предзаписи → коннектор →
+      # топик → потребитель, и потребитель проставляет published_at.
+      - name: Заявка доходит до потребителя через Debezium
+        run: |
+          set -e
+          curl -fsS -X POST http://localhost:8080/api/forms/v1/leads \
+            -H 'Content-Type: application/json; charset=utf-8' \
+            -H 'Idempotency-Key: ci-smoke' \
+            --data-binary @- <<'JSON'
+          {"form":"quote","name":"Проверка CI","phone":"+7 343 555-22-11",
+           "email":"ci@example.ru","message":"Проверка конвейера от начала до конца.",
+           "consent":true}
+          JSON
+
+          for i in $(seq 1 30); do
+            delivered=$(docker exec vedal-db psql -U vedal -d vedal -tAc \
+              "select count(*) from outbox where published_at is not null")
+            [ "$delivered" -gt 0 ] && exit 0
+            sleep 2
+          done
+          echo "событие не доехало до потребителя за минуту" >&2
+          docker compose -f backend/compose.yaml logs --tail 60 connect portal
+          exit 1
+
+      - name: Публичное API и админка отвечают
+        run: |
+          set -e
+          curl -fsS http://localhost:8080/api/public/v1/products > /dev/null
+          curl -fsS http://localhost:8080/ > /dev/null
+          # Без токена дверь правки обязана отвечать 401, а не пускать.
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/admin/v1/products)
+          [ "$code" = "401" ] || { echo "дверь правки ответила $code вместо 401" >&2; exit 1; }
+
+      - name: Логи, если что-то упало
+        if: failure()
+        run: docker compose -f backend/compose.yaml --profile app logs --tail 100

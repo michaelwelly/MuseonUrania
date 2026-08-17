@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>ru.vedal</groupId>
+		<artifactId>portal</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+	<artifactId>portal-admin</artifactId>
+	<name>portal-admin</name>
+	<description>Двери правки и CRM: админское API</description>
+
+	<dependencies>
+		<dependency>
+			<groupId>ru.vedal</groupId>
+			<artifactId>portal-iam</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>ru.vedal</groupId>
+			<artifactId>portal-common</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>ru.vedal</groupId>
+			<artifactId>portal-audit</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>ru.vedal</groupId>
+			<artifactId>portal-catalog</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>ru.vedal</groupId>
+			<artifactId>portal-content</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>ru.vedal</groupId>
+			<artifactId>portal-crm</artifactId>
+		</dependency>
+		<!-- Разговоры посетителей: очередь, ответ, закрытие. Дверь сотрудника
+		     живёт здесь, а не в chat, по тому же правилу, что и остальные:
+		     все двери правки собраны в одном модуле, и ограничить их на проксе
+		     можно одним правилом. -->
+		<dependency>
+			<groupId>ru.vedal</groupId>
+			<artifactId>portal-chat</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>ru.vedal</groupId>
+			<artifactId>portal-documents</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+		</dependency>
+	</dependencies>
+</project>

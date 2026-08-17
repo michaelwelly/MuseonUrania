@@ -1,0 +1,5 @@
+/scripts/up.sh text eol=lf
+/scripts/*.ps1 text eol=crlf
+# Скрипты монтируются в контейнеры Linux. CRLF в них означает
+# «bad interpreter» при запуске, и на Windows это происходит молча.
+*.sh text eol=lf

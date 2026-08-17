@@ -1,8 +1,10 @@
-# Urania Visual Assets
+# Визуальные материалы Урании
 
-## Generated Assets
+**Русский** · [English](urania_visual_assets.en.md)
 
-Workspace assets:
+## Сгенерированные материалы
+
+В репозитории:
 
 - `assets/urania/urania-avatar-concepts-v1.png`
 - `assets/urania/urania-avatar-left-v1.png`
@@ -10,53 +12,58 @@ Workspace assets:
 - `assets/urania/urania-avatar-right-v1.png`
 - `assets/urania/urania-web-integration-mockup-v1.png`
 
-Prototype:
+Прототип:
 
 - `prototypes/urania-web-interface.html`
 
-## Recommended Choice
+## Рекомендованный выбор
 
-Use `urania-avatar-middle-v1.png` as the MVP avatar direction.
+Взять `urania-avatar-middle-v1.png` как направление аватара для MVP.
 
-Reason:
+Почему:
 
-- calm and assistant-like;
-- not too clinical;
-- not too fantasy-heavy;
-- works well inside a small circular web widget.
+- спокойный, похож на ассистента;
+- не слишком клинический;
+- не перегружен фэнтези;
+- хорошо смотрится в маленьком круглом веб-виджете.
 
-Alternative positioning:
+Альтернативы:
 
-- `urania-avatar-left-v1.png`: more medical/clinical, if NN wants the assistant to feel closer to the equipment domain.
-- `urania-avatar-right-v1.png`: more celestial/muse-like, if NN wants the Urania mythology to be more visible.
+- `urania-avatar-left-v1.png` — более медицинский и клинический, если НН хочет,
+  чтобы ассистент был ближе к предметной области оборудования;
+- `urania-avatar-right-v1.png` — более небесный, ближе к образу музы, если НН
+  хочет, чтобы мифология Урании была заметнее.
 
-## Web Integration
+## Интеграция в сайт
 
-Urania should appear in two places:
+Урания должна появляться в двух местах:
 
-1. Hero assistant card on the first screen, secondary to the main product/production headline.
-2. Floating assistant button in the lower-right corner after scroll.
+1. Карточка ассистента на первом экране, вторичная по отношению к главному
+   заголовку о продукции и производстве.
+2. Плавающая кнопка ассистента в правом нижнем углу после прокрутки.
 
-Quick actions:
+Быстрые действия:
 
 - Подобрать оборудование
 - Найти документ
 - Запросить КП
 - Сервис
 
-Important limitation:
+Важное ограничение:
 
-The generated web mockup is a visual direction only. The final UI must be rebuilt in code with exact approved text, no generated text artifacts, and no unapproved claims.
+Сгенерированный веб-макет — только визуальное направление. Финальный интерфейс
+должен быть пересобран в коде с точными согласованными текстами, без артефактов
+сгенерированного текста и без несогласованных заявлений.
 
-## Prompt Record
+## Запись промптов
 
-Avatar concept prompt:
+Промпт концепта аватара:
 
 ```text
 Create a clean concept sheet with 3 circular avatar variants for an AI website assistant named Urania, inspired by the Greek muse of astronomy. Calm female AI guide, precise and expert, not a doctor, not fantasy-heavy. Subtle celestial motifs: star map lines, celestial globe, compass, orbit arcs. Polished semi-flat / soft 3D illustration, vector-friendly, suitable for small web avatars. Palette: VEDAL green, teal, white, charcoal, small muted gold accent. No words, no watermark, no logos, no medical cross, no stethoscope, no mystical fortune-teller look.
 ```
 
-Web integration mockup prompt:
+Промпт макета веб-интеграции:
 
 ```text
 Create a conservative desktop web interface mockup showing how the Urania assistant integrates into the first screen of vedal-med.ru. Hero section with VEDAL-style green accents, headline area, two CTA buttons, and a right/lower-right assistant widget named Urania with circular avatar, compact chat card, and quick actions. Russian UI text: "Российское медицинское оборудование", "Запросить КП", "Каталог", "Urania: помогу найти продукт или документ". No prices, no clinical advice, no invented certifications.

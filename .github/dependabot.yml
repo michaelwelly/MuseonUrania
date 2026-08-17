@@ -1,0 +1,125 @@
+# Обновление зависимостей.
+#
+# Закрывает половину пункта 14 из раздела 7 PROJECT.md: уязвимость
+# в транзитивной зависимости не должна приезжать в прод молча. Вторая
+# половина — Trivy по образам в ci.yml: там видны пакеты базового образа,
+# которых нет ни в одном pom.xml и ни в одном package.json.
+#
+# Куда приходят PR. В `infra`, а не в ветку по умолчанию: обновление
+# зависимости — это изменение сборки и окружения, и слоевая модель отправляет
+# его туда же, куда уходит правка Dockerfile. Дальше оно едет в `dev` обычным
+# мержем и проверяется вместе со всем остальным.
+#
+# Почему обновления сгруппированы. Пятнадцать отдельных PR на пятнадцать
+# патч-версий Spring — это пятнадцать прогонов CI и ноль прочитанных диффов.
+# Группа приезжает одним PR, и его читают целиком.
+
+version: 2
+
+updates:
+  # ————— портал: реактор Maven —————
+  #
+  # Достаточно корня: Dependabot разбирает реактор целиком и видит версии,
+  # объявленные в родительском pom.
+  - package-ecosystem: maven
+    directory: /backend
+    target-branch: infra
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(infra)"
+    groups:
+      spring:
+        patterns:
+          - "org.springframework*"
+          - "org.springframework.boot*"
+      other:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "org.springframework*"
+          - "org.springframework.boot*"
+
+  # ————— шлюз —————
+  #
+  # Отдельный реактору не родственник: у него своя пара версий Spring Boot
+  # и Spring Cloud Gateway, единственная поддерживаемая. Группу заводить
+  # незачем — поднимать их можно только вместе и вручную, сверившись
+  # с матрицей совместимости.
+  - package-ecosystem: maven
+    directory: /backend/api-gateway
+    target-branch: infra
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore(infra)"
+
+  # ————— сайт и админка —————
+  - package-ecosystem: npm
+    directory: /frontend
+    target-branch: infra
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(infra)"
+    groups:
+      next:
+        patterns:
+          - "next"
+          - "react"
+          - "react-dom"
+          - "@types/react*"
+      testing:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+          - "@testing-library/*"
+          - "jsdom"
+
+  # ————— базовые образы —————
+  #
+  # Три Dockerfile, три записи: у Dependabot одна директория на запись.
+  - package-ecosystem: docker
+    directory: /backend
+    target-branch: infra
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: "chore(infra)"
+
+  - package-ecosystem: docker
+    directory: /backend/api-gateway
+    target-branch: infra
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: "chore(infra)"
+
+  - package-ecosystem: docker
+    directory: /frontend
+    target-branch: infra
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: "chore(infra)"
+
+  # ————— сами работы CI —————
+  #
+  # Действие, закреплённое за старым тегом, — это тоже зависимость, и она
+  # выполняется с правами репозитория.
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: infra
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "chore(infra)"

@@ -1,53 +1,75 @@
-# Project Brief
+# Бриф проекта
 
-## Working Name
+**Русский** · [English](project_brief.en.md)
 
-MuseonUrania: digital infrastructure for VEDAL medical equipment production and sales.
+## Рабочее название
 
-## Business Context
+MuseonUrania: цифровая инфраструктура для производства и продажи медицинского
+оборудования VEDAL.
 
-VEDAL is positioned as a Russian manufacturer of medical devices for neonatology, anesthesiology, and resuscitation. The current public website, `vedal-med.ru`, already states the core positioning, basic product directions, production focus, and partners, but it needs to become a stronger sales and information system.
+## Деловой контекст
 
-Related/partner ecosystem:
+VEDAL позиционируется как российский производитель медицинских изделий для
+неонатологии, анестезиологии и реанимации. Нынешний публичный сайт
+`vedal-med.ru` уже заявляет основное позиционирование, базовые продуктовые
+направления, фокус на производстве и партнёров, но ему нужно стать более
+сильной системой продаж и информирования.
 
-- `vedal-med.ru`: primary public site and future commercial entry point.
-- `morus-ms.ru`: related medical systems/manufacturing company, especially MRI direction.
-- `divisy.ru`: partner for integrated medical complexes, telemedicine, conferencing, and multimedia systems.
-- Possible foreign brand relation/reference: `vedal.com.cn`, useful for multilingual catalog and product taxonomy comparison.
+Связанная экосистема:
 
-## Objective
+- `vedal-med.ru` — основной публичный сайт и будущая коммерческая точка входа;
+- `morus-ms.ru` — связанная компания медицинских систем и производства, особенно
+  направление МРТ;
+- `divisy.ru` — партнёр по комплексным медицинским решениям, телемедицине,
+  конференцсвязи и мультимедийным системам;
+- возможная связь с зарубежным брендом `vedal.com.cn` — полезна для сравнения
+  мультиязычного каталога и продуктовой таксономии.
 
-Build the full IT foundation for production and sales of medical equipment:
+## Цель
 
-- Public site and catalog for lead generation.
-- Media and documentation storage.
-- CRM and sales workflow.
-- Internal communications and video meetings.
-- Closed corporate and production contours.
-- Analytics, SEO, multilingual content.
-- AI-assisted document search and future production/service VLM workflows.
+Построить полный ИТ-фундамент производства и продажи медицинского оборудования:
 
-## Strategic Thesis
+- публичный сайт и каталог для сбора заявок;
+- хранилище медиа и документации;
+- CRM и рабочий процесс продаж;
+- внутренние коммуникации и видеовстречи;
+- закрытые корпоративный и производственный контуры;
+- аналитика, SEO, мультиязычный контент;
+- AI-поиск по документам и будущие VLM-сценарии для производства и сервиса.
 
-The site should serve two missions at once:
+## Стратегический тезис
 
-- Inform: show production, certification, technology, product readiness, public documents, press releases, and trust signals.
-- Sell: capture requests for consultations, КП, catalog downloads, dealer conversations, service requests, and partner leads.
+Сайт должен решать две задачи одновременно:
 
-The internal platform should make sales and service teams faster by giving them controlled access to manufacturing knowledge, product documentation, certificates, service manuals, media, and approved commercial materials.
+- **информировать** — показывать производство, сертификацию, технологии,
+  готовность продукции, публичные документы, пресс-релизы и сигналы доверия;
+- **продавать** — собирать запросы на консультации, КП, скачивание каталога,
+  обращения дилеров, сервисные заявки и партнёрские лиды.
 
-## Key Assumptions
+Внутренняя платформа должна ускорять продажи и сервис за счёт контролируемого
+доступа к производственным знаниям, документации по изделиям, сертификатам,
+сервисным руководствам, медиа и согласованным коммерческим материалам.
 
-- Product portfolio is about 10 products.
-- Photos and media already exist in a cloud folder and need to be requested.
-- Innoprom press-release materials exist or can be reconstructed from source materials.
-- Some documentation can be public, while technical, production, service, regulatory, or R&D materials require classification before publication.
-- The first production contour can be built on Yandex Cloud or Google Workspace, with Kontur discussed as an alternative for Russian business/regulatory fit.
+## Ключевые допущения
 
-## Immediate Next Decisions
+- Портфель — примерно 10 изделий.
+- Фотографии и медиа уже лежат в облачной папке, их нужно запросить.
+- Материалы пресс-релиза с Иннопрома существуют или могут быть восстановлены из
+  исходников.
+- Часть документации может быть публичной, а технические, производственные,
+  сервисные, регуляторные и R&D-материалы требуют классификации до публикации.
+- Первый производственный контур можно построить на Yandex Cloud или Google
+  Workspace, при этом Контур обсуждается как вариант с лучшей российской
+  деловой и регуляторной посадкой.
 
-- Confirm exact domain spelling and ownership: `vedal-med.ru` vs `vedalmed.ru`.
-- Confirm whether the public site remains WordPress or is rebuilt as a custom frontend/backend.
-- Choose primary corporate stack: Yandex, Google, Kontur, or hybrid.
-- Decide where S3-compatible storage lives: Yandex Object Storage, Selectel S3, VK Cloud, MinIO, or another provider.
-- Confirm AI deployment model: cloud API first, local/on-prem GPU later, or immediate private GPU contour.
+## Ближайшие решения
+
+- Подтвердить точное написание и принадлежность домена: `vedal-med.ru` или
+  `vedalmed.ru`.
+- Подтвердить, остаётся ли публичный сайт на WordPress или пересобирается как
+  собственный фронтенд и бэкенд.
+- Выбрать основной корпоративный стек: Яндекс, Google, Контур или гибрид.
+- Решить, где живёт S3-совместимое хранилище: Yandex Object Storage, Selectel
+  S3, VK Cloud, MinIO или другой провайдер.
+- Подтвердить модель развёртывания ИИ: сначала облачные API, позже локальные
+  или собственные GPU, либо сразу приватный GPU-контур.

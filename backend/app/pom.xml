@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>ru.vedal</groupId>
+		<artifactId>portal</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+	<artifactId>portal-app</artifactId>
+	<name>portal-app</name>
+	<description>Сборка Spring Boot: точка входа, конфигурация, схема, тесты приложения</description>
+
+	<dependencies>
+		<!-- Все модули портала, включая те, что пришли бы и транзитивно.
+		     Это единственное место, где они сходятся: app — тот самый
+		     «монолит» в «типа микросервисы, но типа монолит». Один процесс,
+		     одна база, один COMMIT на строку сущности и строку события.
+		     Перечислены полностью по двум причинам: список читается как
+		     состав приложения, и сводный отчёт покрытия строится ровно
+		     по прямым зависимостям — транзитивные в него не попадают. -->
+		<dependency>
+			<groupId>ru.vedal</groupId>
+			<artifactId>portal-common</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>ru.vedal</groupId>
+			<artifactId>portal-audit</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>ru.vedal</groupId>
+			<artifactId>portal-catalog</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>ru.vedal</groupId>
+			<artifactId>portal-content</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>ru.vedal</groupId>
+			<artifactId>portal-documents</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>ru.vedal</groupId>
+			<artifactId>portal-crm</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>ru.vedal</groupId>
+			<artifactId>portal-admin</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>ru.vedal</groupId>
+			<artifactId>portal-assistant</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>ru.vedal</groupId>
+			<artifactId>portal-chat</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>ru.vedal</groupId>
+			<artifactId>portal-gateway</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>ru.vedal</groupId>
+			<artifactId>portal-notifications</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>ru.vedal</groupId>
+			<artifactId>portal-iam</artifactId>
+		</dependency>
+
+		<!-- Схема. Именно starter, а не flyway-core: в Boot 4
+		     автоконфигурации разнесены по модулям, и с одним flyway-core
+		     миграции молча не применяются.
+
+		     Миграции лежат здесь, а не по доменам, и это решение. База одна —
+		     следствие транзакционного outbox, — история миграций тоже одна,
+		     а порядок между доменами важен: V14 правит `lead` и ссылается
+		     на `product` и `document`. Разложить их по модулям значит
+		     получить гонку номеров версий между ветками. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-flyway</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+		</dependency>
+		<!-- Swagger UI отдаёт приложение, поэтому полный стартер только
+		     здесь: модулям хватает аннотаций из -webmvc-api. -->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- Тесты, поднимающие приложение, живут здесь: им нужен собранный
+		     контекст со всеми модулями сразу, а не один модуль. Чистые
+		     тесты правил остались в своих модулях — Pipelines, Guardrails,
+		     LocalFileStorage. -->
+		<!-- Именно стартер Boot, а не голый spring-security-test: в Boot 4
+		     тестовые автоконфигурации разнесены по модулям, и без него
+		     springSecurity() к MockMvc не применяется — @WithMockUser молча
+		     не аутентифицирует запрос, а тест с andExpect(is3xxRedirection())
+		     проходит на редиректе к форме входа, ничего не проверив. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-testcontainers</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<!-- Имя без версии: Dockerfile копирует app/target/portal.jar,
+		     и поднятие версии не должно требовать правки образа. -->
+		<finalName>portal</finalName>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<!-- Сведение покрытия по всем модулям. Считать его помодульно
+			     бессмысленно: классы лежат в одиннадцати модулях, а тесты,
+			     которые их проходят, — здесь. -->
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>сводный-отчёт</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>report-aggregate</goal>
+						</goals>
+						<configuration>
+							<includeCurrentProject>true</includeCurrentProject>
+							<outputDirectory>${project.build.directory}/site/jacoco-aggregate</outputDirectory>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>

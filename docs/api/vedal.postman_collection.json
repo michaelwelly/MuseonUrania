@@ -1,0 +1,2612 @@
+{
+  "info": {
+    "_postman_id": "7b1f2c40-9a3e-4d51-8c66-vedalportal01",
+    "name": "VEDAL Portal",
+    "description": "Все двери портала: публичное чтение, приём заявок, ассистент и админское API вместе с CRM.\n\nСобрано из docs/api/*.json — тех же файлов, что springdoc отдаёт по /v3/api-docs.\nПравить руками бессмысленно: контракт меняется в backend/src/main/java, после чего\nколлекция пересобирается.\n\n**Токен вставлять не надо.** Скрипт коллекции берёт его в Keycloak по username/password\nиз переменных и обновляет, когда протух.\n\n**Идентификаторы передаются между запросами.** «Отправить заявку» кладёт leadId,\n«Разобрать заявку в сделку» — dealId и clientId, «Завести КП» — quoteId. Поэтому\nпапки работают по порядку сверху вниз.\n\nАдрес по умолчанию — шлюз на 8080. Портал напрямую — 8081, но тогда включится CORS,\nкоторого через шлюз нет.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "id": "vedal-0080",
+        "type": "text/javascript",
+        "exec": [
+          "// Токен берётся сам и обновляется, когда протух. Вручную его вставлять",
+          "// не нужно: он живёт пятнадцать минут, и на середине разбора сделки",
+          "// это ровно то, что отвлекает.",
+          "//",
+          "// Публичные двери токена не требуют — у их папок стоит noauth,",
+          "// но лишний заголовок им и не мешает.",
+          "const expiresAt = Number(pm.collectionVariables.get('tokenExpiresAt') || 0);",
+          "if (pm.collectionVariables.get('token') && Date.now() < expiresAt - 30000) return;",
+          "",
+          "pm.sendRequest({",
+          "    url: pm.collectionVariables.get('keycloak') + '/realms/vedal/protocol/openid-connect/token',",
+          "    method: 'POST',",
+          "    header: { 'Content-Type': 'application/x-www-form-urlencoded' },",
+          "    body: { mode: 'urlencoded', urlencoded: [",
+          "        { key: 'grant_type', value: 'password' },",
+          "        { key: 'client_id', value: 'vedal-admin-ui' },",
+          "        { key: 'username', value: pm.collectionVariables.get('username') },",
+          "        { key: 'password', value: pm.collectionVariables.get('password') }",
+          "    ]}",
+          "}, (error, response) => {",
+          "    if (error || response.code !== 200) {",
+          "        console.error('Keycloak не выдал токен:', error || response.text());",
+          "        return;",
+          "    }",
+          "    const body = response.json();",
+          "    pm.collectionVariables.set('token', body.access_token);",
+          "    pm.collectionVariables.set('tokenExpiresAt', Date.now() + body.expires_in * 1000);",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "gateway",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "keycloak",
+      "value": "http://localhost:8180",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "editor",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "editor-local",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tokenExpiresAt",
+      "value": "0",
+      "type": "string"
+    },
+    {
+      "key": "slug",
+      "value": "vedal-r1-r2",
+      "type": "string"
+    },
+    {
+      "key": "leadId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "clientId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "dealId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "quoteId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "quoteVersion",
+      "value": "0",
+      "type": "string"
+    },
+    {
+      "key": "productId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "newsId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "documentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "categoryId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Каталог",
+      "item": [
+        {
+          "name": "Категории каталога",
+          "id": "vedal-0003",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/public/v1/categories",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "v1",
+                "categories"
+              ],
+              "query": []
+            },
+            "description": "В порядке показа на сайте.\n\nКатегории каталога"
+          },
+          "response": []
+        },
+        {
+          "name": "Опубликованные изделия",
+          "id": "vedal-0008",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/public/v1/products",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "v1",
+                "products"
+              ],
+              "query": []
+            },
+            "description": "Только опубликованные — фильтр стоит в запросе к базе. Полный состав характеристик отдаёт карточка изделия.\n\nОпубликованные изделия"
+          },
+          "response": []
+        },
+        {
+          "name": "Карточка изделия",
+          "id": "vedal-0009",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/public/v1/products/{{slug}}",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "v1",
+                "products",
+                "{{slug}}"
+              ],
+              "query": []
+            },
+            "description": "Неопубликованное изделие отдаёт `404`, а не пустую карточку: для внешнего мира его не существует.\n\nКарточка изделия"
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "noauth"
+      }
+    },
+    {
+      "name": "Новости",
+      "item": [
+        {
+          "name": "Лента материалов",
+          "id": "vedal-0006",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/public/v1/news",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "v1",
+                "news"
+              ],
+              "query": []
+            },
+            "description": "Только опубликованные, свежие сверху. Без текста материала — он приходит в отдельном запросе.\n\nЛента материалов"
+          },
+          "response": []
+        },
+        {
+          "name": "Материал целиком",
+          "id": "vedal-0007",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/public/v1/news/{{slug}}",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "v1",
+                "news",
+                "{{slug}}"
+              ],
+              "query": []
+            },
+            "description": "Неопубликованный материал отдаёт `404`.\n\nМатериал целиком"
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "noauth"
+      }
+    },
+    {
+      "name": "Документы",
+      "item": [
+        {
+          "name": "Перечень документов",
+          "id": "vedal-0004",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/public/v1/documents",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "v1",
+                "documents"
+              ],
+              "query": []
+            },
+            "description": "Показывается вместе со статусом доступа, в том числе строки без файла: такая строка на сайте ведёт на запрос. Ссылка `fileUrl` заполнена только у опубликованных.\n\nПеречень документов"
+          },
+          "response": []
+        },
+        {
+          "name": "Файл документа",
+          "id": "vedal-0005",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/public/v1/documents/{{slug}}/file",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "v1",
+                "documents",
+                "{{slug}}",
+                "file"
+              ],
+              "query": []
+            },
+            "description": "Отдаёт файл вложением. Скачать можно только опубликованный документ\nс загруженным файлом.\n\nНеопубликованный документ отвечает `404`, а не `403`: по коду ответа\nне должно быть видно, что такой документ вообще есть. Каждая попытка\nпопадает в журнал.\n\nОтвет не кэшируется: снятая с публикации редакция не должна остаться\nв кэшах прокси.\n\n\nФайл документа"
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "noauth"
+      }
+    },
+    {
+      "name": "Формы",
+      "item": [
+        {
+          "name": "Отправить заявку",
+          "id": "vedal-0001",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "vedal-0002",
+                "type": "text/javascript",
+                "exec": [
+                  "// Идентификатор уезжает в переменную коллекции: следующий запрос",
+                  "// в папке работает с тем, что создал этот.",
+                  "if (pm.response.code < 300) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.id !== undefined) pm.collectionVariables.set(\"leadId\", body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"campaign\": \"innoprom-2026\",\n  \"company\": \"Областной перинатальный центр\",\n  \"consent\": true,\n  \"email\": \"i.petrova@example.ru\",\n  \"form\": \"quote\",\n  \"language\": \"ru\",\n  \"message\": \"Интересует поставка двух систем R2 и сроки изготовления.\",\n  \"name\": \"Ирина Петрова\",\n  \"phone\": \"+7 343 300-00-00\",\n  \"productSlug\": \"vedal-r1-r2\",\n  \"trap\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway}}/api/forms/v1/leads",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "forms",
+                "v1",
+                "leads"
+              ],
+              "query": []
+            },
+            "description": "Принимает заявку с любой из пяти форм сайта.\n\nОтвечает `202 Accepted`, а не `201`: заявка принята и поставлена\nв разбор менеджеру, готового ресурса за ней не стоит.\n\nПериметр этой двери — валидация полей, скрытая ловушка для ботов\nи лимит частоты по адресу клиента: 5 обращений за 10 минут.\n\n\nОтправить заявку"
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "noauth"
+      }
+    },
+    {
+      "name": "Ассистент",
+      "item": [
+        {
+          "name": "Спросить Уранию",
+          "id": "vedal-0000",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"Какие каналы мониторинга у инкубатора-трансформера?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway}}/api/assistant/v1/ask",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "assistant",
+                "v1",
+                "ask"
+              ],
+              "query": []
+            },
+            "description": "Отвечает только по опубликованным материалам портала: каталогу, ленте\nи перечню документов. Закрытого файла в ответе не будет, потому что\nего нет в контексте — движок ходит через интерфейсы модулей, а они\nотдают исключительно опубликованное.\n\nВопросы про диагноз и цену отклоняются ограничениями до поиска.\nПодходящих источников не нашлось — ответа нет, приходит `handoff`\nс контактами и подходящими формами. Ответ всегда `200`: передача\nчеловеку это штатный исход, а не ошибка.\n\nЛимит частоты — 20 вопросов за 10 минут с адреса.\n\n\nСпросить Уранию"
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "noauth"
+      }
+    },
+    {
+      "name": "Админка: сессия",
+      "item": [
+        {
+          "name": "Кто вошёл",
+          "id": "vedal-0079",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/session",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "session"
+              ],
+              "query": []
+            },
+            "description": "Кто вошёл"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Админка: заявки",
+      "item": [
+        {
+          "name": "Заявки постранично, свежие сверху",
+          "id": "vedal-0046",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/leads?page=0&size=50",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "leads"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "Фильтр по статусу. Пусто — все.",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "disabled": false
+                },
+                {
+                  "key": "size",
+                  "value": "50",
+                  "description": "Размер страницы, не больше 200.",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Заявки постранично, свежие сверху"
+          },
+          "response": []
+        },
+        {
+          "name": "Статусы заявки",
+          "id": "vedal-0047",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/leads/statuses",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "leads",
+                "statuses"
+              ],
+              "query": []
+            },
+            "description": "Статусы заявки"
+          },
+          "response": []
+        },
+        {
+          "name": "Заявка целиком, с текстом и версией согласия",
+          "id": "vedal-0048",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/leads/{{leadId}}",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "leads",
+                "{{leadId}}"
+              ],
+              "query": []
+            },
+            "description": "Заявка целиком, с текстом и версией согласия"
+          },
+          "response": []
+        },
+        {
+          "name": "Разобрать заявку в сделку",
+          "id": "vedal-0049",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "vedal-0050",
+                "type": "text/javascript",
+                "exec": [
+                  "// Идентификатор уезжает в переменную коллекции: следующий запрос",
+                  "// в папке работает с тем, что создал этот.",
+                  "if (pm.response.code < 300) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.id !== undefined) pm.collectionVariables.set(\"dealId\", body.id);",
+                  "    if (body.clientId !== undefined) pm.collectionVariables.set(\"clientId\", body.clientId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 0,\n  \"clientId\": \"{{clientId}}\",\n  \"owner\": \"\",\n  \"pipeline\": \"sales\",\n  \"title\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/leads/{{leadId}}/convert",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "leads",
+                "{{leadId}}",
+                "convert"
+              ],
+              "query": []
+            },
+            "description": "Заводит сделку в выбранной воронке. Клиент либо указывается существующий,\nлибо заводится из данных заявки — портал не ищет совпадения сам: слить\nдве карточки потом можно, разделить ошибочно слитые уже нет.\n\nЗаявка разбирается один раз. Повтор — `409`: две сделки по одному\nобращению обе попали бы в аналитику.\n\n\nРазобрать заявку в сделку"
+          },
+          "response": []
+        },
+        {
+          "name": "История переписки и звонков по заявке",
+          "id": "vedal-0051",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/leads/{{leadId}}/history",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "leads",
+                "{{leadId}}",
+                "history"
+              ],
+              "query": []
+            },
+            "description": "История переписки и звонков по заявке"
+          },
+          "response": []
+        },
+        {
+          "name": "Дописать в историю заявки",
+          "id": "vedal-0052",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"at\": null,\n  \"body\": \"Обсудили сроки: готовы отгрузить в марте, нужен аванс 30%.\",\n  \"direction\": \"in\",\n  \"kind\": \"call\",\n  \"subject\": \"Созвон по срокам поставки\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/leads/{{leadId}}/history",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "leads",
+                "{{leadId}}",
+                "history"
+              ],
+              "query": []
+            },
+            "description": "История только дописывается: правки и удаления здесь нет.\n\nДописать в историю заявки"
+          },
+          "response": []
+        },
+        {
+          "name": "Разобрать заявку: статус и ответственный",
+          "id": "vedal-0053",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"owner\": null,\n  \"status\": \"draft\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/leads/{{leadId}}/triage",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "leads",
+                "{{leadId}}",
+                "triage"
+              ],
+              "query": []
+            },
+            "description": "Изменение попадает в журнал без персональных данных — только идентификатор заявки, старый и новый статус.\n\nРазобрать заявку: статус и ответственный"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Админка: клиенты",
+      "item": [
+        {
+          "name": "Клиенты постранично, по алфавиту",
+          "id": "vedal-0018",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/clients?page=0&size=50",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "clients"
+              ],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "",
+                  "description": "Поиск по наименованию и ИНН. Пусто — все.",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "disabled": false
+                },
+                {
+                  "key": "size",
+                  "value": "50",
+                  "description": "Размер страницы, не больше 200.",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Клиенты постранично, по алфавиту"
+          },
+          "response": []
+        },
+        {
+          "name": "Завести клиента",
+          "id": "vedal-0019",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "vedal-0020",
+                "type": "text/javascript",
+                "exec": [
+                  "// Идентификатор уезжает в переменную коллекции: следующий запрос",
+                  "// в папке работает с тем, что создал этот.",
+                  "if (pm.response.code < 300) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.id !== undefined) pm.collectionVariables.set(\"clientId\", body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"city\": \"Екатеринбург\",\n  \"country\": \"Россия\",\n  \"email\": \"info@example.ru\",\n  \"externalId\": null,\n  \"inn\": \"5406826069\",\n  \"kind\": \"company\",\n  \"kpp\": \"540601001\",\n  \"name\": \"Областной перинатальный центр\",\n  \"note\": null,\n  \"owner\": null,\n  \"phone\": \"+7 343 300-00-00\",\n  \"version\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/clients",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "clients"
+              ],
+              "query": []
+            },
+            "description": "Завести клиента"
+          },
+          "response": []
+        },
+        {
+          "name": "Виды клиента",
+          "id": "vedal-0021",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/clients/kinds",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "clients",
+                "kinds"
+              ],
+              "query": []
+            },
+            "description": "Виды клиента"
+          },
+          "response": []
+        },
+        {
+          "name": "Карточка клиента",
+          "id": "vedal-0022",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/clients/{{clientId}}",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "clients",
+                "{{clientId}}"
+              ],
+              "query": []
+            },
+            "description": "Карточка клиента"
+          },
+          "response": []
+        },
+        {
+          "name": "Править карточку клиента",
+          "id": "vedal-0023",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"city\": \"Екатеринбург\",\n  \"country\": \"Россия\",\n  \"email\": \"info@example.ru\",\n  \"externalId\": null,\n  \"inn\": \"5406826069\",\n  \"kind\": \"company\",\n  \"kpp\": \"540601001\",\n  \"name\": \"Областной перинатальный центр\",\n  \"note\": null,\n  \"owner\": null,\n  \"phone\": \"+7 343 300-00-00\",\n  \"version\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/clients/{{clientId}}",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "clients",
+                "{{clientId}}"
+              ],
+              "query": []
+            },
+            "description": "Форма отправляется вместе с версией прочитанной карточки. Расхождение версий — `409`: сохранить вслепую значит затереть чужую правку.\n\nПравить карточку клиента"
+          },
+          "response": []
+        },
+        {
+          "name": "История переписки и звонков по клиенту",
+          "id": "vedal-0024",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/clients/{{clientId}}/history",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "clients",
+                "{{clientId}}",
+                "history"
+              ],
+              "query": []
+            },
+            "description": "История переписки и звонков по клиенту"
+          },
+          "response": []
+        },
+        {
+          "name": "Дописать в историю клиента",
+          "id": "vedal-0025",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"at\": null,\n  \"body\": \"Обсудили сроки: готовы отгрузить в марте, нужен аванс 30%.\",\n  \"direction\": \"in\",\n  \"kind\": \"call\",\n  \"subject\": \"Созвон по срокам поставки\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/clients/{{clientId}}/history",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "clients",
+                "{{clientId}}",
+                "history"
+              ],
+              "query": []
+            },
+            "description": "История только дописывается: правки и удаления здесь нет. Историю, которую можно поправить задним числом, незачем вести.\n\nДописать в историю клиента"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Админка: сделки",
+      "item": [
+        {
+          "name": "Сделки постранично, свежие сверху",
+          "id": "vedal-0026",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/deals?page=0&size=50",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "deals"
+              ],
+              "query": [
+                {
+                  "key": "pipeline",
+                  "value": "",
+                  "description": "Фильтр по воронке: sales, dealer, service. Пусто — все.",
+                  "disabled": true
+                },
+                {
+                  "key": "stage",
+                  "value": "",
+                  "description": "Фильтр по стадии. Работает вместе с воронкой.",
+                  "disabled": true
+                },
+                {
+                  "key": "clientId",
+                  "value": "",
+                  "description": "Все сделки одного клиента. Перекрывает фильтр по воронке.",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "disabled": false
+                },
+                {
+                  "key": "size",
+                  "value": "50",
+                  "description": "Размер страницы, не больше 200.",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Сделки постранично, свежие сверху"
+          },
+          "response": []
+        },
+        {
+          "name": "Завести сделку по существующему клиенту",
+          "id": "vedal-0027",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "vedal-0028",
+                "type": "text/javascript",
+                "exec": [
+                  "// Идентификатор уезжает в переменную коллекции: следующий запрос",
+                  "// в папке работает с тем, что создал этот.",
+                  "if (pm.response.code < 300) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.id !== undefined) pm.collectionVariables.set(\"dealId\", body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 2650000,\n  \"clientId\": \"{{clientId}}\",\n  \"currency\": \"RUB\",\n  \"owner\": \"\",\n  \"pipeline\": \"sales\",\n  \"productSlug\": \"\",\n  \"title\": \"Поставка двух систем VEDAL R2\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/deals",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "deals"
+              ],
+              "query": []
+            },
+            "description": "Сделка из заявки заводится другой дверью — `POST /leads/{id}/convert`.\n\nЗавести сделку по существующему клиенту"
+          },
+          "response": []
+        },
+        {
+          "name": "Воронки и их стадии",
+          "id": "vedal-0029",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/deals/pipelines",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "deals",
+                "pipelines"
+              ],
+              "query": []
+            },
+            "description": "Набор стадий у каждой воронки свой. Форма рисует выбор из них, а стадию из чужой воронки не примет ни домен, ни схема.\n\nВоронки и их стадии"
+          },
+          "response": []
+        },
+        {
+          "name": "Карточка сделки",
+          "id": "vedal-0030",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/deals/{{dealId}}",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "deals",
+                "{{dealId}}"
+              ],
+              "query": []
+            },
+            "description": "Карточка сделки"
+          },
+          "response": []
+        },
+        {
+          "name": "Править карточку сделки",
+          "id": "vedal-0031",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 2650000,\n  \"currency\": \"\",\n  \"owner\": \"\",\n  \"productSlug\": \"\",\n  \"title\": \"Поставка двух систем VEDAL R2\",\n  \"version\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/deals/{{dealId}}",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "deals",
+                "{{dealId}}"
+              ],
+              "query": []
+            },
+            "description": "Стадия меняется отдельной дверью: перевод по воронке — это событие, а не правка поля.\n\nПравить карточку сделки"
+          },
+          "response": []
+        },
+        {
+          "name": "Приложить согласованный документ к сделке",
+          "id": "vedal-0032",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documentId\": \"{{documentId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/deals/{{dealId}}/attachments",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "deals",
+                "{{dealId}}",
+                "attachments"
+              ],
+              "query": []
+            },
+            "description": "Прикладывается ссылка на карточку документа, а не копия файла. Несогласованный документ приложить нельзя — `409` с разбором причины.\n\nПриложить согласованный документ к сделке"
+          },
+          "response": []
+        },
+        {
+          "name": "Отцепить документ от сделки",
+          "id": "vedal-0033",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/deals/{{dealId}}/attachments/{{documentId}}",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "deals",
+                "{{dealId}}",
+                "attachments",
+                "{{documentId}}"
+              ],
+              "query": []
+            },
+            "description": "Отцепить документ от сделки"
+          },
+          "response": []
+        },
+        {
+          "name": "История переписки и звонков по сделке",
+          "id": "vedal-0034",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/deals/{{dealId}}/history",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "deals",
+                "{{dealId}}",
+                "history"
+              ],
+              "query": []
+            },
+            "description": "История переписки и звонков по сделке"
+          },
+          "response": []
+        },
+        {
+          "name": "Дописать в историю сделки",
+          "id": "vedal-0035",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"at\": null,\n  \"body\": \"Обсудили сроки: готовы отгрузить в марте, нужен аванс 30%.\",\n  \"direction\": \"in\",\n  \"kind\": \"call\",\n  \"subject\": \"Созвон по срокам поставки\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/deals/{{dealId}}/history",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "deals",
+                "{{dealId}}",
+                "history"
+              ],
+              "query": []
+            },
+            "description": "История только дописывается: правки и удаления здесь нет.\n\nДописать в историю сделки"
+          },
+          "response": []
+        },
+        {
+          "name": "КП по сделке, свежие сверху",
+          "id": "vedal-0036",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/deals/{{dealId}}/quotes",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "deals",
+                "{{dealId}}",
+                "quotes"
+              ],
+              "query": []
+            },
+            "description": "КП по сделке, свежие сверху"
+          },
+          "response": []
+        },
+        {
+          "name": "Перевести сделку на другую стадию",
+          "id": "vedal-0037",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lostReason\": null,\n  \"stage\": \"qualified\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/deals/{{dealId}}/stage",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "deals",
+                "{{dealId}}",
+                "stage"
+              ],
+              "query": []
+            },
+            "description": "Стадия обязана быть из воронки этой сделки. Перевод в проигранную стадию\nтребует причины: воронка без причин показывает, сколько потеряли,\nи молчит о том, почему.\n\n\nПеревести сделку на другую стадию"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Админка: коммерческие предложения",
+      "item": [
+        {
+          "name": "КП постранично, свежие сверху",
+          "id": "vedal-0071",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/quotes?page=0&size=50",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "quotes"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "Фильтр по статусу. Пусто — все.",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "disabled": false
+                },
+                {
+                  "key": "size",
+                  "value": "50",
+                  "description": "Размер страницы, не больше 200.",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "КП постранично, свежие сверху"
+          },
+          "response": []
+        },
+        {
+          "name": "Завести КП по сделке",
+          "id": "vedal-0072",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "vedal-0073",
+                "type": "text/javascript",
+                "exec": [
+                  "// Идентификатор уезжает в переменную коллекции: следующий запрос",
+                  "// в папке работает с тем, что создал этот.",
+                  "if (pm.response.code < 300) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.id !== undefined) pm.collectionVariables.set(\"quoteId\", body.id);",
+                  "    if (body.version !== undefined) pm.collectionVariables.set(\"quoteVersion\", body.version);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currency\": \"\",\n  \"dealId\": \"{{dealId}}\",\n  \"items\": [\n    {\n      \"name\": \"Реанимационная система для новорождённых VEDAL R2\",\n      \"productSlug\": null,\n      \"quantity\": 2,\n      \"unitPrice\": 1250000\n    }\n  ],\n  \"note\": \"\",\n  \"validUntil\": \"2026-12-31\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/quotes",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "quotes"
+              ],
+              "query": []
+            },
+            "description": "Новое КП — черновик со своим номером. Номер выдаёт последовательность базы: двое, нажавшие «создать» одновременно, получат разные номера.\n\nЗавести КП по сделке"
+          },
+          "response": []
+        },
+        {
+          "name": "Статусы КП",
+          "id": "vedal-0074",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/quotes/statuses",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "quotes",
+                "statuses"
+              ],
+              "query": []
+            },
+            "description": "Статусы КП"
+          },
+          "response": []
+        },
+        {
+          "name": "КП целиком, вместе с позициями",
+          "id": "vedal-0075",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/quotes/{{quoteId}}",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "quotes",
+                "{{quoteId}}"
+              ],
+              "query": []
+            },
+            "description": "КП целиком, вместе с позициями"
+          },
+          "response": []
+        },
+        {
+          "name": "Править КП",
+          "id": "vedal-0076",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currency\": \"\",\n  \"items\": [\n    {\n      \"name\": \"Реанимационная система для новорождённых VEDAL R2\",\n      \"productSlug\": null,\n      \"quantity\": 2,\n      \"unitPrice\": 1250000\n    }\n  ],\n  \"note\": \"\",\n  \"validUntil\": \"2026-12-31\",\n  \"version\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/quotes/{{quoteId}}",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "quotes",
+                "{{quoteId}}"
+              ],
+              "query": []
+            },
+            "description": "Правится только черновик. Отправленное КП уже лежит у клиента в почте,\nи правка задним числом означала бы, что портал и клиент держат разные\nверсии одного предложения. Нужны другие условия — заведите новое КП.\n\nПозиции заменяются целиком: редактор видит их одним списком.\n\n\nПравить КП"
+          },
+          "response": []
+        },
+        {
+          "name": "Решение клиента по КП",
+          "id": "vedal-0077",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"accepted\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/quotes/{{quoteId}}/decision",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "quotes",
+                "{{quoteId}}",
+                "decision"
+              ],
+              "query": []
+            },
+            "description": "Только по отправленному: клиент не может согласиться с тем, чего не получал.\n\nРешение клиента по КП"
+          },
+          "response": []
+        },
+        {
+          "name": "Отметить КП отправленным",
+          "id": "vedal-0078",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/quotes/{{quoteId}}/send",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "quotes",
+                "{{quoteId}}",
+                "send"
+              ],
+              "query": []
+            },
+            "description": "Письмо портал пока не шлёт: `MailSender` пишет в лог, SMTP Яндекс 360 —\nследующий шаг. Отметка фиксирует, что предложение ушло, и с этого момента\nоно не правится.\n\n\nОтметить КП отправленным"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Админка: аналитика CRM",
+      "item": [
+        {
+          "name": "Воронка в одном разрезе за период",
+          "id": "vedal-0010",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/analytics?by=source",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "analytics"
+              ],
+              "query": [
+                {
+                  "key": "by",
+                  "value": "source",
+                  "description": "Разрез: product, source, language или campaign.",
+                  "disabled": false
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "description": "Начало периода включительно, `YYYY-MM-DD`. Пусто — с начала.",
+                  "disabled": true
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "description": "Конец периода включительно, `YYYY-MM-DD`. Пусто — по сегодня.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Считается по заявкам с левым соединением на сделку: заявка, не ставшая\nсделкой, обязана попасть в отчёт — иначе конверсия везде равна единице.\n\nНезаполненное значение разреза показывается как «—», а не прячется:\nзаявки без кампании — это тоже ответ.\n\n\nВоронка в одном разрезе за период"
+          },
+          "response": []
+        },
+        {
+          "name": "Разрезы отчёта",
+          "id": "vedal-0011",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/analytics/dimensions",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "analytics",
+                "dimensions"
+              ],
+              "query": []
+            },
+            "description": "Разрезы отчёта"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Админка: каталог",
+      "item": [
+        {
+          "name": "Категории каталога",
+          "id": "vedal-0014",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/categories",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "categories"
+              ],
+              "query": []
+            },
+            "description": "Категории каталога"
+          },
+          "response": []
+        },
+        {
+          "name": "Завести категорию",
+          "id": "vedal-0015",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\",\n  \"position\": 0,\n  \"slug\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/categories",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "categories"
+              ],
+              "query": []
+            },
+            "description": "Завести категорию"
+          },
+          "response": []
+        },
+        {
+          "name": "Удалить категорию",
+          "id": "vedal-0016",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/categories/{{categoryId}}",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "categories",
+                "{{categoryId}}"
+              ],
+              "query": []
+            },
+            "description": "Отклоняется, если в категории есть изделия: в схеме на связке стоит on delete restrict.\n\nУдалить категорию"
+          },
+          "response": []
+        },
+        {
+          "name": "Правка категории",
+          "id": "vedal-0017",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\",\n  \"position\": 0,\n  \"slug\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/categories/{{categoryId}}",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "categories",
+                "{{categoryId}}"
+              ],
+              "query": []
+            },
+            "description": "Правка категории"
+          },
+          "response": []
+        },
+        {
+          "name": "Все изделия, включая неопубликованные",
+          "id": "vedal-0064",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/products",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "products"
+              ],
+              "query": []
+            },
+            "description": "Все изделия, включая неопубликованные"
+          },
+          "response": []
+        },
+        {
+          "name": "Завести изделие",
+          "id": "vedal-0065",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "vedal-0066",
+                "type": "text/javascript",
+                "exec": [
+                  "// Идентификатор уезжает в переменную коллекции: следующий запрос",
+                  "// в папке работает с тем, что создал этот.",
+                  "if (pm.response.code < 300) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.id !== undefined) pm.collectionVariables.set(\"productId\", body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categorySlugs\": [\n    \"\"\n  ],\n  \"detail\": null,\n  \"docStatus\": \"confirmed\",\n  \"imageAlt\": \"\",\n  \"imageSrc\": \"/photos/products/vedal-a-2000.jpg\",\n  \"keyParams\": [\n    {\n      \"label\": \"\",\n      \"muted\": true,\n      \"value\": \"\"\n    }\n  ],\n  \"kind\": \"Инкубатор-трансформер\",\n  \"name\": \"\",\n  \"slug\": \"vedal-a-2000\",\n  \"sortOrder\": 0,\n  \"specs\": [\n    {\n      \"label\": \"\",\n      \"muted\": true,\n      \"value\": \"\"\n    }\n  ],\n  \"summary\": \"\",\n  \"version\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/products",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "products"
+              ],
+              "query": []
+            },
+            "description": "Создаётся неопубликованным. Публикация — отдельным действием.\n\nЗавести изделие"
+          },
+          "response": []
+        },
+        {
+          "name": "Изделие целиком",
+          "id": "vedal-0067",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/products/{{productId}}",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "products",
+                "{{productId}}"
+              ],
+              "query": []
+            },
+            "description": "Изделие целиком"
+          },
+          "response": []
+        },
+        {
+          "name": "Правка изделия",
+          "id": "vedal-0068",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categorySlugs\": [\n    \"\"\n  ],\n  \"detail\": null,\n  \"docStatus\": \"confirmed\",\n  \"imageAlt\": \"\",\n  \"imageSrc\": \"/photos/products/vedal-a-2000.jpg\",\n  \"keyParams\": [\n    {\n      \"label\": \"\",\n      \"muted\": true,\n      \"value\": \"\"\n    }\n  ],\n  \"kind\": \"Инкубатор-трансформер\",\n  \"name\": \"\",\n  \"slug\": \"vedal-a-2000\",\n  \"sortOrder\": 0,\n  \"specs\": [\n    {\n      \"label\": \"\",\n      \"muted\": true,\n      \"value\": \"\"\n    }\n  ],\n  \"summary\": \"\",\n  \"version\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/products/{{productId}}",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "products",
+                "{{productId}}"
+              ],
+              "query": []
+            },
+            "description": "Переименование опубликованного изделия отклоняется: адрес карточки уже разослан и проиндексирован.\n\nПравка изделия"
+          },
+          "response": []
+        },
+        {
+          "name": "Опубликовать изделие",
+          "id": "vedal-0069",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/products/{{productId}}/publish",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "products",
+                "{{productId}}",
+                "publish"
+              ],
+              "query": []
+            },
+            "description": "Опубликовать изделие"
+          },
+          "response": []
+        },
+        {
+          "name": "Снять изделие с публикации",
+          "id": "vedal-0070",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/products/{{productId}}/unpublish",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "products",
+                "{{productId}}",
+                "unpublish"
+              ],
+              "query": []
+            },
+            "description": "Изделие сразу пропадает с сайта. Данные остаются.\n\nСнять изделие с публикации"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Админка: новости",
+      "item": [
+        {
+          "name": "Все материалы, включая черновики",
+          "id": "vedal-0055",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/news",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "news"
+              ],
+              "query": []
+            },
+            "description": "Все материалы, включая черновики"
+          },
+          "response": []
+        },
+        {
+          "name": "Завести материал",
+          "id": "vedal-0056",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "vedal-0057",
+                "type": "text/javascript",
+                "exec": [
+                  "// Идентификатор уезжает в переменную коллекции: следующий запрос",
+                  "// в папке работает с тем, что создал этот.",
+                  "if (pm.response.code < 300) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.id !== undefined) pm.collectionVariables.set(\"newsId\", body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"body\": null,\n  \"excerpt\": \"\",\n  \"imageAlt\": \"\",\n  \"imageSrc\": \"\",\n  \"publishedOn\": \"2026-08-13\",\n  \"slug\": \"postavka-v-perinatalnyy-centr\",\n  \"tag\": \"Продукция\",\n  \"title\": \"\",\n  \"version\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/news",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "news"
+              ],
+              "query": []
+            },
+            "description": "Создаётся черновиком.\n\nЗавести материал"
+          },
+          "response": []
+        },
+        {
+          "name": "Рубрики",
+          "id": "vedal-0058",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/news/tags",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "news",
+                "tags"
+              ],
+              "query": []
+            },
+            "description": "Закрытый список из проверки в схеме. Админка рисует по нему выбор, а не свободное поле.\n\nРубрики"
+          },
+          "response": []
+        },
+        {
+          "name": "Удалить материал",
+          "id": "vedal-0059",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/news/{{newsId}}",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "news",
+                "{{newsId}}"
+              ],
+              "query": []
+            },
+            "description": "Опубликованный материал сначала снимается с публикации: живая ссылка из рассылки не должна переставать открываться одним нажатием.\n\nУдалить материал"
+          },
+          "response": []
+        },
+        {
+          "name": "Материал целиком",
+          "id": "vedal-0060",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/news/{{newsId}}",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "news",
+                "{{newsId}}"
+              ],
+              "query": []
+            },
+            "description": "Материал целиком"
+          },
+          "response": []
+        },
+        {
+          "name": "Правка материала",
+          "id": "vedal-0061",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"body\": null,\n  \"excerpt\": \"\",\n  \"imageAlt\": \"\",\n  \"imageSrc\": \"\",\n  \"publishedOn\": \"2026-08-13\",\n  \"slug\": \"postavka-v-perinatalnyy-centr\",\n  \"tag\": \"Продукция\",\n  \"title\": \"\",\n  \"version\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/news/{{newsId}}",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "news",
+                "{{newsId}}"
+              ],
+              "query": []
+            },
+            "description": "Правка материала"
+          },
+          "response": []
+        },
+        {
+          "name": "Опубликовать материал",
+          "id": "vedal-0062",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/news/{{newsId}}/publish",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "news",
+                "{{newsId}}",
+                "publish"
+              ],
+              "query": []
+            },
+            "description": "Без даты в ленте публикация отклоняется — это ограничение схемы news_published_needs_date.\n\nОпубликовать материал"
+          },
+          "response": []
+        },
+        {
+          "name": "Снять материал с публикации",
+          "id": "vedal-0063",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/news/{{newsId}}/unpublish",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "news",
+                "{{newsId}}",
+                "unpublish"
+              ],
+              "query": []
+            },
+            "description": "Снять материал с публикации"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Админка: документы",
+      "item": [
+        {
+          "name": "Все документы",
+          "id": "vedal-0038",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/documents",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "documents"
+              ],
+              "query": []
+            },
+            "description": "Включая внутренние и конфиденциальные — их нет в публичном перечне. У каждой строки поле `publishBlockedBy` объясняет, почему кнопка публикации недоступна.\n\nВсе документы"
+          },
+          "response": []
+        },
+        {
+          "name": "Завести документ",
+          "id": "vedal-0039",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"access\": \"pdf\",\n  \"group\": \"Лицензирование\",\n  \"listed\": true,\n  \"productSlug\": null,\n  \"revision\": \"\",\n  \"sensitivity\": \"public\",\n  \"slug\": \"\",\n  \"sourceOwner\": \"\",\n  \"subject\": \"VEDAL R1, R2\",\n  \"title\": \"\",\n  \"version\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/documents",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "documents"
+              ],
+              "query": []
+            },
+            "description": "Создаётся без файла и без публикации.\n\nЗавести документ"
+          },
+          "response": []
+        },
+        {
+          "name": "Справочники разделов, секретности и доступа",
+          "id": "vedal-0040",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/documents/vocabulary",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "documents",
+                "vocabulary"
+              ],
+              "query": []
+            },
+            "description": "Закрытые списки из проверок в схеме.\n\nСправочники разделов, секретности и доступа"
+          },
+          "response": []
+        },
+        {
+          "name": "Документ",
+          "id": "vedal-0041",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/documents/{{documentId}}",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "documents",
+                "{{documentId}}"
+              ],
+              "query": []
+            },
+            "description": "Документ"
+          },
+          "response": []
+        },
+        {
+          "name": "Правка карточки документа",
+          "id": "vedal-0042",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"access\": \"pdf\",\n  \"group\": \"Лицензирование\",\n  \"listed\": true,\n  \"productSlug\": null,\n  \"revision\": \"\",\n  \"sensitivity\": \"public\",\n  \"slug\": \"\",\n  \"sourceOwner\": \"\",\n  \"subject\": \"VEDAL R1, R2\",\n  \"title\": \"\",\n  \"version\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/documents/{{documentId}}",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "documents",
+                "{{documentId}}"
+              ],
+              "query": []
+            },
+            "description": "Правка карточки документа"
+          },
+          "response": []
+        },
+        {
+          "name": "Загрузить файл",
+          "id": "vedal-0043",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/documents/{{documentId}}/file",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "documents",
+                "{{documentId}}",
+                "file"
+              ],
+              "query": []
+            },
+            "description": "Предел — 20 МБ на файл. Отказ приходит из разбора multipart,\nто есть до того, как тело целиком попало в память приложения,\nи отвечает `413` в формате problem+json.\n\nЗагрузка не публикует документ: публикация — отдельное действие.\n\n\nЗагрузить файл"
+          },
+          "response": []
+        },
+        {
+          "name": "Опубликовать документ",
+          "id": "vedal-0044",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/documents/{{documentId}}/publish",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "documents",
+                "{{documentId}}",
+                "publish"
+              ],
+              "query": []
+            },
+            "description": "Отклоняется, если документ не `public`, без файла или не в перечне. Причина приезжает в `409`, но та же тройка закрыта ограничениями схемы.\n\nОпубликовать документ"
+          },
+          "response": []
+        },
+        {
+          "name": "Снять документ с публикации",
+          "id": "vedal-0045",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/documents/{{documentId}}/unpublish",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "documents",
+                "{{documentId}}",
+                "unpublish"
+              ],
+              "query": []
+            },
+            "description": "Ссылка на файл перестаёт работать немедленно: ответы с файлами не кэшируются как раз для этого.\n\nСнять документ с публикации"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Админка: изображения",
+      "item": [
+        {
+          "name": "Загрузить изображение",
+          "id": "vedal-0054",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/media?folder=&name=",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "media"
+              ],
+              "query": [
+                {
+                  "key": "folder",
+                  "value": "",
+                  "disabled": false
+                },
+                {
+                  "key": "name",
+                  "value": "",
+                  "description": "Имя файла без расширения. Только латиница в нижнем регистре, цифры и дефис.",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Кладёт файл в открытый на чтение бакет и возвращает путь для поля\n`imageSrc`. Имя файла собирается из `name`, а не из имени на диске\nредактора: пробелы, кириллица и `..` в ключе объектного хранилища\nничем хорошим не заканчиваются.\n\n\nЗагрузить изображение"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Админка: журнал",
+      "item": [
+        {
+          "name": "Журнал постранично, свежие сверху",
+          "id": "vedal-0012",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/audit?page=0&size=50",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "audit"
+              ],
+              "query": [
+                {
+                  "key": "subject",
+                  "value": "",
+                  "description": "Тип объекта: product, news, document, lead, category.",
+                  "disabled": true
+                },
+                {
+                  "key": "subjectId",
+                  "value": "",
+                  "description": "Идентификатор объекта — slug или UUID заявки.",
+                  "disabled": true
+                },
+                {
+                  "key": "actor",
+                  "value": "",
+                  "description": "Логин исполнителя.",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "disabled": false
+                },
+                {
+                  "key": "size",
+                  "value": "50",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Журнал постранично, свежие сверху"
+          },
+          "response": []
+        },
+        {
+          "name": "Весь путь одного запроса",
+          "id": "vedal-0013",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/admin/v1/audit/chain/{{correlationId}}",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "v1",
+                "audit",
+                "chain",
+                "{{correlationId}}"
+              ],
+              "query": []
+            },
+            "description": "Цепочка собирается по correlation_id и переживает границу планировщика: relay работает в другом потоке, и без этого связь письма с заявкой, которая его породила, теряется.\n\nВесь путь одного запроса"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
