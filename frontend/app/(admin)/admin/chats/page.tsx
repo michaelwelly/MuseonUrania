@@ -6,6 +6,7 @@ import {
   chatThread,
   chatsAll,
   closeChat,
+  eraseChatData,
   replyInChat,
   type ChatCard,
   type ChatThread,
@@ -13,6 +14,7 @@ import {
 } from "@/lib/admin";
 import { accessToken } from "@/lib/auth";
 import { apiUrl } from "@/lib/submit";
+import EraseData from "../EraseData";
 import { Note, message, useLoad, when } from "../ui";
 
 // Разговоры посетителей.
@@ -194,6 +196,14 @@ function Thread({ id, beat, onDone }: { id: string; beat: number; onDone: () => 
           </div>
         </div>
       )}
+
+      {/* Обращение по переписке исполняется здесь: посетитель мог написать
+          своё имя и телефон прямо в чат, и обычно именно так и делает. */}
+      <EraseData
+        what="тексты всех сообщений — и посетителя, и Урании, и сотрудника"
+        erase={() => eraseChatData(id)}
+        onDone={onDone}
+      />
     </>
   );
 }
