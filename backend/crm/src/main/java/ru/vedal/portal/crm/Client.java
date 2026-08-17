@@ -48,6 +48,14 @@ public class Client {
     @Version
     private long version;
 
+    // Уничтожение персональных данных карточки. У организации это почта,
+    // телефон и заметка; у частного лица — ещё и наименование.
+    @Column(name = "erased_at")
+    private Instant erasedAt;
+
+    @Column(name = "erasure_basis")
+    private String erasureBasis;
+
     @Column(name = "created_at")
     private Instant createdAt = Instant.now();
 
@@ -79,6 +87,10 @@ public class Client {
     public String getOwner() { return owner; }
     public void setOwner(String owner) { this.owner = owner; }
     public long getVersion() { return version; }
+    public Instant getErasedAt() { return erasedAt; }
+    public void setErasedAt(Instant erasedAt) { this.erasedAt = erasedAt; }
+    public String getErasureBasis() { return erasureBasis; }
+    public void setErasureBasis(String erasureBasis) { this.erasureBasis = erasureBasis; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }

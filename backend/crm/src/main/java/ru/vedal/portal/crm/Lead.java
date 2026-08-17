@@ -51,6 +51,16 @@ public class Lead {
     @Column(name = "idempotency_key")
     private String idempotencyKey;
 
+    // Когда персональные данные заявки уничтожены и на каком основании.
+    // Пусто — не уничтожались. Обезличенная заявка остаётся единицей учёта:
+    // форма, источник, язык и кампания по-прежнему считаются в аналитике,
+    // а опознать по ним человека нельзя.
+    @Column(name = "erased_at")
+    private Instant erasedAt;
+
+    @Column(name = "erasure_basis")
+    private String erasureBasis;
+
     @Column(name = "created_at")
     private Instant createdAt = Instant.now();
 
@@ -88,6 +98,10 @@ public class Lead {
     public void setCorrelationId(String correlationId) { this.correlationId = correlationId; }
     public String getIdempotencyKey() { return idempotencyKey; }
     public void setIdempotencyKey(String idempotencyKey) { this.idempotencyKey = idempotencyKey; }
+    public Instant getErasedAt() { return erasedAt; }
+    public void setErasedAt(Instant erasedAt) { this.erasedAt = erasedAt; }
+    public String getErasureBasis() { return erasureBasis; }
+    public void setErasureBasis(String erasureBasis) { this.erasureBasis = erasureBasis; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }
