@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import ru.vedal.portal.chat.ChatPrivacy;
 import ru.vedal.portal.crm.PersonalData;
 
 import java.util.Map;
@@ -31,9 +32,11 @@ import java.util.UUID;
 public class AdminPrivacyApi {
 
     private final PersonalData privacy;
+    private final ChatPrivacy chats;
 
-    public AdminPrivacyApi(PersonalData privacy) {
+    public AdminPrivacyApi(PersonalData privacy, ChatPrivacy chats) {
         this.privacy = privacy;
+        this.chats = chats;
     }
 
     @Operation(summary = "Уничтожить персональные данные заявки",
@@ -54,7 +57,38 @@ public class AdminPrivacyApi {
     @ApiResponse(responseCode = "404", description = "Заявки нет.")
     @DeleteMapping("/leads/{id}/personal-data")
     public Map<String, String> eraseLead(@PathVariable UUID id, Authentication authentication) {
-        var erased = privacy.eraseLead(id, PersonalData.Basis.REQUEST, Actor.of(authentication));
+        var actor = Actor.of(authentication);
+        var erased = privacy.eraseLead(id, PersonalData.Basis.REQUEST, actor);
+
+        // Разговор, из которого выросла заявка, стирается вместе с ней.
+        // Человек подаёт одно обращение, а данные его лежат в двух местах:
+        // исполнить только половину — значит не исполнить.
+        //
+        // Делается это здесь, а не внутри PersonalData: crm и chat друг о друге
+        // не знают, и связывать их ради одной операции значит потерять
+        // возможность вынести чат отдельно. Дверь знает про оба — ей и сшивать.
+        var talks = chats.eraseByLead(id, PersonalData.Basis.REQUEST.text(), actor);
+
+        return Map.of("result", erased ? "erased" : "already",
+                "conversations", String.valueOf(talks));
+    }
+
+    @Operation(summary = "Уничтожить персональные данные разговора",
+            description = """
+                    Стирает тела всех сообщений — и посетителя, и сотрудника, и Урании:
+                    сотрудник в ответе повторяет имя и телефон чаще, чем кажется,
+                    а ответ ассистента цитирует вопрос.
+
+                    Сама лента остаётся: по ней видно, что разговор был, сколько длился
+                    и чем кончился. Удалить его целиком значит потерять след работы
+                    сотрудника — а работа была, и за неё отвечали.
+                    """)
+    @ApiResponse(responseCode = "200", description = "Уничтожено либо уже было уничтожено.")
+    @ApiResponse(responseCode = "404", description = "Разговора нет.")
+    @DeleteMapping("/chats/{id}/personal-data")
+    public Map<String, String> eraseConversation(@PathVariable UUID id,
+                                                 Authentication authentication) {
+        var erased = chats.erase(id, PersonalData.Basis.REQUEST.text(), Actor.of(authentication));
         return Map.of("result", erased ? "erased" : "already");
     }
 
