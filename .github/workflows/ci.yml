@@ -139,7 +139,7 @@ jobs:
       # load: true оставляет образ в локальном демоне — без этого сканировать
       # нечего: push отключён, и образ существует только внутри buildx.
       - name: Образ портала
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./backend
           push: false
@@ -149,7 +149,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Образ шлюза
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./backend/api-gateway
           push: false
@@ -159,7 +159,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Образ сайта
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./frontend
           push: false
