@@ -11,6 +11,7 @@ import {
   type QuoteForm,
   type QuoteItemForm,
 } from "@/lib/admin";
+import { QUOTE_STATUS, label } from "../../labels";
 import { Field, Note, day, fieldErrors, isConflict, message, money, useLoad, when } from "../../ui";
 
 // Карточка КП.
@@ -18,14 +19,6 @@ import { Field, Note, day, fieldErrors, isConflict, message, money, useLoad, whe
 // Правится только черновик — это правило портала, и интерфейс его показывает,
 // а не обходит: у отправленного КП формы здесь просто нет. Цену называет
 // человек, и наружу — на сайт, в каталог, в ответы Урании — она не попадает.
-
-const STATUS_LABEL: Record<string, string> = {
-  draft: "черновик",
-  sent: "отправлено",
-  accepted: "принято",
-  rejected: "отклонено",
-  expired: "истекло",
-};
 
 const DECISIONS: Array<{ value: string; label: string }> = [
   { value: "accepted", label: "Клиент принял" },
@@ -44,7 +37,7 @@ export default function QuoteCard({ params }: { params: Promise<{ id: string }> 
         {data && (
           <div className="row">
             <span className={`badge ${data.status === "accepted" ? "badge--on" : ""}`}>
-              {STATUS_LABEL[data.status] ?? data.status}
+              {label(QUOTE_STATUS, data.status)}
             </span>
             <span className="mono">версия {data.version}</span>
           </div>

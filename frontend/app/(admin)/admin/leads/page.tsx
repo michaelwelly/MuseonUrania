@@ -21,19 +21,12 @@ import {
 import EraseData from "../EraseData";
 import History from "../History";
 import OwnerField from "../OwnerField";
+import { FORM, LEAD_STATUS, PIPELINE, label } from "../labels";
 import { Field, Note, message, useLoad, when } from "../ui";
 
 // Единственная страница админки, где на экране персональные данные.
 // Отсюда и размер страницы с потолком на портале: ?size=1000000 не должен
 // превращать список в выгрузку всей базы одним запросом.
-
-const STATUS_LABEL: Record<string, string> = {
-  draft: "черновик",
-  new: "новая",
-  in_progress: "в работе",
-  won: "выиграна",
-  lost: "проиграна",
-};
 
 export default function LeadsPage() {
   const [status, setStatus] = useState("");
@@ -63,7 +56,7 @@ export default function LeadsPage() {
             <option value="">все статусы</option>
             {(statuses ?? []).map((s) => (
               <option key={s} value={s}>
-                {STATUS_LABEL[s] ?? s}
+                {label(LEAD_STATUS, s)}
               </option>
             ))}
           </select>
@@ -107,12 +100,12 @@ export default function LeadsPage() {
                       <div className="mono">{row.email}</div>
                     </td>
                     <td className="tight">
-                      <span className="badge">{row.form}</span>
+                      <span className="badge">{label(FORM, row.form)}</span>
                       {row.productSlug && <div className="mono">{row.productSlug}</div>}
                     </td>
                     <td className="tight">
                       <span className={`badge ${row.status === "draft" ? "badge--warn" : ""}`}>
-                        {STATUS_LABEL[row.status] ?? row.status}
+                        {label(LEAD_STATUS, row.status)}
                       </span>
                       {row.owner && (
                         <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
@@ -237,7 +230,7 @@ function LeadCard({
               >
                 {statuses.map((s) => (
                   <option key={s} value={s}>
-                    {STATUS_LABEL[s] ?? s}
+                    {label(LEAD_STATUS, s)}
                   </option>
                 ))}
               </select>
@@ -339,7 +332,7 @@ function ConvertToDeal({
           <select value={form.pipeline} onChange={(e) => set("pipeline", e.target.value)}>
             {(funnels ?? []).map((f) => (
               <option key={f.pipeline} value={f.pipeline}>
-                {f.pipeline}
+                {label(PIPELINE, f.pipeline)}
               </option>
             ))}
           </select>

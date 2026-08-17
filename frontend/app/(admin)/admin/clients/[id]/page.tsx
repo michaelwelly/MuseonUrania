@@ -14,6 +14,7 @@ import {
 import EraseData from "../../EraseData";
 import ClientEditor from "../ClientEditor";
 import History from "../../History";
+import { PIPELINE, STAGE, label } from "../../labels";
 import { Note, money, useLoad, when } from "../../ui";
 
 export default function ClientCard({ params }: { params: Promise<{ id: string }> }) {
@@ -81,9 +82,9 @@ export default function ClientCard({ params }: { params: Promise<{ id: string }>
                           <Link href={`/admin/deals/${row.id}/`}>{row.title}</Link>
                         </td>
                         <td className="tight">
-                          <span className="badge">{row.pipeline}</span>
+                          <span className="badge">{label(PIPELINE, row.pipeline)}</span>
                         </td>
-                        <td className="tight">{row.stage}</td>
+                        <td className="tight">{label(STAGE, row.stage)}</td>
                         <td className="tight">{money(row.amount, row.currency)}</td>
                         <td className="tight muted">{when(row.createdAt)}</td>
                       </tr>
