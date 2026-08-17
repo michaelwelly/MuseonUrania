@@ -10,12 +10,14 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import ru.vedal.portal.common.RateLimit;
@@ -106,6 +108,23 @@ public class PublicChatController {
     @GetMapping("/{visitorKey}")
     public ChatDesk.Thread thread(@PathVariable @Size(max = 64) String visitorKey) {
         return desk.threadFor(visitorKey);
+    }
+
+    @Operation(summary = "Посетитель набирает текст",
+            description = """
+                    Сообщает сотруднику, что человек печатает. Ничего не записывает
+                    и ничего не возвращает: факт живёт секунды и интересен только тому,
+                    кто смотрит в экран прямо сейчас.
+
+                    Виджет шлёт это не на каждую букву, а раз в несколько секунд, пока
+                    поле не пустое: на каждое нажатие получился бы поток запросов
+                    ради надписи, которая и так не меняется.
+                    """)
+    @ApiResponse(responseCode = "204", description = "Принято.")
+    @PostMapping("/{visitorKey}/typing")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void typing(@PathVariable @Size(max = 64) String visitorKey) {
+        desk.typing(visitorKey);
     }
 
     @Operation(summary = "Поток обновлений разговора",

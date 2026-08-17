@@ -104,6 +104,43 @@ public class ChatStream {
         send(desks, event);
     }
 
+    /**
+     * Кто-то набирает текст.
+     *
+     * <p>Идёт мимо транзакционной шины намеренно — транзакции здесь нет и быть
+     * не должно. Ничего не записывается: факт живёт секунды, и AFTER_COMMIT
+     * ждал бы коммита, которого не будет.
+     *
+     * <p>Уходит только противоположной стороне. Отправить обеим значило бы
+     * показать человеку «вы печатаете» — сообщение, которое он и так знает,
+     * и которое в ленте выглядит как чужое.
+     *
+     * @param who {@link ChatMessage#VISITOR} или {@link ChatMessage#STAFF}.
+     */
+    public void typing(UUID conversationId, String visitorKey, String who) {
+        var addressees = ChatMessage.VISITOR.equals(who)
+                ? desks
+                : byVisitor.getOrDefault(visitorKey, List.of());
+
+        // Идентификатор разговора обязателен: на рабочем месте поток один
+        // на все разговоры, и «кто-то печатает» без указания кто — надпись,
+        // которую некуда поставить. Посетителю он не нужен (разговор у него
+        // один), но событие одно на обе стороны: два формата ради экономии
+        // одного поля разошлись бы при первой же правке.
+        for (var emitter : addressees) {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("typing")
+                        .data(new Typing(conversationId, who)));
+            } catch (IOException | IllegalStateException e) {
+                emitter.completeWithError(e);
+            }
+        }
+    }
+
+    /** Кто печатает и в каком разговоре. В базе не хранится: живёт секунды. */
+    public record Typing(UUID conversationId, String who) {}
+
     private void send(List<SseEmitter> subscribers, Changed event) {
         for (var emitter : subscribers) {
             try {

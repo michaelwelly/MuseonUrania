@@ -50,6 +50,12 @@ public class ChatMessage {
     @JdbcTypeCode(SqlTypes.JSON)
     private String sources;
 
+    // Когда сообщение прочитано противоположной стороной. Ставится, когда
+    // адресат читает ленту: отдельной кнопки «прочитано» не бывает,
+    // а отдельный запрос от клиента можно не отправить.
+    @Column(name = "read_at")
+    private Instant readAt;
+
     private Instant at = Instant.now();
 
     public UUID getId() { return id; }
@@ -64,6 +70,8 @@ public class ChatMessage {
     public void setBody(String body) { this.body = body; }
     public String getSources() { return sources; }
     public void setSources(String sources) { this.sources = sources; }
+    public Instant getReadAt() { return readAt; }
+    public void setReadAt(Instant readAt) { this.readAt = readAt; }
     public Instant getAt() { return at; }
     public void setAt(Instant at) { this.at = at; }
 }
