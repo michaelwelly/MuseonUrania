@@ -611,6 +611,45 @@ paths:
       summary: Дописать в историю клиента
       tags:
       - "Админка: клиенты"
+  /api/admin/v1/clients/{id}/personal-data:
+    delete:
+      description: |
+        Стирает почту, телефон и заметку. Наименование — только у частного
+        лица: у организации это её название, и стерев его мы получили бы
+        сделки, подписанные словом «удалено».
+
+        История переписки по клиенту стирается вместе с карточкой: там
+        персональных данных обычно больше, чем в самих полях.
+      operationId: eraseClient
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+          description: Уничтожено либо уже было уничтожено.
+        "404":
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+          description: Клиента нет.
+      security:
+      - keycloak: []
+      summary: Уничтожить персональные данные клиента
+      tags:
+      - "Админка: персональные данные"
   /api/admin/v1/deals:
     get:
       operationId: deals
@@ -1279,6 +1318,50 @@ paths:
       summary: Дописать в историю заявки
       tags:
       - "Админка: заявки"
+  /api/admin/v1/leads/{id}/personal-data:
+    delete:
+      description: |
+        Стирает имя, телефон, почту и текст обращения, а также тему и тело
+        всех записей истории по этой заявке. Организация не трогается:
+        юридическое лицо персональными данными не является.
+
+        Заявка остаётся: форма, источник, язык, кампания, статус и время
+        считаются в аналитике и после — опознать по ним человека нельзя.
+        Удалить строку было бы нельзя, не порвав ссылку из сделки, разрез
+        аналитики и запись в неизменяемом журнале.
+
+        Повторный вызов ничего не меняет и отвечает `already`: обращение
+        приходит дважды чаще, чем кажется.
+      operationId: eraseLead
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+          description: Уничтожено либо уже было уничтожено.
+        "404":
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+          description: Заявки нет.
+      security:
+      - keycloak: []
+      summary: Уничтожить персональные данные заявки
+      tags:
+      - "Админка: персональные данные"
   /api/admin/v1/leads/{id}/triage:
     post:
       description: "Изменение попадает в журнал без персональных данных — только и\
