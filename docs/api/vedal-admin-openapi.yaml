@@ -3241,6 +3241,10 @@ components:
           type: string
         body:
           type: string
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/Source"
     Page:
       type: object
       description: Страница списка.
@@ -3350,6 +3354,26 @@ components:
           type: boolean
         unsorted:
           type: boolean
+    Source:
+      type: object
+      description: "Опубликованный материал, на который опирается ответ."
+      properties:
+        kind:
+          type: string
+          description: Откуда материал взят.
+          enum:
+          - product
+          - news
+          - document
+          example: product
+        title:
+          type: string
+          description: Название материала. У изделия — название и тип через тире.
+          example: VEDAL A-2000 — Инкубатор-трансформер
+        url:
+          type: string
+          description: Адрес материала на сайте.
+          example: /products/vedal-a-2000/
     SseEmitter:
       type: object
       properties:
