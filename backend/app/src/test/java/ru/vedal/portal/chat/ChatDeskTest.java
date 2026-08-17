@@ -31,6 +31,34 @@ class ChatDeskTest extends PostgresTestBase {
         assertThat(thread.messages().get(1).author()).isEqualTo(ChatMessage.ASSISTANT);
     }
 
+    // Ответ обязан нести источники: правило проекта — утверждение без ссылки
+    // проверить нечем. В базе они лежат снимком, и лента обязана их вернуть,
+    // иначе виджет покажет ответ, которому нельзя верить.
+    @Test
+    void answerCarriesItsSourcesBackFromTheThread() {
+        var key = visitor();
+        desk.say(key, "Что такое VEDAL A-2000?", FROM_SITE);
+
+        var reread = desk.threadFor(key);
+        var answer = reread.messages().get(1);
+
+        assertThat(answer.author()).isEqualTo(ChatMessage.ASSISTANT);
+        assertThat(answer.sources())
+                .as("Ответ Урании без источников — ответ, которому нельзя верить")
+                .isNotEmpty();
+        assertThat(answer.sources().getFirst().url()).isNotBlank();
+    }
+
+    // У посетителя и у сотрудника источников нет и быть не может: их несёт
+    // только ответ движка. Пустой список, а не null — иначе клиент обязан
+    // помнить про два способа сказать «ничего».
+    @Test
+    void visitorLinesCarryNoSources() {
+        var thread = desk.say(visitor(), "Что такое VEDAL A-2000?", FROM_SITE);
+
+        assertThat(thread.messages().get(0).sources()).isEmpty();
+    }
+
     // Вопрос про цену отклоняется ограничениями до поиска — это правило проекта,
     // а не поведение движка. Разговор при этом не обрывается, а встаёт в очередь
     // к человеку: передача специалисту это штатный исход.
