@@ -23,8 +23,21 @@ export const metadata: Metadata = {
 
 export default function AdminRootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ru" className={fontVariables}>
-      <body className="admin-body">{children}</body>
+    // suppressHydrationWarning ровно на этих двух узлах и ни на чём больше.
+    //
+    // Расширения браузера правят <html> и <body> до того, как React отрисуется:
+    // дописывают свои атрибуты вроде __processed_<uuid>__, класс темы, метку
+    // менеджера паролей. Сервер таких атрибутов не рисовал, и React считает
+    // это расхождением разметки — в режиме разработки поверх страницы встаёт
+    // оверлей ошибки, и рабочее место выглядит сломанным, хотя сломан не оно.
+    //
+    // Подавление здесь безопасно и не прячет наших ошибок: оно действует
+    // на атрибуты САМОГО узла и не распространяется на детей. Расхождение
+    // внутри страницы отловится как обычно.
+    <html lang="ru" className={fontVariables} suppressHydrationWarning>
+      <body className="admin-body" suppressHydrationWarning>
+        {children}
+      </body>
     </html>
   );
 }
