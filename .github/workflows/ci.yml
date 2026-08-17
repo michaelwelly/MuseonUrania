@@ -26,7 +26,7 @@ jobs:
     name: Бэкенд — тесты и покрытие
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: JDK 25
         uses: actions/setup-java@v4
@@ -84,7 +84,7 @@ jobs:
     name: Фронтенд — типы, линтер, тесты, сборка
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v4
         with:
@@ -132,7 +132,7 @@ jobs:
       security-events: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: docker/setup-buildx-action@v3
 
@@ -233,7 +233,7 @@ jobs:
     # а на слоевых ветках половина стека всё равно не собрана вместе.
     if: github.ref == 'refs/heads/dev' || github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Та же команда, которой стек поднимает человек на чистой машине.
       # Если она перестанет работать, узнать об этом должен CI, а не тестировщик.
