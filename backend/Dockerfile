@@ -28,6 +28,7 @@ COPY crm/pom.xml            crm/
 COPY gateway/pom.xml        gateway/
 COPY notifications/pom.xml  notifications/
 COPY assistant/pom.xml      assistant/
+COPY chat/pom.xml           chat/
 COPY admin/pom.xml          admin/
 COPY app/pom.xml            app/
 
@@ -51,6 +52,7 @@ COPY crm/src            crm/src
 COPY gateway/src        gateway/src
 COPY notifications/src  notifications/src
 COPY assistant/src      assistant/src
+COPY chat/src           chat/src
 COPY admin/src          admin/src
 COPY app/src            app/src
 
