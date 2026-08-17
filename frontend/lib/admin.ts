@@ -77,7 +77,9 @@ const post = <T>(path: string, body?: unknown) =>
   request<T>(path, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) });
 const put = <T>(path: string, body: unknown) =>
   request<T>(path, { method: "PUT", body: JSON.stringify(body) });
-const del = (path: string) => request<void>(path, { method: "DELETE" });
+// Обобщён с прежним поведением по умолчанию: удаление карточки ничего не
+// возвращает, а уничтожение персональных данных отвечает, что именно сделано.
+const del = <T = void>(path: string) => request<T>(path, { method: "DELETE" });
 
 // ————— сессия —————
 
@@ -259,6 +261,8 @@ export type Lead = LeadRow & {
   consentVersion: string;
   consentAt: string;
   correlationId: string | null;
+  /** Когда персональные данные уничтожены. Пусто — не уничтожались. */
+  erasedAt: string | null;
 };
 
 export const leads = (status: string, page = 0, size = 50) => {
@@ -679,3 +683,16 @@ export const replyInChat = (id: string, text: string) =>
   post<ChatThread>(`/chats/${id}/messages`, { text });
 
 export const closeChat = (id: string) => post<void>(`/chats/${id}/close`, {});
+
+// ————— уничтожение персональных данных —————
+//
+// Стирает и заявку, и разговор, из которого она выросла: человек подаёт одно
+// обращение, а данные его лежат в двух местах.
+export const eraseLeadData = (id: string) =>
+  del<{ result: string; conversations: string }>(`/leads/${id}/personal-data`);
+
+export const eraseClientData = (id: string) =>
+  del<{ result: string }>(`/clients/${id}/personal-data`);
+
+export const eraseChatData = (id: string) =>
+  del<{ result: string }>(`/chats/${id}/personal-data`);

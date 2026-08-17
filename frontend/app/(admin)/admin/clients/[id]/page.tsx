@@ -5,18 +5,20 @@ import { use, useState } from "react";
 import {
   client as loadClient,
   clientKinds,
+  eraseClientData,
   deals as loadDeals,
   type Client,
   type DealRow,
   type Page,
 } from "@/lib/admin";
+import EraseData from "../../EraseData";
 import ClientEditor from "../ClientEditor";
 import History from "../../History";
 import { Note, money, useLoad, when } from "../../ui";
 
 export default function ClientCard({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { data, error, loading } = useLoad<Client>(() => loadClient(id), id);
+  const { data, error, loading, reload } = useLoad<Client>(() => loadClient(id), id);
   const { data: kinds } = useLoad<string[]>(clientKinds);
   const { data: theirDeals } = useLoad<Page<DealRow>>(
     () => loadDeals({ clientId: id }, 0, 200),
@@ -93,6 +95,15 @@ export default function ClientCard({ params }: { params: Promise<{ id: string }>
           </div>
 
           <History of="clients" id={data.id} />
+
+          {/* Обращение субъекта по карточке клиента. Наименование организации
+              не трогается — юрлицо персональными данными не является; у частного
+              лица стирается и оно. */}
+          <EraseData
+            what="почта, телефон, заметка и вся история переписки по клиенту"
+            erase={() => eraseClientData(data.id)}
+            onDone={reload}
+          />
         </>
       )}
     </>

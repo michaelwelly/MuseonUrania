@@ -5,6 +5,7 @@ import { useState } from "react";
 import {
   clients as loadClients,
   convertLead,
+  eraseLeadData,
   lead,
   leadStatuses,
   leads,
@@ -17,6 +18,7 @@ import {
   type Page,
   type Pipeline,
 } from "@/lib/admin";
+import EraseData from "../EraseData";
 import History from "../History";
 import OwnerField from "../OwnerField";
 import { Field, Note, message, useLoad, when } from "../ui";
@@ -254,6 +256,16 @@ function LeadCard({
           </div>
 
           <ConvertToDeal lead={data} onError={onError} />
+
+          {/* Обращение субъекта персональных данных исполняется здесь: это
+              единственный экран, где они на виду целиком. Стирается вместе
+              с историей переписки и с разговором, если заявка выросла из чата. */}
+          <EraseData
+            what="имя, телефон, почта, текст обращения, вся история переписки и разговор в чате, если он был"
+            erasedAt={data.erasedAt}
+            erase={() => eraseLeadData(id)}
+            onDone={onDone}
+          />
         </>
       )}
 
