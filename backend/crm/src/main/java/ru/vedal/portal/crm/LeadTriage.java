@@ -88,7 +88,7 @@ public class LeadTriage implements LeadAdmin {
                 l.getOwner(), l.getLanguage(), l.getCampaign(),
                 deals.findByLeadId(l.getId()).map(Deal::getId).orElse(null),
                 l.getConsentVersion(), l.getConsentAt(), l.getCorrelationId(),
-                l.getCreatedAt());
+                l.getErasedAt(), l.getCreatedAt());
     }
 
     private Lead find(UUID id) {

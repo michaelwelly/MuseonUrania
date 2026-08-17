@@ -55,6 +55,14 @@ public interface LeadAdmin {
                     @Schema(description = "Идентификатор цепочки запроса. По нему в журнале "
                             + "собирается весь путь заявки.", nullable = true)
                     String correlationId,
+
+                    @Schema(description = "Когда персональные данные заявки уничтожены. "
+                            + "Пусто — не уничтожались. Нужно интерфейсу, чтобы отличить "
+                            + "исполненное обращение от сбоя: без этой отметки слово "
+                            + "«удалено» в полях выглядит одинаково в обоих случаях.",
+                            nullable = true)
+                    Instant erasedAt,
+
                     Instant createdAt) {}
 
     @Schema(name = "AdminLeadTriage", description = "Разбор заявки: статус и ответственный.")
