@@ -6,6 +6,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.vedal.portal.assistant.AssistantService;
+import ru.vedal.portal.assistant.LlmEngine;
 import ru.vedal.portal.audit.AuditLog;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import ru.vedal.portal.common.NotFoundException;
@@ -235,7 +236,8 @@ public class ChatDesk {
 
     private Thread thread(Conversation conversation) {
         var list = messages.findByConversationIdOrderByAtAsc(conversation.getId()).stream()
-                .map(m -> new Line(m.getAuthor(), m.getActor(), m.getBody(), m.getAt()))
+                .map(m -> new Line(m.getAuthor(), m.getActor(), m.getBody(),
+                        deserialize(m.getSources()), m.getAt()))
                 .toList();
         return new Thread(conversation.getId(), conversation.getStatus(), list);
     }
@@ -243,6 +245,28 @@ public class ChatDesk {
     private String serialize(Object sources) {
         if (sources == null) return null;
         return json.writeValueAsString(sources);
+    }
+
+    /**
+     * Источники ответа обратно из снимка.
+     *
+     * <p>Отдавать их обязательно: правило проекта — утверждение без ссылки
+     * проверить нечем, и ответ Урании без источников это ответ, которому
+     * нельзя верить. В базе они лежат снимком, потому что изделие могли
+     * переименовать или снять с публикации, а переписка обязана остаться
+     * такой, какой её видел человек.
+     *
+     * <p>Разбор не должен ронять чтение ленты: испорченный JSON в одной
+     * строке — повод показать сообщение без ссылок, а не отказать в показе
+     * всего разговора.
+     */
+    private List<LlmEngine.Source> deserialize(String sources) {
+        if (sources == null || sources.isBlank()) return List.of();
+        try {
+            return List.of(json.readValue(sources, LlmEngine.Source[].class));
+        } catch (RuntimeException e) {
+            return List.of();
+        }
     }
 
     public record Thread(UUID id, String status, List<Line> messages) {
@@ -258,5 +282,6 @@ public class ChatDesk {
      * и у самого посетителя пусто: подписывать машину именем человека нельзя,
      * а посетитель и так знает, что написал сам.
      */
-    public record Line(String author, String actor, String body, Instant at) {}
+    public record Line(String author, String actor, String body,
+                       List<LlmEngine.Source> sources, Instant at) {}
 }
