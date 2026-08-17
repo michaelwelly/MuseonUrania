@@ -1,7 +1,11 @@
 .DS_Store
 .env
 .env.*
+# Образцы без значений — это документация, а не секреты. Исключение именное,
+# а не «!.env.*.example»: правило с двумя звёздочками однажды пропустит
+# .env.prod.example, который кто-то заполнил по-настоящему.
 !.env.example
+!.env.host.example
 
 # Local agent/session artifacts
 .codex/
