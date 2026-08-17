@@ -108,12 +108,41 @@ public class ChatDesk {
         return thread(conversation);
     }
 
-    /** Лента разговора по ключу браузера. Разговора нет — пустая лента, а не отказ. */
-    @Transactional(readOnly = true)
+    /**
+     * Лента разговора по ключу браузера. Разговора нет — пустая лента, а не отказ.
+     *
+     * <p>Чтение ленты и есть отметка прочтения: посетитель, открывший виджет,
+     * увидел то, что там написано. Отдельной кнопки «прочитано» не бывает,
+     * а отдельный запрос клиент может не отправить — на обрыве связи, на
+     * закрытии вкладки, просто потому что его забыли позвать.
+     */
+    @Transactional
     public Thread threadFor(String visitorKey) {
         return conversations.findByVisitorKeyAndStatusNot(visitorKey, Conversation.CLOSED)
-                .map(this::thread)
+                .map(conversation -> {
+                    // Посетитель читает то, что написали ему: ответы Урании
+                    // и сотрудника. Свои сообщения он и так видел.
+                    markRead(conversation, ChatMessage.VISITOR);
+                    return thread(conversation);
+                })
                 .orElseGet(Thread::empty);
+    }
+
+    /**
+     * Посетитель набирает текст.
+     *
+     * <p>Мимо базы и мимо транзакции: факт живёт секунды и интересен только
+     * тому, кто смотрит в экран прямо сейчас. Записывать его значит писать
+     * несколько раз на каждое сообщение ради того, что протухнет раньше,
+     * чем доедет.
+     */
+    @Transactional(readOnly = true)
+    public void typing(String visitorKey) {
+        // Разговор ищется ради его идентификатора: на рабочем месте поток один
+        // на все разговоры, и без него надпись некуда поставить. Запрос дешёвый
+        // и редкий — виджет шлёт это раз в несколько секунд, а не на букву.
+        conversations.findByVisitorKeyAndStatusNot(visitorKey, Conversation.CLOSED)
+                .ifPresent(c -> stream.typing(c.getId(), visitorKey, ChatMessage.VISITOR));
     }
 
     // ————— сторона сотрудника —————
@@ -139,9 +168,56 @@ public class ChatDesk {
         return conversations.findByOrderByLastAtDesc(PageRequest.of(page, size)).map(this::card);
     }
 
-    @Transactional(readOnly = true)
+    /**
+     * Лента разговора для сотрудника.
+     *
+     * <p>Открыв её, он прочитал написанное посетителем — и посетитель увидит
+     * галочку. Это единственный честный момент: сотрудник смотрит в текст.
+     */
+    @Transactional
     public Thread threadOf(UUID id) {
-        return thread(find(id));
+        var conversation = find(id);
+        markRead(conversation, ChatMessage.STAFF);
+        return thread(conversation);
+    }
+
+    /** Сотрудник набирает ответ. Видит это только тот посетитель, кому он отвечает. */
+    public void typingTo(UUID id) {
+        conversations.findById(id)
+                .ifPresent(c -> stream.typing(c.getId(), c.getVisitorKey(), ChatMessage.STAFF));
+    }
+
+    /**
+     * Отметить прочитанным всё, что написано НЕ этой стороной.
+     *
+     * @param side кто читает: {@link ChatMessage#VISITOR} или {@link ChatMessage#STAFF}.
+     *             Сотрудник читает сообщения посетителя, посетитель — ответы
+     *             Урании и сотрудника.
+     */
+    private void markRead(Conversation conversation, String side) {
+        var now = Instant.now();
+        var changed = false;
+
+        for (var message : messages.findByConversationIdOrderByAtAsc(conversation.getId())) {
+            var mine = ChatMessage.VISITOR.equals(side)
+                    ? ChatMessage.VISITOR.equals(message.getAuthor())
+                    // Для сотрудника «своё» — и его ответ, и ответ Урании:
+                    // она отвечает от имени портала, и галочка на её реплике
+                    // означала бы, что портал прочитал сам себя.
+                    : !ChatMessage.VISITOR.equals(message.getAuthor());
+
+            if (mine || message.getReadAt() != null) continue;
+            message.setReadAt(now);
+            changed = true;
+        }
+
+        // Событие только если что-то изменилось: иначе каждое открытие ленты
+        // будило бы всех подписчиков разговора без всякой причины, а виджет
+        // на это перечитывает ленту — и будил бы снова.
+        if (changed) {
+            bus.publishEvent(new ChatStream.Changed(
+                    conversation.getId(), conversation.getVisitorKey()));
+        }
     }
 
     /**
@@ -237,7 +313,7 @@ public class ChatDesk {
     private Thread thread(Conversation conversation) {
         var list = messages.findByConversationIdOrderByAtAsc(conversation.getId()).stream()
                 .map(m -> new Line(m.getAuthor(), m.getActor(), m.getBody(),
-                        deserialize(m.getSources()), m.getAt()))
+                        deserialize(m.getSources()), m.getAt(), m.getReadAt()))
                 .toList();
         return new Thread(conversation.getId(), conversation.getStatus(), list);
     }
@@ -283,5 +359,8 @@ public class ChatDesk {
      * а посетитель и так знает, что написал сам.
      */
     public record Line(String author, String actor, String body,
-                       List<LlmEngine.Source> sources, Instant at) {}
+                       List<LlmEngine.Source> sources, Instant at,
+
+                       /** Когда прочитано противоположной стороной. null — ещё нет. */
+                       Instant readAt) {}
 }

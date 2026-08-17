@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import ru.vedal.portal.chat.ChatDesk;
@@ -87,6 +89,22 @@ public class AdminChatApi {
     public ChatDesk.Thread reply(@PathVariable UUID id, @Valid @RequestBody Reply body,
                                  Authentication authentication) {
         return desk.reply(id, Actor.of(authentication), body.text());
+    }
+
+    @Operation(summary = "Сотрудник набирает ответ",
+            description = """
+                    Показывает посетителю «отвечают…». Ничего не записывает: факт живёт
+                    секунды. Уходит только тому посетителю, чей это разговор.
+
+                    Нужно ровно для одного — чтобы человек не ушёл со страницы за те
+                    полминуты, пока сотрудник формулирует. Молчание в чате читается
+                    как «меня не слышат».
+                    """)
+    @ApiResponse(responseCode = "204", description = "Принято.")
+    @PostMapping("/{id}/typing")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void typing(@PathVariable UUID id) {
+        desk.typingTo(id);
     }
 
     @Operation(summary = "Закрыть разговор",

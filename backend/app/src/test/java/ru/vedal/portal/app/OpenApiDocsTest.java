@@ -58,6 +58,7 @@ class OpenApiDocsTest extends PostgresTestBase {
                 // под лимитом частоты. Периметр проверяется там же, где и был.
                 "/api/assistant/v1/chat",
                 "/api/assistant/v1/chat/{visitorKey}",
+                "/api/assistant/v1/chat/{visitorKey}/typing",
                 "/api/assistant/v1/chat/{visitorKey}/stream")));
     }
 
