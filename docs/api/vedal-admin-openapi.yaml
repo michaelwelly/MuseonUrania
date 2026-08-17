@@ -433,6 +433,46 @@ paths:
       summary: Ответить посетителю
       tags:
       - "Админка: чат"
+  /api/admin/v1/chats/{id}/personal-data:
+    delete:
+      description: |
+        Стирает тела всех сообщений — и посетителя, и сотрудника, и Урании:
+        сотрудник в ответе повторяет имя и телефон чаще, чем кажется,
+        а ответ ассистента цитирует вопрос.
+
+        Сама лента остаётся: по ней видно, что разговор был, сколько длился
+        и чем кончился. Удалить его целиком значит потерять след работы
+        сотрудника — а работа была, и за неё отвечали.
+      operationId: eraseConversation
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+          description: Уничтожено либо уже было уничтожено.
+        "404":
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+          description: Разговора нет.
+      security:
+      - keycloak: []
+      summary: Уничтожить персональные данные разговора
+      tags:
+      - "Админка: персональные данные"
   /api/admin/v1/clients:
     get:
       operationId: clients
