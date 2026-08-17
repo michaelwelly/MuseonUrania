@@ -659,6 +659,8 @@ export type ChatLine = {
   author: "visitor" | "assistant" | "staff";
   actor: string | null;
   body: string;
+  /** Чем отвечала Урания. Сотруднику это важно: он видит, что уже сказали. */
+  sources: { title: string; url: string; kind?: string }[];
   at: string;
 };
 

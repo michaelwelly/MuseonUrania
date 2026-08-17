@@ -165,6 +165,8 @@ export type ChatLine = {
   /** Имя сотрудника. У Урании и у самого посетителя пусто. */
   actor: string | null;
   body: string;
+  /** Материалы, на которых построен ответ Урании. У остальных пусто. */
+  sources: Source[];
   at: string;
 };
 
