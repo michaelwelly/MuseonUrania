@@ -4,6 +4,7 @@
 
 import { products } from "./products";
 import { categories } from "./products";
+import { directions, models } from "@/lib/plural";
 
 export const homeHero = {
   eyebrow: "ООО «ВЕДАЛ» · Екатеринбург",
@@ -17,27 +18,17 @@ export const homeHero = {
   },
 };
 
-// Существительное склоняется по числу, которое считается от каталога.
-// Без этого сокращение программы до четырёх позиций дало бы на главной
-// «4 моделей»: подпись была написана под двузначное число и молча
-// разъехалась бы с ним.
-const plural = (n: number, one: string, few: string, many: string) => {
-  const mod100 = n % 100;
-  if (mod100 >= 11 && mod100 <= 14) return many;
-  const mod10 = n % 10;
-  if (mod10 === 1) return one;
-  if (mod10 >= 2 && mod10 <= 4) return few;
-  return many;
-};
-
 export const stats = [
+  // Подписи склоняются по числу: оно считается от каталога, а значит меняется
+  // вместе с ним. Написанное константой «моделей» дало бы на четырёх
+  // позициях «4 моделей».
   {
     value: String(products.length),
-    label: `${plural(products.length, "модель", "модели", "моделей")} в производственной программе`,
+    label: `${models(products.length)} в производственной программе`,
   },
   {
     value: String(categories.length),
-    label: `${plural(categories.length, "направление", "направления", "направлений")}: от неонатологии до мониторинга`,
+    label: `${directions(categories.length)}: от неонатологии до мониторинга`,
   },
   { value: "1", label: "площадка: разработка, сборка и сервис рядом" },
   { value: "24 ч", label: "типовой срок подготовки предложения" },

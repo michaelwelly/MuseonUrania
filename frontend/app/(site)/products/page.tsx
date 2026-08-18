@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import PageHero from "@/components/PageHero";
 import { DarkCta } from "@/components/Blocks";
 import { fetchCategories, fetchProducts } from "@/lib/api";
+import { directions, models } from "@/lib/plural";
 import Catalog from "./catalog";
 import styles from "./page.module.css";
 
@@ -25,8 +26,8 @@ export default async function ProductsPage() {
         title="Каталог оборудования"
         lead={lead}
         stats={[
-          { value: String(products.length), label: "моделей" },
-          { value: String(categories.length), label: "направлений" },
+          { value: String(products.length), label: models(products.length) },
+          { value: String(categories.length), label: directions(categories.length) },
         ]}
       />
 
