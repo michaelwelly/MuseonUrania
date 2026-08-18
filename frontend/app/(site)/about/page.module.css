@@ -1,6 +1,5 @@
 /* О компании. Экран 04 редизайна.
    Полоса цифр и тёмный CTA — общие компоненты в components/Blocks.tsx. */
-
 .page {
   display: flex;
   flex-direction: column;
@@ -22,10 +21,6 @@
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--green);
-}
-
-.eyebrowDark {
-  color: var(--green-on-dark);
 }
 
 /* ---------- полный цикл ---------- */
@@ -91,91 +86,46 @@
 }
 
 /* ---------- направления ---------- */
-.directions {
+/* ---------- членство в УТПП ---------- */
+/* На месте бывшей полосы партнёров, но одноколоночная и без фотографии:
+   у знака палаты фотографии нет, а растягивать блок картинкой цеха —
+   значит выдавать членство за производственный факт. */
+.membership {
   padding: 72px 48px;
   background: var(--soft);
   border-top: 1px solid var(--line);
 }
 
-.h2 {
-  font-size: 34px;
-  letter-spacing: -0.03em;
+.membershipCopy {
+  max-width: 62ch;
 }
 
-.grid5 {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 1px;
-  margin-top: 32px;
-  background: var(--line);
-  border: 1px solid var(--line);
-  list-style: none;
-}
-
-.dirCell {
-  padding: 26px 22px 30px;
-  background: #fff;
-  height: 100%;
-}
-
-/* ---------- партнёры ---------- */
-.partners {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  background: var(--deep);
-}
-
-.partnersCopy {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 72px 48px;
-  color: #fff;
-}
-
-.partnersTitle {
+.membershipTitle {
   margin-top: 16px;
-  max-width: 20ch;
   font-size: 34px;
   line-height: 1.1;
   letter-spacing: -0.03em;
 }
 
-.partnerList {
-  margin-top: 30px;
-  list-style: none;
+.membershipText {
+  margin-top: 18px;
+  font-size: 15.5px;
+  line-height: 1.6;
 }
 
-.partner {
-  padding: 18px 0;
-  border-top: 1px solid var(--on-dark-line);
+.membershipLink {
+  display: inline-block;
+  margin-top: 18px;
+  font-weight: 600;
+  color: var(--green);
+  border-bottom: 1px solid currentColor;
 }
 
-.partner:last-child {
-  border-bottom: 1px solid var(--on-dark-line);
-}
-
-.partnerName {
-  font-family: var(--font-display), sans-serif;
-  font-size: 17px;
-  font-weight: 500;
-}
-
-.partnerText {
-  margin-top: 7px;
-  font-size: 14px;
-  line-height: 1.5;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.photo {
-  position: relative;
-  min-height: 520px;
-  background: var(--img-bg);
-}
-
-.photo img {
-  object-fit: cover;
+.membershipNote {
+  margin-top: 22px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--muted);
 }
 
 /* ---------- реквизиты ---------- */
@@ -229,19 +179,14 @@
 
 @media (max-width: 1100px) {
   .cycle,
-  .partners,
   .legal {
     grid-template-columns: 1fr;
     gap: 28px;
   }
 
   .cycle,
-  .directions,
+  .membership,
   .legal {
-    padding: 48px 24px;
-  }
-
-  .partnersCopy {
     padding: 48px 24px;
   }
 
@@ -249,20 +194,11 @@
     height: 280px;
   }
 
-  .photo {
-    min-height: 320px;
-  }
-
-  .grid5 {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   .cycleTitle,
-  .partnersTitle {
+  .membershipTitle {
     font-size: 28px;
   }
 
-  .h2,
   .legalTitle {
     font-size: 26px;
   }
@@ -270,9 +206,8 @@
 
 @media (max-width: 640px) {
   .cycle,
-  .directions,
-  .legal,
-  .partnersCopy {
+  .membership,
+  .legal {
     padding-left: 18px;
     padding-right: 18px;
   }
@@ -281,8 +216,7 @@
     height: 200px;
   }
 
-  .grid2,
-  .grid5 {
+  .grid2 {
     grid-template-columns: 1fr;
   }
 

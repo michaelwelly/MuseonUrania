@@ -53,12 +53,7 @@ export default function Footer() {
               <a className={styles.phone} href={`tel:${site.phone.replace(/\s/g, "")}`}>
                 {site.phone}
               </a>
-              <a
-                className={styles.contactLine}
-                href={`tel:${site.phoneExtra.replace(/[\s-]/g, "")}`}
-              >
-                {site.phoneExtra}
-              </a>
+              {/* Второй номер снят по §9.2 плана: он не подтверждён заказчиком. */}
               <a className={styles.contactLine} href={`mailto:${site.email}`}>
                 {site.email}
               </a>
