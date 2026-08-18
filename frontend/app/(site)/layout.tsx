@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import VedalinaWidget from "@/components/VedalinaWidget";
+import CookieNotice from "@/components/CookieNotice";
 import LogoPreloader from "@/components/LogoPreloader";
 import Motion from "@/components/Motion";
 import { fontVariables } from "../fonts";
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Footer />
         {/* Плавающий чат — на всех страницах */}
         <VedalinaWidget />
+        <CookieNotice />
       </body>
     </html>
   );

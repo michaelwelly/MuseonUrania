@@ -1,20 +1,24 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Link from "next/link";
 import { site } from "@/content/site";
-import { homeCta } from "@/content/home";
+import { consent as consentCopy } from "@/content/legal";
 import { newIdempotencyKey, submitLead } from "@/lib/submit";
 import styles from "./HomeLeadForm.module.css";
 
-type Errors = Partial<Record<"name" | "phone" | "email" | "message", string>>;
+type Errors = Partial<Record<"name" | "phone" | "email" | "message" | "consent", string>>;
 
-// Короткая форма первого экрана. Полная, с выбором изделия и отдельной
-// галочкой согласия, живёт на /contacts/ и /service/.
+// Короткая форма первого экрана. Полная, с выбором изделия, живёт
+// на /contacts/ и /service/.
 //
 // Имя и почта здесь появились не для симметрии: Forms API их требует, без них
-// заявка не создаётся. Согласие даётся действием — текст под кнопкой
-// (`homeCta.note`) говорит об этом прямо, а версию текста и время хранит
-// бэкенд.
+// заявка не создаётся.
+//
+// Согласие раньше проставлялось само — форма отправляла consent: true, а под
+// кнопкой стояла подпись «нажимая кнопку, вы соглашаетесь». §14.6 плана
+// требует явную галочку: подпись под кнопкой не даёт человеку выбора,
+// а бэкенд при этом сохраняет согласие так, будто выбор был.
 export default function HomeLeadForm() {
   const [errors, setErrors] = useState<Errors>({});
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "failed">("idle");
@@ -31,6 +35,7 @@ export default function HomeLeadForm() {
     if (get("phone").replace(/\D/g, "").length < 10) found.phone = "Укажите телефон с кодом";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(get("email"))) found.email = "Проверьте адрес почты";
     if (get("message").length < 10) found.message = "Опишите задачу хотя бы одной фразой";
+    if (!data.get("consent")) found.consent = consentCopy.error;
 
     setErrors(found);
     if (Object.keys(found).length > 0) return;
@@ -44,7 +49,7 @@ export default function HomeLeadForm() {
         phone: get("phone"),
         email: get("email"),
         message: get("message"),
-        consent: true,
+        consent: true, // проверено выше: без галочки сюда не доходим
         trap: get("trap") || undefined,
       },
       idempotencyKey.current,
@@ -136,6 +141,16 @@ export default function HomeLeadForm() {
         className={styles.trap}
       />
 
+      <label className={styles.consent}>
+        <input type="checkbox" name="consent" aria-invalid={!!errors.consent} />
+        <span>
+          {consentCopy.label} <span className={styles.required}>*</span>
+          {" · "}
+          <Link href={consentCopy.href}>{consentCopy.linkLabel}</Link>
+        </span>
+      </label>
+      {errors.consent && <span className={styles.error}>{errors.consent}</span>}
+
       <div className={styles.actions}>
         <button
           type="submit"
@@ -145,7 +160,7 @@ export default function HomeLeadForm() {
         >
           {status === "sending" ? "Отправляем…" : "Отправить запрос"}
         </button>
-        <span className={styles.note}>{homeCta.note}</span>
+        <span className={styles.note}>{consentCopy.note}</span>
       </div>
 
       {status === "failed" && (

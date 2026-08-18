@@ -1,0 +1,62 @@
+/* Плашка стоит внизу слева, а не поперёк экрана: справа снизу живёт кнопка
+   чата, и полоса во всю ширину накрыла бы её на телефоне. */
+
+.notice {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  max-width: 560px;
+  padding: 16px 18px;
+  background: var(--deep-2);
+  color: var(--on-dark-2);
+  border-radius: 3px;
+  box-shadow: 0 10px 30px rgba(8, 33, 29, 0.25);
+}
+
+.text {
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.link {
+  color: var(--green-on-dark);
+  border-bottom: 1px solid currentColor;
+}
+
+.accept {
+  flex: none;
+  height: 40px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 2px;
+  background: var(--green);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.accept:hover {
+  background: var(--green-bright);
+}
+
+/* На телефоне плашка занимает ширину экрана, а кнопка уходит под текст:
+   в строку они не помещаются, и кнопка сжималась бы до нечитаемой. */
+@media (max-width: 640px) {
+  .notice {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    /* Выше кнопки чата, чтобы не перекрывать её. */
+    margin-bottom: 68px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    max-width: none;
+  }
+}
