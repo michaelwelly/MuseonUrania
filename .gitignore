@@ -49,3 +49,9 @@ next-env.d.ts
 
 # Временные файлы Office, живут пока документ открыт
 ~$*
+
+# Сборка страницы с вариантами типографики. Шаблон и скрипт в репозитории,
+# результат весит мегабайт вшитыми шрифтами и пересобирается за секунду:
+#   node outputs/typography_variants/build.mjs
+outputs/typography_variants/typography_variants.html
+outputs/typography_variants/Onest.ttf
