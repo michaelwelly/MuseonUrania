@@ -110,11 +110,11 @@ class AdminApiTest extends PostgresTestBase {
     @Test
     @WithMockUser(username = "editor", roles = "PORTAL_ADMIN")
     void publishedProductCannotBeRenamed() throws Exception {
-        var product = products.findBySlugAndPublishedTrue("vedal-r1-r2").orElseThrow();
+        var product = products.findBySlugAndPublishedTrue("vedal-r1").orElseThrow();
 
         mvc.perform(put("/api/admin/v1/products/" + product.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(productJson("vedal-r1-r2-new", product.getVersion())))
+                        .content(productJson("vedal-r1-new", product.getVersion())))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.title").value(org.hamcrest.Matchers.containsString("переименовать")));
     }
@@ -195,10 +195,10 @@ class AdminApiTest extends PostgresTestBase {
     @Test
     @WithMockUser(username = "editor", roles = "PORTAL_ADMIN")
     void unpublishedProductWithDocumentsCanBeRenamed() throws Exception {
-        var product = products.findBySlugAndPublishedTrue("vedal-r1-r2").orElseThrow();
+        var product = products.findBySlugAndPublishedTrue("vedal-r1").orElseThrow();
         assertThat(documents.findAll())
                 .as("на это изделие должны ссылаться документы, иначе тест ничего не проверяет")
-                .anySatisfy(d -> assertThat(d.getProductSlug()).isEqualTo("vedal-r1-r2"));
+                .anySatisfy(d -> assertThat(d.getProductSlug()).isEqualTo("vedal-r1"));
 
         mvc.perform(post("/api/admin/v1/products/" + product.getId() + "/unpublish"))
                 .andExpect(status().isOk());
@@ -206,9 +206,9 @@ class AdminApiTest extends PostgresTestBase {
         var current = products.findById(product.getId()).orElseThrow();
         mvc.perform(put("/api/admin/v1/products/" + current.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(productJson("vedal-r1-r2-renamed", current.getVersion())))
+                        .content(productJson("vedal-r1-renamed", current.getVersion())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.slug").value("vedal-r1-r2-renamed"));
+                .andExpect(jsonPath("$.slug").value("vedal-r1-renamed"));
 
         // Каскад отрабатывает в базе, а не в Hibernate: без очистки контекста
         // мы читали бы те же управляемые объекты со старым значением и видели
@@ -218,7 +218,7 @@ class AdminApiTest extends PostgresTestBase {
 
         assertThat(documents.findAll())
                 .as("ссылка документа поехала за изделием")
-                .anySatisfy(d -> assertThat(d.getProductSlug()).isEqualTo("vedal-r1-r2-renamed"));
+                .anySatisfy(d -> assertThat(d.getProductSlug()).isEqualTo("vedal-r1-renamed"));
     }
 
     @Test

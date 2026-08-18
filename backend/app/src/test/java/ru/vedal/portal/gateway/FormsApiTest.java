@@ -21,7 +21,7 @@ class FormsApiTest extends PostgresTestBase {
     private static final String VALID = """
             {"form":"quote","name":"Иван Петров","company":"ГКБ №1",
              "phone":"+7 343 555-22-11","email":"ivan@example.ru",
-             "productSlug":"vedal-r1-r2",
+             "productSlug":"vedal-r1",
              "message":"Прошу коммерческое предложение на две системы.","consent":true}
             """;
 

@@ -102,9 +102,6 @@ export default async function ProductPage(props: PageProps<"/products/[slug]">) 
               Запросить КП
               <Arrow />
             </Link>
-            <Link className={`${styles.btn} ${styles.btnSecondary}`} href="/documents/">
-              Описание изделия
-            </Link>
           </div>
 
           <p className={styles.note}>
@@ -118,7 +115,7 @@ export default async function ProductPage(props: PageProps<"/products/[slug]">) 
 
       <section className={styles.related}>
         <h2 className={styles.relatedTitle} data-words="34">
-          Похожие модели
+          Другие продукты
         </h2>
         <ul className={styles.relatedGrid}>
           {related.map((p, i) => (

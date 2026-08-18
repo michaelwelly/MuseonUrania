@@ -165,18 +165,6 @@
   color: #fff;
 }
 
-.btnSecondary {
-  padding: 0 26px;
-  border: 1px solid var(--line-3);
-  color: var(--deep-2);
-  font-weight: 500;
-}
-
-.btnSecondary:hover {
-  border-color: var(--green);
-  color: var(--green);
-}
-
 .note {
   margin-top: 18px;
   font-size: 13.5px;
