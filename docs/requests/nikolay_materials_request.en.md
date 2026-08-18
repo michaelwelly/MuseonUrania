@@ -76,11 +76,12 @@ showing on Tuesday, 28 July 2026.
    provider, a closed contour, VPN.
 8. Which materials may be used in public SEO and which belong only in the
    internal knowledge base.
-9. The Ural CCI membership mark: are we allowed to publish it on the site, and
-   where is the source file kept. The mark belongs to the chamber, not to VEDAL,
-   and handing the file over on 18 August is not by itself permission to publish
-   it. The mark currently sits on the "About" page and links to `uralcci.com`.
-   Without permission we take it down.
+Closed questions:
+
+- Ural CCI membership mark — permission to publish granted on 19 August 2026.
+  The mark sits on the "About" page and in the footer, and links to
+  `uralcci.com`. Sources: `assets/brand/utpp_logo_horizontal.png` and
+  `utpp_logo_vertical.png`.
 
 ## Proposed schedule
 
