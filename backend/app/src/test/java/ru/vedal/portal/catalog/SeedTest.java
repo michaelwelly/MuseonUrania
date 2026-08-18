@@ -6,6 +6,8 @@ import ru.vedal.portal.PostgresTestBase;
 import ru.vedal.portal.documents.Document;
 import ru.vedal.portal.documents.DocumentRepository;
 
+import java.nio.file.Path;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class SeedTest extends PostgresTestBase {
@@ -75,6 +77,27 @@ class SeedTest extends PostgresTestBase {
                 .extracting(Document::getProductSlug)
                 .contains("vedal-r1")
                 .doesNotContain("vedal-r1-r2");
+    }
+
+    // Путь к фотографии живёт в базе, а сам файл — в репозитории фронтенда,
+    // и между ними нет ничего, что заметило бы расхождение. Оно уже случилось:
+    // R1 и R2 разъехались по своим снимкам, общий кадр удалили, а строки
+    // в базе продолжали на него ссылаться. Отказ тихий — на странице пустое
+    // место вместо изделия, ошибки нет ни в логах, ни в тестах.
+    @Test
+    void everyPublishedProductPointsAtAnExistingPhoto() {
+        var publicDir = Path.of("..", "..", "frontend", "public");
+
+        assertThat(products.findByPublishedTrueOrderBySortOrderAscNameAsc())
+                .allSatisfy(product -> {
+                    var src = product.getImageSrc();
+                    assertThat(src)
+                            .as("у изделия %s нет фотографии", product.getSlug())
+                            .isNotBlank();
+                    assertThat(publicDir.resolve(src.replaceFirst("^/", "")))
+                            .as("фотография изделия %s не найдена в репозитории", product.getSlug())
+                            .exists();
+                });
     }
 
     // Датащит на две модели общий, но различает их явно: у R2 сверх набора R1
