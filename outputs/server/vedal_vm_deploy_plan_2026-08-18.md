@@ -114,6 +114,20 @@ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK1eu3K6B6yfn3gwGo29zTM6xDzo/+V8WvnlDA2lj3j3
 | Source | `<публичный IP Егора>/32` |
 | Description | `Egor SSH deploy access` |
 
+На 2026-08-18 добавлено фактическое правило для VPN/public egress IP Егора:
+
+| Поле | Значение |
+| --- | --- |
+| Direction | Ingress |
+| Protocol | TCP |
+| Port | `2222` |
+| Source | `38.68.134.13/32` |
+| Description | `egor-ssh-deploy-2222-20260818` |
+
+Адрес `192.168.100.134` не используется в Security Group: это приватный адрес
+локальной сети Егора. Для доступа без VPN нужен его фактический публичный IP,
+который показывает, например, `curl ifconfig.me` или `2ip.ru`.
+
 Порт `22` не используем. `0.0.0.0/0` для SSH не включать на постоянной основе:
 если нужно срочно, открывать временно и закрывать после проверки.
 
