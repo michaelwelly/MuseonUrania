@@ -15,7 +15,7 @@ export default defineConfig({
   resolve: {
     alias: {
       // Тот же алиас, что в tsconfig: без него импорты «@/lib/...» не находятся.
-      "@": resolve(__dirname, "."),
+      "@": resolve(import.meta.dirname, "."),
     },
   },
   test: {
