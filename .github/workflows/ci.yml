@@ -96,6 +96,13 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      # Типизированные маршруты Next живут в .next/types и на чистом чекауте
+      # отсутствуют: без этого шага `tsc --noEmit` не находит PageProps
+      # и LayoutProps, а сборка ниже сгенерировала бы их слишком поздно.
+      - name: Типы маршрутов
+        working-directory: frontend
+        run: npx next typegen
+
       - name: Типы
         working-directory: frontend
         run: npx tsc --noEmit
