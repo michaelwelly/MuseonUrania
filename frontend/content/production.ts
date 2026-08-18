@@ -27,11 +27,16 @@ export const facility = {
   ],
 };
 
-// Требование page_briefs.md → Production → «Approved production photos»
+// Требование page_briefs.md → Production → «Approved production photos».
+// Первый кадр — из буклета заказчика: он согласован и снят лучше архивных,
+// поэтому стоит первым.
 export const gallery = [
+  {
+    src: "/photos/production/hall-booklet.jpg",
+    alt: "Производственная площадка VEDAL: инкубаторы и открытые реанимационные системы",
+  },
   { src: "/photos/production/hall-rows.jpg", alt: "Ряды изделий в производственном цехе VEDAL" },
   { src: "/photos/production/hall-team.jpg", alt: "Сотрудники VEDAL в производственном цехе" },
-  { src: "/photos/production/components.jpg", alt: "Зона хранения комплектующих" },
 ];
 
 // Блок «Качество» убран по §6.4 плана. Он перечислял ISO 13485,
