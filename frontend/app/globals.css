@@ -134,13 +134,24 @@ img {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background-image: url("/brand/vedal-cross.png");
-  background-repeat: repeat;
-  background-size: 188px auto;
+  pointer-events: none;
+
+  /* Три слоя одного знака разного размера, с разным шагом и смещением.
+     В буклете крестики раскиданы: они разной величины и стоят неровно,
+     а не сидят в узлах сетки. Один слой с repeat давал именно сетку —
+     её видно даже на шести процентах прозрачности, и фактура читалась
+     как обои, а не как фирменный приём.
+     Шаги (223, 149, 317) взаимно просты: их рисунок совпадает не раньше,
+     чем через десяток метров полосы, то есть на экране — никогда. */
+  background-image: url("/brand/vedal-cross.png"), url("/brand/vedal-cross.png"),
+    url("/brand/vedal-cross.png");
+  background-size: 223px auto, 149px auto, 317px auto;
+  background-position: 0 0, 96px 61px, 41px 173px;
+  background-repeat: repeat, repeat, repeat;
+
   /* 6% — середина вилки 4–8% из плана. На светлой полосе знак едва различим,
      на тёмной его вытягивает осветление ниже. */
   opacity: 0.06;
-  pointer-events: none;
 }
 
 /* На тёмных полосах зелёный знак при 6% сливается с почти чёрным фоном.
@@ -156,7 +167,7 @@ img {
    чтобы стать шумом. */
 @media (max-width: 640px) {
   .crossField::before {
-    background-size: 132px auto;
+    background-size: 156px auto, 104px auto, 222px auto;
   }
 }
 
