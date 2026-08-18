@@ -10,7 +10,6 @@ import {
   directionsIntro,
   homeDirections,
   featured,
-  morePrograms,
   productionBlock,
   documentsBlock,
   homeCta,
@@ -141,24 +140,6 @@ export default function Home() {
               </Link>
             </li>
           ))}
-
-          <li data-reveal={featured.length}>
-            <Link className={styles.tile} href="/products/">
-              <div>
-                <p className={styles.tileEyebrow}>{morePrograms.eyebrow}</p>
-                <h3 className={styles.tileTitle}>{morePrograms.title}</h3>
-              </div>
-              <ul className={styles.tileList}>
-                {morePrograms.lines.map((line) => (
-                  <li key={line}>{line}</li>
-                ))}
-                <li className={styles.tileMore}>
-                  Открыть каталог
-                  <Arrow size={15} />
-                </li>
-              </ul>
-            </Link>
-          </li>
         </ul>
       </section>
 
