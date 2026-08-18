@@ -1,0 +1,624 @@
+<title>Шрифты и знаки VEDAL</title>
+
+<style>
+  :root {
+    /* Палитра снята с сайта VEDAL: зелёный взят пипеткой с логотипа
+       и по договорённости не меняется. Нейтральные тона уведены
+       в зелёную сторону, чтобы лист не выглядел офисным. */
+    --green: #149c3c;
+    --green-deep: #0f7c30;
+    --ink: #12202a;
+    --muted: #5e6b73;
+    --ground: #f7faf8;
+    --card: #ffffff;
+    --line: #dde5e2;
+    --line-soft: #edf2ef;
+    --deep: #08211d;
+    --shadow: 0 1px 2px rgba(8, 33, 29, 0.05);
+  }
+
+  :root:not([data-theme="light"]) {
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --green: #3fc46a;
+      --green-deep: #58d47f;
+      --ink: #e6efea;
+      --muted: #93a49c;
+      --ground: #0a1614;
+      --card: #10231e;
+      --line: #1f3b33;
+      --line-soft: #172d27;
+      --deep: #050f0d;
+      --shadow: none;
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --green: #3fc46a;
+    --green-deep: #58d47f;
+    --ink: #e6efea;
+    --muted: #93a49c;
+    --ground: #0a1614;
+    --card: #10231e;
+    --line: #1f3b33;
+    --line-soft: #172d27;
+    --deep: #050f0d;
+    --shadow: none;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "VEDAL Commissioner", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .sheet {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 56px 28px 96px;
+    display: flex;
+    flex-direction: column;
+    gap: 64px;
+  }
+
+  .label {
+    font-family: "VEDAL Mono", ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  h1 {
+    margin: 12px 0 0;
+    font-family: "VEDAL Unbounded", system-ui, sans-serif;
+    font-weight: 500;
+    font-size: clamp(30px, 5vw, 46px);
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+  }
+
+  .lede {
+    max-width: 64ch;
+    margin: 20px 0 0;
+    font-size: 17px;
+    color: var(--muted);
+  }
+
+  h2 {
+    margin: 0;
+    font-family: "VEDAL Unbounded", system-ui, sans-serif;
+    font-weight: 500;
+    font-size: clamp(22px, 3vw, 28px);
+    line-height: 1.15;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+
+  section > .label + h2 { margin-top: 10px; }
+
+  .note {
+    max-width: 68ch;
+    margin: 14px 0 0;
+    color: var(--muted);
+  }
+
+  /* ---------- спорная буква ---------- */
+  /* Единственное место, где лист позволяет себе крупный жест: претензия
+     заказчика — про одну букву, и её нужно увидеть, а не прочитать. */
+  .glyphs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    margin-top: 28px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .glyphCell {
+    background: var(--card);
+    padding: 32px 28px 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .glyphRow {
+    display: flex;
+    align-items: baseline;
+    gap: 22px;
+    font-size: clamp(64px, 12vw, 116px);
+    line-height: 1;
+    color: var(--ink);
+  }
+
+  .glyphRow span:last-child { color: var(--green); }
+
+  .word {
+    font-size: clamp(26px, 4.4vw, 40px);
+    line-height: 1;
+    letter-spacing: -0.01em;
+  }
+
+  .varA .glyphRow,
+  .varA .word { font-family: "VEDAL Unbounded", system-ui, sans-serif; font-weight: 500; }
+
+  .varB .glyphRow,
+  .varB .word { font-family: "VEDAL Onest", system-ui, sans-serif; font-weight: 600; }
+
+  /* ---------- сравнение вариантов ---------- */
+  .compare {
+    display: grid;
+    grid-template-columns: 180px 1fr 1fr;
+    gap: 1px;
+    margin-top: 28px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .compare > * {
+    background: var(--card);
+    padding: 22px 24px;
+  }
+
+  .head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .headTitle {
+    font-family: "VEDAL Mono", ui-monospace, monospace;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .headFont {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .rowLabel {
+    font-family: "VEDAL Mono", ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .sampleA h3,
+  .sampleA .num,
+  .sampleA .model { font-family: "VEDAL Unbounded", system-ui, sans-serif; }
+
+  .sampleB h3,
+  .sampleB .num,
+  .sampleB .model { font-family: "VEDAL Onest", system-ui, sans-serif; }
+
+  .compare h3 {
+    margin: 0;
+    font-weight: 500;
+    font-size: 25px;
+    line-height: 1.12;
+    letter-spacing: -0.025em;
+  }
+
+  .model {
+    font-weight: 500;
+    font-size: 21px;
+    letter-spacing: -0.015em;
+  }
+
+  .kind {
+    margin-top: 4px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  .num {
+    font-weight: 500;
+    font-size: 27px;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .specs {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .specs li {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .specs .v { font-weight: 500; }
+
+  .body { font-size: 15px; }
+
+  .btn {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 11px 22px;
+    background: var(--green);
+    color: #fff;
+    border-radius: 2px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  /* ---------- решения ---------- */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-top: 26px;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: 22px 24px;
+    box-shadow: var(--shadow);
+  }
+
+  .card h3 {
+    margin: 10px 0 0;
+    font-family: "VEDAL Unbounded", system-ui, sans-serif;
+    font-weight: 500;
+    font-size: 18px;
+    letter-spacing: -0.02em;
+  }
+
+  .card p {
+    margin: 10px 0 0;
+    font-size: 14.5px;
+    color: var(--muted);
+  }
+
+  .ask {
+    margin: 26px 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    counter-reset: ask;
+  }
+
+  .ask li {
+    display: grid;
+    grid-template-columns: 30px 1fr;
+    gap: 14px;
+    align-items: start;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .ask li::before {
+    counter-increment: ask;
+    content: counter(ask, decimal-leading-zero);
+    font-family: "VEDAL Mono", ui-monospace, monospace;
+    font-size: 12px;
+    color: var(--green);
+    padding-top: 3px;
+  }
+
+  .ask strong { font-weight: 600; }
+  .ask span { display: block; margin-top: 3px; color: var(--muted); font-size: 14.5px; }
+
+  hr {
+    height: 1px;
+    margin: 0;
+    border: 0;
+    background: var(--line);
+  }
+
+  .foot {
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  a { color: var(--green-deep); }
+
+  @media (max-width: 760px) {
+    .glyphs { grid-template-columns: 1fr; }
+    .compare { grid-template-columns: 1fr; }
+    .compare .head:first-child { display: none; }
+    .rowLabel { padding-bottom: 0; border-top: 1px solid var(--line-soft); }
+    .head { position: static; }
+  }
+</style>
+
+<main class="sheet">
+
+  <header>
+    <p class="label">ООО «ВЕДАЛ» · 18 августа 2026</p>
+    <h1>Шрифты и знаки VEDAL</h1>
+    <p class="lede">
+      Два варианта заголовочного шрифта на реальных текстах сайта, место маркировочного
+      знака и отдельный вопрос по логотипу. Всё, что ниже — к согласованию: пока варианта
+      нет, на сайте работает вариант&nbsp;A.
+    </p>
+  </header>
+
+  <hr />
+
+  <section>
+    <p class="label">С чего всё началось</p>
+    <h2>Спорная буква E</h2>
+    <p class="note">
+      Замечание было к форме буквы <strong>E</strong>. Она встречается дважды: в логотипе
+      и в заголовочном шрифте <strong>Unbounded</strong>, который подбирали под логотип.
+      Это два разных решения, и менять их можно по отдельности. Ниже — только шрифт.
+    </p>
+
+    <div class="glyphs">
+      <div class="glyphCell varA">
+        <p class="label">Вариант A · Unbounded</p>
+        <p class="glyphRow"><span>E</span><span>Е</span></p>
+        <p class="word">VEDAL R2</p>
+      </div>
+      <div class="glyphCell varB">
+        <p class="label">Вариант B · Onest</p>
+        <p class="glyphRow"><span>E</span><span>Е</span></p>
+        <p class="word">VEDAL R2</p>
+      </div>
+    </div>
+
+    <p class="note">
+      Слева латинская <strong>E</strong>, справа русская <strong>Е</strong> — она встречается
+      в текстах чаще. У Unbounded перекладины короткие и расставлены широко, буква читается
+      как геометрический знак. У Onest пропорции обычные, буква не притягивает взгляд.
+    </p>
+  </section>
+
+  <hr />
+
+  <section>
+    <p class="label">Одни и те же тексты, два набора</p>
+    <h2>Как это выглядит на сайте</h2>
+    <p class="note">
+      Меняется только заголовочный шрифт. Основной текст, кнопки и поля остаются на
+      <strong>Commissioner</strong> — к нему замечаний не было, и он отвечает за читаемость
+      описаний и характеристик.
+    </p>
+
+    <div class="compare">
+      <div class="head"></div>
+      <div class="head">
+        <p class="headTitle">Вариант A</p>
+        <p class="headFont">Unbounded — как сейчас</p>
+      </div>
+      <div class="head">
+        <p class="headTitle">Вариант B</p>
+        <p class="headFont">Onest — спокойнее</p>
+      </div>
+
+      <div class="rowLabel">Заголовок главной</div>
+      <div class="sampleA"><h3>Медицинское оборудование, сделанное в России</h3></div>
+      <div class="sampleB"><h3>Медицинское оборудование, сделанное в России</h3></div>
+
+      <div class="rowLabel">Название изделия</div>
+      <div class="sampleA">
+        <p class="model">VEDAL A-2000</p>
+        <p class="kind">Инкубатор-трансформер</p>
+      </div>
+      <div class="sampleB">
+        <p class="model">VEDAL A-2000</p>
+        <p class="kind">Инкубатор-трансформер</p>
+      </div>
+
+      <div class="rowLabel">Телефон</div>
+      <div class="sampleA"><p class="num">8 800 600 3449</p></div>
+      <div class="sampleB"><p class="num">8 800 600 3449</p></div>
+
+      <div class="rowLabel">Характеристики</div>
+      <div class="sampleA">
+        <ul class="specs">
+          <li><span>Габариты</span><span class="v">1185 × 740 × 1840 мм</span></li>
+          <li><span>Масса</span><span class="v">87,5 ± 2,0 кг</span></li>
+          <li><span>Температура кожи</span><span class="v">32,0–37,5 °C</span></li>
+        </ul>
+      </div>
+      <div class="sampleB">
+        <ul class="specs">
+          <li><span>Габариты</span><span class="v">1185 × 740 × 1840 мм</span></li>
+          <li><span>Масса</span><span class="v">87,5 ± 2,0 кг</span></li>
+          <li><span>Температура кожи</span><span class="v">32,0–37,5 °C</span></li>
+        </ul>
+      </div>
+
+      <div class="rowLabel">Текст и кнопка</div>
+      <div class="sampleA">
+        <p class="body">
+          Открытая реанимационная система для интенсивной терапии, экстренной помощи
+          и выхаживания новорождённых.
+        </p>
+        <p><span class="btn">Запросить КП</span></p>
+      </div>
+      <div class="sampleB">
+        <p class="body">
+          Открытая реанимационная система для интенсивной терапии, экстренной помощи
+          и выхаживания новорождённых.
+        </p>
+        <p><span class="btn">Запросить КП</span></p>
+      </div>
+    </div>
+  </section>
+
+  <hr />
+
+  <section>
+    <p class="label">Что меняется, а что нет</p>
+    <h2>Границы решения</h2>
+
+    <div class="cards">
+      <div class="card">
+        <p class="label">Меняется</p>
+        <h3>Заголовочный шрифт</h3>
+        <p>
+          Заголовки, названия изделий, крупные числа и телефоны. Работа на день:
+          файл шрифта и одна строка настройки.
+        </p>
+      </div>
+      <div class="card">
+        <p class="label">Не меняется</p>
+        <h3>Основной текст</h3>
+        <p>
+          Commissioner остаётся в описаниях, характеристиках, кнопках и полях форм.
+          Служебные подписи и даты — JetBrains Mono.
+        </p>
+      </div>
+      <div class="card">
+        <p class="label">Отдельное решение</p>
+        <h3>Логотип VEDAL</h3>
+        <p>
+          Начертание в логотипе мы не трогаем. Это правка фирменного знака, а не сайта:
+          логотип стоит на изделиях, документах и бланках, и менять его на одном сайте
+          нельзя.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <hr />
+
+  <section>
+    <p class="label">Знак дерева</p>
+    <h2>Где он встанет</h2>
+    <p class="note">
+      Дерево работает как маркировочный знак — им помечены изделия. Логотип отвечает
+      за другое: чья это компания. Поэтому знаки стоят порознь, рядом они читались бы
+      как один составной, которого у бренда нет.
+    </p>
+
+    <div class="cards">
+      <div class="card">
+        <p class="label">Страница «О компании»</p>
+        <h3>После блока о полном цикле</h3>
+        <p>
+          Там, где рассказано про собственную разработку и производство. Знак подтверждает
+          сказанное, а не открывает новую тему.
+        </p>
+      </div>
+      <div class="card">
+        <p class="label">Страница «Производство»</p>
+        <h3>Рядом с описанием площадки</h3>
+        <p>
+          Изделия, собранные в Екатеринбурге, получают этот знак — здесь он на своём месте
+          по смыслу.
+        </p>
+      </div>
+      <div class="card">
+        <p class="label">Что нужно</p>
+        <h3>Файл знака</h3>
+        <p>
+          Присланный <code>tree_logo_8x8cm_300dpi.tif</code> браузеры не открывают.
+          Нужен PNG с прозрачным фоном или SVG. Места на обеих страницах уже размечены —
+          знак включится, как только файл появится.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <hr />
+
+  <section>
+    <p class="label">Что нужно от вас</p>
+    <h2>Четыре ответа</h2>
+
+    <ul class="ask">
+      <li>
+        <div>
+          <strong>Вариант A или B</strong>
+          <span>Если ответа не будет, остаётся A — тот, что работает сейчас.</span>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Логотип: трогаем или нет</strong>
+          <span>Отдельное решение по фирменному знаку. Без него сайт живёт с текущим логотипом.</span>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Знак дерева в PNG или SVG</strong>
+          <span>И подтверждение, что его можно размещать на сайте.</span>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Знак члена Уральской ТПП</strong>
+          <span>Тот же вопрос: файл и разрешение на публикацию. Ссылка на uralcci.com уже стоит.</span>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <hr />
+
+  <p class="foot">
+    Оба шрифта распространяются по лицензии OFL и лежат в репозитории файлами — сайт
+    не ходит за ними на чужие серверы.
+  </p>
+
+</main>
+
+<style>
+  @font-face {
+    font-family: "VEDAL Unbounded";
+    src: url("data:font/woff2;base64,__UNBOUNDED__") format("woff2");
+    font-weight: 300 600;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "VEDAL Commissioner";
+    src: url("data:font/woff2;base64,__COMMISSIONER__") format("woff2");
+    font-weight: 300 700;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "VEDAL Mono";
+    src: url("data:font/woff2;base64,__MONO__") format("woff2");
+    font-weight: 400 500;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "VEDAL Onest";
+    src: url("data:font/ttf;base64,__ONEST__") format("truetype");
+    font-weight: 100 900;
+    font-display: swap;
+  }
+</style>
