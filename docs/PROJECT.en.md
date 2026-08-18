@@ -131,7 +131,9 @@ MuseonVedalina/
 │  ├─ architecture/         owner brief, infrastructure
 │  ├─ strategy/             business frame, requirements, Vedalina, SEO, competitors
 │  ├─ frontend/             sitemap, content models, page briefs, checklist
-│  ├─ operations/           roadmap, team estimate
+│  ├─ legal/                compliance requirements: personal data, hosting, claims
+│  ├─ operations/           roadmap, team estimate, credentials handover,
+│  │                        vedal-med.ru domain cutover
 │  ├─ products/             VEDAL R1/R2, A-2000, Т-100 datasheets and the analysis
 │  ├─ requests/             the materials request to Nikolay Nikolaevich
 │  └─ superpowers/          the backend spec, the catalog module plan
