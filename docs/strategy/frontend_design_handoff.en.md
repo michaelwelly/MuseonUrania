@@ -14,9 +14,9 @@ Prepare a conservative B2B medical equipment website concept that can be handed 
 
 Smart Solution should be shown as a technology integration layer, not as a replacement for the VEDAL brand. Its role is to connect the website, forms, CRM/S3, metadata pipeline, and future AI search.
 
-The title/hero page must include a reserved place for the public website assistant named Urania. Urania is a personified assistant inspired by the muse of astronomy: precise, calm, knowledge-oriented, and visually connected with celestial globe/compass/star-map motifs. The assistant must be secondary to VEDAL's product and production message.
+The title/hero page must include a reserved place for the public website assistant named Vedalina. Vedalina is a personified assistant inspired by the muse of astronomy: precise, calm, knowledge-oriented, and visually connected with celestial globe/compass/star-map motifs. The assistant must be secondary to VEDAL's product and production message.
 
-Generated Urania assets are available under `assets/urania/`. Use `urania-avatar-middle-v1.png` as the recommended MVP avatar unless NN prefers the more medical or more celestial alternatives.
+Generated Vedalina assets are available under `assets/vedalina/`. Use `vedalina-avatar-middle-v1.png` as the recommended MVP avatar unless NN prefers the more medical or more celestial alternatives.
 
 ## First Release Pages
 
@@ -24,7 +24,7 @@ Generated Urania assets are available under `assets/urania/`. Use `urania-avatar
    - positioning;
    - production signal;
    - redesigned hero/title section;
-   - reserved Urania assistant area;
+   - reserved Vedalina assistant area;
    - priority products;
    - trust/certification block;
    - partner block;
@@ -98,7 +98,7 @@ Business goal: make the site both informational and sales-oriented. It must supp
 
 Include Smart Solution as a technology integration layer: site forms, CRM handoff, S3/document metadata, and future AI search. Do not make Smart Solution visually stronger than VEDAL on public-facing screens.
 
-Include a public assistant named Urania. She should be represented as a restrained expert guide inspired by the muse of astronomy, using subtle celestial globe/compass/star-map motifs. She helps users navigate products, public documents, service and quote requests. She must not provide medical diagnosis, treatment advice, unapproved specifications, prices, or certification claims.
+Include a public assistant named Vedalina. She should be represented as a restrained expert guide inspired by the muse of astronomy, using subtle celestial globe/compass/star-map motifs. She helps users navigate products, public documents, service and quote requests. She must not provide medical diagnosis, treatment advice, unapproved specifications, prices, or certification claims.
 
 Variants:
 

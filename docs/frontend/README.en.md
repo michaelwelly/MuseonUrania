@@ -15,10 +15,10 @@ This package is ready to pass to Claude, a UI designer, or a frontend team.
 
 ## Related Assets
 
-- `assets/urania/urania-avatar-concepts-v1.png`
-- `assets/urania/urania-avatar-middle-v1.png`
-- `assets/urania/urania-web-integration-mockup-v1.png`
-- `prototypes/urania-web-interface.html`
+- `assets/vedalina/vedalina-avatar-concepts-v1.png`
+- `assets/vedalina/vedalina-avatar-middle-v1.png`
+- `assets/vedalina/vedalina-web-integration-mockup-v1.png`
+- `prototypes/vedalina-web-interface.html`
 
 ## First Action
 

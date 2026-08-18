@@ -33,17 +33,17 @@ Mandatory first-screen requirements:
 - Show Russian medical equipment production clearly.
 - Include primary CTA: "Запросить КП".
 - Include secondary CTA: "Каталог".
-- Reserve a visible but secondary area for the public assistant Urania.
+- Reserve a visible but secondary area for the public assistant Vedalina.
 - Use product/production visuals as evidence.
 
-Urania assistant:
-- Public website assistant named Urania.
+Vedalina assistant:
+- Public website assistant named Vedalina.
 - Inspired by the muse of astronomy.
 - Visual motifs: celestial globe, compass, star map, subtle orbit lines.
-- Use recommended MVP avatar: assets/urania/urania-avatar-middle-v1.png.
+- Use recommended MVP avatar: assets/vedalina/vedalina-avatar-middle-v1.png.
 - Placement: hero assistant card and floating lower-right button.
 - Quick actions: "Подобрать оборудование", "Найти документ", "Запросить КП", "Сервис".
-- Urania must not provide diagnosis, treatment advice, unapproved specifications, prices, delivery times, certification claims, or private documents.
+- Vedalina must not provide diagnosis, treatment advice, unapproved specifications, prices, delivery times, certification claims, or private documents.
 - All factual answers must come from approved public pages/documents.
 
 Smart Solution:
@@ -62,14 +62,14 @@ Variant B: Product-Led Catalog
 - Catalog discovery is the center of the UI.
 
 Variant C: Expert Technology Platform
-- Production/R&D capability, international readiness, Smart Solution and Urania as technology layer.
+- Production/R&D capability, international readiness, Smart Solution and Vedalina as technology layer.
 - Keep claims conservative and approved-only.
 
 Design constraints:
 - Conservative B2B medical/industrial style.
 - White, VEDAL green, teal, charcoal, light gray.
 - No decorative gradient hero.
-- No fantasy visual dominance for Urania.
+- No fantasy visual dominance for Vedalina.
 - No prices.
 - No invented certificates.
 - No clinical claims.
@@ -79,10 +79,10 @@ Design constraints:
 - UI must be production-implementable, not only a concept image.
 
 Use these assets:
-- assets/urania/urania-avatar-middle-v1.png
-- assets/urania/urania-avatar-left-v1.png
-- assets/urania/urania-avatar-right-v1.png
-- assets/urania/urania-web-integration-mockup-v1.png as direction reference only, not final UI
+- assets/vedalina/vedalina-avatar-middle-v1.png
+- assets/vedalina/vedalina-avatar-left-v1.png
+- assets/vedalina/vedalina-avatar-right-v1.png
+- assets/vedalina/vedalina-web-integration-mockup-v1.png as direction reference only, not final UI
 
 Placeholder policy:
 Where NN answer is missing, use "ожидает уточнения" or "awaiting NN answer".
@@ -92,6 +92,6 @@ Deliverables:
 1. A concise design rationale for all three variants.
 2. Home page layout for each variant.
 3. Product listing layout for each variant.
-4. Urania assistant UI state for each variant.
+4. Vedalina assistant UI state for each variant.
 5. Recommendation: which variant to show first to NN and why.
 ```

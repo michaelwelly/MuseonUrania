@@ -27,13 +27,13 @@ Persistent elements:
 - Phone number.
 - Search icon.
 - CTA: `Запросить КП`.
-- Urania floating assistant button.
+- Vedalina floating assistant button.
 
 ## First Release Routes
 
 | Route | Page | Status | Purpose |
 | --- | --- | --- | --- |
-| `/` | Главная | MVP | production/product positioning, hero, Urania slot, product categories, trust, CTA |
+| `/` | Главная | MVP | production/product positioning, hero, Vedalina slot, product categories, trust, CTA |
 | `/products/` | Продукция | MVP | catalog overview, product cards, filters, quote/catalog requests |
 | `/products/<slug>/` | Product detail | MVP | individual product page with specs, docs, media, CTA |
 | `/production/` | Производство | MVP | production story, quality system, approved photos |
@@ -61,7 +61,7 @@ Persistent elements:
    - VEDAL production headline.
    - two CTAs: `Запросить КП`, `Каталог`.
    - visual evidence: real product/production image.
-   - Urania assistant card/slot.
+   - Vedalina assistant card/slot.
 3. Product categories.
 4. Priority products.
 5. Production and quality block.
@@ -71,7 +71,7 @@ Persistent elements:
 9. Lead capture block.
 10. Footer.
 
-## Urania Placement
+## Vedalina Placement
 
 First release should support:
 

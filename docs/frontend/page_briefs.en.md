@@ -6,12 +6,12 @@
 
 Goal:
 
-Present VEDAL as a Russian medical equipment manufacturer and route visitors into product catalog, quote request, documents, or Urania assistant.
+Present VEDAL as a Russian medical equipment manufacturer and route visitors into product catalog, quote request, documents, or Vedalina assistant.
 
 Required sections:
 
 - Hero/title section.
-- Urania assistant card.
+- Vedalina assistant card.
 - Product categories.
 - Priority product cards.
 - Production and quality block.
@@ -26,7 +26,7 @@ Hero draft:
 - Supporting copy: `Собственное производство и современные решения для неонатологии, реанимации, анестезиологии и интенсивной терапии.`
 - Primary CTA: `Запросить КП`
 - Secondary CTA: `Каталог`
-- Urania prompt: `Я помогу найти продукт, документ или передать запрос специалисту.`
+- Vedalina prompt: `Я помогу найти продукт, документ или передать запрос специалисту.`
 
 Awaiting NN:
 
@@ -47,7 +47,7 @@ Required sections:
 - Product cards.
 - Product status labels.
 - Quote/catalog CTA.
-- Urania prompt for product selection.
+- Vedalina prompt for product selection.
 
 Categories:
 
@@ -119,7 +119,7 @@ Required sections:
 - Press materials.
 - Public-only downloads.
 
-Urania behavior:
+Vedalina behavior:
 
 - help find approved public documents;
 - never expose private/internal materials.
@@ -170,11 +170,11 @@ Required sections:
 - Service request form.
 - Product selector.
 - Contact details.
-- Urania quick action: `Сервис`.
+- Vedalina quick action: `Сервис`.
 
 Safety:
 
-Urania may collect context and route the request, but must not provide technical service instructions unless they are approved public instructions.
+Vedalina may collect context and route the request, but must not provide technical service instructions unless they are approved public instructions.
 
 ## Contacts
 

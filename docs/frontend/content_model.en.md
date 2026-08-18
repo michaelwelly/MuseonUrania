@@ -99,13 +99,13 @@ The website should be driven by structured content so that NN answers can be ins
 }
 ```
 
-## Urania Assistant Model
+## Vedalina Assistant Model
 
 ```json
 {
-  "assistant_name": "Urania",
+  "assistant_name": "Vedalina",
   "assistant_role": "public product/document/navigation assistant",
-  "assistant_avatar": "assets/urania/urania-avatar-middle-v1.png",
+  "assistant_avatar": "assets/vedalina/vedalina-avatar-middle-v1.png",
   "assistant_slot": "hero_and_floating_button",
   "quick_actions": [
     "Подобрать оборудование",

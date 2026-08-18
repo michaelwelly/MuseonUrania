@@ -1,4 +1,4 @@
-# MuseonUrania
+# MuseonVedalina
 
 [Русский](README.md) · **English**
 
@@ -73,7 +73,7 @@ future VLM/LLM workflows for office, sales, service, and production.
 
 ## Repository Layout
 
-Monorepo: `frontend/` (public site + Urania UI), `backend/` (API, forms/CRM
+Monorepo: `frontend/` (public site + Vedalina UI), `backend/` (API, forms/CRM
 handoff), `docs/`, `assets/`, `prototypes/`, `outputs/`.
 
 Branches:
@@ -106,9 +106,9 @@ branch rules — [docs/PROJECT.en.md, section 4](docs/PROJECT.en.md#4-branches).
 - [Competitor notes](docs/strategy/competitor_notes.en.md)
 - [Frontend design handoff](docs/strategy/frontend_design_handoff.en.md)
 - [Frontend variants](docs/strategy/frontend_variants.en.md)
-- [Urania assistant spec](docs/strategy/urania_assistant_spec.en.md)
-- [Urania visual assets](docs/strategy/urania_visual_assets.en.md)
-- [Urania web prototype](prototypes/urania-web-interface.html)
+- [Vedalina assistant spec](docs/strategy/vedalina_assistant_spec.en.md)
+- [Vedalina visual assets](docs/strategy/vedalina_visual_assets.en.md)
+- [Vedalina web prototype](prototypes/vedalina-web-interface.html)
 - [Request to Nikolay Nikolaevich](docs/requests/nikolay_materials_request.en.md)
 - [Presentation outline for Nikolay Nikolaevich](docs/strategy/nn_presentation_outline.en.md)
 - [Roadmap](docs/operations/roadmap.en.md)

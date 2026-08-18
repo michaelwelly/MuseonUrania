@@ -28,7 +28,7 @@
 flowchart TB
     subgraph entry[" Кто приходит "]
         direction LR
-        visitor["Посетитель ✅<br/><small>сайт и Урания</small>"]
+        visitor["Посетитель ✅<br/><small>сайт и Ведалина</small>"]
         staff["Сотрудник ✅<br/><small>админка</small>"]
         yform["Яндекс Форма ⬜<br/><small>внешняя заявка</small>"]
         mail["Почта ⬜<br/><small>заявка письмом</small>"]
@@ -83,7 +83,7 @@ flowchart TB
         end
     end
 
-    subgraph rag[" Урания: поиск по документам "]
+    subgraph rag[" Ведалина: поиск по документам "]
         direction LR
         extract["Извлечение ⬜<br/><small>PDF и OCR</small>"]
         chunks["Чанки ⬜"]
@@ -130,7 +130,7 @@ flowchart TB
 | S3 в двух областях | приватная для документов, открытая для медиа; приватность закреплена бакетом |
 | Keycloak | проверка издателя **и** аудитории токена, роли из `realm_access` |
 | Периметр | TLS на Caddy, HSTS, CSP без `unsafe-inline` для скриптов, `X-Frame-Options`, лимит тела |
-| Ограничения Урании | `Guardrails` до вызова движка; закрытые материалы физически недостижимы |
+| Ограничения Ведалины | `Guardrails` до вызова движка; закрытые материалы физически недостижимы |
 
 ## Чего нет и что это блокирует
 

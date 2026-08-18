@@ -29,7 +29,7 @@ with it; where they disagree, the brief wins.
 flowchart TB
     subgraph entry[" Кто приходит "]
         direction LR
-        visitor["Посетитель ✅<br/><small>сайт и Урания</small>"]
+        visitor["Посетитель ✅<br/><small>сайт и Ведалина</small>"]
         staff["Сотрудник ✅<br/><small>админка</small>"]
         yform["Яндекс Форма ⬜<br/><small>внешняя заявка</small>"]
         mail["Почта ⬜<br/><small>заявка письмом</small>"]
@@ -84,7 +84,7 @@ flowchart TB
         end
     end
 
-    subgraph rag[" Урания: поиск по документам "]
+    subgraph rag[" Ведалина: поиск по документам "]
         direction LR
         extract["Извлечение ⬜<br/><small>PDF и OCR</small>"]
         chunks["Чанки ⬜"]
@@ -131,7 +131,7 @@ Confirmed by tests and by a run against the live stack.
 | S3 in two areas | private for documents, open for media; privacy anchored to the bucket |
 | Keycloak | the issuer **and** the audience of the token are validated, roles come from `realm_access` |
 | Perimeter | TLS on Caddy, HSTS, CSP without `unsafe-inline` for scripts, `X-Frame-Options`, body limit |
-| Urania's limits | `Guardrails` before the engine is called; closed materials are physically unreachable |
+| Vedalina's limits | `Guardrails` before the engine is called; closed materials are physically unreachable |
 
 ## What is missing and what it blocks
 
