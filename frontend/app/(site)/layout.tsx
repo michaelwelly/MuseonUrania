@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import UraniaWidget from "@/components/UraniaWidget";
@@ -17,7 +18,11 @@ export const metadata: Metadata = {
     "Собственное производство и современные решения для неонатологии, реанимации, анестезиологии и интенсивной терапии.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+type RootLayoutProps = {
+  children: ReactNode;
+};
+
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
     // Та же причина, что и в админке: расширения браузера дописывают свои
     // атрибуты в <html> и <body> раньше, чем отрисуется React. Подавление

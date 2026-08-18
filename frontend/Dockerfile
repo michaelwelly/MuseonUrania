@@ -23,7 +23,12 @@ FROM node:24-alpine AS runtime
 WORKDIR /app
 
 # curl для healthcheck'а в compose.
-RUN apk add --no-cache curl
+#
+# npm из базового node:24-alpine может отставать от security-fix'ов своих
+# вложенных пакетов. Trivy сканирует и глобальный npm тоже; поэтому runtime
+# слой явно подтягивает версию, где node-tar уже закрыт.
+RUN apk add --no-cache curl \
+    && npm install -g npm@12.0.2
 
 # Владелец проставляется при копировании, а не отдельным `chown -R`:
 # тот обходит несколько десятков тысяч файлов в node_modules и стоит

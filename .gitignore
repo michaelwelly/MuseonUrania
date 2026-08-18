@@ -29,6 +29,11 @@ outputs/*.inspect.ndjson
 outputs/*_v0.*
 outputs/*_v1_*
 outputs/*_v2_*
+tmp/
+output/
+outputs/**/tmp*/
+outputs/**/rendered_*/
+outputs/**/owner_deck_tmp/
 
 # IDE
 .idea/
