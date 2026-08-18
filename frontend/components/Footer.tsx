@@ -1,5 +1,6 @@
 import Link from "next/link";
-import AnimatedLogo from "@/components/AnimatedLogo";
+import Image from "next/image";
+import { membership } from "@/content/about";
 import { footer, site } from "@/content/site";
 import FooterSubscribe from "./FooterSubscribe";
 import styles from "./Footer.module.css";
@@ -9,10 +10,30 @@ export default function Footer() {
     <footer className={styles.footer}>
       <div className={styles.top}>
         <div>
-          <Link href="/" className={styles.brand} aria-label={`${site.brand}, на главную`}>
-            {/* 40 — та же высота, что была у статичного знака в .brand img. */}
-            <AnimatedLogo height={40} />
-          </Link>
+          {/* Раньше здесь стоял знак VEDAL на белой плашке. Плашка была нужна
+              не по замыслу, а вынужденно: знак нарисован почти чёрным (#111),
+              и на фоне подвала (#08211d) его контраст — 1.12:1, то есть его
+              не видно. Логотип и так стоит в шапке каждой страницы, поэтому
+              в подвале его место занял знак члена палаты.
+
+              Подложка под ним осталась светлой по той же причине: знак палаты
+              бордовый (#812a5d), на фоне подвала это 1.94:1. Перекрасить его
+              нельзя — чужой фирменный знак. Плашка подогнана под пропорции
+              горизонтального начертания, а не квадратная. */}
+          <a
+            className={styles.membership}
+            href={membership.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${membership.title}: ${membership.mark.alt}`}
+          >
+            <Image
+              src={membership.markWide.src}
+              alt={membership.markWide.alt}
+              width={membership.markWide.width}
+              height={membership.markWide.height}
+            />
+          </a>
           <p className={styles.about}>{footer.about}</p>
           <div className={styles.messengers}>
             {footer.messengers.map((m) =>
