@@ -3,6 +3,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import VedalinaWidget from "@/components/VedalinaWidget";
 import CookieNotice from "@/components/CookieNotice";
+import ImageGuard from "@/components/ImageGuard";
 import LogoPreloader from "@/components/LogoPreloader";
 import Motion from "@/components/Motion";
 import { fontVariables } from "../fonts";
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {/* Плавающий чат — на всех страницах */}
         <VedalinaWidget />
         <CookieNotice />
+        <ImageGuard />
       </body>
     </html>
   );

@@ -87,6 +87,7 @@ export default function Footer() {
           Вход для сотрудников
         </Link>
         <span className={styles.disclaimer}>{footer.disclaimer}</span>
+        <span className={styles.disclaimer}>{footer.copyright}</span>
       </div>
     </footer>
   );
