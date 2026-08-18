@@ -8,16 +8,12 @@ import ProductTabs from "./tabs";
 import styles from "./page.module.css";
 import { mediaSrc } from "@/lib/media";
 
-type ProductPageProps = {
-  params: Promise<{ slug: string }>;
-};
-
 export async function generateStaticParams() {
   const products = await fetchProducts();
   return products.map((p) => ({ slug: p.slug }));
 }
 
-export async function generateMetadata(props: ProductPageProps): Promise<Metadata> {
+export async function generateMetadata(props: PageProps<"/products/[slug]">): Promise<Metadata> {
   const { slug } = await props.params;
   const product = await fetchProduct(slug);
   if (!product) return {};
@@ -35,7 +31,7 @@ function Arrow() {
   );
 }
 
-export default async function ProductPage(props: ProductPageProps) {
+export default async function ProductPage(props: PageProps<"/products/[slug]">) {
   const { slug } = await props.params;
   const [product, products] = await Promise.all([fetchProduct(slug), fetchProducts()]);
   // Неопубликованное изделие бэкенд отдаёт как 404 — страницы у него нет.
