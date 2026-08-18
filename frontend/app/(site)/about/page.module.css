@@ -87,10 +87,14 @@
 
 /* ---------- направления ---------- */
 /* ---------- членство в УТПП ---------- */
-/* На месте бывшей полосы партнёров, но одноколоночная и без фотографии:
-   у знака палаты фотографии нет, а растягивать блок картинкой цеха —
-   значит выдавать членство за производственный факт. */
+/* Знак стоит рядом с текстом, а не под ним: он и есть подтверждение
+   сказанного, и разносить их по вертикали значит заставлять читателя
+   связывать их самому. */
 .membership {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 48px;
   padding: 72px 48px;
   background: var(--soft);
   border-top: 1px solid var(--line);
@@ -121,11 +125,20 @@
   border-bottom: 1px solid currentColor;
 }
 
-.membershipNote {
-  margin-top: 22px;
-  font-size: 13px;
-  line-height: 1.55;
-  color: var(--muted);
+/* Подложка под знаком белая: у файла палаты прозрачный фон, а её бордовый
+   на светло-зелёном фоне полосы теряет контраст. */
+.membershipMark {
+  display: block;
+  padding: 24px 28px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+
+.membershipMark img {
+  display: block;
+  width: 168px;
+  height: auto;
 }
 
 /* ---------- реквизиты ---------- */
@@ -179,6 +192,7 @@
 
 @media (max-width: 1100px) {
   .cycle,
+  .membership,
   .legal {
     grid-template-columns: 1fr;
     gap: 28px;

@@ -30,6 +30,22 @@
   line-height: 1.6;
 }
 
+.links {
+  max-width: 68ch;
+  margin-top: 18px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 15px;
+}
+
+.links a {
+  color: var(--green);
+  border-bottom: 1px solid currentColor;
+}
+
 .table {
   max-width: 68ch;
   margin-top: 24px;

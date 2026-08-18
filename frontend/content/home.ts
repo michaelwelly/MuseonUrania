@@ -63,14 +63,14 @@ export const featured = [
     category: "Реанимация",
     name: "VEDAL R1",
     text: "Открытая реанимационная система: лучистый обогрев, встроенные весы, пульсоксиметрия.",
-    image: { src: "/photos/products/vedal-r1-r2.jpg", alt: "Открытая реанимационная система VEDAL R1" },
+    image: { src: "/photos/products/vedal-r1.jpg", alt: "Открытая реанимационная система VEDAL R1" },
   },
   {
     slug: "vedal-r2",
     category: "Реанимация",
     name: "VEDAL R2",
     text: "К обогреву и мониторингу добавляются ЖК-дисплей, фототерапия и аспиратор.",
-    image: { src: "/photos/products/vedal-r1-r2.jpg", alt: "Открытая реанимационная система VEDAL R2" },
+    image: { src: "/photos/products/vedal-r2.jpg", alt: "Открытая реанимационная система VEDAL R2" },
   },
   {
     slug: "vedal-t-100",

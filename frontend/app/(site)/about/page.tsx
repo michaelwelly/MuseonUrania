@@ -66,8 +66,8 @@ export default function AboutPage() {
       </section>
 
       {/* Членство в УТПП, а не коммерческое партнёрство: блок намеренно
-          отдельный и без интеграторов — §2.6 плана. Знак члена палаты
-          появится, когда заказчик пришлёт оригинал и разрешит публикацию. */}
+          отдельный и без интеграторов — §2.6 плана. Знак ведёт на сайт
+          палаты, как просил заказчик. */}
       <section className={styles.membership}>
         <div className={styles.membershipCopy} data-reveal="0">
           <p className={styles.eyebrow}>{membership.eyebrow}</p>
@@ -83,8 +83,21 @@ export default function AboutPage() {
           >
             {membership.linkLabel}
           </a>
-          <p className={styles.membershipNote}>{membership.markNote}</p>
         </div>
+        <a
+          className={styles.membershipMark}
+          href={membership.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-reveal="1"
+        >
+          <Image
+            src={membership.mark.src}
+            alt={membership.mark.alt}
+            width={membership.mark.width}
+            height={membership.mark.height}
+          />
+        </a>
       </section>
 
       <section className={styles.legal}>
