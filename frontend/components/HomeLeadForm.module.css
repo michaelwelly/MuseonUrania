@@ -81,6 +81,35 @@
   color: #f0a99e;
 }
 
+/* Галочка согласия. Цвета — из набора «на тёмном»: форма стоит на --deep-2,
+   и светлые токены соседней формы здесь дали бы серый текст на тёмном. */
+.consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin-top: 18px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--on-dark-2);
+}
+
+.consent input {
+  margin-top: 2px;
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  accent-color: var(--green);
+}
+
+.consent a {
+  color: var(--green-on-dark);
+  border-bottom: 1px solid currentColor;
+}
+
+.required {
+  color: var(--green-on-dark);
+}
+
 .actions {
   display: flex;
   align-items: center;
