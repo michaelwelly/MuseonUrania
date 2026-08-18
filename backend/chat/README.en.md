@@ -2,7 +2,7 @@
 
 [Русский](README.md) · **English**
 
-The site widget, Urania's reply, and a staff member joining the thread.
+The site widget, Vedalina's reply, and a staff member joining the thread.
 
 ## Why a separate module
 
@@ -13,7 +13,7 @@ consists of nothing but memory.
 
 Dependencies: `common`, `audit`, `assistant`. Answers come from
 `AssistantService` rather than a second call into the engine, and that is the
-point: Urania's limits — no diagnoses, no prices, published material only —
+point: Vedalina's limits — no diagnoses, no prices, published material only —
 live in `Guardrails`. A second path to the engine would mean a second set of
 limits, and one day the two would disagree.
 
@@ -31,8 +31,8 @@ room for a human to step in. The perimeter is still checked where it was.
 
 | | |
 | --- | --- |
-| `open` | in progress, Urania answers |
-| `waiting` | Urania handed off, no staff member has joined yet |
+| `open` | in progress, Vedalina answers |
+| `waiting` | Vedalina handed off, no staff member has joined yet |
 | `attended` | a staff member is in the conversation |
 | `closed` | finished |
 
@@ -43,7 +43,7 @@ there is.
 
 ## The main rule
 
-**Once a conversation is handed to a human, Urania goes silent.** Not "answers
+**Once a conversation is handed to a human, Vedalina goes silent.** Not "answers
 less often", not "answers until a staff member joins" — silent, completely.
 
 Otherwise you get a conversation where the machine talks over the person: the

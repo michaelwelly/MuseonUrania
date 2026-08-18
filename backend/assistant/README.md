@@ -2,8 +2,8 @@
 
 **Русский** · [English](README.en.md)
 
-Публичный ассистент Urania. Спецификация —
-[urania_assistant_spec.md](../../docs/strategy/urania_assistant_spec.md),
+Публичный ассистент Vedalina. Спецификация —
+[vedalina_assistant_spec.md](../../docs/strategy/vedalina_assistant_spec.md),
 место в архитектуре —
 [спека серверной части](../../docs/superpowers/specs/2026-08-06-vedal-portal-architecture-design.md).
 
@@ -48,7 +48,7 @@
 
 Только запросные интерфейсы соседей — `CatalogQuery`, `ContentQuery`,
 `DocumentQuery`. Они отдают исключительно опубликованное, поэтому закрытые
-материалы Урании физически недостижимы.
+материалы Ведалины физически недостижимы.
 
 Границу держит сборка, а не дисциплина: импорт из модуля, которого нет
 в зависимостях, роняет компиляцию. Раньше весь код лежал одной кучей

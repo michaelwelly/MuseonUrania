@@ -9,7 +9,7 @@
 	</parent>
 	<artifactId>portal-assistant</artifactId>
 	<name>portal-assistant</name>
-	<description>Урания: ответы по опубликованному, жёсткие ограничения</description>
+	<description>Ведалина: ответы по опубликованному, жёсткие ограничения</description>
 
 	<dependencies>
 		<dependency>

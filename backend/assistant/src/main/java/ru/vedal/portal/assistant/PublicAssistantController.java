@@ -30,7 +30,7 @@ public class PublicAssistantController {
         this.rateLimit = rateLimit;
     }
 
-    @Operation(summary = "Спросить Уранию",
+    @Operation(summary = "Спросить Ведалину",
             description = """
                     Отвечает только по опубликованным материалам портала: каталогу, ленте
                     и перечню документов. Закрытого файла в ответе не будет, потому что

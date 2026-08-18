@@ -2,8 +2,8 @@
 
 [Русский](README.md) · **English**
 
-The public assistant Urania. The specification is
-[urania_assistant_spec.en.md](../../docs/strategy/urania_assistant_spec.en.md),
+The public assistant Vedalina. The specification is
+[vedalina_assistant_spec.en.md](../../docs/strategy/vedalina_assistant_spec.en.md),
 its place in the architecture is the
 [backend spec](../../docs/superpowers/specs/2026-08-06-vedal-portal-architecture-design.en.md).
 
@@ -53,7 +53,7 @@ It depends on: `common`, `audit`, `catalog`, `content`, `documents`.
 
 Only the neighbours' query interfaces — `CatalogQuery`, `ContentQuery`,
 `DocumentQuery`. They return published material only, which is why closed
-materials are physically unreachable for Urania.
+materials are physically unreachable for Vedalina.
 
 The boundary is enforced by the build rather than by discipline: importing
 from a module that is not among the dependencies fails compilation. Previously

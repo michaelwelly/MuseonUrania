@@ -13,8 +13,8 @@ import java.util.UUID;
 //
 // Состояний четыре, и разница между open и waiting — главная из них:
 //
-//   open     — идёт, отвечает Урания;
-//   waiting  — Урания передала человеку, сотрудник ещё не подключился;
+//   open     — идёт, отвечает Ведалина;
+//   waiting  — Ведалина передала человеку, сотрудник ещё не подключился;
 //   attended — сотрудник в разговоре;
 //   closed   — завершён.
 //
@@ -94,7 +94,7 @@ public class Conversation {
     public long getVersion() { return version; }
     public void setVersion(long version) { this.version = version; }
 
-    /** Человек уже в разговоре или вызван — Урании здесь больше нечего делать. */
+    /** Человек уже в разговоре или вызван — Ведалины здесь больше нечего делать. */
     public boolean handedToHuman() {
         return WAITING.equals(status) || ATTENDED.equals(status);
     }
