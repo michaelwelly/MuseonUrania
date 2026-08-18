@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import PageHero from "@/components/PageHero";
 import { DarkCta } from "@/components/Blocks";
-import { fetchCategories, fetchProducts } from "@/lib/api";
-import { directions, models } from "@/lib/plural";
+import { fetchProducts } from "@/lib/api";
 import Catalog from "./catalog";
 import styles from "./page.module.css";
 
@@ -15,9 +14,11 @@ export const metadata: Metadata = {
 };
 
 export default async function ProductsPage() {
-  // Каталог и категории — с бэкенда на сборке. Запросы независимы, поэтому
-  // идут параллельно: последовательные ждали бы друг друга без причины.
-  const [products, categories] = await Promise.all([fetchProducts(), fetchCategories()]);
+  // Категории больше не запрашиваются: фильтр по ним убран, и полоса цифр
+  // над каталогом — тоже. Считать «5 направлений» было не по чем и незачем:
+  // изделий четыре, из пяти направлений два пустых, и полоса объявляла
+  // ассортимент шире реального. Ту же полосу сняли с «О компании» по §2.1.
+  const products = await fetchProducts();
 
   return (
     <main className={styles.page}>
@@ -25,13 +26,9 @@ export default async function ProductsPage() {
         crumbs={[{ label: "Главная", href: "/" }, { label: "Продукция" }]}
         title="Каталог оборудования"
         lead={lead}
-        stats={[
-          { value: String(products.length), label: models(products.length) },
-          { value: String(categories.length), label: directions(categories.length) },
-        ]}
       />
 
-      <Catalog products={products} categories={categories} />
+      <Catalog products={products} />
 
       <DarkCta
         tone="deep"
