@@ -13,10 +13,20 @@ import styles from "./TreeGrow.module.css";
  * Рост сделан маской, а не обрезкой контейнера: у маски мягкий край,
  * и граница появления не читается прямой линией, ползущей по картинке.
  */
-export default function TreeGrow({ size = 176 }: { size?: number }) {
+/**
+ * `size` принимает и число, и CSS-длину. Загрузочный экран задаёт знак от
+ * размера окна (`min(64vmin, 520px)`), а не числом: на телефоне и на большом
+ * мониторе одно и то же число даёт разный экран — то знак теряется в поле,
+ * то упирается в края.
+ */
+export default function TreeGrow({ size = 176 }: { size?: number | string }) {
+  // 100vmin — верхняя граница, а не запрос: браузер по ней выбирает исходник
+  // для самого крупного случая и не догружает второй при смене ориентации.
+  const sizes = typeof size === "number" ? `${size}px` : "100vmin";
+
   return (
     <div className={styles.wrap} style={{ width: size, height: size }} aria-hidden="true">
-      <Image src={treeMark.src} alt="" fill sizes={`${size}px`} priority className={styles.tree} />
+      <Image src={treeMark.src} alt="" fill sizes={sizes} priority className={styles.tree} />
     </div>
   );
 }
