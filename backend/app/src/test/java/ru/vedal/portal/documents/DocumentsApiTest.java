@@ -65,7 +65,10 @@ class DocumentsApiTest extends PostgresTestBase {
         var document = documents.findBySlug("opisanie-izdeliya-vedal-r1-r2").orElseThrow();
         document.setSensitivity("internal");
         document.setStorageKey("probe.pdf");
-        document.setListed(true);
+        // listed выключен намеренно: с ним первым сработал бы
+        // document_listed_only_public, и тест проверял бы уже не то правило.
+        // Здесь проверяется именно запрет публикации непубличного документа.
+        document.setListed(false);
         document.setPublished(true);
 
         assertThatThrownBy(() -> documents.saveAndFlush(document))
@@ -83,6 +86,36 @@ class DocumentsApiTest extends PostgresTestBase {
         assertThatThrownBy(() -> documents.saveAndFlush(document))
                 .isInstanceOf(DataIntegrityViolationException.class)
                 .hasMessageContaining("document_published_has_file");
+    }
+
+    // §12.4 плана: confidential-документы не индексируются и не показываются.
+    //
+    // Файл у них и так недостижим — `document_public_only` не даёт поставить
+    // published непубличному документу. Но перечень отбирался только по listed,
+    // а он с уровнем секретности никак не связан. Достаточно было пометить
+    // закрытый документ как «в перечне», и наружу уезжали название, предмет
+    // и привязка к изделию — без файла, но этого хватает: «Отчёт об испытаниях
+    // VEDAL R2» в открытом списке говорит о продукте больше, чем хотелось бы.
+    //
+    // Тот же перечень читает ассистент, поэтому утечка попадала бы и в ответы.
+    @Test
+    void confidentialDocumentNeverReachesThePublicListing() {
+        var document = documents.findBySlug("katalog-produkcii-2026").orElseThrow();
+        document.setSensitivity("confidential");
+        document.setListed(true);
+
+        assertThatThrownBy(() -> documents.saveAndFlush(document))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("document_listed_only_public");
+    }
+
+    // Второй рубеж: даже если строка окажется в базе в обход схемы — миграцией,
+    // ручным update, восстановлением из старого дампа, — перечень её не отдаст.
+    @Test
+    void listingSelectsOnlyPublicDocuments() {
+        assertThat(documents.findByListedTrueAndSensitivityOrderByDocGroupAscTitleAsc("public"))
+                .isNotEmpty()
+                .allSatisfy(d -> assertThat(d.getSensitivity()).isEqualTo("public"));
     }
 
     @Test

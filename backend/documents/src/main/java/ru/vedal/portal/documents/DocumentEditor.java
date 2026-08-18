@@ -103,6 +103,18 @@ public class DocumentEditor implements DocumentAdmin {
                             + ", сначала снимите его с публикации.");
         }
 
+        // То же и для перечня. Ограничение document_listed_only_public такую
+        // строку не примет, но редактор должен увидеть причину, а не отказ
+        // базы: «в перечне» и «закрытый» — сочетание, которое ставят
+        // по недосмотру, а не со зла.
+        if (form.listed() && !"public".equals(form.sensitivity())) {
+            throw new ConflictException(
+                    "Документ с уровнем " + form.sensitivity()
+                            + " не показывается в перечне на сайте: в перечень попадают "
+                            + "название и предмет документа. Снимите отметку «в перечне» "
+                            + "или измените уровень на public.");
+        }
+
         apply(document, form);
         documents.saveAndFlush(document);
 
