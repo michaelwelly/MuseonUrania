@@ -63,7 +63,7 @@ class ChatPrivacyTest extends PostgresTestBase {
         // Свойства перехода — не персональные данные и остаются для аналитики.
         assertThat(conversation.getCampaign()).isEqualTo("innoprom");
         // Сравнение с тем, что было, а не с числом: сколько именно реплик
-        // окажется в ленте, зависит от того, ответила ли Урания, — а проверяем
+        // окажется в ленте, зависит от того, ответила ли Ведалина, — а проверяем
         // мы не это, а что обезличивание не удаляет строки.
         assertThat(desk.threadOf(id).messages()).hasSize(before);
     }

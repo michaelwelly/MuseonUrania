@@ -120,7 +120,7 @@ Consequences in the code:
 
 Prices in a quote are named by a manager. The «не выдумывать цены» rule from
 section 9 of [PROJECT.md](../../docs/PROJECT.en.md) applies to the site, the
-catalogue and Urania; a quote is an internal document a person composes and
+catalogue and Vedalina; a quote is an internal document a person composes and
 signs, and its prices never go outward.
 
 ## Analytics
