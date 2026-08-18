@@ -2,7 +2,7 @@
 
 [Русский](README.md) · **English**
 
-The public website `vedal-med.ru` and the Urania assistant. Next.js 16, App
+The public website `vedal-med.ru` and the Vedalina assistant. Next.js 16, App
 Router, TypeScript, CSS Modules.
 
 ## Running it
@@ -20,12 +20,12 @@ no Docker required. To work against the server side, copy
 The catalog, the news and the documents are read from the public API at build
 time and refreshed every five minutes — the same window the backend puts in
 `Cache-Control`. That is why a backend outage does not take an already built
-site down. A live backend is needed only by the forms and by Urania: they call
+site down. A live backend is needed only by the forms and by Vedalina: they call
 from the browser.
 
-| `NEXT_PUBLIC_API_URL` | Catalog, news, documents | Forms and Urania |
+| `NEXT_PUBLIC_API_URL` | Catalog, news, documents | Forms and Vedalina |
 | --- | --- | --- |
-| unset | `content/*.ts` | say plainly that submission is not wired; Urania answers with local prompts |
+| unset | `content/*.ts` | say plainly that submission is not wired; Vedalina answers with local prompts |
 | set | the public API; if it does not answer, **the build fails** | `POST /api/forms/v1/leads` and `POST /api/assistant/v1/ask` |
 
 The build fails on purpose: silently substituting the hardcoded catalog is more
@@ -36,8 +36,8 @@ on its side, see [backend/README.en.md](../backend/README.en.md).
 
 ## What is done
 
-Nine screens of the site, the Urania chat, the lead forms. The markup comes from
-[prototypes/urania-web-interface.html](../prototypes/urania-web-interface.html),
+Nine screens of the site, the Vedalina chat, the lead forms. The markup comes from
+[prototypes/vedalina-web-interface.html](../prototypes/vedalina-web-interface.html),
 the requirements from [docs/frontend](../docs/frontend).
 
 Twenty-one admin screens: site content (products, categories, news, documents,
@@ -51,7 +51,7 @@ three pipelines, quotes, analytics in four dimensions).
   not leak into it.
 - `components/` — header, footer, forms, assistant blocks.
 - `lib/api.ts` — reading the public API on the server.
-- `lib/submit.ts` — sending leads and Urania questions from the browser.
+- `lib/submit.ts` — sending leads and Vedalina questions from the browser.
 - `lib/admin.ts` — the admin API: browser only, token only.
 - `lib/auth.ts` — Keycloak sign-in, authorization code with PKCE.
 - `content/*.ts` — all site text and the fallback data source. Unconfirmed facts

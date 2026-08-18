@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import PageHero from "@/components/PageHero";
 import { newsHero, press } from "@/content/news";
-import { pressContact, DEMO_NOTE } from "@/content/staff";
+import { companyContact, STAFF_AWAITING } from "@/content/staff";
+import { vedalina } from "@/content/vedalina";
 import { fetchNews } from "@/lib/api";
 import NewsFeed from "./feed";
 import NewsSubscribe from "./subscribe";
@@ -36,18 +37,18 @@ export default async function NewsPage() {
 
           <div className={styles.contact}>
             <div className={styles.avatar}>
-              <Image src="/urania/urania-avatar-middle-v1.png" alt="" fill sizes="56px" />
+              <Image src={vedalina.avatar} alt="" fill sizes="56px" />
             </div>
             <div>
-              <p className={styles.contactName}>{pressContact.name}</p>
+              <p className={styles.contactName}>{companyContact.title}</p>
               <p className={styles.contactRole}>
-                {pressContact.role} ·{" "}
-                <a href={`mailto:${pressContact.email}`}>{pressContact.email}</a>
+                {companyContact.scope} ·{" "}
+                <a href={`mailto:${companyContact.email}`}>{companyContact.email}</a>
               </p>
             </div>
           </div>
           {/* Пресс-контакт — заглушка из макета, см. content/staff.ts */}
-          <p className={styles.demoNote}>{DEMO_NOTE}</p>
+          <p className={styles.demoNote}>{STAFF_AWAITING}</p>
         </div>
 
         <NewsSubscribe />

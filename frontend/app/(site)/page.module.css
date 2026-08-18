@@ -8,7 +8,7 @@
 /* ---------- hero ---------- */
 
 /* Первый экран белый — по референсу
-   assets/urania/urania-web-integration-mockup-v1.png. Граница с шапкой
+   assets/vedalina/vedalina-web-integration-mockup-v1.png. Граница с шапкой
    не теряется: у .bar в Header.module.css своя нижняя линия. */
 .hero {
   position: relative;

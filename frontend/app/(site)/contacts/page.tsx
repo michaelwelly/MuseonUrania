@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import PageHero from "@/components/PageHero";
 import LeadForm from "@/components/LeadForm";
 import VedalMap from "@/components/VedalMap";
 import { fetchProducts } from "@/lib/api";
-import { staff, DEMO_NOTE } from "@/content/staff";
+import { companyContact, STAFF_AWAITING } from "@/content/staff";
 import {
   contactsHero,
   topics,
@@ -14,7 +13,7 @@ import {
   staffSection,
   legalRows,
   contactsNotice,
-  uraniaCard,
+  vedalinaCard,
 } from "@/content/contacts";
 import styles from "./page.module.css";
 
@@ -83,44 +82,22 @@ export default async function ContactsPage() {
         </div>
       </section>
 
-      <section className={styles.staff}>
-        <div className={styles.staffHead} data-reveal="0">
-          <div>
-            <p className={styles.eyebrow} style={{ color: "var(--green)" }}>
-              {staffSection.eyebrow}
-            </p>
-            <h2 className={styles.h2} data-words="30">
-              {staffSection.title}
-            </h2>
-          </div>
-          {/* Требование хендоффа: примечание видно до замены на реальные данные. */}
-          <p className={styles.staffNote}>{DEMO_NOTE}</p>
-        </div>
-
-        <ul className={styles.staffGrid}>
-          {staff.map((p, i) => (
-            <li key={p.email} className={styles.person} data-reveal={i}>
-              <div className={styles.personTop}>
-                <div className={styles.avatar}>
-                  <Image src="/urania/urania-avatar-middle-v1.png" alt="" fill sizes="60px" />
-                </div>
-                <div>
-                  <p className={styles.personName}>{p.name}</p>
-                  <p className={styles.personRole}>{p.role}</p>
-                </div>
-              </div>
-              <p className={styles.personScope}>{p.scope}</p>
-              <address className={styles.personContacts}>
-                <a className={styles.personPhone} href={`tel:${p.phone.replace(/[\s+]/g, "")}`}>
-                  {p.phone}
-                </a>
-                <a className={styles.personMail} href={`mailto:${p.email}`}>
-                  {p.email}
-                </a>
-              </address>
-            </li>
-          ))}
-        </ul>
+      {/* Блок «Кому писать напрямую» снят: все шесть карточек были
+          придуманными людьми с придуманными телефонами, а примечание рядом
+          не мешает по такому телефону позвонить. Вернётся, когда заказчик
+          подтвердит список — §9.3 плана, см. content/staff.ts. */}
+      <section className={styles.staffPending} data-reveal="0">
+        <p className={styles.eyebrow} style={{ color: "var(--green)" }}>
+          {staffSection.eyebrow}
+        </p>
+        <h2 className={styles.h2} data-words="30">
+          {staffSection.title}
+        </h2>
+        <p className={styles.staffNote}>{STAFF_AWAITING}</p>
+        <address className={styles.staffFallback}>
+          <a href={`tel:${companyContact.phone.replace(/\s/g, "")}`}>{companyContact.phone}</a>
+          <a href={`mailto:${companyContact.email}`}>{companyContact.email}</a>
+        </address>
       </section>
 
       <section className={styles.bottom}>
@@ -149,11 +126,11 @@ export default async function ContactsPage() {
             ))}
           </div>
 
-          <div className={styles.uraniaCard}>
-            <h2 className={styles.uraniaTitle}>{uraniaCard.title}</h2>
-            <p className={styles.uraniaText}>{uraniaCard.text}</p>
-            <Link className={styles.uraniaCta} href="#urania">
-              {uraniaCard.cta}
+          <div className={styles.vedalinaCard}>
+            <h2 className={styles.vedalinaTitle}>{vedalinaCard.title}</h2>
+            <p className={styles.vedalinaText}>{vedalinaCard.text}</p>
+            <Link className={styles.vedalinaCta} href="#vedalina">
+              {vedalinaCard.cta}
             </Link>
           </div>
         </div>

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import UraniaWidget from "@/components/UraniaWidget";
+import VedalinaWidget from "@/components/VedalinaWidget";
 import LogoPreloader from "@/components/LogoPreloader";
 import Motion from "@/components/Motion";
 import { fontVariables } from "../fonts";
@@ -33,7 +33,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </div>
         <Footer />
         {/* Плавающий чат — на всех страницах */}
-        <UraniaWidget />
+        <VedalinaWidget />
       </body>
     </html>
   );

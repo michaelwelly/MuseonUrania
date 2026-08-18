@@ -494,7 +494,7 @@ export const dealQuotes = (id: string) => get<QuoteRow[]>(`/deals/${id}/quotes`)
 // ————— коммерческие предложения —————
 //
 // Единственное место портала, где цену называет человек. Наружу — на сайт,
-// в каталог, в ответы Урании — она не попадает никогда.
+// в каталог, в ответы Ведалины — она не попадает никогда.
 
 export type QuoteRow = {
   id: string;
@@ -663,7 +663,7 @@ export type ChatLine = {
   author: "visitor" | "assistant" | "staff";
   actor: string | null;
   body: string;
-  /** Чем отвечала Урания. Сотруднику это важно: он видит, что уже сказали. */
+  /** Чем отвечала Ведалина. Сотруднику это важно: он видит, что уже сказали. */
   sources: { title: string; url: string; kind?: string }[];
   /** Когда прочитано посетителем. null — ещё нет. */
   readAt: string | null;

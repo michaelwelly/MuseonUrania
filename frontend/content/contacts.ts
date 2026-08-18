@@ -9,7 +9,7 @@ import { AWAITING, site } from "./site";
 
 export const contactsHero = {
   title: "Связаться с VEDAL",
-  lead: "Позвоните, напишите профильному специалисту напрямую или оставьте обращение — запрос попадёт в нужный отдел.",
+  lead: "Позвоните, напишите на общий адрес или оставьте обращение — запрос попадёт в нужный отдел.",
 };
 
 // content_model.md → Urania Assistant Model → handoff_forms
@@ -33,21 +33,24 @@ export const contactBlocks: {
   {
     title: "Телефон",
     main: { text: site.phone, href: `tel:${site.phone.replace(/\s/g, "")}` },
-    lines: [
-      { text: site.phoneExtra, href: `tel:${site.phoneExtra.replace(/[\s-]/g, "")}` },
-      { text: site.phoneHours },
-    ],
+    // Публично остаётся один номер — тот, что стоит на бланке датащитов.
+    // Второй (+7 922…) снят 18 августа по §9.2 плана: он не подтверждён
+    // заказчиком, а на сайте номер читается как обещание, что по нему ответят.
+    lines: [{ text: site.phoneHours }],
   },
   {
     title: "Почта",
     main: { text: site.email, href: `mailto:${site.email}` },
-    // Отдельные адреса отделов не подтверждены — с бланка снят только sales@
-    lines: [{ text: "service@vedal-med.ru — сервис" }, { text: "docs@vedal-med.ru — документы" }],
+    // service@ и docs@ отсюда убраны: с бланка снят только sales@, остальные
+    // адреса взяты из макета. Письмо на несуществующий ящик молча пропадает.
+    lines: [{ text: "Ответ в рабочие часы" }],
   },
   {
     title: "Адрес производства",
     main: { text: "620135, Екатеринбург, ул. Совхозная, стр. 20В" },
-    lines: [{ text: "Приём по предварительной договорённости" }],
+    // Приём посетителей не обещаем — §6.3 плана. Порядок въезда для
+    // поставок остаётся ниже, в схеме проезда.
+    lines: [],
   },
 ];
 
@@ -64,7 +67,7 @@ export const route = {
 
 export const staffSection = {
   eyebrow: "Сотрудники",
-  title: "Кому писать напрямую",
+  title: "Куда попадёт обращение",
 };
 
 export const legalRows = [
@@ -79,8 +82,8 @@ export const contactsNotice = {
   text: `Политика обработки персональных данных и текст согласия — ${AWAITING}. До их согласования форма не отправляет данные на сервер: обращение принимается по телефону и почте.`,
 };
 
-export const uraniaCard = {
-  title: "Быстрее — через Уранию",
+export const vedalinaCard = {
+  title: "Быстрее — через Ведалину",
   text: "Ассистент подскажет модель, найдёт документ и передаст запрос специалисту.",
   cta: "Открыть чат",
 };

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import PageHero from "@/components/PageHero";
 import { DarkCta } from "@/components/Blocks";
 import { fetchCategories, fetchProducts } from "@/lib/api";
+import { directions, models } from "@/lib/plural";
 import Catalog from "./catalog";
 import styles from "./page.module.css";
 
@@ -25,8 +26,8 @@ export default async function ProductsPage() {
         title="Каталог оборудования"
         lead={lead}
         stats={[
-          { value: String(products.length), label: "моделей" },
-          { value: String(categories.length), label: "направлений" },
+          { value: String(products.length), label: models(products.length) },
+          { value: String(categories.length), label: directions(categories.length) },
         ]}
       />
 
@@ -35,13 +36,13 @@ export default async function ProductsPage() {
       <DarkCta
         tone="deep"
         title="Не нашли нужную конфигурацию?"
-        text="Опишите задачу отделения — Урания подскажет модели сразу, а специалист подготовит предложение с характеристиками и документами."
+        text="Опишите задачу отделения — Ведалина подскажет модели сразу, а специалист подготовит предложение с характеристиками и документами."
         primary={{
           label: "Запросить подбор",
           href: "/contacts/",
           analytics: "product_quote_click",
         }}
-        secondary={{ label: "Спросить Уранию", href: "#urania" }}
+        secondary={{ label: "Спросить Ведалину", href: "#vedalina" }}
       />
     </main>
   );
