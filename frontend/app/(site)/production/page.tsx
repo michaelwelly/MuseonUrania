@@ -4,6 +4,7 @@ import Link from "next/link";
 import VedalMap from "@/components/VedalMap";
 import { site } from "@/content/site";
 import { productionHero, facility, gallery, address } from "@/content/production";
+import TreeMark from "@/components/TreeMark";
 import styles from "./page.module.css";
 import { mediaSrc } from "@/lib/media";
 
@@ -58,6 +59,9 @@ export default function ProductionPage() {
               {p}
             </p>
           ))}
+          {/* §11.2: место маркировочного знака. Рисуется, когда заказчик
+              передаст файл — см. content/brand.ts. */}
+          <TreeMark where="production" />
         </div>
       </section>
 

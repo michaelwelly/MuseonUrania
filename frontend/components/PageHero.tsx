@@ -15,7 +15,7 @@ type Props = {
 
 export default function PageHero({ crumbs, title, lead, stats, aside }: Props) {
   return (
-    <section className={styles.hero}>
+    <section className={`${styles.hero} crossField`}>
       <div>
         <p className={styles.crumbs}>
           {crumbs.map((c, i) => (

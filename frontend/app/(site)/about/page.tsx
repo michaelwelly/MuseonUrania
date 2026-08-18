@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import PageHero from "@/components/PageHero";
+import TreeMark from "@/components/TreeMark";
 import { DarkCta } from "@/components/Blocks";
 import {
   aboutHero,
@@ -59,6 +60,9 @@ export default function AboutPage() {
             ))}
           </ul>
         </div>
+        {/* §11.2: место маркировочного знака. Рисуется, когда заказчик
+            передаст файл — см. content/brand.ts. */}
+        <TreeMark where="about" />
       </section>
 
       {/* Членство в УТПП, а не коммерческое партнёрство: блок намеренно

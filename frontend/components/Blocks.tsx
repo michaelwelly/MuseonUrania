@@ -4,7 +4,7 @@ import styles from "./Blocks.module.css";
 /** Полоса из четырёх цифр. Экраны «Главная» и «О компании». */
 export function StatsBand({ items }: { items: { value: string; label: string }[] }) {
   return (
-    <ul className={styles.stats} aria-label="Ключевые цифры">
+    <ul className={`${styles.stats} crossField`} aria-label="Ключевые цифры">
       {items.map((s, i) => (
         <li key={s.label} className={styles.stat} data-reveal={i}>
           <p className={styles.statValue}>{s.value}</p>
@@ -32,7 +32,9 @@ export function DarkCta({
   tone?: "deep" | "deep-2";
 }) {
   return (
-    <section className={`${styles.cta} ${tone === "deep" ? styles.ctaDeep : styles.ctaDeep2}`}>
+    <section
+      className={`${styles.cta} ${tone === "deep" ? styles.ctaDeep : styles.ctaDeep2} crossField crossFieldDark`}
+    >
       <div data-reveal="0">
         <h2 className={styles.ctaTitle} data-words="30">
           {title}
