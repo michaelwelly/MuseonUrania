@@ -76,6 +76,15 @@ showing on Tuesday, 28 July 2026.
    provider, a closed contour, VPN.
 8. Which materials may be used in public SEO and which belong only in the
    internal knowledge base.
+9. The name of the fourth catalog position: the site says `VEDAL Т-100`, booklet
+   5.0 says `VEDAL MH-100A`. We need one. A mismatch in a device name is a
+   mismatch in the registration certificate, the tender bid and the datasheet —
+   not a spelling variation.
+10. The `Анестезиология` and `Мониторинг` tags stayed in the catalog filter after
+    the cut to four positions, but no product carries them any more — the filter
+    returns an empty list. Do we keep them as a claim on future positions, or
+    remove them until such products exist.
+
 Closed questions:
 
 - Ural CCI membership mark — permission to publish granted on 19 August 2026.
