@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import AnimatedLogo from "./AnimatedLogo";
+import TreeGrow from "./TreeGrow";
 import styles from "./LogoPreloader.module.css";
 
 // Прелоадер показывается один раз за сессию: повторные переходы по сайту
@@ -75,7 +76,13 @@ export default function LogoPreloader() {
 
   return (
     <div className={styles.overlay} role="status" aria-label="Загрузка">
-      <AnimatedLogo height={160} replayOnHover={false} />
+      {/* Дерево растёт первым, знак VEDAL проявляется под ним. Порядок
+          не случайный: крона дерева сложена из тех же крестиков, что и знак,
+          и сначала показывается, из чего он собран. */}
+      <TreeGrow size={168} />
+      <div className={styles.word}>
+        <AnimatedLogo height={104} replayOnHover={false} />
+      </div>
       <div className={styles.track}>
         <div className={styles.bar} />
       </div>

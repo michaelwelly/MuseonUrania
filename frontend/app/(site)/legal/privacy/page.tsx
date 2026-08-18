@@ -22,6 +22,20 @@ export default function PrivacyPage() {
       />
 
       <section className={styles.section}>
+        <h2 className={styles.h2}>{privacy.law.title}</h2>
+        <p className={styles.text}>{privacy.law.text}</p>
+        <ul className={styles.links}>
+          {privacy.law.links.map((link) => (
+            <li key={link.href}>
+              <a href={link.href} target="_blank" rel="noopener noreferrer">
+                {link.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className={styles.sectionSoft}>
         <h2 className={styles.h2}>{privacy.operator.title}</h2>
         <dl className={styles.table}>
           {privacy.operator.rows.map((row) => (
@@ -33,7 +47,7 @@ export default function PrivacyPage() {
         </dl>
       </section>
 
-      <section className={styles.sectionSoft}>
+      <section className={styles.section}>
         <h2 className={styles.h2}>{privacy.current.title}</h2>
         <ul className={styles.list}>
           {privacy.current.items.map((item) => (
@@ -42,7 +56,7 @@ export default function PrivacyPage() {
         </ul>
       </section>
 
-      <section className={styles.section}>
+      <section className={styles.sectionSoft}>
         <h2 className={styles.h2}>{privacy.scope.title}</h2>
         <ol className={styles.numbered}>
           {privacy.scope.items.map((item) => (
@@ -51,7 +65,7 @@ export default function PrivacyPage() {
         </ol>
       </section>
 
-      <section className={styles.sectionSoft}>
+      <section className={styles.section}>
         <h2 className={styles.h2}>{privacy.contact.title}</h2>
         <p className={styles.text}>{privacy.contact.text}</p>
         <address className={styles.contacts}>

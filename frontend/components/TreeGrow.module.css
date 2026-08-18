@@ -1,0 +1,48 @@
+/* Рост дерева на загрузочном экране.
+ *
+ * Маска — градиент с мягким краем, прижатый к низу. Анимируется её высота:
+ * 0% — знака не видно, 150% — виден целиком с запасом, чтобы размытый край
+ * градиента успел уйти за верхнюю кромку и крона не осталась приглушённой.
+ *
+ * Почему mask-size, а не проценты в самом градиенте: анимировать позиции
+ * цветовых стопов браузер умеет только через @property с типом <percentage>,
+ * а размер маски анимируется штатно и одинаково во всех движках.
+ */
+
+.wrap {
+  position: relative;
+  flex: none;
+}
+
+.tree {
+  object-fit: contain;
+
+  -webkit-mask-image: linear-gradient(to top, #000 55%, rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(to top, #000 55%, rgba(0, 0, 0, 0) 100%);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: bottom center;
+  mask-position: bottom center;
+  -webkit-mask-size: 100% 0%;
+  mask-size: 100% 0%;
+
+  animation: vedalTreeGrow 1700ms cubic-bezier(0.22, 0.61, 0.36, 1) 120ms forwards;
+}
+
+@keyframes vedalTreeGrow {
+  to {
+    -webkit-mask-size: 100% 150%;
+    mask-size: 100% 150%;
+  }
+}
+
+/* Продукт медицинский, движение сдержанное: под prefers-reduced-motion знак
+   стоит целиком с первого кадра. Показать его надо в любом случае — это
+   не украшение, а единственное содержимое экрана загрузки. */
+@media (prefers-reduced-motion: reduce) {
+  .tree {
+    animation: none;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
