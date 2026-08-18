@@ -44,9 +44,9 @@ class CrmAnalyticsTest extends PostgresTestBase {
 
     @Test
     void leadWithoutADealStillCountsInTheReport() {
-        accept("a-1", "site", "ru", "innoprom-2026", "vedal-r1-r2");
-        accept("a-2", "site", "ru", "innoprom-2026", "vedal-r1-r2");
-        win(accept("a-3", "site", "ru", "innoprom-2026", "vedal-r1-r2"), "1000");
+        accept("a-1", "site", "ru", "innoprom-2026", "vedal-r1");
+        accept("a-2", "site", "ru", "innoprom-2026", "vedal-r1");
+        win(accept("a-3", "site", "ru", "innoprom-2026", "vedal-r1"), "1000");
 
         var report = analytics.report("campaign", null, null);
 
@@ -110,7 +110,7 @@ class CrmAnalyticsTest extends PostgresTestBase {
 
     @Test
     void sourceAndProductAreSeparateDimensions() {
-        accept("a-12", "site", "ru", null, "vedal-r1-r2");
+        accept("a-12", "site", "ru", null, "vedal-r1");
         accept("a-13", "yandex_form", "ru", null, "vedal-a-2000");
 
         assertThat(analytics.report("source", null, null).rows())
@@ -118,7 +118,7 @@ class CrmAnalyticsTest extends PostgresTestBase {
                 .containsExactlyInAnyOrder("site", "yandex_form");
         assertThat(analytics.report("product", null, null).rows())
                 .extracting(CrmAnalytics.Row::key)
-                .containsExactlyInAnyOrder("vedal-r1-r2", "vedal-a-2000");
+                .containsExactlyInAnyOrder("vedal-r1", "vedal-a-2000");
     }
 
     // Успешный исход у каждой воронки свой, и все три обязаны попасть
