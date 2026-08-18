@@ -162,14 +162,10 @@ export async function fetchProduct(slug: string): Promise<Product | null> {
   };
 }
 
-export async function fetchCategories(): Promise<string[]> {
-  if (!apiConfigured) {
-    const { categories } = await import("@/content/products");
-    return [...categories];
-  }
-  const list = await get<{ slug: string; name: string }[]>("/api/public/v1/categories");
-  return list.map((c) => c.name);
-}
+// fetchCategories убрана 19 августа вместе с фильтром каталога — она читала
+// список направлений только ради его чипов. Направления никуда не делись:
+// они лежат у каждого изделия в поле categories и подписывают карточку.
+// Эндпоинт /api/public/v1/categories жив, админка направлениями управляет.
 
 // ————— новости —————
 

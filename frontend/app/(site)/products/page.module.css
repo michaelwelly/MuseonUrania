@@ -5,67 +5,9 @@
   flex-direction: column;
 }
 
-/* ---------- полоса фильтров ---------- */
-.filters {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 18px 48px;
-  background: #fff;
-  border-bottom: 1px solid var(--line);
-}
-
-.chips {
-  display: flex;
-  gap: 8px;
-  min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.chips::-webkit-scrollbar {
-  display: none;
-}
-
-.chip {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  height: 38px;
-  padding: 0 16px;
-  border: 1px solid var(--line);
-  border-radius: 19px;
-  background: #fff;
-  color: var(--text-2);
-  font: inherit;
-  font-size: 13.5px;
-  font-weight: 500;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.chip:hover {
-  border-color: var(--green);
-  color: var(--green);
-}
-
-.chipActive,
-.chipActive:hover {
-  background: var(--deep-2);
-  border-color: var(--deep-2);
-  color: #fff;
-  font-weight: 600;
-}
-
-.meta {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  font-size: 13.5px;
-  color: var(--muted);
-  white-space: nowrap;
-}
+/* Полоса фильтров убрана целиком: чипы направлений, счётчик «показано N из M»
+   и переключатель сортировки. Вместе с ней — верхняя граница сетки, которую
+   эта полоса и рисовала. */
 
 /* ---------- сетка ---------- */
 .grid {
@@ -171,46 +113,18 @@
   color: var(--muted);
 }
 
-.empty {
-  grid-column: 1 / -1;
-  padding: 40px;
-  border: 1px dashed var(--line-3);
-  border-radius: 3px;
-  background: #fff;
-  color: var(--muted);
-}
+/* Пустое состояние сетки убрано вместе с фильтром: показать пустой каталог
+   было нечему. Каталог приходит с бэкенда, и пустым он бывает только если
+   с публикации сняли все изделия разом — это авария, а не состояние экрана. */
 
 @media (max-width: 1100px) {
-  .filters {
-    padding: 16px 24px;
-  }
-
   .grid {
     grid-template-columns: repeat(2, 1fr);
     padding: 28px 24px 44px;
   }
-
 }
 
 @media (max-width: 640px) {
-  .filters {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 14px;
-    padding: 16px 18px;
-  }
-
-  .chips {
-    margin: 0 -18px;
-    padding: 0 18px;
-  }
-
-  /* space-between ушло вместе с кнопкой сортировки: разгонять по краям
-     стало нечего, в блоке остался один счётчик. */
-  .meta {
-    margin-left: 0;
-  }
-
   .grid {
     grid-template-columns: 1fr;
     padding: 22px 18px 28px;
