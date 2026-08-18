@@ -13,7 +13,7 @@ import {
   staffSection,
   legalRows,
   contactsNotice,
-  uraniaCard,
+  vedalinaCard,
 } from "@/content/contacts";
 import styles from "./page.module.css";
 
@@ -126,11 +126,11 @@ export default async function ContactsPage() {
             ))}
           </div>
 
-          <div className={styles.uraniaCard}>
-            <h2 className={styles.uraniaTitle}>{uraniaCard.title}</h2>
-            <p className={styles.uraniaText}>{uraniaCard.text}</p>
-            <Link className={styles.uraniaCta} href="#urania">
-              {uraniaCard.cta}
+          <div className={styles.vedalinaCard}>
+            <h2 className={styles.vedalinaTitle}>{vedalinaCard.title}</h2>
+            <p className={styles.vedalinaText}>{vedalinaCard.text}</p>
+            <Link className={styles.vedalinaCta} href="#vedalina">
+              {vedalinaCard.cta}
             </Link>
           </div>
         </div>

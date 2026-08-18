@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { urania, quickReplies, answerFor } from "@/content/urania";
+import { vedalina, quickReplies, answerFor } from "@/content/vedalina";
 import { site } from "@/content/site";
 import {
   apiConfigured,
@@ -15,11 +15,11 @@ import {
   type Handoff,
   type Source,
 } from "@/lib/submit";
-import styles from "./UraniaChat.module.css";
+import styles from "./VedalinaChat.module.css";
 
 // Виджет ведёт РАЗГОВОР, а не задаёт разовые вопросы.
 //
-// Отличие видно не сразу, но оно меняет всё: когда Урания не находит ответа
+// Отличие видно не сразу, но оно меняет всё: когда Ведалина не находит ответа
 // по опубликованному, разговор не заканчивается тупиком с телефоном — он
 // встаёт в очередь к сотруднику, и дальше отвечает человек. Посетителю при
 // этом видно, кто именно ответил: выдать ответ поиска за консультацию
@@ -40,7 +40,7 @@ type Message = {
   handoff?: Handoff;
 };
 
-const GREETING: Message = { from: "bot", text: urania.greeting };
+const GREETING: Message = { from: "bot", text: vedalina.greeting };
 
 /** Строка серверной ленты — в сообщение виджета. */
 function toMessage(line: ChatLine): Message {
@@ -55,7 +55,7 @@ function toMessage(line: ChatLine): Message {
   };
 }
 
-export default function UraniaChat({ onClose }: { onClose?: () => void }) {
+export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
   const [list, setList] = useState<Message[]>([GREETING]);
   const [typing, setTyping] = useState(false);
   const [draft, setDraft] = useState("");
@@ -135,7 +135,7 @@ export default function UraniaChat({ onClose }: { onClose?: () => void }) {
       timer.current = setTimeout(() => {
         setList((prev) => [...prev, { from: "bot", text: answerFor(question) }]);
         setTyping(false);
-      }, urania.replyDelay);
+      }, vedalina.replyDelay);
       return;
     }
 
@@ -167,32 +167,32 @@ export default function UraniaChat({ onClose }: { onClose?: () => void }) {
           ...prev,
           {
             from: "bot",
-            text: urania.handoffNote,
-            handoff: { reason: urania.handoffNote, phone: site.phone, email: site.email, forms: [] },
+            text: vedalina.handoffNote,
+            handoff: { reason: vedalina.handoffNote, phone: site.phone, email: site.email, forms: [] },
           },
         ]);
       }
     });
   }
 
-  const shown = list.slice(-urania.windowSize);
+  const shown = list.slice(-vedalina.windowSize);
 
   return (
-    <section className={styles.chat} aria-label={`Чат с ассистентом ${urania.name}`}>
+    <section className={styles.chat} aria-label={`Чат с ассистентом ${vedalina.name}`}>
       <div className={styles.head}>
         <div className={styles.avatarWrap}>
           <Image
             className={styles.avatar}
-            src={urania.avatar}
-            alt={`Аватар ассистента ${urania.name}`}
+            src={vedalina.avatar}
+            alt={`Аватар ассистента ${vedalina.name}`}
             fill
             sizes="44px"
           />
           <span className={styles.status} aria-hidden="true" />
         </div>
         <div>
-          <div className={styles.name}>{urania.name}</div>
-          <div className={styles.role}>{urania.role}</div>
+          <div className={styles.name}>{vedalina.name}</div>
+          <div className={styles.role}>{vedalina.role}</div>
         </div>
         {onClose && (
           <div className={styles.headTools}>
@@ -223,7 +223,7 @@ export default function UraniaChat({ onClose }: { onClose?: () => void }) {
             className={`${styles.turn} ${m.from === "me" ? styles.turnMe : styles.turnBot}`}
           >
             {/* Подпись только у сотрудника. Посетитель должен видеть, что
-                отвечает человек, а не машина: у Урании подпись есть в шапке
+                отвечает человек, а не машина: у Ведалины подпись есть в шапке
                 окна, у самого посетителя она бессмысленна. */}
             {m.from === "staff" && <span className={styles.who}>{m.who}</span>}
 
@@ -252,7 +252,7 @@ export default function UraniaChat({ onClose }: { onClose?: () => void }) {
         ))}
 
         {typing && (
-          <p className={`${styles.msg} ${styles.bot} ${styles.typing}`} aria-label="Урания печатает">
+          <p className={`${styles.msg} ${styles.bot} ${styles.typing}`} aria-label="Ведалина печатает">
             <span />
             <span />
             <span />
@@ -260,7 +260,7 @@ export default function UraniaChat({ onClose }: { onClose?: () => void }) {
         )}
 
         {/* Отвечает человек — и это надо сказать словом, а не теми же точками,
-            что у Урании. Разница между «машина думает» и «специалист пишет»
+            что у Ведалины. Разница между «машина думает» и «специалист пишет»
             для ждущего посетителя существенная: во втором случае он готов
             подождать дольше. */}
         {staffTyping && (
@@ -276,7 +276,7 @@ export default function UraniaChat({ onClose }: { onClose?: () => void }) {
               type="button"
               className={styles.chip}
               onClick={() => ask(q)}
-              data-analytics="urania_quick_action_click"
+              data-analytics="vedalina_quick_action_click"
             >
               {q}
             </button>
@@ -305,8 +305,8 @@ export default function UraniaChat({ onClose }: { onClose?: () => void }) {
               }
             }
           }}
-          placeholder={urania.placeholder}
-          aria-label={`Сообщение ассистенту ${urania.name}`}
+          placeholder={vedalina.placeholder}
+          aria-label={`Сообщение ассистенту ${vedalina.name}`}
         />
         <button type="submit" className={styles.send} aria-label="Отправить">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -320,7 +320,7 @@ export default function UraniaChat({ onClose }: { onClose?: () => void }) {
         </button>
       </form>
 
-      <p className={styles.disclaimer}>{urania.disclaimer}</p>
+      <p className={styles.disclaimer}>{vedalina.disclaimer}</p>
     </section>
   );
 }

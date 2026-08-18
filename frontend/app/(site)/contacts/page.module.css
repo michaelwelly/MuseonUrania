@@ -243,26 +243,26 @@
   font-size: 13px;
 }
 
-.uraniaCard {
+.vedalinaCard {
   padding: 28px 30px;
   background: var(--deep-2);
   border-radius: 3px;
   color: #fff;
 }
 
-.uraniaTitle {
+.vedalinaTitle {
   font-size: 20px;
   letter-spacing: -0.02em;
 }
 
-.uraniaText {
+.vedalinaText {
   margin-top: 12px;
   font-size: 14.5px;
   line-height: 1.6;
   color: var(--on-dark-lead);
 }
 
-.uraniaCta {
+.vedalinaCta {
   display: inline-flex;
   align-items: center;
   height: 46px;
@@ -275,7 +275,7 @@
   font-weight: 600;
 }
 
-.uraniaCta:hover {
+.vedalinaCta:hover {
   background: var(--green-bright);
   color: #fff;
 }

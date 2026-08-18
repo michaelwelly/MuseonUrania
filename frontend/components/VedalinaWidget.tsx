@@ -2,28 +2,28 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { urania } from "@/content/urania";
-import UraniaChat from "./UraniaChat";
-import styles from "./UraniaWidget.module.css";
+import { vedalina } from "@/content/vedalina";
+import VedalinaChat from "./VedalinaChat";
+import styles from "./VedalinaWidget.module.css";
 
 // Плавающий чат в правом нижнем углу. Подключён в layout, поэтому доступен
 // на всех страницах.
 //
-// Ссылки «Спросить Уранию» с других экранов ведут на #urania — виджет
+// Ссылки «Спросить Ведалину» с других экранов ведут на #vedalina — виджет
 // открывается по хешу, чтобы не тащить общее состояние через контекст.
-export default function UraniaWidget() {
+export default function VedalinaWidget() {
   const [open, setOpen] = useState(false);
 
   const close = useCallback(() => {
     setOpen(false);
-    if (window.location.hash === "#urania") {
+    if (window.location.hash === "#vedalina") {
       history.replaceState(null, "", window.location.pathname + window.location.search);
     }
   }, []);
 
   useEffect(() => {
     const syncFromHash = () => {
-      if (window.location.hash === "#urania") setOpen(true);
+      if (window.location.hash === "#vedalina") setOpen(true);
     };
     syncFromHash();
     window.addEventListener("hashchange", syncFromHash);
@@ -41,8 +41,8 @@ export default function UraniaWidget() {
 
   if (open) {
     return (
-      <div className={styles.panel} role="dialog" aria-label={`Чат с ассистентом ${urania.name}`}>
-        <UraniaChat onClose={close} />
+      <div className={styles.panel} role="dialog" aria-label={`Чат с ассистентом ${vedalina.name}`}>
+        <VedalinaChat onClose={close} />
       </div>
     );
   }
@@ -52,11 +52,11 @@ export default function UraniaWidget() {
       type="button"
       className={styles.launcher}
       onClick={() => setOpen(true)}
-      aria-label={`Открыть чат с ассистентом ${urania.name}`}
-      data-analytics="urania_open"
+      aria-label={`Открыть чат с ассистентом ${vedalina.name}`}
+      data-analytics="vedalina_open"
     >
       <span className={styles.launcherAvatar}>
-        <Image src={urania.avatar} alt="" fill sizes="48px" />
+        <Image src={vedalina.avatar} alt="" fill sizes="48px" />
         <span className={styles.launcherDot} aria-hidden="true" />
       </span>
       <span className={styles.launcherLabel}>Задать вопрос</span>

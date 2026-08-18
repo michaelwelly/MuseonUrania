@@ -3,6 +3,7 @@ import Image from "next/image";
 import PageHero from "@/components/PageHero";
 import { newsHero, press } from "@/content/news";
 import { companyContact, STAFF_AWAITING } from "@/content/staff";
+import { vedalina } from "@/content/vedalina";
 import { fetchNews } from "@/lib/api";
 import NewsFeed from "./feed";
 import NewsSubscribe from "./subscribe";
@@ -36,7 +37,7 @@ export default async function NewsPage() {
 
           <div className={styles.contact}>
             <div className={styles.avatar}>
-              <Image src="/urania/urania-avatar-middle-v1.png" alt="" fill sizes="56px" />
+              <Image src={vedalina.avatar} alt="" fill sizes="56px" />
             </div>
             <div>
               <p className={styles.contactName}>{companyContact.title}</p>

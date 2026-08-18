@@ -108,21 +108,9 @@ export const hero = {
   },
 };
 
-// MVP-аватар утверждён в docs/strategy/urania_visual_assets.md.
-// Копия assets/urania/urania-avatar-middle-v1.png: Next не резолвит импорты
-// выше своего корня. Переедет в S3/CDN на этапе медиа-хранилища.
-export const URANIA_AVATAR = "/urania/urania-avatar-middle-v1.png";
-
-// docs/frontend/content_model.md → Urania Assistant Model
-export const urania = {
-  name: "Urania",
-  role: "AI-ассистент VEDAL",
-  greeting: "Я помогу найти продукт, документ или передать запрос специалисту.",
-  inputPlaceholder: "Напишите вопрос...",
-  quickActions: [
-    { label: "Подобрать оборудование", href: "/products/" },
-    { label: "Найти документ", href: "/documents/" },
-    { label: "Запросить КП", href: "/contacts/" },
-    { label: "Сервис", href: "/service/" },
-  ],
-};
+// Ассистент описан в content/vedalina.ts — там имя, аватар, приветствие
+// и ограничения. Здесь лежала вторая копия: константа VEDALINA_AVATAR
+// и объект с полями name/role/greeting/quickActions. Обе не импортировались
+// ни одним экраном, и именно поэтому в них до сегодняшнего дня стояло старое
+// имя «Urania» — расхождение никому не мешало, потому что никто их не читал.
+// Удалены, чтобы имя ассистента жило в одном месте.

@@ -36,13 +36,13 @@ export default async function ProductsPage() {
       <DarkCta
         tone="deep"
         title="Не нашли нужную конфигурацию?"
-        text="Опишите задачу отделения — Урания подскажет модели сразу, а специалист подготовит предложение с характеристиками и документами."
+        text="Опишите задачу отделения — Ведалина подскажет модели сразу, а специалист подготовит предложение с характеристиками и документами."
         primary={{
           label: "Запросить подбор",
           href: "/contacts/",
           analytics: "product_quote_click",
         }}
-        secondary={{ label: "Спросить Уранию", href: "#urania" }}
+        secondary={{ label: "Спросить Ведалину", href: "#vedalina" }}
       />
     </main>
   );

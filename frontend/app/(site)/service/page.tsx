@@ -6,6 +6,7 @@ import { fetchProducts } from "@/lib/api";
 import { site } from "@/content/site";
 import { serviceHero, steps, serviceForm, serviceNotice, urgent } from "@/content/service";
 import { companyContact, STAFF_AWAITING } from "@/content/staff";
+import { vedalina } from "@/content/vedalina";
 import styles from "./page.module.css";
 import { mediaSrc } from "@/lib/media";
 
@@ -71,7 +72,7 @@ export default async function ServicePage() {
             <div className={styles.person}>
               <div className={styles.avatar}>
                 <Image
-                  src="/urania/urania-avatar-middle-v1.png"
+                  src={vedalina.avatar}
                   alt=""
                   fill
                   sizes="64px"

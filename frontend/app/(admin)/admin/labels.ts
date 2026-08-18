@@ -106,7 +106,7 @@ export const DIRECTION: Record<string, string> = {
 // ————— разговор —————
 
 export const CHAT_STATUS: Record<string, string> = {
-  open: "с Уранией",
+  open: "с Ведалиной",
   waiting: "ждёт ответа",
   attended: "в работе",
   closed: "закрыт",
@@ -114,6 +114,6 @@ export const CHAT_STATUS: Record<string, string> = {
 
 export const CHAT_AUTHOR: Record<string, string> = {
   visitor: "Посетитель",
-  assistant: "Урания",
+  assistant: "Ведалина",
   staff: "Сотрудник",
 };
