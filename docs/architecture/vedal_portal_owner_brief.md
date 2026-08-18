@@ -47,7 +47,7 @@
 | --- | --- |
 | **Пользователи** | Клиент, Продажник, Бухгалтер, Админ/ИБ, Собственник |
 | **Открытый офис** — покупаем, Яндекс 360 | Почта на домене, Календарь, Телемост, Формы, Диск без секретов, Вики/Трекер для общей операционки |
-| **Согласованный сайт / VM** — развиваем как продукт | Public Frontend (сайт + каталог), Lead Forms (КП / консультация / сервис), Urania public assistant (только approved content), Backend API (формы, каталог, личный вход), Admin panel / CMS, Login area (вход в закрытую CRM) |
+| **Согласованный сайт / VM** — развиваем как продукт | Public Frontend (сайт + каталог), Lead Forms (КП / консультация / сервис), Vedalina public assistant (только approved content), Backend API (формы, каталог, личный вход), Admin panel / CMS, Login area (вход в закрытую CRM) |
 | **DMZ / Controlled integration** — пишем под проект | Integration Gateway (webhook/API intake), Event queue, Antivirus / DLP, Manual approve, Outbound templates, Import/export audit |
 | **Закрытый контур** — на VM + приватные managed-сервисы | VEDAL CRM inside site, Document Vault, PostgreSQL как источник истины, Private Object Storage, Keycloak + MFA + роли, VPN / Zero Trust, Logs + backups |
 

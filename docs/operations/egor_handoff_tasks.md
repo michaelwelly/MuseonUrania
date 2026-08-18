@@ -31,12 +31,12 @@
 - `docs/frontend/content_model.md`
 - `docs/frontend/page_briefs.md`
 - `docs/frontend/implementation_checklist.md`
-- `docs/strategy/urania_assistant_spec.md`
-- `docs/strategy/urania_visual_assets.md`
+- `docs/strategy/vedalina_assistant_spec.md`
+- `docs/strategy/vedalina_visual_assets.md`
 - `outputs/customer_presentation/vedal_customer_requests_plan_2026-08-18.md`
 - `outputs/server/vedal_vm_deploy_plan_2026-08-18.md`
-- `assets/urania/urania-avatar-middle-v1.png`
-- `assets/urania/urania-web-integration-mockup-v1.png`
+- `assets/vedalina/vedalina-avatar-middle-v1.png`
+- `assets/vedalina/vedalina-web-integration-mockup-v1.png`
 - `assets/brand/`
 - `outputs/vedal_architecture/v2_update/vedal_portal_architecture_and_stages_v3.pdf`
 
@@ -64,7 +64,7 @@
 
 ### P0. Интерфейс публичного ассистента Ведалина
 
-- Переименовать Уранию в Ведалину во всём публичном UI.
+- Переименовать Ведалину в Ведалину во всём публичном UI.
 - Использовать утверждённый второй, средний вариант аватара.
 - Добавить карточку Ведалины на первый экран.
 - Добавить плавающую кнопку Ведалины в правом нижнем углу.

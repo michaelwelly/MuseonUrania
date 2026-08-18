@@ -4,7 +4,7 @@
 
 ## Working Name
 
-MuseonUrania: digital infrastructure for VEDAL medical equipment production and sales.
+MuseonVedalina: digital infrastructure for VEDAL medical equipment production and sales.
 
 ## Business Context
 

@@ -32,7 +32,7 @@ Requirements:
 - Publish only approved documents and wording.
 - Link product claims to approved public catalog pages, certificates, registration documents, or official VEDAL statements.
 - Route ambiguous product or clinical questions to a human sales/service specialist.
-- Urania assistant must not provide diagnosis, treatment recommendations, or unapproved medical claims.
+- Vedalina assistant must not provide diagnosis, treatment recommendations, or unapproved medical claims.
 
 ## Advertising And Yandex Direct
 
@@ -50,7 +50,7 @@ Open contour:
 - Public website.
 - Public product catalog.
 - Public documents and press releases.
-- Lead forms and public Urania assistant limited to approved public knowledge.
+- Lead forms and public Vedalina assistant limited to approved public knowledge.
 
 Closed contour:
 

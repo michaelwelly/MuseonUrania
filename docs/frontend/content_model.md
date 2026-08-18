@@ -100,13 +100,13 @@
 }
 ```
 
-## Модель ассистента Урания
+## Модель ассистента Ведалина
 
 ```json
 {
-  "assistant_name": "Urania",
+  "assistant_name": "Vedalina",
   "assistant_role": "публичный ассистент по продукции, документам и навигации",
-  "assistant_avatar": "assets/urania/urania-avatar-middle-v1.png",
+  "assistant_avatar": "assets/vedalina/vedalina-avatar-middle-v1.png",
   "assistant_slot": "hero_and_floating_button",
   "quick_actions": [
     "Подобрать оборудование",

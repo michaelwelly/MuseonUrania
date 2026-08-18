@@ -231,7 +231,7 @@ embeddings → pgvector. The answer is assembled from the found chunks and must
 carry links to the sources.
 
 The limits from
-[urania_assistant_spec.en.md](../../strategy/urania_assistant_spec.en.md) live
+[urania_assistant_spec.en.md](../../strategy/vedalina_assistant_spec.en.md) live
 **in the service above the port**, not in the prompt: no diagnosis, no treatment
 advice, no invented specifications, prices or deadlines, no internal documents.
 The model receives only what we handed it — it cannot be talked into showing a
