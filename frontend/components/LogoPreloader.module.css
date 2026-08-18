@@ -13,19 +13,6 @@
   animation: vedalOverlayOut 600ms cubic-bezier(0.65, 0, 0.35, 1) 2800ms forwards;
 }
 
-/* Знак VEDAL проявляется после того, как дерево выросло: сначала видно,
-   из чего собрана крона, потом — чей это знак. */
-.word {
-  opacity: 0;
-  animation: vedalWordIn 700ms cubic-bezier(0.22, 0.61, 0.36, 1) 1250ms forwards;
-}
-
-@keyframes vedalWordIn {
-  to {
-    opacity: 1;
-  }
-}
-
 .track {
   width: 220px;
   height: 2px;
@@ -63,11 +50,6 @@
   .overlay {
     animation-delay: 400ms;
     animation-duration: 200ms;
-  }
-
-  .word {
-    animation: none;
-    opacity: 1;
   }
 
   .bar {

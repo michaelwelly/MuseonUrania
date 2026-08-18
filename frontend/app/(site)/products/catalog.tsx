@@ -10,17 +10,20 @@ import { mediaSrc } from "@/lib/media";
 
 type Props = { products: Product[]; categories: string[] };
 
-// Фильтр и сортировка на клиенте: позиций мало, перезагрузка страницы ради
-// смены категории только мешала бы. Сами позиции приходят сверху — их читает
-// серверный компонент на сборке.
+// Фильтр на клиенте: позиций мало, перезагрузка страницы ради смены категории
+// только мешала бы. Сами позиции приходят сверху — их читает серверный
+// компонент на сборке.
+//
+// Сортировка «сначала с документацией» убрана 19 августа. Она решала задачу
+// каталога на двенадцать позиций: там имело смысл поднять наверх те, у которых
+// датащит подтверждён. В каталоге первого релиза позиций четыре, все четыре
+// с подтверждённой документацией, и кнопка не меняла ни одной строки на
+// экране. Порядок вывода задан заказчиком в §3.2 и живёт в sort_order —
+// переключатель, способный его переставить, этому прямо противоречит.
 export default function Catalog({ products, categories }: Props) {
   const [active, setActive] = useState<string | null>(null);
-  const [docsFirst, setDocsFirst] = useState(false);
 
-  const filtered = active ? products.filter((p) => p.categories.includes(active)) : products;
-  const shown = docsFirst
-    ? [...filtered].sort((a, b) => Number(b.status === "confirmed") - Number(a.status === "confirmed"))
-    : filtered;
+  const shown = active ? products.filter((p) => p.categories.includes(active)) : products;
 
   return (
     <>
@@ -54,17 +57,6 @@ export default function Catalog({ products, categories }: Props) {
           <span aria-live="polite">
             Показано {shown.length} из {products.length}
           </span>
-          <button
-            type="button"
-            className={`${styles.sort} ${docsFirst ? styles.sortActive : ""}`}
-            onClick={() => setDocsFirst((v) => !v)}
-            aria-pressed={docsFirst}
-          >
-            Сначала с документацией
-            <svg width="11" height="7" viewBox="0 0 12 8" fill="none" aria-hidden="true">
-              <path d="M1 1.5 6 6.5l5-5" stroke="currentColor" strokeWidth="1.6" />
-            </svg>
-          </button>
         </div>
       </div>
 
