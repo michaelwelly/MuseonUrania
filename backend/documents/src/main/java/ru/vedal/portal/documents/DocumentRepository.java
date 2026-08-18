@@ -10,6 +10,14 @@ public interface DocumentRepository extends JpaRepository<Document, UUID> {
 
     List<Document> findByListedTrueOrderByDocGroupAscTitleAsc();
 
+    /**
+     * Публичный перечень. Уровень секретности в условии обязателен: отбор
+     * по одному listed отдавал наружу название и предмет закрытого документа,
+     * если его пометили как «в перечне». Файл при этом оставался недоступен,
+     * но и одного названия достаточно.
+     */
+    List<Document> findByListedTrueAndSensitivityOrderByDocGroupAscTitleAsc(String sensitivity);
+
     Optional<Document> findBySlug(String slug);
 
     List<Document> findAllByOrderByDocGroupAscTitleAsc();

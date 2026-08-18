@@ -258,6 +258,10 @@ class AdminApiTest extends PostgresTestBase {
     void internalDocumentIsRefusedPublicationWithAReason() throws Exception {
         var document = documents.findBySlug("opisanie-izdeliya-vedal-r1-r2").orElseThrow();
         document.setSensitivity("internal");
+        // Документ из сида стоит в перечне, а закрытому там не место
+        // (document_listed_only_public, V21): снимаем отметку вместе
+        // с понижением уровня, иначе не сохранится сама подготовка теста.
+        document.setListed(false);
         documents.saveAndFlush(document);
 
         mvc.perform(post("/api/admin/v1/documents/" + document.getId() + "/publish"))
