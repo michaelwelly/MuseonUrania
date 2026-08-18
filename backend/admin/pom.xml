@@ -45,6 +45,14 @@
 			<groupId>ru.vedal</groupId>
 			<artifactId>portal-chat</artifactId>
 		</dependency>
+		<!-- Ведалина в закрытом контуре: /api/admin/v1/assistant.
+		     Через portal-chat он приезжает и транзитивно, но зависимость,
+		     которой пользуются напрямую, объявляют явно: иначе перестановка
+		     в чате однажды уронит сборку админки. -->
+		<dependency>
+			<groupId>ru.vedal</groupId>
+			<artifactId>portal-assistant</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>ru.vedal</groupId>
 			<artifactId>portal-documents</artifactId>

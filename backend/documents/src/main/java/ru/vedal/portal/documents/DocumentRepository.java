@@ -18,6 +18,12 @@ public interface DocumentRepository extends JpaRepository<Document, UUID> {
      */
     List<Document> findByListedTrueAndSensitivityOrderByDocGroupAscTitleAsc(String sensitivity);
 
+    /**
+     * Материалы закрытого контура: public и internal. Confidential в список
+     * не передаём — он не индексируется ассистентом ни при каком входе.
+     */
+    List<Document> findBySensitivityInOrderByDocGroupAscTitleAsc(List<String> sensitivities);
+
     Optional<Document> findBySlug(String slug);
 
     List<Document> findAllByOrderByDocGroupAscTitleAsc();

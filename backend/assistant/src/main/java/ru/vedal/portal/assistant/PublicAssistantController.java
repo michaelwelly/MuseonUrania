@@ -58,6 +58,6 @@ public class PublicAssistantController {
         if (!rateLimit.allow(http.getRemoteAddr())) {
             throw new TooManyRequestsException("Слишком много вопросов подряд. Попробуйте позже.");
         }
-        return ResponseEntity.ok(assistant.ask(request.question()));
+        return ResponseEntity.ok(assistant.ask(request.question(), LlmEngine.Scope.PUBLIC, "public"));
     }
 }

@@ -26,6 +26,26 @@ public class DocumentService implements DocumentQuery {
         this.audit = audit;
     }
 
+    /**
+     * §10.3: материалы закрытого контура. Список уровней задан здесь одним
+     * местом — «public и internal», — и confidential в нём отсутствует
+     * не по недосмотру, а по правилу §7.4.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<Card> staffDocuments() {
+        return documents.findBySensitivityInOrderByDocGroupAscTitleAsc(List.of("public", "internal"))
+                .stream()
+                .map(d -> new Card(d.getSlug(), d.getTitle(), d.getDocGroup(), d.getSubject(),
+                        d.getProductSlug(), d.getAccess(), d.isPublished(),
+                        // Ссылка на файл — только у опубликованных, как и в открытом
+                        // контуре. У внутреннего документа файла по публичному
+                        // адресу нет, и собирать его здесь значило бы однажды
+                        // собрать его для закрытого.
+                        d.isPublished() ? "/api/public/v1/documents/" + d.getSlug() + "/file" : null))
+                .toList();
+    }
+
     @Override
     @Transactional(readOnly = true)
     public List<Card> listedDocuments() {

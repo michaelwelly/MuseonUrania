@@ -12,8 +12,10 @@ import java.util.List;
 import java.util.Optional;
 
 // Ранняя реализация порта: поиск по словам, без модели. Ходит только через
-// интерфейсы модулей, а они отдают исключительно опубликованное — неопубликованное
-// изделие, черновик новости и несогласованный документ сюда физически не попадут.
+// интерфейсы модулей, а они отдают ровно то, что положено области: посетителю —
+// опубликованное и публичное, сотруднику — плюс документы уровня internal.
+// Неопубликованное изделие, черновик новости и confidential-документ сюда
+// физически не попадут ни в одной из областей.
 @Component
 public class DeterministicSearch implements LlmEngine {
 
@@ -34,7 +36,7 @@ public class DeterministicSearch implements LlmEngine {
     }
 
     @Override
-    public Optional<Grounded> answer(String question) {
+    public Optional<Grounded> answer(String question, Scope scope) {
         var tokens = tokens(question);
         if (tokens.isEmpty()) return Optional.empty();
 
@@ -56,7 +58,11 @@ public class DeterministicSearch implements LlmEngine {
             }
         }
 
-        for (var d : documents.listedDocuments()) {
+        // Единственное место, где области расходятся. Изделия и новости
+        // в обоих контурах одни и те же — опубликованные: черновик карточки
+        // сотруднику показывать незачем, он смотрит его в админке.
+        var visible = scope == Scope.STAFF ? documents.staffDocuments() : documents.listedDocuments();
+        for (var d : visible) {
             var score = score(tokens, d.title(), d.subject(), d.group());
             if (score > 0) {
                 hits.add(new Hit(new Source(d.title() + " — " + d.subject(),
