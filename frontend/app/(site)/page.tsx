@@ -29,7 +29,8 @@ export default function Home() {
   return (
     <main className={styles.page}>
       {/* 01. Hero */}
-      <section className={styles.hero}>
+      {/* Фактура из фирменных знаков — §11.1. Класс глобальный, см. globals.css */}
+      <section className={`${styles.hero} crossField`}>
         <div className={styles.heroCopy}>
           {/* data-anim — крючки появления первого экрана, правила в app/motion.css */}
           <p className={`${styles.eyebrow} ${styles.eyebrowLight}`} data-anim="rise-sm">
