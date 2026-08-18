@@ -89,7 +89,8 @@ public class ChatDesk {
         // Человек в разговоре — ассистенту здесь делать нечего.
         if (conversation.handedToHuman()) return thread(conversation);
 
-        var reply = assistant.ask(text);
+        // Чат на сайте — открытый контур: посетитель, не сотрудник.
+        var reply = assistant.ask(text, LlmEngine.Scope.PUBLIC, "public");
 
         if (reply.handoff() != null) {
             // Ответа нет — это штатный исход, а не ошибка: правило «нет
