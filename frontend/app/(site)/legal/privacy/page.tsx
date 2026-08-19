@@ -47,6 +47,19 @@ export default function PrivacyPage() {
         </dl>
       </section>
 
+      {/* Состав собираемых данных стоит выше «что действует сейчас»: человек
+          сначала должен узнать, что именно с него берут, и только потом —
+          какие правила пока действуют. */}
+      <section className={styles.section}>
+        <h2 className={styles.h2}>{privacy.collected.title}</h2>
+        <p className={styles.text}>{privacy.collected.text}</p>
+        <ul className={styles.list}>
+          {privacy.collected.items.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      </section>
+
       <section className={styles.section}>
         <h2 className={styles.h2}>{privacy.current.title}</h2>
         <ul className={styles.list}>
