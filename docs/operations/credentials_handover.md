@@ -1,68 +1,90 @@
-# Credentials And Access Handover Procedure
+# Порядок передачи доступов
 
-## Purpose
+**Русский** · [English](credentials_handover.en.md)
 
-This procedure defines how VEDAL transfers temporary project access to the contractor and how the contractor transfers final access, documentation, and control back to VEDAL.
+## Назначение
 
-## Customer To Contractor: Initial Access
+Документ описывает, как VEDAL передаёт подрядчику временные доступы к проекту
+и как подрядчик возвращает VEDAL итоговые доступы, документацию и управление.
 
-Recommended method:
+## От заказчика подрядчику: начальные доступы
 
-- Create named accounts for contractor access where possible.
-- Avoid sending permanent owner passwords in chats or email.
-- Use temporary passwords and require password rotation after first login.
-- Enable MFA and record who owns the MFA device.
-- Transfer access through a password manager or signed access inventory.
-- For cloud, domain, repository, analytics, CRM, and CMS, prefer role-based invitations instead of shared root credentials.
+Рекомендуемый порядок:
 
-Minimum initial access inventory:
+- заводить для подрядчика именные учётные записи там, где это возможно;
+- не пересылать постоянные пароли владельца в мессенджерах и почте;
+- выдавать временные пароли и требовать смены при первом входе;
+- включать многофакторную аутентификацию и фиксировать, у кого находится
+  устройство подтверждения;
+- передавать доступы через менеджер паролей или подписанную опись;
+- для облака, домена, репозитория, аналитики, CRM и CMS выдавать приглашения
+  с ролью, а не общие учётные данные владельца.
 
-- Domain/DNS account or delegated DNS management.
-- Yandex Cloud account/project access.
-- Existing hosting/admin access, if any.
-- Current website CMS/admin access, if any.
-- Cloud folder with photos, videos, catalogs, certificates, and documentation.
-- Email account/integration access for forms.
-- CRM or chosen CRM workspace access.
-- Yandex Metrica/Yandex Direct access, if existing.
-- GitHub repository access.
+Минимальный перечень начальных доступов:
 
-## Contractor To Customer: Final Handover
+- учётная запись домена и DNS либо делегированное управление DNS;
+- доступ к аккаунту и проекту Yandex Cloud;
+- доступ к текущему хостингу и панели управления, если он есть;
+- доступ к CMS и админке текущего сайта, если они есть;
+- облачная папка с фотографиями, видео, каталогами, сертификатами и
+  документацией;
+- доступ к почтовому ящику или интеграции, куда уходят заявки с форм;
+- доступ к CRM или к выбранному рабочему пространству CRM;
+- доступ к Яндекс.Метрике и Яндекс.Директу, если они уже заведены;
+- доступ к репозиторию на GitHub.
 
-At final handover, VEDAL should receive:
+## От подрядчика заказчику: итоговая передача
 
-- GitHub repository ownership or confirmed collaborator/admin access.
-- Production hosting/cloud project access.
-- CMS/admin owner access.
-- S3 buckets and storage policy overview.
-- Domain/DNS control or deployment instructions.
-- Yandex Metrica access.
-- API documentation / Swagger URL.
-- Environment variables inventory without exposing secrets in the repository.
-- Backup and restore notes.
-- Support contacts and monthly support terms.
-- Known limitations and next-phase recommendations.
+При итоговой передаче VEDAL получает:
 
-## Handover Act
+- владение репозиторием GitHub либо подтверждённые права администратора;
+- доступ к боевому хостингу и облачному проекту;
+- права владельца в CMS и админке;
+- перечень бакетов S3 и описание политики хранения;
+- управление доменом и DNS либо инструкцию по развёртыванию;
+- доступ к Яндекс.Метрике;
+- документацию API и адрес Swagger;
+- опись переменных окружения без раскрытия самих секретов в репозитории;
+- описание резервного копирования и восстановления;
+- контакты поддержки и условия ежемесячного сопровождения;
+- перечень известных ограничений и рекомендации на следующий этап.
 
-The handover act should list:
+## Акт передачи
 
-- Access item.
-- System URL.
-- Owner account.
-- Access role.
-- Transfer method.
-- MFA status.
-- Date/time of transfer.
-- Responsible person from contractor.
-- Responsible person from VEDAL.
-- Notes and restrictions.
+В акте перечисляется:
 
-## Security Rules
+- предмет доступа;
+- адрес системы;
+- учётная запись владельца;
+- роль доступа;
+- способ передачи;
+- состояние многофакторной аутентификации;
+- дата и время передачи;
+- ответственный со стороны подрядчика;
+- ответственный со стороны VEDAL;
+- примечания и ограничения.
 
-- Never commit passwords, tokens, `.env` files, API keys, private certificates, or database dumps to the repository.
-- Rotate all temporary passwords after handover.
-- Remove contractor access after acceptance if monthly support is not active.
-- If monthly support is active, keep only the minimum required support roles.
-- Keep separate public, admin, and infrastructure access groups.
+## Правила безопасности
 
+- пароли, токены, файлы `.env`, ключи API, приватные сертификаты и дампы базы
+  в репозиторий не коммитятся никогда;
+- все временные пароли меняются после передачи;
+- доступы подрядчика снимаются после приёмки, если ежемесячное сопровождение
+  не действует;
+- при действующем сопровождении остаются только минимально необходимые роли;
+- группы доступа для публичного контура, админки и инфраструктуры держатся
+  раздельно.
+
+## Реестр доменов и официальных каналов
+
+§13.4 плана заказчика требует отдельного реестра, который ведётся вне
+репозитория вместе с остальными учётными данными. В него входят:
+
+- основные доменные имена и защитные написания;
+- единое имя в социальных сетях и мессенджерах;
+- по каждому аккаунту: владелец, администратор, почта восстановления и
+  состояние двухфакторной аутентификации.
+
+До подтверждения официальных каналов ссылки на них в подвале сайта не
+ставятся — там стоит `ожидает уточнения`, и это правильное состояние, а не
+недоделка (§13.5).

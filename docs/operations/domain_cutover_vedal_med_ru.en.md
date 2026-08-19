@@ -101,7 +101,7 @@ switch rather than next to it.
 spellings, a single handle across social networks and messengers, plus owner,
 administrator, recovery mail and 2FA per account. The registry is kept outside
 the repository — the handover procedure is described in
-[docs/operations/credentials_handover.md](credentials_handover.md).
+[docs/operations/credentials_handover.en.md](credentials_handover.en.md).
 
 The site footer links only to confirmed official channels (§13.5). It currently
 shows `awaiting clarification`, which is the correct state until confirmation
@@ -112,4 +112,4 @@ arrives, not an omission.
 - [VM deploy plan](../../outputs/server/vedal_vm_deploy_plan_2026-08-18.md) —
   host map, placement, SSH.
 - [Content protection requirements](../strategy/content_protection_requirements.en.md).
-- [Credentials handover](credentials_handover.md).
+- [Credentials handover](credentials_handover.en.md).

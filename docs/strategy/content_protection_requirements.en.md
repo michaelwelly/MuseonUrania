@@ -113,7 +113,7 @@ Requirements and status:
 
 ## Related documents
 
-- [Compliance requirements](../legal/compliance_requirements_ru.md) — personal
+- [Compliance requirements](../legal/compliance_requirements.en.md) — personal
   data, hosting, open and closed contours.
 - [vedal-med.ru domain cutover](../operations/domain_cutover_vedal_med_ru.en.md).
 - [Materials request to Nikolay Nikolaevich](../requests/nikolay_materials_request.en.md).
