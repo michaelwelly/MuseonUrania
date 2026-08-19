@@ -92,10 +92,20 @@ showing on Tuesday, 28 July 2026.
    5.0 says `VEDAL MH-100A`. We need one. A mismatch in a device name is a
    mismatch in the registration certificate, the tender bid and the datasheet —
    not a spelling variation.
-10. The `Анестезиология` and `Мониторинг` tags stayed in the catalog filter after
-    the cut to four positions, but no product carries them any more — the filter
-    returns an empty list. Do we keep them as a claim on future positions, or
-    remove them until such products exist.
+10. The `Анестезиология` and `Мониторинг` directions remain in the site's lists,
+    but no product carries them after the catalog cut. The catalog filter was
+    removed on 19 August, so it is no longer visible there, but the directions
+    are still listed in the site footer and in the catalog subheading. Do we keep
+    them as a claim on future positions, or remove them until such products
+    exist.
+11. Real service and warranty terms (§5.2 of the plan). The Service page
+    currently describes only how a request is handled and deliberately names no
+    warranty period and no types of work. We need confirmation of:
+    - the warranty period and what it covers;
+    - whether on-site visits are performed. The site and Vedalina currently
+      mention them, and no document backs that — if there are no visits, the
+      wording comes off;
+    - who owns service requests and which contacts may be published.
 
 Closed questions:
 
