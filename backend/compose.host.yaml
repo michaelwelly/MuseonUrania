@@ -92,6 +92,15 @@ services:
       MINIO_ROOT_USER: ${VEDAL_S3_ACCESS_KEY:?задайте VEDAL_S3_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${VEDAL_S3_SECRET_KEY:?задайте VEDAL_S3_SECRET_KEY}
 
+  # Ключи без значений по умолчанию — как у minio-init выше и по той же
+  # причине. Заливка фотографий из репозитория при этом остаётся включённой:
+  # снимок, добавленный в git и не доехавший до бакета, отдаёт 404 здесь
+  # ровно так же, как на машине разработчика.
+  media-seed:
+    environment:
+      MINIO_ROOT_USER: ${VEDAL_S3_ACCESS_KEY:?задайте VEDAL_S3_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${VEDAL_S3_SECRET_KEY:?задайте VEDAL_S3_SECRET_KEY}
+
   keycloak:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${VEDAL_KEYCLOAK_ADMIN:?задайте VEDAL_KEYCLOAK_ADMIN}
