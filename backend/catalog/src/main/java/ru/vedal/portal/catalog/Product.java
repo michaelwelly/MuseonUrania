@@ -27,6 +27,10 @@ public class Product {
     private String summary;
     private String detail;
 
+    // Назначение изделия — §4.5 плана. Nullable: у всех четырёх позиций
+    // текста пока нет, и значение по умолчанию пришлось бы выдумать.
+    private String purpose;
+
     // Статус документации: рисует бейдж на сайте. Это НЕ видимость.
     @Column(name = "doc_status")
     private String docStatus;
@@ -75,6 +79,14 @@ public class Product {
     @OrderBy("position asc")
     private List<ProductSpec> specs = new ArrayList<>();
 
+    // nullable = false по той же причине, что у specs выше: без него Hibernate
+    // пытается отвязать осиротевшую строку через product_id = null и падает
+    // на not null.
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "product_id", nullable = false)
+    @OrderBy("position asc")
+    private List<ProductFeature> features = new ArrayList<>();
+
     public long getVersion() { return version; }
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
@@ -88,6 +100,8 @@ public class Product {
     public void setSummary(String summary) { this.summary = summary; }
     public String getDetail() { return detail; }
     public void setDetail(String detail) { this.detail = detail; }
+    public String getPurpose() { return purpose; }
+    public void setPurpose(String purpose) { this.purpose = purpose; }
     public String getDocStatus() { return docStatus; }
     public void setDocStatus(String docStatus) { this.docStatus = docStatus; }
     public boolean isPublished() { return published; }
@@ -105,5 +119,6 @@ public class Product {
     public List<Category> getCategories() { return categories; }
     public void setCategories(List<Category> categories) { this.categories = categories; }
     public List<ProductSpec> getSpecs() { return specs; }
+    public List<ProductFeature> getFeatures() { return features; }
     public void setSpecs(List<ProductSpec> specs) { this.specs = specs; }
 }

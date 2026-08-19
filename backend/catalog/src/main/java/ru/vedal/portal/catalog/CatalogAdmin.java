@@ -34,6 +34,7 @@ public interface CatalogAdmin {
                                + "то, что за это время поменял кто-то другой».")
                        long version,
                        String slug, String name, String kind, String summary, String detail,
+                       String purpose, List<String> features,
                        String docStatus, boolean published, int sortOrder,
                        String imageSrc, String imageAlt,
                        List<String> categorySlugs,
@@ -74,6 +75,15 @@ public interface CatalogAdmin {
             @Schema(description = "Развёрнутое описание. Пусто — карточка покажет только summary.",
                     nullable = true)
             @Size(max = 20000) String detail,
+
+            @Schema(description = "Назначение: в каких отделениях и для каких задач применяется "
+                    + "изделие. Пусто — карточка покажет «ожидает уточнения».",
+                    nullable = true)
+            @Size(max = 20000) String purpose,
+
+            @Schema(description = "Ключевые особенности, по одному утверждению в строке. Пусто — "
+                    + "карточка покажет «ожидает уточнения».")
+            List<@NotBlank @Size(max = 500) String> features,
 
             @Schema(description = "Подтверждены ли характеристики датащитом. Это НЕ видимость "
                     + "на сайте: бейдж рисуется по нему, а показ — по published.",
