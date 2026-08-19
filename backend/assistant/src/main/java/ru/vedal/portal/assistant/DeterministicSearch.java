@@ -65,8 +65,8 @@ public class DeterministicSearch implements LlmEngine {
         for (var d : visible) {
             var score = score(tokens, d.title(), d.subject(), d.group());
             if (score > 0) {
-                hits.add(new Hit(new Source(d.title() + " — " + d.subject(),
-                        d.published() ? d.fileUrl() : "/documents/", "document"), score));
+                hits.add(new Hit(new Source(label(d), d.published() ? d.fileUrl() : "/documents/",
+                        "document"), score));
             }
         }
 
@@ -96,6 +96,28 @@ public class DeterministicSearch implements LlmEngine {
         body.append("\n\nПодробности — на страницах по ссылкам. "
                 + "Подбор комплектации и коммерческие условия уточняет специалист.");
         return body.toString();
+    }
+
+    /**
+     * Подпись документа в ответе ассистента.
+     *
+     * Документ со статусом {@code pending} — это документ, наличие которого
+     * никто не подтвердил. В перечне на сайте рядом с таким стоит подпись
+     * «Уточняется», и без неё строка «Сертификат ISO 13485 — Производство»
+     * читается как утверждение, что сертификат есть.
+     *
+     * Именно это утверждение §6.4 плана убрала со страницы «Производство»
+     * вместе с блоком «Качество». Ассистент повторял его дословно, только
+     * без статуса — и правило «не выдумывать сертификаты» обходилось не
+     * выдумкой, а умолчанием.
+     *
+     * Скрывать такие документы целиком нельзя: на вопрос «есть ли ISO»
+     * пустой ответ читается как «нет», а это тоже утверждение, которого мы
+     * не знаем. Показываем с тем же статусом, что и страница.
+     */
+    private static String label(DocumentQuery.Card d) {
+        var title = d.title() + " — " + d.subject();
+        return "pending".equals(d.access()) ? title + " (статус уточняется)" : title;
     }
 
     private static List<String> tokens(String question) {
