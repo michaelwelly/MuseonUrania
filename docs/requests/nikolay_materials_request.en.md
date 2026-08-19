@@ -113,6 +113,23 @@ showing on Tuesday, 28 July 2026.
       mention them, and no document backs that — if there are no visits, the
       wording comes off;
     - who owns service requests and which contacts may be published.
+13. News (§8.1, §8.2 of the plan). The section is built and empty. We need:
+    - which materials get published first;
+    - for Innoprom specifically: the press release text, dates, photos,
+      participants, and permission to publish each item.
+14. News format (§8.3 of the plan). The article page is built and shows the
+    title, excerpt, full text and image; the SEO description is taken from the
+    excerpt. Two decisions are missing:
+    - whether an article needs attached documents and links — there are no
+      fields and no table for them, and building those before the answer is
+      guesswork;
+    - whether a separate SEO title and description are needed, or the excerpt
+      is enough.
+15. The registration certificate for `VEDAL R2`. There is a single one in the
+    document listing, labelled "VEDAL R1, R2" — from when they were one card.
+    After the §4.1 split the certificate is linked to `R1` only, and `R2` has no
+    document of its own. We need to know whether one certificate covers both
+    models or `R2` has a separate one.
 
 Closed questions:
 
