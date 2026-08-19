@@ -30,6 +30,10 @@ export type Product = {
   summary: string;
   image?: { src: string; alt: string };
   detail?: string;
+  /** Назначение. undefined — текста ещё нет, карточка покажет «ожидает уточнения». */
+  purpose?: string;
+  /** Ключевые особенности. Пустой список приходит как undefined — см. toProduct. */
+  features?: string[];
   keyParams?: Spec[];
   specs?: Spec[];
 };
@@ -111,6 +115,8 @@ type ApiCard = {
 
 type ApiDetail = ApiCard & {
   detail: string | null;
+  purpose: string | null;
+  features: string[];
   keyParams: ApiSpec[];
   specs: ApiSpec[];
 };
@@ -157,6 +163,11 @@ export async function fetchProduct(slug: string): Promise<Product | null> {
   return {
     ...toProduct(detail),
     detail: detail.detail ?? undefined,
+    purpose: detail.purpose ?? undefined,
+    // Пустой список сводится к undefined, как keyParams и specs ниже: разметка
+    // проверяет наличие блока, а не длину массива, и пустой массив нарисовал
+    // бы заголовок «Ключевые особенности» над пустотой.
+    features: detail.features.length ? detail.features : undefined,
     keyParams: detail.keyParams.length ? detail.keyParams.map(toSpec) : undefined,
     specs: detail.specs.length ? detail.specs.map(toSpec) : undefined,
   };
