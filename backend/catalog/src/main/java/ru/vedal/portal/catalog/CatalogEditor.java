@@ -184,6 +184,7 @@ public class CatalogEditor implements CatalogAdmin {
         product.setKind(form.kind());
         product.setSummary(form.summary());
         product.setDetail(blankToNull(form.detail()));
+        product.setPurpose(blankToNull(form.purpose()));
         product.setDocStatus(form.docStatus());
         product.setSortOrder(form.sortOrder());
         product.setImageSrc(blankToNull(form.imageSrc()));
@@ -202,6 +203,17 @@ public class CatalogEditor implements CatalogAdmin {
         product.getSpecs().clear();
         addSpecs(product, "key_param", nullToEmpty(form.keyParams()));
         addSpecs(product, "spec", nullToEmpty(form.specs()));
+
+        // Особенности — тем же приёмом и по той же причине.
+        product.getFeatures().clear();
+        var featurePosition = 0;
+        for (var body : nullToEmpty(form.features())) {
+            var feature = new ProductFeature();
+            feature.setId(UUID.randomUUID());
+            feature.setPosition(featurePosition++);
+            feature.setBody(body);
+            product.getFeatures().add(feature);
+        }
     }
 
     private static void addSpecs(Product product, String kind, List<SpecForm> rows) {
@@ -220,7 +232,9 @@ public class CatalogEditor implements CatalogAdmin {
 
     private static ProductView view(Product p) {
         return new ProductView(p.getId(), p.getVersion(), p.getSlug(), p.getName(), p.getKind(), p.getSummary(),
-                p.getDetail(), p.getDocStatus(), p.isPublished(), p.getSortOrder(),
+                p.getDetail(), p.getPurpose(),
+                p.getFeatures().stream().map(ProductFeature::getBody).toList(),
+                p.getDocStatus(), p.isPublished(), p.getSortOrder(),
                 p.getImageSrc(), p.getImageAlt(),
                 p.getCategories().stream().map(Category::getSlug).toList(),
                 specs(p, "key_param"), specs(p, "spec"),
