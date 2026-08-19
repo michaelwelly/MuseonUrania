@@ -20,7 +20,9 @@ export default async function ServicePage() {
 
   return (
     <main className={styles.page}>
-      <section className={styles.hero}>
+      {/* §11.1: фактура на первом экране — как на остальных страницах.
+          Здесь свой hero, а не PageHero, поэтому утилита ставится руками. */}
+      <section className={`${styles.hero} crossField`}>
         <div className={styles.heroCopy}>
           <p className={styles.crumbs}>
             <Link href="/">Главная</Link> / Сервис
