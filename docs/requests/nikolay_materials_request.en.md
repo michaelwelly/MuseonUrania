@@ -20,8 +20,20 @@ showing on Tuesday, 28 July 2026.
 ## What we need
 
 1. The current product catalog, including the Innoprom catalog and materials.
-2. A confirmed list of products for the first version of the website and the
-   presentation. As currently understood, about 10 products are expected.
+2. Final descriptions and confirmed specifications for the four first-release
+   products: `VEDAL A-2000`, `VEDAL R1`, `VEDAL R2`, `VEDAL Т-100`. The list was
+   cut to four on 18 August 2026 per §3.1 of the plan — the other nine positions
+   were taken off the site until their datasheets arrive.
+
+   What is on the site now and what replaces it (§4.4, §4.6 of the plan):
+   - descriptions and specifications are taken from booklet 5.0 and are treated
+     as **provisional**. They were never approved as public wording and will be
+     replaced by whatever you send;
+   - the `VEDAL A-2000` transformer-incubator text is not treated as final —
+     §4.6 requires replacing it outright;
+   - purpose and key features are empty for every product: the slots on the
+     product page are ready and currently read "awaiting clarification";
+   - the delivery set is empty for every product.
 3. For each product:
    - the exact name;
    - the category;
