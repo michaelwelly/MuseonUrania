@@ -19,6 +19,14 @@ showing on Tuesday, 28 July 2026.
 
 ## What we need
 
+0. **Access to the cloud folders with the materials** (§7.1, §7.2 of the plan).
+   The customer has already named both links, but we have no access, and that
+   blocks everything else on this list:
+   - Yandex Disk — https://disk.yandex.ru/d/KlfCPTs8UuL-jw. Access is requested
+     for the `mpoedinenko@yandex.ru` mailbox;
+   - Google Drive —
+     https://drive.google.com/drive/folders/1k8BYlRD_PZqWRpUoSUYNAjAdJLZE3KyY.
+     We need to check whether the folder opens, and obtain access if it does not.
 1. The current product catalog, including the Innoprom catalog and materials.
 2. Final descriptions and confirmed specifications for the four first-release
    products: `VEDAL A-2000`, `VEDAL R1`, `VEDAL R2`, `VEDAL Т-100`. The list was
