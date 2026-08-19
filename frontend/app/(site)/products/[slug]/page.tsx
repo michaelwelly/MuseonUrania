@@ -111,6 +111,46 @@ export default async function ProductPage(props: PageProps<"/products/[slug]">) 
         </div>
       </section>
 
+      {/* §4.5 плана: места под назначение и ключевые особенности. Оба блока
+          стоят до вкладок намеренно — это ответ на вопрос «что это и зачем»,
+          а вкладки ниже отвечают на «сколько весит и что в комплекте».
+          Прятать назначение за вкладку значит просить читателя догадаться,
+          что искать его надо в «Характеристиках».
+
+          Пустые блоки не скрываются: §4.7 ждёт тексты от НН, и видимое
+          «ожидает уточнения» — это напоминание, а скрытый блок — забытая
+          задача. Правило CLAUDE.md запрещает заполнять такие места
+          правдоподобной выдумкой. */}
+      <section className={styles.about}>
+        <div>
+          <h2 className={styles.aboutTitle}>Назначение</h2>
+          {product.purpose ? (
+            <p className={styles.aboutText}>{product.purpose}</p>
+          ) : (
+            <p className={styles.awaiting}>
+              Назначение изделия — ожидает уточнения. Текст готовит производитель; до
+              согласования формулировки на сайте не публикуются.
+            </p>
+          )}
+        </div>
+
+        <div>
+          <h2 className={styles.aboutTitle}>Ключевые особенности</h2>
+          {product.features ? (
+            <ul className={styles.features}>
+              {product.features.map((f) => (
+                <li key={f}>{f}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className={styles.awaiting}>
+              Перечень особенностей — ожидает уточнения. Запрошен у производителя вместе с
+              описаниями и характеристиками.
+            </p>
+          )}
+        </div>
+      </section>
+
       <ProductTabs product={product} />
 
       <section className={styles.related}>

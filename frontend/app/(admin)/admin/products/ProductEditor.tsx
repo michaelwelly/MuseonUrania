@@ -29,6 +29,8 @@ const EMPTY: ProductForm = {
   kind: "",
   summary: "",
   detail: null,
+  purpose: null,
+  features: [],
   docStatus: "pending",
   sortOrder: 0,
   imageSrc: null,
@@ -148,6 +150,18 @@ export default function ProductEditor({ existing }: { existing?: Product }) {
           />
         </Field>
 
+        <Field
+          label="Назначение"
+          error={errors.purpose}
+          hint="В каких отделениях и для каких задач применяется изделие. Пусто — карточка покажет «ожидает уточнения»."
+        >
+          <textarea
+            value={form.purpose ?? ""}
+            onChange={(e) => set("purpose", e.target.value || null)}
+            style={{ minHeight: 120 }}
+          />
+        </Field>
+
         <div className="grid2">
           <Field label="Порядок в списке" error={errors.sortOrder}>
             <input
@@ -220,6 +234,8 @@ export default function ProductEditor({ existing }: { existing?: Product }) {
         onChange={(rows) => set("specs", rows)}
       />
 
+      <FeatureList rows={form.features} onChange={(rows) => set("features", rows)} />
+
       <div className="row row--end">
         <button className="btn" onClick={() => router.back()}>
           Отмена
@@ -229,6 +245,49 @@ export default function ProductEditor({ existing }: { existing?: Product }) {
         </button>
       </div>
     </>
+  );
+}
+
+// Отдельный список, а не SpecTable с пустым значением: у особенности нет пары
+// «метка — значение», это одно утверждение. Второе поле ввода, всегда пустое,
+// редактор бы заполнял — и не понимал, зачем.
+function FeatureList({
+  rows,
+  onChange,
+}: {
+  rows: string[];
+  onChange: (rows: string[]) => void;
+}) {
+  return (
+    <div className="admin-card">
+      <h2 style={{ fontSize: 15, marginBottom: 4 }}>Ключевые особенности</h2>
+      <p className="admin-hint" style={{ marginBottom: 12 }}>
+        По одному утверждению в строке, в порядке важности. Пусто — карточка покажет «ожидает
+        уточнения».
+      </p>
+
+      {rows.map((row, i) => (
+        <div key={i} className="row" style={{ marginBottom: 8 }}>
+          <input
+            style={{ flex: "1 1 420px", font: "inherit", fontSize: 14, padding: "8px 10px",
+              border: "1px solid var(--line-3)", borderRadius: 8 }}
+            placeholder="Например: переход между режимами без перекладывания новорождённого"
+            value={row}
+            onChange={(e) => onChange(rows.map((r, index) => (index === i ? e.target.value : r)))}
+          />
+          <button
+            className="btn btn--small btn--danger"
+            onClick={() => onChange(rows.filter((_, index) => index !== i))}
+          >
+            Удалить
+          </button>
+        </div>
+      ))}
+
+      <button className="btn btn--small" onClick={() => onChange([...rows, ""])}>
+        Добавить особенность
+      </button>
+    </div>
   );
 }
 
@@ -307,6 +366,8 @@ function toForm(product: Product): ProductForm {
     kind: product.kind,
     summary: product.summary,
     detail: product.detail,
+    purpose: product.purpose,
+    features: product.features,
     docStatus: product.docStatus,
     sortOrder: product.sortOrder,
     imageSrc: product.imageSrc,

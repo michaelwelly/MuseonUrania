@@ -114,6 +114,11 @@ export type Product = {
   kind: string;
   summary: string;
   detail: string | null;
+  /** Назначение изделия. null — места под текст пустое, карточка покажет
+   *  «ожидает уточнения». */
+  purpose: string | null;
+  /** Ключевые особенности, по одному утверждению в строке. */
+  features: string[];
   docStatus: string;
   published: boolean;
   sortOrder: number;
