@@ -47,6 +47,13 @@ export type NewsItem = {
   image?: { src: string; alt: string };
 };
 
+/** Новость целиком: то же самое плюс текст материала. */
+export type NewsEntry = NewsItem & {
+  /** Дата в формате ISO — для тега <time>, который читают машины. */
+  isoDate: string;
+  body?: string;
+};
+
 export type Doc = {
   slug: string;
   title: string;
@@ -216,6 +223,37 @@ export async function fetchNews(): Promise<NewsItem[]> {
     excerpt: c.excerpt,
     image: c.imageSrc ? { src: c.imageSrc, alt: c.imageAlt ?? "" } : undefined,
   }));
+}
+
+// Отдельная запись читается по slug: списочный ответ текста не содержит,
+// и тянуть весь список ради одного материала значит грузить ленту целиком
+// на каждую страницу новости.
+//
+// Возвращает null на 404 — неопубликованной новости для сайта не существует,
+// и страница отвечает notFound(), а не падает пятисотой.
+export async function fetchNewsEntry(slug: string): Promise<NewsEntry | null> {
+  if (!apiConfigured) return null;
+
+  // buildUrl и revalidate — как в fetchProduct рядом: запрос идёт на сборке,
+  // а собственный fetch нужен ради разбора 404 (общий get() на нём бросает).
+  const url = `${buildUrl}/api/public/v1/news/${encodeURIComponent(slug)}`;
+  const response = await fetch(url, { next: { revalidate: REVALIDATE } });
+
+  // 404 — неопубликованный или несуществующий материал, а не сбой сборки.
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error(`Публичное API ответило ${response.status}: ${url}`);
+
+  const item = (await response.json()) as ApiNews & { body: string | null };
+  return {
+    slug: item.slug,
+    isoDate: item.publishedOn,
+    date: formatDate(item.publishedOn),
+    tag: item.tag,
+    title: item.title,
+    excerpt: item.excerpt,
+    body: item.body ?? undefined,
+    image: item.imageSrc ? { src: item.imageSrc, alt: item.imageAlt ?? "" } : undefined,
+  };
 }
 
 // ————— документы —————

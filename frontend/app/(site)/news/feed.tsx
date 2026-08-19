@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { tags, expected } from "@/content/news";
 import type { NewsItem } from "@/lib/api";
 import styles from "./page.module.css";
@@ -10,6 +11,19 @@ import { mediaSrc } from "@/lib/media";
 // Чипы рубрик и лента. Публикаций пока нет — фильтр всё равно нужен,
 // иначе при появлении первой записи придётся переписывать разметку.
 // Записи приходят сверху: их читает серверный компонент на сборке.
+// Ссылка или неподвижная карточка — решает наличие slug. Обёртка вынесена,
+// чтобы разметка карточки не дублировалась в двух ветках условия: разъехались
+// бы при первой же правке.
+function CardShell({ slug, children }: { slug: string; children: React.ReactNode }) {
+  return slug ? (
+    <Link className={styles.card} href={`/news/${slug}/`}>
+      {children}
+    </Link>
+  ) : (
+    <article className={styles.card}>{children}</article>
+  );
+}
+
 export default function NewsFeed({ news }: { news: NewsItem[] }) {
   const [active, setActive] = useState<string | null>(null);
   const shown = active ? news.filter((n) => n.tag === active) : news;
@@ -55,7 +69,10 @@ export default function NewsFeed({ news }: { news: NewsItem[] }) {
         <ul className={styles.feed} data-reveal="0">
           {shown.map((item) => (
             <li key={item.slug || item.title}>
-              <article className={styles.card}>
+              {/* Карточка ведёт на материал целиком. Без slug ссылки нет:
+                  локальная заглушка из content/news.ts отдаёт пустой slug,
+                  и ссылка на /news// вела бы в 404. */}
+              <CardShell slug={item.slug}>
                 <div className={styles.cardPhoto}>
                   {item.image && (
                     <Image
@@ -74,7 +91,7 @@ export default function NewsFeed({ news }: { news: NewsItem[] }) {
                   <h2 className={styles.cardTitle}>{item.title}</h2>
                   <p className={styles.cardExcerpt}>{item.excerpt}</p>
                 </div>
-              </article>
+              </CardShell>
             </li>
           ))}
         </ul>
