@@ -158,7 +158,7 @@ at `/legal/privacy/`.
 
 ## Related documents
 
-- [Compliance requirements](compliance_requirements_ru.md) — personal data,
+- [Compliance requirements](compliance_requirements.en.md) — personal data,
   hosting, open and closed contours.
 - [Content protection requirements](../strategy/content_protection_requirements.en.md).
 - [Materials request to Nikolay Nikolaevich](../requests/nikolay_materials_request.en.md).

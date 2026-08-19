@@ -160,7 +160,7 @@
 
 ## Связанные документы
 
-- [Требования соответствия](compliance_requirements_ru.md) — персональные
+- [Требования соответствия](compliance_requirements.md) — персональные
   данные, размещение, открытый и закрытый контуры.
 - [Требования к защите контента](../strategy/content_protection_requirements.md).
 - [Запрос материалов Николаю Николаевичу](../requests/nikolay_materials_request.md).

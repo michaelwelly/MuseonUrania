@@ -1,5 +1,7 @@
 # Compliance Requirements: VEDAL Public And Internal Contours
 
+[Русский](compliance_requirements.md) · **English**
+
 This document is an operational requirements checklist, not a legal opinion. Final legal wording should be approved by VEDAL or its legal counsel before publication and contract signing.
 
 ## Personal Data And Hosting
