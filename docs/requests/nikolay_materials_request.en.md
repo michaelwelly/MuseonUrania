@@ -98,7 +98,14 @@ showing on Tuesday, 28 July 2026.
     are still listed in the site footer and in the catalog subheading. Do we keep
     them as a claim on future positions, or remove them until such products
     exist.
-11. Real service and warranty terms (§5.2 of the plan). The Service page
+11. Document sections on the public page (§7.5 of the plan). The plan names six:
+    registration certificates, certificates, catalogs, product descriptions,
+    manuals, press materials. The site currently has four — `Лицензирование`,
+    `Система качества`, `Техническая документация`, `Коммерческие материалы` —
+    and they do not map one to one onto those six. We need the final list of
+    sections confirmed, and which section each document belongs to; there are no
+    manuals and no press materials at all right now.
+12. Real service and warranty terms (§5.2 of the plan). The Service page
     currently describes only how a request is handled and deliberately names no
     warranty period and no types of work. We need confirmation of:
     - the warranty period and what it covers;
