@@ -87,15 +87,33 @@ type Props = {
    * сильнее, чем текст рядом.
    */
   tone?: "light" | "dark";
+  /**
+   * Где стоит композиция.
+   *
+   * `edge` — прижата к правому краю полосы. Годится там, где правая часть
+   * свободна: первые экраны внутренних страниц.
+   *
+   * `seam` — в стыке между текстом и фотографией, правым краем под снимок.
+   * Для полос, где правую половину занимает фото: у края там встать негде,
+   * композиция ушла бы под снимок целиком. Долю, которую занимает фото,
+   * страница передаёт через CSS-переменную --pattern-seam.
+   */
+  placement?: "edge" | "seam";
 };
 
-export default function LivePattern({ variant = 1, tone = "light" }: Props) {
+export default function LivePattern({
+  variant = 1,
+  tone = "light",
+  placement = "edge",
+}: Props) {
   const net = NET[variant];
   const dark = tone === "dark";
 
   return (
     <span
-      className={`${styles.pattern} ${dark ? styles.dark : ""}`}
+      className={`${styles.pattern} ${dark ? styles.dark : ""} ${
+        placement === "seam" ? styles.seam : ""
+      }`}
       aria-hidden="true"
       data-variant={variant}
     >

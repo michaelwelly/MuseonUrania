@@ -16,11 +16,13 @@
 /* Белый вслед за первым экраном главной и шапками остальных разделов.
    Линия снизу отделяет шапку от содержимого: раньше это делал перепад
    с тёмного на белое. */
+/* То же, что на «Сервисе»: фото ужато, стык освобождён под паттерн. */
 .hero {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.15fr 0.85fr;
   background: var(--page);
   border-bottom: 1px solid var(--line);
+  --pattern-seam: 30%;
 }
 
 .heroCopy {

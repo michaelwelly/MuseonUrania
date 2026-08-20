@@ -32,7 +32,8 @@ export default function Home() {
           концом строки и краем фото всего 244 пикселя, а паттерну нужно
           465. Паттерн стоит там, где для него есть место, — на первых
           экранах внутренних страниц и на тёмной полосе призыва ниже. */}
-      <section className={styles.hero}>
+      <section className={`${styles.hero} patternHost`}>
+        <LivePattern variant={2} placement="seam" />
         <div className={styles.heroCopy}>
           {/* data-anim — крючки появления первого экрана, правила в app/motion.css */}
           <p className={`${styles.eyebrow} ${styles.eyebrowLight}`} data-anim="rise-sm">

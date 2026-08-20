@@ -7,6 +7,7 @@ import { site } from "@/content/site";
 import { serviceHero, steps, serviceForm, serviceNotice, urgent } from "@/content/service";
 import { companyContact, STAFF_AWAITING } from "@/content/staff";
 import { vedalina } from "@/content/vedalina";
+import LivePattern from "@/components/LivePattern";
 import styles from "./page.module.css";
 import { mediaSrc } from "@/lib/media";
 
@@ -23,7 +24,8 @@ export default async function ServicePage() {
       {/* Паттерна нет по той же причине, что на главной: правая половина
           полосы занята фото во всю высоту, и класть композицию за него
           или под текст одинаково плохо. */}
-      <section className={styles.hero}>
+      <section className={`${styles.hero} patternHost`}>
+        <LivePattern variant={2} placement="seam" />
         <div className={styles.heroCopy}>
           <p className={styles.crumbs}>
             <Link href="/">Главная</Link> / Сервис

@@ -9,11 +9,14 @@
 /* ---------- hero-сплит ---------- */
 /* Белый вслед за остальными шапками разделов. Линия снизу отделяет её
    от содержимого — раньше это делал перепад с тёмного на белое. */
+/* Колонки 1fr 1fr сжаты до 1.15fr 0.85fr: правая половина отдана фото,
+   и без сжатия стыка под паттерн не остаётся. */
 .hero {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.15fr 0.85fr;
   background: var(--page);
   border-bottom: 1px solid var(--line);
+  --pattern-seam: 30%;
 }
 
 .heroCopy {

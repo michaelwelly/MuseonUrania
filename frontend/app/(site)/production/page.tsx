@@ -5,6 +5,7 @@ import VedalMap from "@/components/VedalMap";
 import { site } from "@/content/site";
 import { productionHero, facility, gallery, address } from "@/content/production";
 import TreeMark from "@/components/TreeMark";
+import LivePattern from "@/components/LivePattern";
 import styles from "./page.module.css";
 import { mediaSrc } from "@/lib/media";
 
@@ -18,7 +19,8 @@ export default function ProductionPage() {
     <main className={styles.page}>
       {/* Паттерна нет по той же причине, что на главной: правая половина
           полосы занята фото во всю высоту. */}
-      <section className={styles.hero}>
+      <section className={`${styles.hero} patternHost`}>
+        <LivePattern variant={1} placement="seam" />
         <div className={styles.heroCopy}>
           <p className={styles.crumbs}>
             <Link href="/">Главная</Link> / Производство
