@@ -178,58 +178,8 @@
   letter-spacing: -0.03em;
 }
 
-.h2Narrow {
-  max-width: 22ch;
-}
-
-.sectionNote {
-  flex: none;
-  max-width: 42ch;
-  font-size: 15.5px;
-  line-height: 1.6;
-  color: var(--muted);
-}
-
-/* ---------- направления ---------- */
-.directions {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 1px;
-  margin-top: 44px;
-  background: var(--line);
-  border: 1px solid var(--line);
-  list-style: none;
-}
-
-.direction {
-  display: block;
-  padding: 26px 22px 30px;
-  background: #fff;
-  height: 100%;
-}
-
-.direction:hover {
-  background: var(--soft);
-}
-
-.dirNum {
-  font-family: var(--font-mono), monospace;
-  font-size: 11px;
-  color: var(--green);
-}
-
-.dirTitle {
-  margin-top: 12px;
-  font-size: 17px;
-  letter-spacing: -0.01em;
-}
-
-.dirText {
-  margin-top: 10px;
-  font-size: 13.5px;
-  line-height: 1.5;
-  color: var(--muted);
-}
+/* Стили полосы цифр и блока «Направления» удалены вместе с самими блоками:
+   .h2Narrow и .sectionNote применялись только в их заголовке. */
 
 /* ---------- каталог ---------- */
 .cards {
@@ -607,9 +557,6 @@
     padding-right: 24px;
   }
 
-  .directions {
-    grid-template-columns: repeat(2, 1fr);
-  }
 
   .cards {
     grid-template-columns: repeat(2, 1fr);
@@ -683,7 +630,6 @@
     justify-content: center;
   }
 
-  .directions,
   .cards,
   .newsGrid {
     grid-template-columns: 1fr;

@@ -1,14 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import HomeLeadForm from "@/components/HomeLeadForm";
-import { StatsBand } from "@/components/Blocks";
 import { site } from "@/content/site";
 import { news } from "@/content/news";
 import {
   homeHero,
-  stats,
-  directionsIntro,
-  homeDirections,
   featured,
   productionBlock,
   documentsBlock,
@@ -74,35 +70,20 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 02. Полоса цифр */}
-      <StatsBand items={stats} />
+      {/* Полоса цифр и блок «Направления» убраны с главной 19 августа по
+          прямому решению заказчика. Те же два блока §2.1 и §2.4 сняли
+          со страницы «О компании» — на главной они уцелели и повторяли
+          ровно то, от чего заказчик отказался.
 
-      {/* 03. Направления */}
-      <section className={styles.section}>
-        <div className={styles.sectionHead} data-reveal="0">
-          <div style={{ flex: 1 }}>
-            <p className={`${styles.eyebrow} ${styles.eyebrowLight}`}>Направления</p>
-            <h2 className={`${styles.h2} ${styles.h2Narrow}`} data-words="30">
-              Пять направлений, одно производство
-            </h2>
-          </div>
-          <p className={styles.sectionNote}>{directionsIntro}</p>
-        </div>
+          Обе полосы к тому же обещали больше, чем есть: «5 направлений»
+          при четырёх изделиях в трёх направлениях, а карточки
+          «Анестезиология» и «Мониторинг» вели в каталог, где изделий
+          этих направлений нет. По той же причине 19 августа с каталога
+          сняли фильтр по направлениям.
 
-        <ul className={styles.directions}>
-          {homeDirections.map((d, i) => (
-            <li key={d.n} data-reveal={i}>
-              <Link className={styles.direction} href="/products/">
-                <span className={styles.dirNum}>{d.n}</span>
-                <h3 className={styles.dirTitle}>{d.title}</h3>
-                <p className={styles.dirText}>{d.text}</p>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
+          Из первого экрана сразу идёт каталог. */}
 
-      {/* 04. Каталог */}
+      {/* 02. Каталог */}
       <section className={styles.sectionSoft}>
         <div className={`${styles.sectionHead} ${styles.sectionHeadSplit}`} data-reveal="0">
           <div>

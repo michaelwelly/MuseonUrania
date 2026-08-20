@@ -1,19 +1,13 @@
 import Link from "next/link";
 import styles from "./Blocks.module.css";
 
-/** Полоса из четырёх цифр. Экраны «Главная» и «О компании». */
-export function StatsBand({ items }: { items: { value: string; label: string }[] }) {
-  return (
-    <ul className={`${styles.stats} crossField`} aria-label="Ключевые цифры">
-      {items.map((s, i) => (
-        <li key={s.label} className={styles.stat} data-reveal={i}>
-          <p className={styles.statValue}>{s.value}</p>
-          <p className={styles.statLabel}>{s.label}</p>
-        </li>
-      ))}
-    </ul>
-  );
-}
+// Компонент StatsBand удалён 19 августа. Полоса из четырёх цифр стояла на
+// «Главной» и «О компании»; со второй её снял §2.1, с первой — прямое решение
+// заказчика. Полос на сайте не осталось ни одной.
+//
+// Компонент не оставлен «на всякий случай» намеренно: заказчик отказался от
+// этого блока дважды, и готовый к вставке StatsBand — это приглашение вернуть
+// его третий раз. Понадобится — есть в истории.
 
 type Action = { label: string; href: string; analytics?: string };
 
