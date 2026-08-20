@@ -3,3 +3,10 @@
 # Скрипты монтируются в контейнеры Linux. CRLF в них означает
 # «bad interpreter» при запуске, и на Windows это происходит молча.
 *.sh text eol=lf
+
+# Юниты systemd ставятся на ВМ из этого репозитория. CRLF в них systemd
+# не разбирает: строка `ExecStart=…\r` превращается в путь с возвратом
+# каретки на конце, и запуск падает с «No such file or directory» —
+# указывая при этом на существующий файл.
+*.service text eol=lf
+*.timer text eol=lf
