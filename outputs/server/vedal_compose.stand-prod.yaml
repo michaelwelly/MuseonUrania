@@ -13,6 +13,9 @@ services:
   minio-init:
     profiles: ["local-minio"]
 
+  media-seed:
+    profiles: ["local-minio"]
+
   portal:
     depends_on: !override
       db:
@@ -39,4 +42,3 @@ services:
       NEXT_PUBLIC_API_URL: ${VEDAL_PUBLIC_URL:?set VEDAL_PUBLIC_URL}
       NEXT_PUBLIC_MEDIA_URL: ${VEDAL_MEDIA_URL:?set VEDAL_MEDIA_URL}
       NEXT_PUBLIC_OIDC_ISSUER: ${VEDAL_KEYCLOAK_URL:-http://localhost:8180}/realms/vedal
-

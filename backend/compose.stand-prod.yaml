@@ -1,0 +1,62 @@
+# Stand-production overlay for the shared VM.
+#
+# Purpose:
+# - keep C3AG/Astor 80/443 untouched;
+# - expose VEDAL by IP on :18080 until vedal-med.ru DNS is available;
+# - use real Yandex Object Storage instead of local MinIO;
+# - keep Keycloak on localhost for now.
+
+services:
+  minio:
+    profiles: ["local-minio"]
+
+  minio-init:
+    profiles: ["local-minio"]
+
+  # Заливка фотографий из репозитория работает и здесь — против Yandex Object
+  # Storage вместо MinIO. Выключать её нельзя: она единственное, что связывает
+  # frontend/public/photos с бакетом.
+  #
+  # Что было. Сервис стоял в профиле local-minio, то есть на ВМ не запускался
+  # вовсе. Файл, добавленный в репозиторий, в бакет не попадал, и каталог
+  # показывал изделия без фотографий: vedal-r1.jpg, vedal-r2.jpg,
+  # hall-booklet.jpg и service-r2-setup.jpg отдавали 404. Сборку это не роняет
+  # и тестами не ловится — 404 за картинкой видно только глазами на стенде.
+  #
+  # depends_on переопределён пустым: minio-init здесь в профиле local-minio
+  # и не поднимается, а бакеты в облаке заведены заранее. Без !override сервис
+  # ждал бы контейнер, которого не будет.
+  media-seed:
+    depends_on: !override {}
+    environment:
+      MINIO_ROOT_USER: ${VEDAL_S3_ACCESS_KEY:?set VEDAL_S3_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${VEDAL_S3_SECRET_KEY:?set VEDAL_S3_SECRET_KEY}
+      S3_ENDPOINT: ${VEDAL_S3_ENDPOINT:?set VEDAL_S3_ENDPOINT}
+      S3_BUCKET_MEDIA: ${VEDAL_S3_BUCKET_MEDIA:-vedal-media}
+
+  portal:
+    depends_on: !override
+      db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    environment:
+      VEDAL_STORAGE_KIND: s3
+      VEDAL_S3_ENDPOINT: ${VEDAL_S3_ENDPOINT:?set VEDAL_S3_ENDPOINT}
+      VEDAL_S3_REGION: ${VEDAL_S3_REGION:-ru-central1}
+      VEDAL_S3_BUCKET_MEDIA: ${VEDAL_S3_BUCKET_MEDIA:-vedal-media}
+      VEDAL_S3_BUCKET_DOCUMENTS: ${VEDAL_S3_BUCKET_DOCUMENTS:-vedal-documents}
+      VEDAL_S3_ACCESS_KEY: ${VEDAL_S3_ACCESS_KEY:?set VEDAL_S3_ACCESS_KEY}
+      VEDAL_S3_SECRET_KEY: ${VEDAL_S3_SECRET_KEY:?set VEDAL_S3_SECRET_KEY}
+
+  api-gateway:
+    ports: !override
+      - "0.0.0.0:${VEDAL_GATEWAY_HOST_PORT:-18080}:8080"
+
+  site:
+    environment:
+      NEXT_PUBLIC_API_URL: ${VEDAL_PUBLIC_URL:?set VEDAL_PUBLIC_URL}
+      NEXT_PUBLIC_MEDIA_URL: ${VEDAL_MEDIA_URL:?set VEDAL_MEDIA_URL}
+      NEXT_PUBLIC_OIDC_ISSUER: ${VEDAL_KEYCLOAK_URL:-http://localhost:8180}/realms/vedal
