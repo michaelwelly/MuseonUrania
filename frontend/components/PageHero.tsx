@@ -1,4 +1,5 @@
 import Link from "next/link";
+import LivePattern from "./LivePattern";
 import styles from "./PageHero.module.css";
 
 type Crumb = { label: string; href?: string };
@@ -17,7 +18,8 @@ type Props = {
 
 export default function PageHero({ crumbs, title, lead, aside }: Props) {
   return (
-    <section className={`${styles.hero} crossField`}>
+    <section className={`${styles.hero} patternHost`}>
+      <LivePattern />
       <div>
         <p className={styles.crumbs}>
           {crumbs.map((c, i) => (

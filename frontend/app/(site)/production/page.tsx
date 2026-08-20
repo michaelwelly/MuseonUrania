@@ -16,12 +16,9 @@ export const metadata: Metadata = {
 export default function ProductionPage() {
   return (
     <main className={styles.page}>
-      {/* §11.1: фирменная фактура на первом экране. «Производство» и «Сервис»
-          рисуют свой hero, а не PageHero, к которому фактура прикручена, —
-          и молча остались единственными страницами без неё. Утилита
-          глобальная именно для таких случаев: прозрачность у всех полос
-          обязана совпадать, а разойдись она на процент — глазом не поймать. */}
-      <section className={`${styles.hero} crossField`}>
+      {/* Паттерна нет по той же причине, что на главной: правая половина
+          полосы занята фото во всю высоту. */}
+      <section className={styles.hero}>
         <div className={styles.heroCopy}>
           <p className={styles.crumbs}>
             <Link href="/">Главная</Link> / Производство
