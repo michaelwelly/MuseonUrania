@@ -55,8 +55,11 @@ export default function VedalinaWidget() {
       aria-label={`Открыть чат с ассистентом ${vedalina.name}`}
       data-analytics="vedalina_open"
     >
+      {/* Размер задан пропами, а не fill: fill выставляет картинке
+          position: absolute и inset: 0, и отступ обёртки на неё не действует —
+          дерево упиралось бы в край круга и теряло линию земли. */}
       <span className={styles.launcherAvatar}>
-        <Image src={vedalina.avatar} alt="" fill sizes="48px" />
+        <Image src={vedalina.avatar} alt="" width={38} height={38} />
         <span className={styles.launcherDot} aria-hidden="true" />
       </span>
       <span className={styles.launcherLabel}>Задать вопрос</span>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import LivePattern from "./LivePattern";
 import { vedalina, quickReplies, answerFor } from "@/content/vedalina";
 import { site } from "@/content/site";
 import {
@@ -180,13 +181,19 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
   return (
     <section className={styles.chat} aria-label={`Чат с ассистентом ${vedalina.name}`}>
       <div className={styles.head}>
+        {/* Та же фактура, что на тёмных полосах страниц: чат — часть сайта,
+            а не вставленный чужой виджет. Без квадратов и на 9%. */}
+        <LivePattern variant={2} tone="dark" />
+
+        {/* Размер пропами, а не fill — см. VedalinaWidget: fill выставляет
+            картинке inset: 0, и отступ обёртки на неё не действует. */}
         <div className={styles.avatarWrap}>
           <Image
             className={styles.avatar}
             src={vedalina.avatar}
-            alt={`Аватар ассистента ${vedalina.name}`}
-            fill
-            sizes="44px"
+            alt={`Знак ассистента ${vedalina.name}`}
+            width={36}
+            height={36}
           />
           <span className={styles.status} aria-hidden="true" />
         </div>

@@ -1,5 +1,9 @@
 /* Окно чата Ведалины. Размеры из design/VedalinaChat.dc.html. */
 
+/* Скругление 16, а не 4. Кнопка, из которой окно раскрывается, — пилюля
+   с радиусом 32; окно с почти острым углом читалось как другой элемент,
+   а не как та же кнопка, только развёрнутая. 16 — середина между ними
+   и совпадает с радиусом реплик в ленте (14). */
 .chat {
   display: flex;
   flex-direction: column;
@@ -7,12 +11,17 @@
   overflow: hidden;
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: 4px;
+  border-radius: 16px;
   box-shadow: 0 24px 70px -20px rgba(8, 33, 29, 0.45);
 }
 
 /* --- шапка --- */
+/* isolation: isolate — под фирменную фактуру: полоса тёмная, как полосы
+   призыва на страницах, и держит тот же приём. */
 .head {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: flex;
   align-items: center;
   gap: 13px;
@@ -20,18 +29,22 @@
   background: var(--deep);
 }
 
+/* Белый диск — тот же, что у кнопки виджета, и по той же причине: круглый
+   аватар читается как собеседник, а знак прямо на тёмной шапке — как иконка.
+   Контраст здесь ни при чём, у дерева на тёмном он даже выше. */
 .avatarWrap {
   position: relative;
   flex: none;
+  display: grid;
+  place-items: center;
   width: 44px;
   height: 44px;
+  border-radius: 50%;
+  background: #fff;
 }
 
 .avatar {
-  border-radius: 50%;
-  object-fit: cover;
-  /* Кадрирование важно — иначе лицо уходит из круга. */
-  object-position: 50% 22%;
+  display: block;
 }
 
 .status {
