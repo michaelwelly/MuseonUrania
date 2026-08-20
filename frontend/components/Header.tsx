@@ -35,8 +35,9 @@ export default function Header() {
     <header className={styles.header}>
       <div className={styles.bar}>
         <Link href="/" className={styles.brand} aria-label={`${site.brand}, на главную`}>
-          {/* 42 — та же высота, что была у статичного знака в .brand img. */}
-          <AnimatedLogo height={42} />
+          {/* 60 — размер из пакета передачи логотипа. Шапка 78px высотой,
+              то есть по 9px воздуха сверху и снизу. */}
+          <AnimatedLogo height={60} />
         </Link>
 
         <nav className={styles.nav} aria-label="Основная навигация">
