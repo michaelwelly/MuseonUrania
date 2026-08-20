@@ -74,7 +74,7 @@ export default async function DocumentsPage() {
 
           <div className={styles.contact}>
             <div className={styles.avatar}>
-              <Image src={vedalina.avatar} alt="" fill sizes="48px" />
+              <Image src={vedalina.avatar} alt="" width={34} height={34} />
             </div>
             <div>
               <p className={styles.contactName}>{companyContact.title}</p>

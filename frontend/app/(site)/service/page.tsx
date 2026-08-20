@@ -76,12 +76,7 @@ export default async function ServicePage() {
             <p className={styles.asideLabel}>Сервисное обращение</p>
             <div className={styles.person}>
               <div className={styles.avatar}>
-                <Image
-                  src={vedalina.avatar}
-                  alt=""
-                  fill
-                  sizes="64px"
-                />
+                <Image src={vedalina.avatar} alt="" width={46} height={46} />
               </div>
               <div>
                 <p className={styles.personName}>{companyContact.title}</p>

@@ -37,7 +37,7 @@ export default async function NewsPage() {
 
           <div className={styles.contact}>
             <div className={styles.avatar}>
-              <Image src={vedalina.avatar} alt="" fill sizes="56px" />
+              <Image src={vedalina.avatar} alt="" width={40} height={40} />
             </div>
             <div>
               <p className={styles.contactName}>{companyContact.title}</p>
