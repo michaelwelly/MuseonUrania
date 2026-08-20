@@ -44,7 +44,7 @@ class ChatDeskTest extends PostgresTestBase {
 
         assertThat(answer.author()).isEqualTo(ChatMessage.ASSISTANT);
         assertThat(answer.sources())
-                .as("Ответ Урании без источников — ответ, которому нельзя верить")
+                .as("Ответ Ведалины без источников — ответ, которому нельзя верить")
                 .isNotEmpty();
         assertThat(answer.sources().getFirst().url()).isNotBlank();
     }

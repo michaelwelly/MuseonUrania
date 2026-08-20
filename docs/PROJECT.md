@@ -78,7 +78,7 @@
 | Поколение | Когда | Язык | Файлы |
 | --- | --- | --- | --- |
 | Бизнес-рамка | июль 2026 | английский | [project_brief](strategy/project_brief.md), [functional_requirements](strategy/functional_requirements.md), [roadmap](operations/roadmap.md), [infrastructure_architecture](architecture/infrastructure_architecture.md), [content_and_seo_plan](strategy/content_and_seo_plan.md), [competitor_notes](strategy/competitor_notes.md), [team_estimate](operations/team_estimate_7_people.md) |
-| Фронтовый пакет | июль 2026 | английский | [sitemap](frontend/sitemap.md), [content_model](frontend/content_model.md), [page_briefs](frontend/page_briefs.md), [implementation_checklist](frontend/implementation_checklist.md), [frontend_design_handoff](strategy/frontend_design_handoff.md), [frontend_variants](strategy/frontend_variants.md), [urania_assistant_spec](strategy/urania_assistant_spec.md) |
+| Фронтовый пакет | июль 2026 | английский | [sitemap](frontend/sitemap.md), [content_model](frontend/content_model.md), [page_briefs](frontend/page_briefs.md), [implementation_checklist](frontend/implementation_checklist.md), [frontend_design_handoff](strategy/frontend_design_handoff.md), [frontend_variants](strategy/frontend_variants.md), [vedalina_assistant_spec](strategy/vedalina_assistant_spec.md) |
 | Техническая правда | 6–11 августа 2026 | русский | [бриф собственника](architecture/vedal_portal_owner_brief.md), [спека](superpowers/specs/2026-08-06-vedal-portal-architecture-design.md), [backend/README](../backend/README.md) + модульные, [план каталога](superpowers/plans/2026-08-06-catalog-module.md) |
 
 Замер по 39 файлам: 18 написаны по-русски на 70–98%, 20 — по-английски на
@@ -91,7 +91,7 @@
 ## 3. Карта репозитория
 
 ```
-MuseonUrania/
+MuseonVedalina/
 ├─ docs/PROJECT.md          ← этот файл, точка входа
 ├─ frontend/                Next.js 16, App Router, TypeScript, CSS Modules
 │  ├─ app/(site)/           публичный сайт: девять маршрутов
@@ -99,7 +99,7 @@ MuseonUrania/
 │  │                        документы, журнал; CRM — заявки, клиенты, сделки,
 │  │                        КП, аналитика. Свой корневой layout — оформление
 │  │                        сайта в админку не приезжает
-│  ├─ components/           Header, Footer, LeadForm, UraniaChat/Widget, AnimatedLogo, VedalMap…
+│  ├─ components/           Header, Footer, LeadForm, VedalinaChat/Widget, AnimatedLogo, VedalMap…
 │  ├─ content/*.ts          ВЕСЬ текст сайта; незаполненное помечено «ожидает уточнения»
 │  ├─ lib/api.ts            публичное API: чтение на сборке
 │  ├─ lib/admin.ts          админское API: только браузер, только с токеном
@@ -124,14 +124,16 @@ MuseonUrania/
 ├─ docs/
 │  ├─ api/                  выгрузка OpenAPI публичного API (собирается из кода)
 │  ├─ architecture/         бриф собственника, инфраструктура
-│  ├─ strategy/             бизнес-рамка, требования, Урания, SEO, конкуренты
+│  ├─ strategy/             бизнес-рамка, требования, Ведалина, SEO, конкуренты
 │  ├─ frontend/             карта сайта, модели контента, брифы страниц, чек-лист
-│  ├─ operations/           роадмап, оценка команды
+│  ├─ legal/                требования соответствия: ПДн, размещение, заявления
+│  ├─ operations/           роадмап, оценка команды, передача доступов,
+│  │                        подключение домена vedal-med.ru
 │  ├─ products/             датащиты VEDAL R1/R2, A-2000, Т-100 + разбор
 │  ├─ requests/             запрос материалов Николаю Николаевичу
 │  └─ superpowers/          спека серверной части, план модуля каталога
-├─ assets/urania/           аватары Урании; MVP — urania-avatar-middle-v1.png
-├─ prototypes/              urania-web-interface.html — источник вёрстки
+├─ assets/vedalina/           аватары Ведалины; MVP — vedalina-avatar-middle-v1.png
+├─ prototypes/              vedalina-web-interface.html — источник вёрстки
 └─ outputs/                 презентации pptx/pdf
 ```
 
@@ -159,7 +161,7 @@ MuseonUrania/
 | [gateway](../backend/gateway/README.md) | приём заявок: проверка, approve, передача в CRM |
 | [crm](../backend/crm/README.md) | заявки, клиенты, сделки, КП, история переписки, аналитика воронки |
 | [notifications](../backend/notifications/README.md) | письма клиентам и уведомления менеджерам |
-| [assistant](../backend/assistant/README.md) | Урания: ответы по опубликованному, ограничения |
+| [assistant](../backend/assistant/README.md) | Ведалина: ответы по опубликованному, ограничения |
 | [audit](../backend/audit/README.md) | журнал действий и доступа к документам |
 
 Отложены и папок ещё нет: **knowledge** (внутренний AI-поиск, этап 3 роадмапа)
@@ -219,7 +221,7 @@ git-операцией, а не догадываться по общей пра�
 
 | Дверь | Кто ходит | Свойство |
 | --- | --- | --- |
-| `Public API` `/api/public/v1/*` | сборка сайта, Урания | read-only, только опубликованное, кэшируемое |
+| `Public API` `/api/public/v1/*` | сборка сайта, Ведалина | read-only, только опубликованное, кэшируемое |
 | `Forms API` `/api/forms/v1/leads` | формы сайта, Яндекс Форма, разбор почты | **единственная запись снаружи**, идемпотентность по `Idempotency-Key` |
 | `Admin API` `/api/admin/v1/**` | сотрудник | JSON, токен Keycloak, роли `portal-admin` и `portal-editor`. Дверь одна, поэтому ограничить её на прокси можно одним правилом — **но сейчас такого правила в [Caddyfile](../backend/proxy/Caddyfile) нет**, и наружу она открыта |
 
@@ -261,7 +263,7 @@ ambient authority, на котором стоит межсайтовая под�
 ### 5.3 Пять свойств, которыми меряется стабильность
 
 1. **Падение бэкенда не роняет сайт.** Каталог, новости и документы уезжают в
-   статику на сборке. Живой бэкенд нужен только формам и Урании.
+   статику на сборке. Живой бэкенд нужен только формам и Ведалине.
 2. **Схема меняется только миграциями.** Ручной `ALTER` на проде запрещён: после
    него дамп восстанавливается в схему, которой нет в истории.
 3. **Наружу уходит только опубликованное.** Это свойство запроса, а не
@@ -679,7 +681,7 @@ Testcontainers. Шлюз — Spring Boot 4.0.7 и Spring Cloud Gateway 5.0.2:
 | `GET /api/public/v1/documents` | сборка сайта | перечень; ссылка на файл только у опубликованных |
 | `GET /api/public/v1/documents/{slug}/file` | посетитель | файл; закрытый — 404, обращение в журнал |
 | `POST /api/forms/v1/leads` | формы сайта | приём заявки, `Idempotency-Key`, ответ `202` |
-| `POST /api/assistant/v1/ask` | Урания | ответ по опубликованному со ссылками |
+| `POST /api/assistant/v1/ask` | Ведалина | ответ по опубликованному со ссылками |
 | `/api/admin/v1/products`, `/categories` | админка | каталог целиком: правка, характеристики, снимки, публикация |
 | `/api/admin/v1/news` | админка | новости: создание, правка, публикация, удаление черновика |
 | `/api/admin/v1/documents` | админка | карточка, загрузка файла до 20 МБ, публикация с разбором причины отказа |
@@ -733,7 +735,7 @@ CRM: заявки с разбором в сделку, клиенты, сдел�
 
 Сайт и админка разведены группами маршрутов `(site)` и `(admin)` — у каждой свой
 корневой layout. Вложенный layout не умеет убрать оформление родителя: шапка,
-футер, прелоадер и плавающая Урания приехали бы и в админку. Адреса страниц
+футер, прелоадер и плавающая Ведалина приехали бы и в админку. Адреса страниц
 сайта от этого не поменялись: имя группы в скобках в URL не попадает.
 
 ### 6.3 Разрыв закрыт
@@ -743,7 +745,7 @@ CRM: заявки с разбором в сделку, клиенты, сдел�
 - каталог, новости и документы читаются из Public API на сборке и уезжают
   в статику — свойство №1 не сломано, падение бэкенда не роняет собранный сайт;
 - `LeadForm` отправляет заявку в Forms API с `Idempotency-Key` и версией
-  согласия, `UraniaChat` спрашивает ассистента;
+  согласия, `VedalinaChat` спрашивает ассистента;
 - админка правит содержимое через Admin API под токеном Keycloak.
 
 Адресов API у фронтенда два, и это не дублирование: каталог читается на сборке
@@ -793,11 +795,11 @@ CRM: заявки с разбором в сделку, клиенты, сдел�
 | --- | --- | --- |
 | 1 | API-клиент + `NEXT_PUBLIC_API_URL`, чтение каталога/новостей/документов через Public API на сборке | статика остаётся статикой — свойство №1 не ломаем |
 | 2 | `LeadForm` → `POST /api/forms/v1/leads` | `Idempotency-Key` (uuid на монтирование формы), версия текста согласия и время, honeypot, состояния success/error, обработка `202`. Плюс атрибуция: язык страницы и `utm_campaign` снимаются при монтировании формы, а не при отправке — иначе метка теряется у всех, кто не заполнил форму на первой же странице |
-| 3 | `UraniaChat` → `POST /api/assistant/v1/ask` | рендер списка источников; нет источников — показать передачу человеку с контактами и формами, а не выдуманный ответ |
+| 3 | `VedalinaChat` → `POST /api/assistant/v1/ask` | рендер списка источников; нет источников — показать передачу человеку с контактами и формами, а не выдуманный ответ |
 | 4 | Достроить маршруты до карты сайта | по [sitemap](frontend/sitemap.md) нужны `/press/` (Иннопром) и `/partners/` (Divisy, Morus MS, Smart Solution) — их нет; вместо `/press` сделан `/news`, добавлен незапланированный `/about`. Либо достроить, либо обновить карту |
 | 5 | Карточка изделия из API + перечень документов по изделию | сейчас из `content/products.ts` |
 | 6 | SEO: metadata API, `sitemap.xml`, `robots.txt`, JSON-LD Product/Organization, канонические урлы | приоритет: `/products/`, `/products/<slug>/`, `/production/`, `/documents/` |
-| 7 | Яндекс Метрика и именованные события | список готов в [implementation_checklist](frontend/implementation_checklist.md): `hero_quote_click`, `hero_catalog_click`, `product_card_open`, `product_quote_click`, `document_download_click`, `urania_open`, `urania_quick_action_click`, `service_form_submit`, `quote_form_submit`, `catalog_form_submit` |
+| 7 | Яндекс Метрика и именованные события | список готов в [implementation_checklist](frontend/implementation_checklist.md): `hero_quote_click`, `hero_catalog_click`, `product_card_open`, `product_quote_click`, `document_download_click`, `vedalina_open`, `vedalina_quick_action_click`, `service_form_submit`, `quote_form_submit`, `catalog_form_submit` |
 | 8 | Каркас мультиязычности `/en/`, `/zh/`, hreflang | контент — после утверждения русского; хинди отдельным этапом |
 | 9 | Текст согласия на ПДн перед отправкой любой формы, доступность форм и кнопок | пункт Safety QA, сейчас не закрыт |
 
@@ -805,7 +807,7 @@ CRM: заявки с разбором в сделку, клиенты, сдел�
 
 ## 9. Правила, которые нельзя нарушать
 
-Действуют и на сайте, и в админке, и в Урании:
+Действуют и на сайте, и в админке, и в Ведалины:
 
 - не выдумывать **цены**;
 - не выдумывать **характеристики**;
@@ -813,12 +815,12 @@ CRM: заявки с разбором в сделку, клиенты, сдел�
 - не выдумывать **сроки поставки и наличие**;
 - не публиковать **клинические заявления** без согласования;
 - не показывать **внутренние и конфиденциальные документы**;
-- Урания **не диагностирует и не рекомендует лечение**, не обещает пригодность
+- Ведалина **не диагностирует и не рекомендует лечение**, не обещает пригодность
   изделия для клинического случая без разбора специалистом;
 - недостающие данные — **«ожидает уточнения»**, а не правдоподобная выдумка;
 - сомнительный или чувствительный вопрос заканчивается **передачей человеку**.
 
-Визуальные правила: Урания видна, но вторична по отношению к продукту и
+Визуальные правила: Ведалина видна, но вторична по отношению к продукту и
 производству; Smart Solution вторичен по отношению к VEDAL; сдержанный
 медицинский B2B без крупных маркетинговых заголовков и декоративных градиентов.
 
@@ -902,7 +904,7 @@ CRM, сделки уезжают туда потребителем топика 
 9. Материалы Иннопрома.
 10. Домен: `vedal-med.ru` или другой вариант.
 11. Можно ли ставить Яндекс Метрику на публичный сайт.
-12. Можно ли публично называть ассистента Urania и показывать её в hero.
+12. Можно ли публично называть ассистента Vedalina и показывать её в hero.
 
 **Технические, ждут подтверждения:**
 
@@ -965,7 +967,7 @@ CRM, сделки уезжают туда потребителем топика 
 | Модели данных страницы, продукта, документа, формы, ассистента | [frontend/content_model.md](frontend/content_model.md) |
 | Что должно быть на каждой странице | [frontend/page_briefs.md](frontend/page_briefs.md) |
 | Чек-лист приёмки и события аналитики | [frontend/implementation_checklist.md](frontend/implementation_checklist.md) |
-| Правила и ограничения Урании | [strategy/urania_assistant_spec.md](strategy/urania_assistant_spec.md) |
+| Правила и ограничения Ведалины | [strategy/vedalina_assistant_spec.md](strategy/vedalina_assistant_spec.md) |
 | Бизнес-требования целиком | [strategy/functional_requirements.md](strategy/functional_requirements.md) |
 | Этапы и сроки | [operations/roadmap.md](operations/roadmap.md) |
 | Инфраструктурные фазы и открытые вопросы | [architecture/infrastructure_architecture.md](architecture/infrastructure_architecture.md) |

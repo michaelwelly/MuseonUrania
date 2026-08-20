@@ -86,6 +86,16 @@ public final class PublicDto {
                     nullable = true)
             String detail,
 
+            @Schema(description = "Назначение изделия: в каких отделениях и для каких задач "
+                    + "оно применяется. `null`, пока текст не передан производителем.",
+                    nullable = true)
+            String purpose,
+
+            @Schema(description = "Ключевые особенности изделия, по одному утверждению в строке. "
+                    + "Пустой список, пока перечень не передан производителем.",
+                    example = "[\"Переход между режимами без перекладывания новорождённого\"]")
+            List<String> features,
+
             @Schema(description = "Состояние регистрационных документов.",
                     allowableValues = {"confirmed", "pending"}, example = "confirmed")
             String docStatus,

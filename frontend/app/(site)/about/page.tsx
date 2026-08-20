@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import PageHero from "@/components/PageHero";
-import { StatsBand, DarkCta } from "@/components/Blocks";
+import TreeMark from "@/components/TreeMark";
+import { DarkCta } from "@/components/Blocks";
 import {
   aboutHero,
-  aboutStats,
   cycle,
-  directions,
-  partners,
+  membership,
   legal,
   aboutCta,
 } from "@/content/about";
@@ -38,8 +37,6 @@ export default function AboutPage() {
         />
       </div>
 
-      <StatsBand items={aboutStats} />
-
       <section className={styles.cycle}>
         <div data-reveal="0">
           <p className={styles.eyebrow}>{cycle.eyebrow}</p>
@@ -63,46 +60,44 @@ export default function AboutPage() {
             ))}
           </ul>
         </div>
+        {/* §11.2: место маркировочного знака. Рисуется, когда заказчик
+            передаст файл — см. content/brand.ts. */}
+        <TreeMark where="about" />
       </section>
 
-      <section className={styles.directions}>
-        <h2 className={styles.h2} data-words="34">
-          Направления
-        </h2>
-        <ul className={styles.grid5}>
-          {directions.map((d, i) => (
-            <li key={d.n} className={styles.dirCell} data-reveal={i}>
-              <p className={styles.num}>{d.n}</p>
-              <h3 className={styles.cellTitle}>{d.title}</h3>
-              <p className={styles.cellText}>{d.text}</p>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className={styles.partners}>
-        <div className={styles.partnersCopy} data-reveal="0">
-          <p className={`${styles.eyebrow} ${styles.eyebrowDark}`}>{partners.eyebrow}</p>
-          <h2 className={styles.partnersTitle} data-words="30">
-            {partners.title}
+      {/* Членство в УТПП, а не коммерческое партнёрство: блок намеренно
+          отдельный и без интеграторов — §2.6 плана. Знак ведёт на сайт
+          палаты, как просил заказчик. */}
+      <section className={styles.membership}>
+        <div className={styles.membershipCopy} data-reveal="0">
+          <p className={styles.eyebrow}>{membership.eyebrow}</p>
+          <h2 className={styles.membershipTitle} data-words="30">
+            {membership.title}
           </h2>
-          <ul className={styles.partnerList}>
-            {partners.items.map((p) => (
-              <li key={p.name} className={styles.partner}>
-                <p className={styles.partnerName}>{p.name}</p>
-                <p className={styles.partnerText}>{p.text}</p>
-              </li>
-            ))}
-          </ul>
+          <p className={styles.membershipText}>{membership.text}</p>
+          <a
+            className={styles.membershipLink}
+            href={membership.href}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {membership.linkLabel}
+          </a>
         </div>
-        <div className={styles.photo} data-reveal="1">
+        <a
+          className={styles.membershipMark}
+          href={membership.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-reveal="1"
+        >
           <Image
-            src={mediaSrc(partners.image.src)}
-            alt={partners.image.alt}
-            fill
-            sizes="(max-width: 1100px) 100vw, 50vw"
+            src={membership.mark.src}
+            alt={membership.mark.alt}
+            width={membership.mark.width}
+            height={membership.mark.height}
           />
-        </div>
+        </a>
       </section>
 
       <section className={styles.legal}>

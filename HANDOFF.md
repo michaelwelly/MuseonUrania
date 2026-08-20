@@ -5,7 +5,7 @@
 ## С чего начать
 
 Этот репозиторий — пакет передачи по редизайну сайта VEDAL и концепции
-ассистента Урания.
+ассистента Ведалина.
 
 Основной фронтовый пакет:
 
@@ -20,17 +20,17 @@
 
 Прототип:
 
-- `prototypes/urania-web-interface.html`
+- `prototypes/vedalina-web-interface.html`
 
-Материалы Урании:
+Материалы Ведалины:
 
-- `assets/urania/urania-avatar-concepts-v1.png`
-- `assets/urania/urania-avatar-middle-v1.png`
-- `assets/urania/urania-web-integration-mockup-v1.png`
+- `assets/vedalina/vedalina-avatar-concepts-v1.png`
+- `assets/vedalina/vedalina-avatar-middle-v1.png`
+- `assets/vedalina/vedalina-web-integration-mockup-v1.png`
 
 Рекомендованный аватар для MVP:
 
-- `assets/urania/urania-avatar-middle-v1.png`
+- `assets/vedalina/vedalina-avatar-middle-v1.png`
 
 ## Презентация
 
@@ -45,7 +45,7 @@
 
 - редизайн главной и первого экрана;
 - структура каталога продукции;
-- место под ассистента Урания и плавающая кнопка;
+- место под ассистента Ведалина и плавающая кнопка;
 - формы запроса КП, каталога и сервиса, подготовленные к передаче в CRM;
 - Smart Solution — вторичный интеграционный слой.
 
@@ -62,5 +62,5 @@
 - Не выдумывать цены.
 - Не выдумывать сертификаты и статус регистрации.
 - Не показывать внутренние и закрытые документы.
-- Урания не даёт диагнозов и рекомендаций по лечению.
+- Ведалина не даёт диагнозов и рекомендаций по лечению.
 - Там, где ответа от НН ещё нет, ставить `ожидает уточнения`.

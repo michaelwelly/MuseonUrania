@@ -28,7 +28,7 @@ that were not in the original list — `content` and `assistant`. Eleven in tota
 | [gateway](gateway/README.en.md) | lead intake from the website: validation, approve, handover to CRM |
 | [crm](crm/README.en.md) | leads, clients, deals, quotes, correspondence history, funnel analytics |
 | [notifications](notifications/README.en.md) | customer letters and manager notifications |
-| [assistant](assistant/README.en.md) | Urania: answers from published content, hard limits |
+| [assistant](assistant/README.en.md) | Vedalina: answers from published content, hard limits |
 | [audit](audit/README.en.md) | log of actions and document access |
 
 Each is a **Maven module** with its own `pom.xml`, its own `src/` and its own
@@ -225,7 +225,7 @@ panel.
 | `GET /api/public/v1/documents` | site build | listing with access status; the file link only for published ones |
 | `GET /api/public/v1/documents/{slug}/file` | visitor | the file; closed returns 404 and the request is logged |
 | `POST /api/forms/v1/leads` | website forms | lead intake, `Idempotency-Key` header, `202` response; the optional `language` and `campaign` carry attribution for analytics |
-| `POST /api/assistant/v1/ask` | Urania | an answer from published content with links; no sources means handoff to a human |
+| `POST /api/assistant/v1/ask` | Vedalina | an answer from published content with links; no sources means handoff to a human |
 | `/api/admin/v1/**` | admin UI | forty-seven routes, sixty-five operations: products, categories, news, documents, leads, clients, deals, quotes, correspondence history, funnel analytics, audit log, images, session, staff |
 
 There is no public door to the CRM: the client base, deal amounts and quote

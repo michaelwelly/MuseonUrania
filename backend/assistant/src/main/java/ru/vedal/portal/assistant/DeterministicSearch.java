@@ -12,8 +12,10 @@ import java.util.List;
 import java.util.Optional;
 
 // Ранняя реализация порта: поиск по словам, без модели. Ходит только через
-// интерфейсы модулей, а они отдают исключительно опубликованное — неопубликованное
-// изделие, черновик новости и несогласованный документ сюда физически не попадут.
+// интерфейсы модулей, а они отдают ровно то, что положено области: посетителю —
+// опубликованное и публичное, сотруднику — плюс документы уровня internal.
+// Неопубликованное изделие, черновик новости и confidential-документ сюда
+// физически не попадут ни в одной из областей.
 @Component
 public class DeterministicSearch implements LlmEngine {
 
@@ -34,7 +36,7 @@ public class DeterministicSearch implements LlmEngine {
     }
 
     @Override
-    public Optional<Grounded> answer(String question) {
+    public Optional<Grounded> answer(String question, Scope scope) {
         var tokens = tokens(question);
         if (tokens.isEmpty()) return Optional.empty();
 
@@ -56,11 +58,15 @@ public class DeterministicSearch implements LlmEngine {
             }
         }
 
-        for (var d : documents.listedDocuments()) {
+        // Единственное место, где области расходятся. Изделия и новости
+        // в обоих контурах одни и те же — опубликованные: черновик карточки
+        // сотруднику показывать незачем, он смотрит его в админке.
+        var visible = scope == Scope.STAFF ? documents.staffDocuments() : documents.listedDocuments();
+        for (var d : visible) {
             var score = score(tokens, d.title(), d.subject(), d.group());
             if (score > 0) {
-                hits.add(new Hit(new Source(d.title() + " — " + d.subject(),
-                        d.published() ? d.fileUrl() : "/documents/", "document"), score));
+                hits.add(new Hit(new Source(label(d), d.published() ? d.fileUrl() : "/documents/",
+                        "document"), score));
             }
         }
 
@@ -90,6 +96,28 @@ public class DeterministicSearch implements LlmEngine {
         body.append("\n\nПодробности — на страницах по ссылкам. "
                 + "Подбор комплектации и коммерческие условия уточняет специалист.");
         return body.toString();
+    }
+
+    /**
+     * Подпись документа в ответе ассистента.
+     *
+     * Документ со статусом {@code pending} — это документ, наличие которого
+     * никто не подтвердил. В перечне на сайте рядом с таким стоит подпись
+     * «Уточняется», и без неё строка «Сертификат ISO 13485 — Производство»
+     * читается как утверждение, что сертификат есть.
+     *
+     * Именно это утверждение §6.4 плана убрала со страницы «Производство»
+     * вместе с блоком «Качество». Ассистент повторял его дословно, только
+     * без статуса — и правило «не выдумывать сертификаты» обходилось не
+     * выдумкой, а умолчанием.
+     *
+     * Скрывать такие документы целиком нельзя: на вопрос «есть ли ISO»
+     * пустой ответ читается как «нет», а это тоже утверждение, которого мы
+     * не знаем. Показываем с тем же статусом, что и страница.
+     */
+    private static String label(DocumentQuery.Card d) {
+        var title = d.title() + " — " + d.subject();
+        return "pending".equals(d.access()) ? title + " (статус уточняется)" : title;
     }
 
     private static List<String> tokens(String question) {

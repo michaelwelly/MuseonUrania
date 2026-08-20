@@ -8,14 +8,19 @@
 /* ---------- hero ---------- */
 
 /* Первый экран белый — по референсу
-   assets/urania/urania-web-integration-mockup-v1.png. Граница с шапкой
+   assets/vedalina/vedalina-web-integration-mockup-v1.png. Граница с шапкой
    не теряется: у .bar в Header.module.css своя нижняя линия. */
+/* Фото сжато с 588 до 500 пикселей, чтобы освободить стык под живой
+   паттерн: заказчик просил поставить его и на первый экран главной.
+   --pattern-seam — доля полосы, отведённая фото, минус небольшой заход
+   паттерна под снимок. */
 .hero {
   position: relative;
   display: grid;
-  grid-template-columns: 1fr 588px;
+  grid-template-columns: 1fr 440px;
   min-height: 648px;
   background: var(--page);
+  --pattern-seam: 300px;
 }
 
 .heroCopy {
@@ -49,7 +54,9 @@
 
 .h1 {
   margin-top: 20px;
-  max-width: 15ch;
+  /* 13ch вместо 15: заголовок тянулся на 781 пиксель и не оставлял места
+     живому паттерну в стыке с фотографией. */
+  max-width: 13ch;
   font-size: 60px;
   line-height: 1.02;
   letter-spacing: -0.035em;
@@ -178,58 +185,8 @@
   letter-spacing: -0.03em;
 }
 
-.h2Narrow {
-  max-width: 22ch;
-}
-
-.sectionNote {
-  flex: none;
-  max-width: 42ch;
-  font-size: 15.5px;
-  line-height: 1.6;
-  color: var(--muted);
-}
-
-/* ---------- направления ---------- */
-.directions {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 1px;
-  margin-top: 44px;
-  background: var(--line);
-  border: 1px solid var(--line);
-  list-style: none;
-}
-
-.direction {
-  display: block;
-  padding: 26px 22px 30px;
-  background: #fff;
-  height: 100%;
-}
-
-.direction:hover {
-  background: var(--soft);
-}
-
-.dirNum {
-  font-family: var(--font-mono), monospace;
-  font-size: 11px;
-  color: var(--green);
-}
-
-.dirTitle {
-  margin-top: 12px;
-  font-size: 17px;
-  letter-spacing: -0.01em;
-}
-
-.dirText {
-  margin-top: 10px;
-  font-size: 13.5px;
-  line-height: 1.5;
-  color: var(--muted);
-}
+/* Стили полосы цифр и блока «Направления» удалены вместе с самими блоками:
+   .h2Narrow и .sectionNote применялись только в их заголовке. */
 
 /* ---------- каталог ---------- */
 .cards {
@@ -287,56 +244,6 @@
   font-size: 13.5px;
   line-height: 1.55;
   color: var(--muted);
-}
-
-.tile {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  height: 100%;
-  padding: 26px 24px;
-  background: var(--deep-2);
-  border-radius: 3px;
-  color: #fff;
-}
-
-.tile:hover {
-  background: var(--deep);
-  color: #fff;
-}
-
-.tileEyebrow {
-  font-family: var(--font-mono), monospace;
-  font-size: 10.5px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.45);
-}
-
-.tileTitle {
-  margin-top: 14px;
-  font-size: 22px;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-}
-
-.tileList {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-  margin-top: 26px;
-  font-size: 13.5px;
-  color: rgba(255, 255, 255, 0.7);
-  list-style: none;
-}
-
-.tileMore {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  margin-top: 6px;
-  font-weight: 600;
-  color: #fff;
 }
 
 /* ---------- производство ---------- */
@@ -657,9 +564,6 @@
     padding-right: 24px;
   }
 
-  .directions {
-    grid-template-columns: repeat(2, 1fr);
-  }
 
   .cards {
     grid-template-columns: repeat(2, 1fr);
@@ -733,7 +637,6 @@
     justify-content: center;
   }
 
-  .directions,
   .cards,
   .newsGrid {
     grid-template-columns: 1fr;

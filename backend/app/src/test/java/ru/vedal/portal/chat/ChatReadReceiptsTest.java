@@ -61,7 +61,7 @@ class ChatReadReceiptsTest extends PostgresTestBase {
         assertThat(lastOf(desk.threadOf(id), ChatMessage.STAFF).readAt()).isNotNull();
     }
 
-    // Урания отвечает от имени портала. Галочка на её реплике от того, что
+    // Ведалина отвечает от имени портала. Галочка на её реплике от того, что
     // сотрудник открыл разговор, означала бы, что портал прочитал сам себя.
     @Test
     void staffOpeningTheThreadDoesNotMarkTheAssistantsOwnAnswer() {
@@ -73,7 +73,7 @@ class ChatReadReceiptsTest extends PostgresTestBase {
         assertThat(lastOf(desk.threadOf(id), ChatMessage.ASSISTANT).readAt()).isNull();
     }
 
-    // Ответ Урании адресован посетителю — значит он его и прочитывает.
+    // Ответ Ведалины адресован посетителю — значит он его и прочитывает.
     @Test
     void visitorReadingMarksTheAssistantsAnswer() {
         var key = visitor();

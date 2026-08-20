@@ -3,7 +3,7 @@
 // Каталог, новости и документы читаются на сборке и обновляются раз в пять
 // минут — тот же срок, что бэкенд ставит в `Cache-Control`. Поэтому падение
 // бэкенда не роняет уже собранный сайт: свойство №1 из спеки серверной части.
-// Живой бэкенд нужен только формам и Урании, они ходят из браузера.
+// Живой бэкенд нужен только формам и Ведалине, они ходят из браузера.
 //
 // Что происходит, если API недоступен:
 //
@@ -30,6 +30,10 @@ export type Product = {
   summary: string;
   image?: { src: string; alt: string };
   detail?: string;
+  /** Назначение. undefined — текста ещё нет, карточка покажет «ожидает уточнения». */
+  purpose?: string;
+  /** Ключевые особенности. Пустой список приходит как undefined — см. toProduct. */
+  features?: string[];
   keyParams?: Spec[];
   specs?: Spec[];
 };
@@ -41,6 +45,13 @@ export type NewsItem = {
   title: string;
   excerpt: string;
   image?: { src: string; alt: string };
+};
+
+/** Новость целиком: то же самое плюс текст материала. */
+export type NewsEntry = NewsItem & {
+  /** Дата в формате ISO — для тега <time>, который читают машины. */
+  isoDate: string;
+  body?: string;
 };
 
 export type Doc = {
@@ -55,7 +66,7 @@ export type Doc = {
 
 const trim = (value: string | undefined) => (value ?? "").replace(/\/+$/, "");
 
-/** Адрес для браузера: формы, Урания, админка. Он же адрес по умолчанию. */
+/** Адрес для браузера: формы, Ведалина, админка. Он же адрес по умолчанию. */
 export const apiUrl = trim(process.env.NEXT_PUBLIC_API_URL);
 
 // Адрес для сборки. Этот модуль работает на сервере, и в контейнере ему нужен
@@ -111,6 +122,8 @@ type ApiCard = {
 
 type ApiDetail = ApiCard & {
   detail: string | null;
+  purpose: string | null;
+  features: string[];
   keyParams: ApiSpec[];
   specs: ApiSpec[];
 };
@@ -157,19 +170,20 @@ export async function fetchProduct(slug: string): Promise<Product | null> {
   return {
     ...toProduct(detail),
     detail: detail.detail ?? undefined,
+    purpose: detail.purpose ?? undefined,
+    // Пустой список сводится к undefined, как keyParams и specs ниже: разметка
+    // проверяет наличие блока, а не длину массива, и пустой массив нарисовал
+    // бы заголовок «Ключевые особенности» над пустотой.
+    features: detail.features.length ? detail.features : undefined,
     keyParams: detail.keyParams.length ? detail.keyParams.map(toSpec) : undefined,
     specs: detail.specs.length ? detail.specs.map(toSpec) : undefined,
   };
 }
 
-export async function fetchCategories(): Promise<string[]> {
-  if (!apiConfigured) {
-    const { categories } = await import("@/content/products");
-    return [...categories];
-  }
-  const list = await get<{ slug: string; name: string }[]>("/api/public/v1/categories");
-  return list.map((c) => c.name);
-}
+// fetchCategories убрана 19 августа вместе с фильтром каталога — она читала
+// список направлений только ради его чипов. Направления никуда не делись:
+// они лежат у каждого изделия в поле categories и подписывают карточку.
+// Эндпоинт /api/public/v1/categories жив, админка направлениями управляет.
 
 // ————— новости —————
 
@@ -209,6 +223,37 @@ export async function fetchNews(): Promise<NewsItem[]> {
     excerpt: c.excerpt,
     image: c.imageSrc ? { src: c.imageSrc, alt: c.imageAlt ?? "" } : undefined,
   }));
+}
+
+// Отдельная запись читается по slug: списочный ответ текста не содержит,
+// и тянуть весь список ради одного материала значит грузить ленту целиком
+// на каждую страницу новости.
+//
+// Возвращает null на 404 — неопубликованной новости для сайта не существует,
+// и страница отвечает notFound(), а не падает пятисотой.
+export async function fetchNewsEntry(slug: string): Promise<NewsEntry | null> {
+  if (!apiConfigured) return null;
+
+  // buildUrl и revalidate — как в fetchProduct рядом: запрос идёт на сборке,
+  // а собственный fetch нужен ради разбора 404 (общий get() на нём бросает).
+  const url = `${buildUrl}/api/public/v1/news/${encodeURIComponent(slug)}`;
+  const response = await fetch(url, { next: { revalidate: REVALIDATE } });
+
+  // 404 — неопубликованный или несуществующий материал, а не сбой сборки.
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error(`Публичное API ответило ${response.status}: ${url}`);
+
+  const item = (await response.json()) as ApiNews & { body: string | null };
+  return {
+    slug: item.slug,
+    isoDate: item.publishedOn,
+    date: formatDate(item.publishedOn),
+    tag: item.tag,
+    title: item.title,
+    excerpt: item.excerpt,
+    body: item.body ?? undefined,
+    image: item.imageSrc ? { src: item.imageSrc, alt: item.imageAlt ?? "" } : undefined,
+  };
 }
 
 // ————— документы —————

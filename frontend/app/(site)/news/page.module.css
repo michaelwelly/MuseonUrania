@@ -218,14 +218,19 @@
   border-top: 1px solid var(--on-dark-line);
 }
 
+/* Аватаром стало фирменное дерево. Диск белый — как у виджета чата и как
+   на загрузочном экране: круглый аватар на светлом читается как собеседник.
+   Размер картинки задан пропами, поэтому знак не упирается в край круга
+   и сохраняет свою линию земли. */
 .avatar {
   position: relative;
+  display: grid;
+  place-items: center;
   flex: none;
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  overflow: hidden;
-  background: var(--deep-2);
+  background: #fff;
 }
 
 .avatar img {

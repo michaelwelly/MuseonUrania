@@ -5,7 +5,9 @@ import LeadForm from "@/components/LeadForm";
 import { fetchProducts } from "@/lib/api";
 import { site } from "@/content/site";
 import { serviceHero, steps, serviceForm, serviceNotice, urgent } from "@/content/service";
-import { serviceEngineer, DEMO_NOTE } from "@/content/staff";
+import { companyContact, STAFF_AWAITING } from "@/content/staff";
+import { vedalina } from "@/content/vedalina";
+import LivePattern from "@/components/LivePattern";
 import styles from "./page.module.css";
 import { mediaSrc } from "@/lib/media";
 
@@ -19,7 +21,11 @@ export default async function ServicePage() {
 
   return (
     <main className={styles.page}>
-      <section className={styles.hero}>
+      {/* Паттерна нет по той же причине, что на главной: правая половина
+          полосы занята фото во всю высоту, и класть композицию за него
+          или под текст одинаково плохо. */}
+      <section className={`${styles.hero} patternHost`}>
+        <LivePattern variant={2} placement="seam" />
         <div className={styles.heroCopy}>
           <p className={styles.crumbs}>
             <Link href="/">Главная</Link> / Сервис
@@ -67,36 +73,31 @@ export default async function ServicePage() {
 
         <div className={styles.aside} data-reveal="1">
           <div className={styles.engineer}>
-            <p className={styles.asideLabel}>Ваш инженер</p>
+            <p className={styles.asideLabel}>Сервисное обращение</p>
             <div className={styles.person}>
               <div className={styles.avatar}>
-                <Image
-                  src="/urania/urania-avatar-middle-v1.png"
-                  alt=""
-                  fill
-                  sizes="64px"
-                />
+                <Image src={vedalina.avatar} alt="" width={46} height={46} />
               </div>
               <div>
-                <p className={styles.personName}>{serviceEngineer.name}</p>
-                <p className={styles.personRole}>{serviceEngineer.role}</p>
+                <p className={styles.personName}>{companyContact.title}</p>
+                <p className={styles.personRole}>{companyContact.scope}</p>
               </div>
             </div>
             <address className={styles.personContacts}>
               <a
                 className={styles.personPhone}
-                href={`tel:${serviceEngineer.phone.replace(/[\s+]/g, "")}`}
+                href={`tel:${companyContact.phone.replace(/[\s+]/g, "")}`}
               >
-                {serviceEngineer.phone}
+                {companyContact.phone}
               </a>
-              <a className={styles.personMail} href={`mailto:${serviceEngineer.email}`}>
-                {serviceEngineer.email}
+              <a className={styles.personMail} href={`mailto:${companyContact.email}`}>
+                {companyContact.email}
               </a>
             </address>
           </div>
 
-          {/* Данные инженера — заглушка из макета, см. content/staff.ts */}
-          <p className={styles.demoNote}>{DEMO_NOTE}</p>
+          {/* Именной инженер вернётся, когда заказчик подтвердит контакты. */}
+          <p className={styles.demoNote}>{STAFF_AWAITING}</p>
 
           <div className={styles.notice}>
             <h2 className={styles.noticeTitle}>{serviceNotice.title}</h2>

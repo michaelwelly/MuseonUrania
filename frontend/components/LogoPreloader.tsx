@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import AnimatedLogo from "./AnimatedLogo";
+import TreeGrow from "./TreeGrow";
 import styles from "./LogoPreloader.module.css";
 
 // Прелоадер показывается один раз за сессию: повторные переходы по сайту
@@ -75,7 +75,13 @@ export default function LogoPreloader() {
 
   return (
     <div className={styles.overlay} role="status" aria-label="Загрузка">
-      <AnimatedLogo height={160} replayOnHover={false} />
+      {/* Знак VEDAL с этого экрана убран: он и так стоит в шапке, которая
+          открывается сразу за прелоадером, и показывать его дважды подряд
+          незачем. Остаётся дерево — во весь экран, как просил заказчик.
+
+          Размер задан от окна, а не числом: дерево растёт снизу вверх, и
+          на этом движении важно, чтобы оно занимало экран целиком. */}
+      <TreeGrow size="min(64vmin, 520px)" />
       <div className={styles.track}>
         <div className={styles.bar} />
       </div>

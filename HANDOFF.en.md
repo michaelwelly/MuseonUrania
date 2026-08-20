@@ -4,7 +4,7 @@
 
 ## Start Here
 
-Use this repository as the project handoff for the VEDAL website redesign and Urania assistant concept.
+Use this repository as the project handoff for the VEDAL website redesign and Vedalina assistant concept.
 
 Primary frontend package:
 
@@ -20,17 +20,17 @@ Primary frontend package:
 
 Prototype:
 
-- `prototypes/urania-web-interface.html`
+- `prototypes/vedalina-web-interface.html`
 
-Urania assets:
+Vedalina assets:
 
-- `assets/urania/urania-avatar-concepts-v1.png`
-- `assets/urania/urania-avatar-middle-v1.png`
-- `assets/urania/urania-web-integration-mockup-v1.png`
+- `assets/vedalina/vedalina-avatar-concepts-v1.png`
+- `assets/vedalina/vedalina-avatar-middle-v1.png`
+- `assets/vedalina/vedalina-web-integration-mockup-v1.png`
 
 Recommended MVP avatar:
 
-- `assets/urania/urania-avatar-middle-v1.png`
+- `assets/vedalina/vedalina-avatar-middle-v1.png`
 
 ## Presentation
 
@@ -45,7 +45,7 @@ First release focus:
 
 - Redesign home/title page.
 - Build product/catalog structure.
-- Add Urania assistant slot and floating button.
+- Add Vedalina assistant slot and floating button.
 - Prepare quote/catalog/service forms for CRM handoff.
 - Keep Smart Solution as a secondary integration layer.
 
@@ -62,5 +62,5 @@ Deferred:
 - Do not invent prices.
 - Do not invent certifications or registration status.
 - Do not expose private/internal documents.
-- Urania must not provide diagnosis or treatment advice.
+- Vedalina must not provide diagnosis or treatment advice.
 - Use placeholders such as `ожидает уточнения` where NN answers are missing.

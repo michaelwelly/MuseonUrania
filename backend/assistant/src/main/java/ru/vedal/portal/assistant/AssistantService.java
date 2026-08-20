@@ -34,23 +34,28 @@ public class AssistantService {
         this.email = email;
     }
 
+    /**
+     * @param scope кому отвечаем — посетителю или вошедшему сотруднику (§10.3)
+     * @param actor кто спросил; в журнал уходит он, а не «public»,
+     *              иначе по записи не понять, кто искал по внутренним материалам
+     */
     @Transactional
-    public AskReply ask(String question) {
+    public AskReply ask(String question, LlmEngine.Scope scope, String actor) {
         // Сначала ограничения, потом движок: вопрос про диагноз или цену
         // до поиска не доходит вообще.
         var refusal = guardrails.refuse(question);
         if (refusal.isPresent()) {
-            journal("blocked", 0);
+            journal(actor, "blocked", 0);
             return new AskReply(refusal.get(), List.of(), handoff(refusal.get()));
         }
 
-        var grounded = engine.answer(question);
+        var grounded = engine.answer(question, scope);
         if (grounded.isEmpty()) {
-            journal("no-sources", 0);
+            journal(actor, "no-sources", 0);
             return new AskReply(NOT_FOUND, List.of(), handoff(NOT_FOUND));
         }
 
-        journal("answered", grounded.get().sources().size());
+        journal(actor, "answered", grounded.get().sources().size());
         return new AskReply(grounded.get().text(), grounded.get().sources(), null);
     }
 
@@ -61,8 +66,8 @@ public class AssistantService {
     // Текст вопроса в журнал не пишем: посетитель может указать в нём и клинику,
     // и себя. Пишем только категорию исхода и число источников — этого хватает
     // для разбора качества ответов и не делает журнал хранилищем ПДн.
-    private void journal(String outcome, int sources) {
-        audit.record("public", "assistant.ask", "assistant", outcome,
+    private void journal(String actor, String outcome, int sources) {
+        audit.record(actor, "assistant.ask", "assistant", outcome,
                 Map.of("sources", sources));
     }
 }

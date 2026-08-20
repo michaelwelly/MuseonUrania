@@ -29,6 +29,11 @@ outputs/*.inspect.ndjson
 outputs/*_v0.*
 outputs/*_v1_*
 outputs/*_v2_*
+tmp/
+output/
+outputs/**/tmp*/
+outputs/**/rendered_*/
+outputs/**/owner_deck_tmp/
 
 # IDE
 .idea/
@@ -44,3 +49,9 @@ next-env.d.ts
 
 # Временные файлы Office, живут пока документ открыт
 ~$*
+
+# Сборка страницы с вариантами типографики. Шаблон и скрипт в репозитории,
+# результат весит мегабайт вшитыми шрифтами и пересобирается за секунду:
+#   node outputs/typography_variants/build.mjs
+outputs/typography_variants/typography_variants.html
+outputs/typography_variants/Onest.ttf

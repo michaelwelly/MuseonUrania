@@ -106,7 +106,7 @@ class AdminCrmApiTest extends PostgresTestBase {
                 .andExpect(jsonPath("$.clientName").value("ГКБ №1"))
                 .andExpect(jsonPath("$.leadId").value(leadId.toString()))
                 // Название сделки собирается из формы заявки и изделия.
-                .andExpect(jsonPath("$.title").value("Запрос цены — vedal-r1-r2"))
+                .andExpect(jsonPath("$.title").value("Запрос цены — vedal-r1"))
                 .andReturn().getResponse().getContentAsString();
 
         assertThat(id(deal)).isNotBlank();
@@ -461,7 +461,7 @@ class AdminCrmApiTest extends PostgresTestBase {
 
     private UUID acceptLead(String key, String company, String language, String campaign) {
         return intake.accept(new LeadIntake.Draft("quote", "Иван Петров", company,
-                "+7 343 555-22-11", "ivan@example.ru", "vedal-r1-r2",
+                "+7 343 555-22-11", "ivan@example.ru", "vedal-r1",
                 "Прошу коммерческое предложение на две системы.", "site",
                 language, campaign), key).id();
     }

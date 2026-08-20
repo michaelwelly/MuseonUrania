@@ -19,9 +19,29 @@ showing on Tuesday, 28 July 2026.
 
 ## What we need
 
+0. **Access to the cloud folders with the materials** (§7.1, §7.2 of the plan).
+   The customer has already named both links, but we have no access, and that
+   blocks everything else on this list:
+   - Yandex Disk — https://disk.yandex.ru/d/KlfCPTs8UuL-jw. Access is requested
+     for the `mpoedinenko@yandex.ru` mailbox;
+   - Google Drive —
+     https://drive.google.com/drive/folders/1k8BYlRD_PZqWRpUoSUYNAjAdJLZE3KyY.
+     We need to check whether the folder opens, and obtain access if it does not.
 1. The current product catalog, including the Innoprom catalog and materials.
-2. A confirmed list of products for the first version of the website and the
-   presentation. As currently understood, about 10 products are expected.
+2. Final descriptions and confirmed specifications for the four first-release
+   products: `VEDAL A-2000`, `VEDAL R1`, `VEDAL R2`, `VEDAL Т-100`. The list was
+   cut to four on 18 August 2026 per §3.1 of the plan — the other nine positions
+   were taken off the site until their datasheets arrive.
+
+   What is on the site now and what replaces it (§4.4, §4.6 of the plan):
+   - descriptions and specifications are taken from booklet 5.0 and are treated
+     as **provisional**. They were never approved as public wording and will be
+     replaced by whatever you send;
+   - the `VEDAL A-2000` transformer-incubator text is not treated as final —
+     §4.6 requires replacing it outright;
+   - purpose and key features are empty for every product: the slots on the
+     product page are ready and currently read "awaiting clarification";
+   - the delivery set is empty for every product.
 3. For each product:
    - the exact name;
    - the category;
@@ -76,6 +96,55 @@ showing on Tuesday, 28 July 2026.
    provider, a closed contour, VPN.
 8. Which materials may be used in public SEO and which belong only in the
    internal knowledge base.
+9. The name of the fourth catalog position: the site says `VEDAL Т-100`, booklet
+   5.0 says `VEDAL MH-100A`. We need one. A mismatch in a device name is a
+   mismatch in the registration certificate, the tender bid and the datasheet —
+   not a spelling variation.
+10. The `Анестезиология` and `Мониторинг` directions remain in the site's lists,
+    but no product carries them after the catalog cut. The catalog filter was
+    removed on 19 August, so it is no longer visible there, but the directions
+    are still listed in the site footer and in the catalog subheading. Do we keep
+    them as a claim on future positions, or remove them until such products
+    exist.
+11. Document sections on the public page (§7.5 of the plan). The plan names six:
+    registration certificates, certificates, catalogs, product descriptions,
+    manuals, press materials. The site currently has four — `Лицензирование`,
+    `Система качества`, `Техническая документация`, `Коммерческие материалы` —
+    and they do not map one to one onto those six. We need the final list of
+    sections confirmed, and which section each document belongs to; there are no
+    manuals and no press materials at all right now.
+12. Real service and warranty terms (§5.2 of the plan). The Service page
+    currently describes only how a request is handled and deliberately names no
+    warranty period and no types of work. We need confirmation of:
+    - the warranty period and what it covers;
+    - whether on-site visits are performed. The site and Vedalina currently
+      mention them, and no document backs that — if there are no visits, the
+      wording comes off;
+    - who owns service requests and which contacts may be published.
+13. News (§8.1, §8.2 of the plan). The section is built and empty. We need:
+    - which materials get published first;
+    - for Innoprom specifically: the press release text, dates, photos,
+      participants, and permission to publish each item.
+14. News format (§8.3 of the plan). The article page is built and shows the
+    title, excerpt, full text and image; the SEO description is taken from the
+    excerpt. Two decisions are missing:
+    - whether an article needs attached documents and links — there are no
+      fields and no table for them, and building those before the answer is
+      guesswork;
+    - whether a separate SEO title and description are needed, or the excerpt
+      is enough.
+15. The registration certificate for `VEDAL R2`. There is a single one in the
+    document listing, labelled "VEDAL R1, R2" — from when they were one card.
+    After the §4.1 split the certificate is linked to `R1` only, and `R2` has no
+    document of its own. We need to know whether one certificate covers both
+    models or `R2` has a separate one.
+
+Closed questions:
+
+- Ural CCI membership mark — permission to publish granted on 19 August 2026.
+  The mark sits on the "About" page and in the footer, and links to
+  `uralcci.com`. Sources: `assets/brand/utpp_logo_horizontal.png` and
+  `utpp_logo_vertical.png`.
 
 ## Proposed schedule
 

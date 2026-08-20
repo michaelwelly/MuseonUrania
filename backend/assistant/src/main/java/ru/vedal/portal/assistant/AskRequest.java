@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-@Schema(name = "AskRequest", description = "Вопрос Урании.")
+@Schema(name = "AskRequest", description = "Вопрос Ведалины.")
 public record AskRequest(
 
         @Schema(description = "Текст вопроса. В журнал он не попадает: посетитель может указать "

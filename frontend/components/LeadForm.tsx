@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { serviceForm } from "@/content/service";
+import { consent as consentCopy } from "@/content/legal";
 import { site } from "@/content/site";
 import {
   attribution,
@@ -25,7 +27,7 @@ export function validate(data: FormData): Errors {
   if (get("phone").replace(/\D/g, "").length < 10) errors.phone = "Укажите телефон с кодом";
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(get("email"))) errors.email = "Проверьте адрес почты";
   if (get("message").length < 10) errors.message = "Опишите обращение хотя бы одной фразой";
-  if (!data.get("consent")) errors.consent = "Без согласия отправить запрос нельзя";
+  if (!data.get("consent")) errors.consent = consentCopy.error;
 
   return errors;
 }
@@ -266,14 +268,18 @@ export default function LeadForm({
         className={styles.trap}
       />
 
+      {/* §14.6: рядом с согласием стоит ссылка на политику — иначе человек
+          подписывается под документом, которого не видел. */}
       <label className={styles.consent}>
-        <input type="checkbox" name="consent" />
+        <input type="checkbox" name="consent" aria-invalid={!!errors.consent} />
         <span>
-          {serviceForm.consent} <span className={styles.required}>*</span>
+          {consentCopy.label} <span className={styles.required}>*</span>
+          {" · "}
+          <Link href={consentCopy.href}>{consentCopy.linkLabel}</Link>
         </span>
       </label>
       {errors.consent && <span className={styles.error}>{errors.consent}</span>}
-      <p className={styles.consentNote}>{serviceForm.consentNote}</p>
+      <p className={styles.consentNote}>{consentCopy.note}</p>
 
       <div className={styles.actions}>
         <button

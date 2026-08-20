@@ -21,7 +21,7 @@ import java.util.UUID;
 //
 // ————— главное правило —————
 //
-// Как только разговор передан человеку, Урания замолкает. Не «отвечает реже»
+// Как только разговор передан человеку, Ведалина замолкает. Не «отвечает реже»
 // и не «отвечает, пока сотрудник не подключился» — замолкает совсем.
 //
 // Иначе получается разговор, в котором машина перебивает человека: сотрудник
@@ -89,7 +89,8 @@ public class ChatDesk {
         // Человек в разговоре — ассистенту здесь делать нечего.
         if (conversation.handedToHuman()) return thread(conversation);
 
-        var reply = assistant.ask(text);
+        // Чат на сайте — открытый контур: посетитель, не сотрудник.
+        var reply = assistant.ask(text, LlmEngine.Scope.PUBLIC, "public");
 
         if (reply.handoff() != null) {
             // Ответа нет — это штатный исход, а не ошибка: правило «нет
@@ -120,7 +121,7 @@ public class ChatDesk {
     public Thread threadFor(String visitorKey) {
         return conversations.findByVisitorKeyAndStatusNot(visitorKey, Conversation.CLOSED)
                 .map(conversation -> {
-                    // Посетитель читает то, что написали ему: ответы Урании
+                    // Посетитель читает то, что написали ему: ответы Ведалины
                     // и сотрудника. Свои сообщения он и так видел.
                     markRead(conversation, ChatMessage.VISITOR);
                     return thread(conversation);
@@ -196,7 +197,7 @@ public class ChatDesk {
      *
      * @param side кто читает: {@link ChatMessage#VISITOR} или {@link ChatMessage#STAFF}.
      *             Сотрудник читает сообщения посетителя, посетитель — ответы
-     *             Урании и сотрудника.
+     *             Ведалины и сотрудника.
      */
     private void markRead(Conversation conversation, String side) {
         var now = Instant.now();
@@ -205,7 +206,7 @@ public class ChatDesk {
         for (var message : messages.findByConversationIdOrderByAtAsc(conversation.getId())) {
             var mine = ChatMessage.VISITOR.equals(side)
                     ? ChatMessage.VISITOR.equals(message.getAuthor())
-                    // Для сотрудника «своё» — и его ответ, и ответ Урании:
+                    // Для сотрудника «своё» — и его ответ, и ответ Ведалины:
                     // она отвечает от имени портала, и галочка на её реплике
                     // означала бы, что портал прочитал сам себя.
                     : !ChatMessage.VISITOR.equals(message.getAuthor());
@@ -331,7 +332,7 @@ public class ChatDesk {
      * Источники ответа обратно из снимка.
      *
      * <p>Отдавать их обязательно: правило проекта — утверждение без ссылки
-     * проверить нечем, и ответ Урании без источников это ответ, которому
+     * проверить нечем, и ответ Ведалины без источников это ответ, которому
      * нельзя верить. В базе они лежат снимком, потому что изделие могли
      * переименовать или снять с публикации, а переписка обязана остаться
      * такой, какой её видел человек.
@@ -358,7 +359,7 @@ public class ChatDesk {
     /**
      * Строка ленты.
      *
-     * <p>{@code actor} у сотрудника — имя, которое видит посетитель. У Урании
+     * <p>{@code actor} у сотрудника — имя, которое видит посетитель. У Ведалины
      * и у самого посетителя пусто: подписывать машину именем человека нельзя,
      * а посетитель и так знает, что написал сам.
      */

@@ -177,6 +177,92 @@ services:
         mc anonymous set-json /tmp/media-policy.json local/vedal-media
         echo 'бакеты готовы: vedal-documents закрыт, vedal-media отдаёт объекты без перечисления'
 
+
+  # Фотографии из репозитория в бакет.
+  #
+  # Снимки лежат в git под frontend/public/photos, а сайт запрашивает их из
+  # хранилища по NEXT_PUBLIC_MEDIA_URL. До этого сервиса два места не связывало
+  # ничто: файл добавляли в репозиторий, в бакет его не клал никто, и каталог
+  # продукции показывал изделие без фотографии. Ловилось это глазами на стенде,
+  # а не сборкой: 404 за картинкой не роняет ни страницу, ни тесты.
+  #
+  # Заливаются ТОЛЬКО отсутствующие объекты, и это здесь главное. В тот же
+  # бакет и под те же ключи пишет редактор через админку: AdminMediaApi кладёт
+  # файл как photos/<каталог>/<имя>.<расширение>, и каталоги у него products,
+  # news, production — ровно те же, что в репозитории. Зеркалирование
+  # (mc mirror) сравнивает содержимое и перезаписывает различающееся, то есть
+  # на каждом docker compose up возвращало бы репозиторную версию поверх
+  # заменённой редактором. Поэтому здесь поштучная проверка mc stat: ключ
+  # занят — не трогаем, чей бы файл под ним ни лежал.
+  #
+  # Обратная сторона того же решения: снимок, удалённый из репозитория,
+  # остаётся в бакете, а заменённый в репозитории туда не доезжает. Это
+  # осознанно — под занятым ключом хранилище считается источником истины.
+  # Подменить такой файл можно руками: mc rm, затем перезапуск стека.
+  #
+  # Контейнер одноразовый, отрабатывает и гаснет.
+  media-seed:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    container_name: vedal-media-seed
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      MINIO_ROOT_USER: ${VEDAL_S3_ACCESS_KEY:-vedal}
+      MINIO_ROOT_PASSWORD: ${VEDAL_S3_SECRET_KEY:-vedal-local-secret}
+    volumes:
+      # Только чтение: сервис заливает файлы в бакет, а не забирает из него.
+      - ../frontend/public/photos:/photos:ro
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" > /dev/null
+
+        # Список собирает `mc find`, а не find(1): в образе mc последнего нет
+        # вовсе, это не busybox. Каталоги он печатает наравне с файлами,
+        # поэтому ниже стоит проверка -f.
+        #
+        # Список кладётся в файл, а не читается из конвейера: `mc find | while`
+        # уводит цикл в подоболочку, и посчитанные внутри счётчики наружу
+        # не возвращаются — отчёт в конце всегда показывал бы нули.
+        mc find /photos > /tmp/photos.list
+
+        added=0
+        kept=0
+        skipped=0
+        while IFS= read -r entry; do
+          [ -f "$$entry" ] || continue
+
+          # Тот же список расширений, что и у админки (AdminMediaApi):
+          # бакет открыт на чтение анонимно, а SVG — это XML, который умеет
+          # нести внутри <script>. Заодно сюда не уезжают Thumbs.db и прочее,
+          # что Windows кладёт в каталог с картинками.
+          case "$$entry" in
+            *.jpg|*.jpeg|*.png|*.webp) ;;
+            *)
+              echo "пропущено, не изображение: $$entry"
+              skipped=$$((skipped + 1))
+              continue
+              ;;
+          esac
+
+          # /photos/products/foo.jpg -> photos/products/foo.jpg. Ключ совпадает
+          # с путём в разметке один в один: в контенте лежит /photos/...,
+          # и mediaSrc() только подставляет перед ним хост.
+          key="photos$${entry#/photos}"
+          if mc stat "local/vedal-media/$$key" > /dev/null 2>&1; then
+            kept=$$((kept + 1))
+            continue
+          fi
+          mc cp --quiet "$$entry" "local/vedal-media/$$key" > /dev/null
+          echo "залито: $$key"
+          added=$$((added + 1))
+        done < /tmp/photos.list
+
+        echo "фотографии: залито $$added, уже в бакете $$kept (эти не трогали), пропущено $$skipped"
+
   # Провайдер идентичности. Пароли, MFA и выдача токенов живут здесь; портал
   # только проверяет подпись и разбирает роли.
   #

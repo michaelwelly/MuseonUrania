@@ -1,21 +1,25 @@
 import Link from "next/link";
+import LivePattern from "./LivePattern";
 import styles from "./PageHero.module.css";
 
 type Crumb = { label: string; href?: string };
 
+// Проп stats убран: полосы цифр не осталось ни на одном экране. «О компании»
+// потеряла её по §2.1, «Продукция» — 19 августа вместе с фильтром. Держать
+// неиспользуемый проп значит предлагать следующему разработчику вернуть
+// именно то, что заказчик дважды попросил убрать.
 type Props = {
   crumbs: Crumb[];
   title: string;
   lead?: string;
-  /** Цифры справа по низу — экраны «Продукция» и «О компании». */
-  stats?: { value: string; label: string }[];
   /** Произвольный блок справа — например кнопка на экране «Документы». */
   aside?: React.ReactNode;
 };
 
-export default function PageHero({ crumbs, title, lead, stats, aside }: Props) {
+export default function PageHero({ crumbs, title, lead, aside }: Props) {
   return (
-    <section className={styles.hero}>
+    <section className={`${styles.hero} patternHost`}>
+      <LivePattern />
       <div>
         <p className={styles.crumbs}>
           {crumbs.map((c, i) => (
@@ -37,21 +41,7 @@ export default function PageHero({ crumbs, title, lead, stats, aside }: Props) {
         )}
       </div>
 
-      {(stats || aside) && (
-        <div className={styles.aside}>
-          {stats && (
-            <ul className={styles.stats}>
-              {stats.map((s) => (
-                <li key={s.label}>
-                  <p className={styles.statValue}>{s.value}</p>
-                  <p className={styles.statLabel}>{s.label}</p>
-                </li>
-              ))}
-            </ul>
-          )}
-          {aside}
-        </div>
-      )}
+      {aside && <div className={styles.aside}>{aside}</div>}
     </section>
   );
 }

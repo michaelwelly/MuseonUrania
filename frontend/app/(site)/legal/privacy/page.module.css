@@ -1,0 +1,126 @@
+/* Юридическая страница: одна колонка, крупный набор, без картинок.
+   Здесь читают, а не рассматривают, поэтому ширина строки ограничена
+   по читаемости, а не по сетке остальных экранов. */
+
+.page {
+  padding-bottom: 0;
+}
+
+.section,
+.sectionSoft {
+  padding: 56px 48px;
+  border-top: 1px solid var(--line);
+}
+
+.sectionSoft {
+  background: var(--soft);
+}
+
+.h2 {
+  max-width: 24ch;
+  font-size: 26px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.text {
+  max-width: 68ch;
+  margin-top: 16px;
+  font-size: 15.5px;
+  line-height: 1.6;
+}
+
+.links {
+  max-width: 68ch;
+  margin-top: 18px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 15px;
+}
+
+.links a {
+  color: var(--green);
+  border-bottom: 1px solid currentColor;
+}
+
+.table {
+  max-width: 68ch;
+  margin-top: 24px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 15px;
+}
+
+.rowLabel {
+  color: var(--muted);
+}
+
+.list,
+.numbered {
+  max-width: 68ch;
+  margin-top: 22px;
+  padding-left: 20px;
+  font-size: 15.5px;
+  line-height: 1.65;
+}
+
+.list {
+  list-style: disc;
+}
+
+.numbered {
+  list-style: decimal;
+}
+
+.list li + li,
+.numbered li + li {
+  margin-top: 10px;
+}
+
+.contacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 28px;
+  margin-top: 22px;
+  font-style: normal;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.contacts a {
+  border-bottom: 1px solid var(--line-3);
+}
+
+.contacts a:hover {
+  color: var(--green);
+  border-color: currentColor;
+}
+
+@media (max-width: 1100px) {
+  .section,
+  .sectionSoft {
+    padding: 44px 24px;
+  }
+
+  .row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 640px) {
+  .section,
+  .sectionSoft {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+}

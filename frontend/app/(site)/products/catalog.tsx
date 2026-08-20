@@ -1,6 +1,3 @@
-"use client";
-
-import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { statusLabel } from "@/content/products";
@@ -8,106 +5,58 @@ import type { Product } from "@/lib/api";
 import styles from "./page.module.css";
 import { mediaSrc } from "@/lib/media";
 
-type Props = { products: Product[]; categories: string[] };
+type Props = { products: Product[] };
 
-// Фильтр и сортировка на клиенте: позиций мало, перезагрузка страницы ради
-// смены категории только мешала бы. Сами позиции приходят сверху — их читает
-// серверный компонент на сборке.
-export default function Catalog({ products, categories }: Props) {
-  const [active, setActive] = useState<string | null>(null);
-  const [docsFirst, setDocsFirst] = useState(false);
-
-  const filtered = active ? products.filter((p) => p.categories.includes(active)) : products;
-  const shown = docsFirst
-    ? [...filtered].sort((a, b) => Number(b.status === "confirmed") - Number(a.status === "confirmed"))
-    : filtered;
-
+// Каталог первого релиза выводится списком, без фильтров и сортировки.
+//
+// Убрано 19 августа по прямому решению заказчика. Обе механики родом из
+// каталога на двенадцать позиций: там фильтр по направлению экономил
+// прокрутку, а сортировка поднимала наверх позиции с подтверждённым
+// датащитом. На четырёх изделиях фильтр показывает четыре из четырёх,
+// а два направления из пяти открываются в пустоту.
+//
+// Заодно компонент перестал быть клиентским: состояния в нём не осталось,
+// а с ним ушли useState, гидратация и сам JS этой страницы в браузере.
+// Ревилы держатся на data-атрибутах и работают без него.
+export default function Catalog({ products }: Props) {
   return (
-    <>
-      {/* Ревил на контейнерах, а не на карточках: сетка перерисовывается при
-          смене фильтра, и карточка с ещё не снятым inline-стилем осталась бы
-          невидимой до следующего скролла. */}
-      <div className={styles.filters} data-reveal="0">
-        <div className={styles.chips}>
-          <button
-            type="button"
-            className={`${styles.chip} ${active === null ? styles.chipActive : ""}`}
-            onClick={() => setActive(null)}
-            aria-pressed={active === null}
+    <ul className={styles.grid} data-reveal="0">
+      {products.map((p) => (
+        <li key={p.slug}>
+          <Link
+            className={styles.card}
+            href={`/products/${p.slug}/`}
+            data-analytics="product_card_open"
           >
-            Все
-          </button>
-          {categories.map((c) => (
-            <button
-              key={c}
-              type="button"
-              className={`${styles.chip} ${active === c ? styles.chipActive : ""}`}
-              onClick={() => setActive(c)}
-              aria-pressed={active === c}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
+            <div className={`${styles.photo} ${p.image ? "" : styles.photoEmpty}`}>
+              {p.image ? (
+                <Image
+                  src={mediaSrc(p.image.src)}
+                  alt={p.image.alt}
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 33vw"
+                />
+              ) : (
+                <span>Фото ожидает съёмки</span>
+              )}
+            </div>
 
-        <div className={styles.meta}>
-          <span aria-live="polite">
-            Показано {shown.length} из {products.length}
-          </span>
-          <button
-            type="button"
-            className={`${styles.sort} ${docsFirst ? styles.sortActive : ""}`}
-            onClick={() => setDocsFirst((v) => !v)}
-            aria-pressed={docsFirst}
-          >
-            Сначала с документацией
-            <svg width="11" height="7" viewBox="0 0 12 8" fill="none" aria-hidden="true">
-              <path d="M1 1.5 6 6.5l5-5" stroke="currentColor" strokeWidth="1.6" />
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <ul className={styles.grid} data-reveal="1">
-        {shown.length === 0 && <li className={styles.empty}>В этой категории пока нет позиций.</li>}
-
-        {shown.map((p) => (
-          <li key={p.slug}>
-            <Link
-              className={styles.card}
-              href={`/products/${p.slug}/`}
-              data-analytics="product_card_open"
-            >
-              <div className={`${styles.photo} ${p.image ? "" : styles.photoEmpty}`}>
-                {p.image ? (
-                  <Image
-                    src={mediaSrc(p.image.src)}
-                    alt={p.image.alt}
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 33vw"
-                  />
-                ) : (
-                  <span>Фото ожидает съёмки</span>
-                )}
-              </div>
-
-              <div className={styles.body}>
-                <p className={styles.cat}>{p.categories[0]}</p>
-                <h3 className={styles.name}>{p.name}</h3>
-                <p className={styles.kind}>{p.kind}</p>
-                <p className={styles.summary}>{p.summary}</p>
-                <span
-                  className={`${styles.badge} ${
-                    p.status === "confirmed" ? styles.badgeOk : styles.badgeMuted
-                  }`}
-                >
-                  {statusLabel[p.status]}
-                </span>
-              </div>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </>
+            <div className={styles.body}>
+              <p className={styles.cat}>{p.categories[0]}</p>
+              <h3 className={styles.name}>{p.name}</h3>
+              <p className={styles.kind}>{p.kind}</p>
+              <p className={styles.summary}>{p.summary}</p>
+              <span
+                className={`${styles.badge} ${
+                  p.status === "confirmed" ? styles.badgeOk : styles.badgeMuted
+                }`}
+              >
+                {statusLabel[p.status]}
+              </span>
+            </div>
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }

@@ -1,0 +1,165 @@
+/* Плавающий виджет чата: кнопка в правом нижнем углу и всплывающая панель.
+   Живёт в layout, поэтому доступен на всех страницах. */
+
+.launcher {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 64px;
+  padding: 0 24px 0 8px;
+  border: 0;
+  border-radius: 32px;
+  background: var(--deep);
+  color: #fff;
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 16px 36px -16px rgba(8, 33, 29, 0.6);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.launcher:hover {
+  background: var(--deep-2);
+  /* Кнопка приподнимается, а не меняет размер: масштаб дёргает подпись
+     и в углу экрана читается как рябь. */
+  transform: translateY(-2px);
+  box-shadow: 0 22px 44px -16px rgba(8, 33, 29, 0.7);
+}
+
+.launcher:active {
+  transform: translateY(0);
+}
+
+/* Белый диск под знаком — не ради контраста: он у дерева на тёмной кнопке
+   как раз выше (4.70:1 против 3.59:1 на белом). Причина в другом.
+ *
+ * Во-первых, круглый аватар — то, что человек ожидает увидеть у чата;
+ * знак, лежащий прямо на кнопке, читается как иконка, а не как собеседник.
+ * Во-вторых, на загрузочном экране дерево стоит на белом, и повторение
+ * связывает виджет с заставкой: это один и тот же знак, а не два похожих.
+ *
+ * Размер картинки задан пропами (38 из 48), поэтому знак не упирается
+ * в край круга: у дерева внизу своя линия земли, обрезать её нельзя —
+ * знак теряет опору. */
+.launcherAvatar {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.launcherAvatar img {
+  display: block;
+}
+
+/* Зелёная точка «на связи» с тем же пульсом, что в шапке чата.
+   Ушла на край круга: на белом диске она сидела поверх кроны и читалась
+   как оторвавшийся от дерева лист. */
+.launcherDot {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--green);
+  border: 2px solid var(--deep);
+  animation: w-pulse 2.4s ease-out infinite;
+}
+
+@keyframes w-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(20, 156, 60, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(20, 156, 60, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(20, 156, 60, 0);
+  }
+}
+
+.launcherLabel {
+  white-space: nowrap;
+}
+
+/* ---------- панель ---------- */
+.panel {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 41;
+  width: 404px;
+  max-height: min(640px, calc(100svh - 48px));
+  display: flex;
+  animation: w-in 0.2s ease both;
+}
+
+.panel > * {
+  flex: 1;
+  min-height: 0;
+}
+
+@keyframes w-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* На мобильном панель занимает почти весь экран — иначе поле ввода
+   и клавиатура не помещаются. */
+@media (max-width: 640px) {
+  .launcher {
+    right: 16px;
+    bottom: 16px;
+    height: 58px;
+    padding: 0 18px 0 6px;
+    font-size: 14px;
+  }
+
+  .launcherAvatar {
+    width: 46px;
+    height: 46px;
+  }
+
+  .launcherDot {
+    right: 10px;
+    bottom: 10px;
+  }
+
+  .panel {
+    right: 12px;
+    left: 12px;
+    bottom: 12px;
+    width: auto;
+    max-height: min(78svh, calc(100svh - 24px));
+  }
+}
+
+/* Совсем узкие экраны: подпись у кнопки съедает место. */
+@media (max-width: 400px) {
+  .launcherLabel {
+    display: none;
+  }
+
+  .launcher {
+    width: 58px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+  }
+}

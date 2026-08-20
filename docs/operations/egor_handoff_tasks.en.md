@@ -25,10 +25,10 @@ Egor owns UX/UI and frontend implementation. Mikhail owns backend/CMS, infrastru
 - `docs/frontend/content_model.md`
 - `docs/frontend/page_briefs.md`
 - `docs/frontend/implementation_checklist.md`
-- `docs/strategy/urania_assistant_spec.md`
-- `docs/strategy/urania_visual_assets.md`
-- `assets/urania/urania-avatar-middle-v1.png`
-- `assets/urania/urania-web-integration-mockup-v1.png`
+- `docs/strategy/vedalina_assistant_spec.md`
+- `docs/strategy/vedalina_visual_assets.md`
+- `assets/vedalina/vedalina-avatar-middle-v1.png`
+- `assets/vedalina/vedalina-web-integration-mockup-v1.png`
 
 ## Frontend Tasks For Egor
 
@@ -42,11 +42,11 @@ Egor owns UX/UI and frontend implementation. Mikhail owns backend/CMS, infrastru
 - Keep phone and primary contact CTA visible in desktop header.
 - Prepare responsive mobile header.
 
-### P0: Urania Public Assistant UI
+### P0: Vedalina Public Assistant UI
 
-- Use the second/middle Urania avatar variant.
-- Add Urania card on the first screen.
-- Add floating Urania button in the lower-right corner.
+- Use the second/middle Vedalina avatar variant.
+- Add Vedalina card on the first screen.
+- Add floating Vedalina button in the lower-right corner.
 - Public mode label: `AI-поиск по открытым документам`.
 - Quick actions:
   - `Подобрать оборудование`
@@ -95,7 +95,7 @@ Egor owns UX/UI and frontend implementation. Mikhail owns backend/CMS, infrastru
 
 - Desktop and mobile layouts are stable.
 - Header items do not wrap awkwardly.
-- Urania is visible but does not overpower product/production message.
+- Vedalina is visible but does not overpower product/production message.
 - Product/category cards do not shift layout when content is missing.
 - All buttons have clear states.
 - Forms have validation states and success/error states.
@@ -120,7 +120,7 @@ Egor owns UX/UI and frontend implementation. Mikhail owns backend/CMS, infrastru
 - Public API for published site content.
 - Forms API for quote/catalog/service/contact requests.
 - Admin API for CMS operations.
-- Assistant API for Urania public and authenticated modes.
+- Assistant API for Vedalina public and authenticated modes.
 - Health checks and basic monitoring endpoints.
 
 ### Storage
@@ -146,16 +146,16 @@ Egor owns UX/UI and frontend implementation. Mikhail owns backend/CMS, infrastru
 
 ## AI / Closed-Contour Scope For Mikhail
 
-### Public Urania
+### Public Vedalina
 
-- Public Urania answers only from approved public pages and public documents.
+- Public Vedalina answers only from approved public pages and public documents.
 - It can navigate products, documents, service, and commercial next steps.
 - It routes requests to forms or human specialists when confidence is low.
 - It must provide source links where possible.
 
-### Authenticated Urania
+### Authenticated Vedalina
 
-- After login, Urania can search internal documents and databases.
+- After login, Vedalina can search internal documents and databases.
 - Answers are filtered by user role and document permissions.
 - Internal answers must not leak into public mode.
 - All internal AI interactions should be auditable.
@@ -187,7 +187,7 @@ Egor owns UX/UI and frontend implementation. Mikhail owns backend/CMS, infrastru
 - Header/navigation updates.
 - Product catalog structure.
 - Public documents/news/service pages.
-- Urania public UI shell.
+- Vedalina public UI shell.
 - Forms and CRM handoff structure.
 - CMS/admin minimal viable scope.
 - Yandex Metrica and consent banner.

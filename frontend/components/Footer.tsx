@@ -1,5 +1,6 @@
 import Link from "next/link";
-import AnimatedLogo from "@/components/AnimatedLogo";
+import Image from "next/image";
+import { membership } from "@/content/about";
 import { footer, site } from "@/content/site";
 import FooterSubscribe from "./FooterSubscribe";
 import styles from "./Footer.module.css";
@@ -9,10 +10,30 @@ export default function Footer() {
     <footer className={styles.footer}>
       <div className={styles.top}>
         <div>
-          <Link href="/" className={styles.brand} aria-label={`${site.brand}, на главную`}>
-            {/* 40 — та же высота, что была у статичного знака в .brand img. */}
-            <AnimatedLogo height={40} />
-          </Link>
+          {/* Раньше здесь стоял знак VEDAL на белой плашке. Плашка была нужна
+              не по замыслу, а вынужденно: знак нарисован почти чёрным (#111),
+              и на фоне подвала (#08211d) его контраст — 1.12:1, то есть его
+              не видно. Логотип и так стоит в шапке каждой страницы, поэтому
+              в подвале его место занял знак члена палаты.
+
+              Подложка под ним осталась светлой по той же причине: знак палаты
+              бордовый (#812a5d), на фоне подвала это 1.94:1. Перекрасить его
+              нельзя — чужой фирменный знак. Плашка подогнана под пропорции
+              горизонтального начертания, а не квадратная. */}
+          <a
+            className={styles.membership}
+            href={membership.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${membership.title}: ${membership.mark.alt}`}
+          >
+            <Image
+              src={membership.markWide.src}
+              alt={membership.markWide.alt}
+              width={membership.markWide.width}
+              height={membership.markWide.height}
+            />
+          </a>
           <p className={styles.about}>{footer.about}</p>
           <div className={styles.messengers}>
             {footer.messengers.map((m) =>
@@ -53,12 +74,7 @@ export default function Footer() {
               <a className={styles.phone} href={`tel:${site.phone.replace(/\s/g, "")}`}>
                 {site.phone}
               </a>
-              <a
-                className={styles.contactLine}
-                href={`tel:${site.phoneExtra.replace(/[\s-]/g, "")}`}
-              >
-                {site.phoneExtra}
-              </a>
+              {/* Второй номер снят по §9.2 плана: он не подтверждён заказчиком. */}
               <a className={styles.contactLine} href={`mailto:${site.email}`}>
                 {site.email}
               </a>
@@ -76,9 +92,14 @@ export default function Footer() {
         </span>
         <span>ИНН {site.inn}</span>
         <span>КПП {site.kpp}</span>
-        <span title="Текст политики ожидает уточнения">
+        {/* §14.1 плана: ссылка на политику стоит в конце каждой страницы.
+            Раньше здесь был неактивный текст — вести было некуда. Страница
+            по адресу ниже не содержит текста политики: он готовится и до
+            проверки юристом не публикуется (§14.7). Она показывает статус,
+            реквизиты оператора и контакт для обращений. */}
+        <Link className={styles.contactLine} href="/legal/privacy/">
           Политика обработки персональных данных
-        </span>
+        </Link>
         {/* Дверь сотрудника. prefetch={false} обязателен: у сайта и админки
             разные корневые layout'ы, переход всё равно перезагружает страницу
             целиком, а предзагрузка тянула бы бандл админки каждому посетителю
@@ -87,6 +108,7 @@ export default function Footer() {
           Вход для сотрудников
         </Link>
         <span className={styles.disclaimer}>{footer.disclaimer}</span>
+        <span className={styles.disclaimer}>{footer.copyright}</span>
       </div>
     </footer>
   );

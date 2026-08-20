@@ -44,16 +44,16 @@ Mandatory hero elements:
 - primary CTA: `Запросить КП`.
 - secondary CTA: `Каталог`.
 - production/product visual.
-- Urania assistant card/slot.
+- Vedalina assistant card/slot.
 - no unapproved medical, price, certification, delivery, or technical claims.
 
-## Urania
+## Vedalina
 
-Urania is the public website assistant.
+Vedalina is the public website assistant.
 
 Visual idea:
 
-- inspired by Urania, muse of astronomy;
+- inspired by Vedalina, muse of astronomy;
 - calm female expert guide;
 - celestial globe, compass, star map, subtle orbit lines;
 - green/teal/white/charcoal palette;
@@ -61,24 +61,24 @@ Visual idea:
 
 Use recommended MVP asset:
 
-- `assets/urania/urania-avatar-middle-v1.png`
+- `assets/vedalina/vedalina-avatar-middle-v1.png`
 
 Other available references:
 
-- `assets/urania/urania-avatar-concepts-v1.png`
-- `assets/urania/urania-avatar-left-v1.png`
-- `assets/urania/urania-avatar-right-v1.png`
-- `assets/urania/urania-web-integration-mockup-v1.png`
-- `prototypes/urania-web-interface.html`
+- `assets/vedalina/vedalina-avatar-concepts-v1.png`
+- `assets/vedalina/vedalina-avatar-left-v1.png`
+- `assets/vedalina/vedalina-avatar-right-v1.png`
+- `assets/vedalina/vedalina-web-integration-mockup-v1.png`
+- `prototypes/vedalina-web-interface.html`
 
-Urania quick actions:
+Vedalina quick actions:
 
 - Подобрать оборудование
 - Найти документ
 - Запросить КП
 - Сервис
 
-Urania safety limits:
+Vedalina safety limits:
 
 - no diagnosis;
 - no treatment advice;
@@ -163,7 +163,7 @@ For each of the three variants:
 2. Home page section layout.
 3. Products page layout.
 4. Product detail layout.
-5. Urania assistant UI state.
+5. Vedalina assistant UI state.
 6. Mobile behavior.
 7. Risks and what NN must confirm.
 
@@ -181,6 +181,6 @@ The best variant should:
 - make product discovery easy;
 - show production and documents clearly;
 - preserve VEDAL as the main brand;
-- include Urania visibly but secondarily;
+- include Vedalina visibly but secondarily;
 - prepare CRM/S3/AI integration without overpromising;
 - be realistic to implement quickly.

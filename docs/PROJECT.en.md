@@ -83,7 +83,7 @@ detail:
 | Generation | When | Language | Files |
 | --- | --- | --- | --- |
 | Business frame | July 2026 | English | [project_brief](strategy/project_brief.en.md), [functional_requirements](strategy/functional_requirements.en.md), [roadmap](operations/roadmap.en.md), [infrastructure_architecture](architecture/infrastructure_architecture.en.md), [content_and_seo_plan](strategy/content_and_seo_plan.en.md), [competitor_notes](strategy/competitor_notes.en.md), [team_estimate](operations/team_estimate_7_people.en.md) |
-| Frontend package | July 2026 | English | [sitemap](frontend/sitemap.en.md), [content_model](frontend/content_model.en.md), [page_briefs](frontend/page_briefs.en.md), [implementation_checklist](frontend/implementation_checklist.en.md), [frontend_design_handoff](strategy/frontend_design_handoff.en.md), [frontend_variants](strategy/frontend_variants.en.md), [urania_assistant_spec](strategy/urania_assistant_spec.en.md) |
+| Frontend package | July 2026 | English | [sitemap](frontend/sitemap.en.md), [content_model](frontend/content_model.en.md), [page_briefs](frontend/page_briefs.en.md), [implementation_checklist](frontend/implementation_checklist.en.md), [frontend_design_handoff](strategy/frontend_design_handoff.en.md), [frontend_variants](strategy/frontend_variants.en.md), [vedalina_assistant_spec](strategy/vedalina_assistant_spec.en.md) |
 | Technical truth | 6–11 August 2026 | Russian | [owner brief](architecture/vedal_portal_owner_brief.en.md), [spec](superpowers/specs/2026-08-06-vedal-portal-architecture-design.en.md), [backend/README](../backend/README.en.md) and the module ones, [catalog plan](superpowers/plans/2026-08-06-catalog-module.en.md) |
 
 A measurement across 39 files: 18 were written 70–98% in Russian, 20 were 75–100%
@@ -96,7 +96,7 @@ inside the file) is a separate task.
 ## 3. Repository map
 
 ```
-MuseonUrania/
+MuseonVedalina/
 ├─ docs/PROJECT.md          ← this file, the entry point
 ├─ frontend/                Next.js 16, App Router, TypeScript, CSS Modules
 │  ├─ app/(site)/           the public site: nine routes
@@ -104,7 +104,7 @@ MuseonUrania/
 │  │                        documents, audit log; CRM — leads, clients, deals,
 │  │                        quotes, analytics. Its own root layout — the site's
 │  │                        chrome does not leak into it
-│  ├─ components/           Header, Footer, LeadForm, UraniaChat/Widget, AnimatedLogo, VedalMap…
+│  ├─ components/           Header, Footer, LeadForm, VedalinaChat/Widget, AnimatedLogo, VedalMap…
 │  ├─ content/*.ts          ALL page text; unconfirmed facts marked «ожидает уточнения»
 │  ├─ lib/api.ts            public API: read at build time
 │  ├─ lib/admin.ts          admin API: browser only, token only
@@ -129,14 +129,16 @@ MuseonUrania/
 ├─ docs/
 │  ├─ api/                  OpenAPI export for the public API (assembled from the code)
 │  ├─ architecture/         owner brief, infrastructure
-│  ├─ strategy/             business frame, requirements, Urania, SEO, competitors
+│  ├─ strategy/             business frame, requirements, Vedalina, SEO, competitors
 │  ├─ frontend/             sitemap, content models, page briefs, checklist
-│  ├─ operations/           roadmap, team estimate
+│  ├─ legal/                compliance requirements: personal data, hosting, claims
+│  ├─ operations/           roadmap, team estimate, credentials handover,
+│  │                        vedal-med.ru domain cutover
 │  ├─ products/             VEDAL R1/R2, A-2000, Т-100 datasheets and the analysis
 │  ├─ requests/             the materials request to Nikolay Nikolaevich
 │  └─ superpowers/          the backend spec, the catalog module plan
-├─ assets/urania/           Urania avatars; MVP — urania-avatar-middle-v1.png
-├─ prototypes/              urania-web-interface.html — the source of the markup
+├─ assets/vedalina/           Vedalina avatars; MVP — vedalina-avatar-middle-v1.png
+├─ prototypes/              vedalina-web-interface.html — the source of the markup
 └─ outputs/                 presentations, pptx/pdf
 ```
 
@@ -166,7 +168,7 @@ Eleven modules plus `app`, which assembles them:
 | [gateway](../backend/gateway/README.en.md) | lead intake: validation, approve, handover to CRM |
 | [crm](../backend/crm/README.en.md) | leads, clients, deals, quotes, correspondence history, funnel analytics |
 | [notifications](../backend/notifications/README.en.md) | customer letters and manager notifications |
-| [assistant](../backend/assistant/README.en.md) | Urania: answers from published content, limits |
+| [assistant](../backend/assistant/README.en.md) | Vedalina: answers from published content, limits |
 | [audit](../backend/audit/README.en.md) | log of actions and document access |
 
 Deferred, with no folders yet: **knowledge** (internal AI search, stage 3 of the
@@ -229,7 +231,7 @@ perimeter is checked in three places rather than in thirty controllers.
 
 | Door | Who calls it | Property |
 | --- | --- | --- |
-| `Public API` `/api/public/v1/*` | site build, Urania | read-only, published content only, cacheable |
+| `Public API` `/api/public/v1/*` | site build, Vedalina | read-only, published content only, cacheable |
 | `Forms API` `/api/forms/v1/leads` | website forms, Yandex Form, mail parsing | **the single external write**, idempotency by `Idempotency-Key` |
 | `Admin API` `/api/admin/v1/**` | employee | JSON, Keycloak token, roles `portal-admin` and `portal-editor`. The door is single, so restricting it at the proxy takes one rule — **but no such rule is in the [Caddyfile](../backend/proxy/Caddyfile) today**, and it is open to the internet |
 
@@ -274,7 +276,7 @@ Every step writes to `audit`.
 
 1. **A backend outage does not take the website down.** The catalog, the news and
    the documents are baked into static files at build time. A live backend is
-   needed only by the forms and by Urania.
+   needed only by the forms and by Vedalina.
 2. **The schema changes only through migrations.** A manual `ALTER` in production
    is forbidden: after it a dump restores into a schema that is not in the
    history.
@@ -702,7 +704,7 @@ Working routes:
 | `GET /api/public/v1/documents` | site build | the listing; the file link only for published ones |
 | `GET /api/public/v1/documents/{slug}/file` | visitor | the file; closed returns 404 and the request is logged |
 | `POST /api/forms/v1/leads` | website forms | lead intake, `Idempotency-Key`, `202` response |
-| `POST /api/assistant/v1/ask` | Urania | an answer from published content with links |
+| `POST /api/assistant/v1/ask` | Vedalina | an answer from published content with links |
 | `/api/admin/v1/products`, `/categories` | admin UI | the whole catalog: editing, specs, images, publishing |
 | `/api/admin/v1/news` | admin UI | news: creating, editing, publishing, deleting a draft |
 | `/api/admin/v1/documents` | admin UI | the card, file upload up to 20 MB, publication with the refusal explained |
@@ -759,7 +761,7 @@ in a loop.
 
 The site and the admin UI are separated by the `(site)` and `(admin)` route
 groups, each with its own root layout. A nested layout cannot remove the parent's
-chrome: the header, the footer, the preloader and the floating Urania would have
+chrome: the header, the footer, the preloader and the floating Vedalina would have
 arrived in the admin UI too. The site's page addresses did not change: a group
 name in parentheses never reaches the URL.
 
@@ -771,7 +773,7 @@ The wire between the halves exists:
   time and become static — property №1 is intact, a backend outage does not take
   down an already built site;
 - `LeadForm` submits to the Forms API with an `Idempotency-Key` and a consent
-  version, `UraniaChat` asks the assistant;
+  version, `VedalinaChat` asks the assistant;
 - the admin UI edits content through the Admin API under a Keycloak token.
 
 The frontend has two API addresses, and that is not duplication: the catalog is
@@ -821,11 +823,11 @@ is in [architecture/target_architecture.en.md](architecture/target_architecture.
 | --- | --- | --- |
 | 1 | An API client plus `NEXT_PUBLIC_API_URL`, reading the catalog, news and documents through the Public API at build time | static stays static — property #1 must not break |
 | 2 | `LeadForm` → `POST /api/forms/v1/leads` | `Idempotency-Key` (a uuid per form mount), the consent text version and time, a honeypot, success/error states, handling `202`. Plus attribution: the page language and `utm_campaign` are captured when the form mounts rather than when it is submitted — otherwise the tag is lost for everyone who did not fill the form on the very first page |
-| 3 | `UraniaChat` → `POST /api/assistant/v1/ask` | render the list of sources; when there are none, show the handoff to a human with contacts and forms rather than an invented answer |
+| 3 | `VedalinaChat` → `POST /api/assistant/v1/ask` | render the list of sources; when there are none, show the handoff to a human with contacts and forms rather than an invented answer |
 | 4 | Bring the routes in line with the sitemap | [sitemap](frontend/sitemap.en.md) requires `/press/` (Innoprom) and `/partners/` (Divisy, Morus MS, Smart Solution) — neither exists; `/news` was built instead of `/press`, and an unplanned `/about` was added. Either build them or update the map |
 | 5 | The product page from the API plus the list of documents per product | currently from `content/products.ts` |
 | 6 | SEO: the metadata API, `sitemap.xml`, `robots.txt`, JSON-LD Product/Organization, canonical URLs | priority: `/products/`, `/products/<slug>/`, `/production/`, `/documents/` |
-| 7 | Yandex Metrica and the named events | the list is ready in the [implementation checklist](frontend/implementation_checklist.en.md): `hero_quote_click`, `hero_catalog_click`, `product_card_open`, `product_quote_click`, `document_download_click`, `urania_open`, `urania_quick_action_click`, `service_form_submit`, `quote_form_submit`, `catalog_form_submit` |
+| 7 | Yandex Metrica and the named events | the list is ready in the [implementation checklist](frontend/implementation_checklist.en.md): `hero_quote_click`, `hero_catalog_click`, `product_card_open`, `product_quote_click`, `document_download_click`, `vedalina_open`, `vedalina_quick_action_click`, `service_form_submit`, `quote_form_submit`, `catalog_form_submit` |
 | 8 | The multilingual skeleton `/en/`, `/zh/`, hreflang | content follows the approval of the Russian version; Hindi is a separate stage |
 | 9 | Consent text before submitting any form, accessible forms and buttons | a Safety QA item, currently not covered |
 
@@ -833,7 +835,7 @@ is in [architecture/target_architecture.en.md](architecture/target_architecture.
 
 ## 9. Rules that must not be broken
 
-They apply to the website, the admin panel and Urania alike:
+They apply to the website, the admin panel and Vedalina alike:
 
 - do not invent **prices**;
 - do not invent **specifications**;
@@ -841,12 +843,12 @@ They apply to the website, the admin panel and Urania alike:
 - do not invent **delivery times or availability**;
 - do not publish **clinical claims** without approval;
 - do not expose **internal or confidential documents**;
-- Urania **does not diagnose and does not recommend treatment**, and does not
+- Vedalina **does not diagnose and does not recommend treatment**, and does not
   promise a device's suitability for a clinical case without specialist review;
 - missing data is **«ожидает уточнения»**, never a plausible invention;
 - a questionable or sensitive question ends in a **handoff to a human**.
 
-Visual rules: Urania is visible but secondary to the product and production
+Visual rules: Vedalina is visible but secondary to the product and production
 message; Smart Solution is secondary to VEDAL; restrained medical B2B with no
 oversized marketing headlines and no decorative gradients.
 
@@ -932,7 +934,7 @@ no separate port had to be introduced for that.
 9. The Innoprom materials.
 10. The domain: `vedal-med.ru` or another option.
 11. Whether Yandex Metrica may be installed on the public website.
-12. Whether the assistant may be publicly called Urania and shown in the hero.
+12. Whether the assistant may be publicly called Vedalina and shown in the hero.
 
 **Technical, awaiting confirmation:**
 
@@ -997,7 +999,7 @@ The full roadmap is [operations/roadmap.en.md](operations/roadmap.en.md): stage 
 | Data models for page, product, document, form, assistant | [frontend/content_model.en.md](frontend/content_model.en.md) |
 | What each page must contain | [frontend/page_briefs.en.md](frontend/page_briefs.en.md) |
 | Acceptance checklist and analytics events | [frontend/implementation_checklist.en.md](frontend/implementation_checklist.en.md) |
-| Urania's rules and limits | [strategy/urania_assistant_spec.en.md](strategy/urania_assistant_spec.en.md) |
+| Vedalina's rules and limits | [strategy/vedalina_assistant_spec.en.md](strategy/vedalina_assistant_spec.en.md) |
 | The full business requirements | [strategy/functional_requirements.en.md](strategy/functional_requirements.en.md) |
 | Stages and timelines | [operations/roadmap.en.md](operations/roadmap.en.md) |
 | Infrastructure phases and open questions | [architecture/infrastructure_architecture.en.md](architecture/infrastructure_architecture.en.md) |

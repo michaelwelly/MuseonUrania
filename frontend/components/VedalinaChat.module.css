@@ -1,0 +1,355 @@
+/* Окно чата Ведалины. Размеры из design/VedalinaChat.dc.html. */
+
+/* Скругление 16, а не 4. Кнопка, из которой окно раскрывается, — пилюля
+   с радиусом 32; окно с почти острым углом читалось как другой элемент,
+   а не как та же кнопка, только развёрнутая. 16 — середина между ними
+   и совпадает с радиусом реплик в ленте (14). */
+.chat {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 24px 70px -20px rgba(8, 33, 29, 0.45);
+}
+
+/* --- шапка --- */
+/* isolation: isolate — под фирменную фактуру: полоса тёмная, как полосы
+   призыва на страницах, и держит тот же приём. */
+.head {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 15px 18px;
+  background: var(--deep);
+}
+
+/* Белый диск — тот же, что у кнопки виджета, и по той же причине: круглый
+   аватар читается как собеседник, а знак прямо на тёмной шапке — как иконка.
+   Контраст здесь ни при чём, у дерева на тёмном он даже выше. */
+.avatarWrap {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.avatar {
+  display: block;
+}
+
+.status {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--green);
+  border: 2px solid var(--deep);
+  animation: u-pulse 2.4s ease-out infinite;
+}
+
+@keyframes u-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(20, 156, 60, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(20, 156, 60, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(20, 156, 60, 0);
+  }
+}
+
+.name {
+  font-family: var(--font-display), sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: #fff;
+}
+
+.role {
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.headTools {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+
+.headButton {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 2px;
+  background: none;
+  color: rgba(255, 255, 255, 0.5);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.headButton:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* --- лента --- */
+.feed {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 18px;
+  background: var(--soft);
+  /* В панели фиксированной высоты лента может не поместиться — даём прокрутку.
+     В ленте всё равно только последние сообщения, но клавиатура на мобильном
+     сжимает окно сильнее расчётного. */
+  overflow-y: auto;
+}
+
+/* Ход диалога: сообщение плюс источники и передача человеку под ним.
+   Выравнивание живёт здесь, а не на .msg — иначе список источников уезжает
+   в противоположную сторону от реплики. */
+.turn {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.turnBot {
+  align-items: flex-start;
+}
+
+.turnMe {
+  align-items: flex-end;
+}
+
+.msg {
+  max-width: 82%;
+  padding: 12px 14px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  animation: u-in 0.28s ease both;
+}
+
+.sources,
+.handoff {
+  max-width: 82%;
+  margin: 0;
+  padding: 0 0 0 14px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.sources {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  list-style: none;
+}
+
+.sources a,
+.handoff a {
+  color: var(--green);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@keyframes u-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.bot {
+  align-self: flex-start;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 3px 14px 14px 14px;
+  color: var(--ink);
+}
+
+.me {
+  align-self: flex-end;
+  background: var(--deep-2);
+  border: 1px solid var(--deep-2);
+  border-radius: 14px 3px 14px 14px;
+  color: #fff;
+}
+
+.typing {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.typing span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: u-dot 1.1s infinite;
+}
+
+.typing span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.typing span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes u-dot {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+/* --- быстрые ответы --- */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 4px;
+}
+
+.chip {
+  height: 34px;
+  padding: 0 13px;
+  border: 1px solid var(--line-3);
+  border-radius: 17px;
+  background: #fff;
+  color: var(--deep-2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.chip:hover {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+/* --- ввод --- */
+.inputRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--line);
+  background: #fff;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  height: 42px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 14.5px;
+  color: var(--ink);
+}
+
+.input:focus {
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--muted);
+}
+
+.send {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 2px;
+  background: var(--green);
+  color: #fff;
+  cursor: pointer;
+}
+
+.send:hover {
+  background: var(--green-bright);
+}
+
+.disclaimer {
+  padding: 9px 16px;
+  border-top: 1px solid var(--line-2);
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* Ответ сотрудника.
+ *
+ * Отличается от ответа Ведалины заливкой И сплошной рамкой, а не одним оттенком:
+ * посетитель обязан различать машину и человека, а восемь процентов мужчин
+ * не различают красный и зелёный — одним цветом это не передать.
+ *
+ * Слева, как и Ведалина: это входящее сообщение. Правая сторона занята
+ * собственными репликами посетителя, и переносить туда чужой ответ значит
+ * ломать главный признак, по которому лента читается без чтения.
+ */
+.staff {
+  background: var(--ok-bg);
+  border: 1px solid var(--ok-line);
+  color: var(--ink);
+}
+
+/* Имя специалиста над его сообщением. Мелко и приглушённо: это подпись,
+   а не заголовок, — но она обязана быть, иначе человек неотличим от машины. */
+.who {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ok-fg);
+  margin-bottom: 3px;
+}
+
+/* «Специалист печатает…» — словом, а не точками.
+ *
+ * У Ведалины точки означают «машина думает», и ждать её человек готов пару
+ * секунд. Здесь другое: отвечает живой специалист, и ради этого посетитель
+ * останется на странице дольше — но только если понимает, кого ждёт. */
+.staffTyping {
+  font-style: italic;
+  opacity: 0.85;
+}

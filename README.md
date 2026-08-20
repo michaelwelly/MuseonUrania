@@ -1,4 +1,4 @@
-# MuseonUrania
+# MuseonVedalina
 
 **Русский** · [English](README.en.md)
 
@@ -73,7 +73,7 @@ VLM/LLM-сценарии для офиса, продаж, сервиса и пр
 
 ## Раскладка репозитория
 
-Монорепозиторий: `frontend/` (публичный сайт и интерфейс Урании), `backend/`
+Монорепозиторий: `frontend/` (публичный сайт и интерфейс Ведалины), `backend/`
 (API, приём форм и передача в CRM), `docs/`, `assets/`, `prototypes/`,
 `outputs/`.
 
@@ -107,9 +107,9 @@ VLM/LLM-сценарии для офиса, продаж, сервиса и пр
 - [Заметки по конкурентам](docs/strategy/competitor_notes.md)
 - [Дизайн-передача фронтенда](docs/strategy/frontend_design_handoff.md)
 - [Три варианта фронтенда](docs/strategy/frontend_variants.md)
-- [Спецификация ассистента Урания](docs/strategy/urania_assistant_spec.md)
-- [Визуальные материалы Урании](docs/strategy/urania_visual_assets.md)
-- [Веб-прототип Урании](prototypes/urania-web-interface.html)
+- [Спецификация ассистента Ведалина](docs/strategy/vedalina_assistant_spec.md)
+- [Визуальные материалы Ведалины](docs/strategy/vedalina_visual_assets.md)
+- [Веб-прототип Ведалины](prototypes/vedalina-web-interface.html)
 - [Запрос материалов Николаю Николаевичу](docs/requests/nikolay_materials_request.md)
 - [План презентации для Николая Николаевича](docs/strategy/nn_presentation_outline.md)
 - [Роадмап](docs/operations/roadmap.md)

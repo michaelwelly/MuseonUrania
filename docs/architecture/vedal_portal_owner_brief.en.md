@@ -49,7 +49,7 @@ Five vertical lanes, left to right:
 | --- | --- |
 | **Users** | Customer, Salesperson, Accountant, Admin/InfoSec, Owner |
 | **Open office** — we buy it, Yandex 360 | Mail on the domain, Calendar, Telemost, Forms, Disk without secrets, Wiki/Tracker for shared operations |
-| **The agreed website / VM** — we develop it as a product | Public Frontend (site + catalog), Lead Forms (quote / consultation / service), Urania public assistant (approved content only), Backend API (forms, catalog, personal sign-in), Admin panel / CMS, Login area (entry into the closed CRM) |
+| **The agreed website / VM** — we develop it as a product | Public Frontend (site + catalog), Lead Forms (quote / consultation / service), Vedalina public assistant (approved content only), Backend API (forms, catalog, personal sign-in), Admin panel / CMS, Login area (entry into the closed CRM) |
 | **DMZ / Controlled integration** — we write it for this project | Integration Gateway (webhook/API intake), Event queue, Antivirus / DLP, Manual approve, Outbound templates, Import/export audit |
 | **The closed contour** — on the VM plus private managed services | VEDAL CRM inside the site, Document Vault, PostgreSQL as the source of truth, Private Object Storage, Keycloak + MFA + roles, VPN / Zero Trust, Logs + backups |
 

@@ -46,8 +46,8 @@ tags:
 - description: "Единственная дверь на запись снаружи. Авторизации нет — периметр з\
     десь составляют валидация, ловушка для ботов и лимит частоты."
   name: Формы
-- description: "Урания отвечает только по опубликованным материалам. Подходящих ис\
-    точников нет — ответа нет, есть передача человеку."
+- description: "Ведалина отвечает только по опубликованным материалам. Подходящих\
+    \ источников нет — ответа нет, есть передача человеку."
   name: Ассистент
 paths:
   /api/admin/v1/analytics:
@@ -111,6 +111,48 @@ paths:
       summary: Разрезы отчёта
       tags:
       - "Админка: аналитика CRM"
+  /api/admin/v1/assistant/ask:
+    post:
+      description: |
+        То же, что публичная дверь, но область поиска шире: к каталогу,
+        ленте и публичным документам добавляются документы уровня
+        `internal`.
+
+        Документы уровня `confidential` не входят и сюда. Вход в админку
+        не является тем «отдельным разрешением», по которому их выдают:
+        они не фильтруются из ответа, а вообще не попадают в контекст
+        поиска.
+
+        Ограничения те же, что на публичной двери: вопрос про диагноз
+        или цену отклоняется до поиска. Не нашлось источников — приходит
+        `handoff`, а не выдуманный ответ.
+
+        В журнале действие записывается на того, кто спросил.
+      operationId: ask
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AskRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AskReply"
+          description: Ответ со ссылками на источники либо передача человеку.
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Вопрос пуст или длиннее 500 символов.
+      security:
+      - keycloak: []
+      summary: Спросить Ведалину по внутренним материалам
+      tags:
+      - "Админка: ассистент"
   /api/admin/v1/audit:
     get:
       operationId: entries
@@ -293,7 +335,7 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/PageCard"
+                $ref: "#/components/schemas/Page"
           description: OK
       security:
       - keycloak: []
@@ -304,7 +346,7 @@ paths:
     get:
       description: |
         Разговоры в состоянии `waiting`, дольше ждущие первыми. Это и есть
-        работа: разговор попадает сюда, когда Урания не нашла ответа
+        работа: разговор попадает сюда, когда Ведалина не нашла ответа
         и передала человеку.
       operationId: queue
       parameters:
@@ -327,7 +369,7 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/PageCard"
+                $ref: "#/components/schemas/Page"
           description: OK
       security:
       - keycloak: []
@@ -406,7 +448,7 @@ paths:
         намеренно — взятый, но не отвеченный разговор пропадает из очереди,
         а посетитель ждёт ровно так же, как ждал.
 
-        С этого момента Урания в разговоре молчит.
+        С этого момента Ведалина в разговоре молчит.
       operationId: reply
       parameters:
       - in: path
@@ -436,7 +478,7 @@ paths:
   /api/admin/v1/chats/{id}/personal-data:
     delete:
       description: |
-        Стирает тела всех сообщений — и посетителя, и сотрудника, и Урании:
+        Стирает тела всех сообщений — и посетителя, и сотрудника, и Ведалины:
         сотрудник в ответе повторяет имя и телефон чаще, чем кажется,
         а ответ ассистента цитирует вопрос.
 
@@ -2879,6 +2921,10 @@ components:
           type: string
         docStatus:
           type: string
+        features:
+          type: array
+          items:
+            type: string
         id:
           type: string
           format: uuid
@@ -2896,6 +2942,8 @@ components:
           type: string
         published:
           type: boolean
+        purpose:
+          type: string
         slug:
           type: string
         sortOrder:
@@ -2945,6 +2993,14 @@ components:
           - pending
           minLength: 1
           pattern: confirmed|pending
+        features:
+          type: array
+          description: "Ключевые особенности, по одному утверждению в строке. Пуст\
+            о — карточка покажет «ожидает уточнения»."
+          items:
+            type: string
+            maxLength: 500
+            minLength: 0
         imageAlt:
           type: string
           maxLength: 500
@@ -2972,6 +3028,14 @@ components:
         name:
           type: string
           maxLength: 200
+          minLength: 0
+        purpose:
+          type:
+          - string
+          - "null"
+          description: "Назначение: в каких отделениях и для каких задач применяет\
+            ся изделие. Пусто — карточка покажет «ожидает уточнения»."
+          maxLength: 20000
           minLength: 0
         slug:
           type: string
@@ -3254,6 +3318,42 @@ components:
           description: Как показывать в списке. Пусто у учётной записи без имени и
             фамилии — тогда показывается логин.
           example: Анна Фёдорова
+    AskReply:
+      type: object
+      description: |
+        Ответ Ведалины. Заполнено ровно одно из двух: либо `answer` со списком
+        `sources`, либо `handoff` — тогда `sources` пуст.
+
+        Ответа без источников не бывает: движок работает поверх опубликованного,
+        и придумывать ответ, когда подходящих материалов нет, запрещено.
+      properties:
+        answer:
+          type: string
+          description: "Текст ответа. При передаче человеку сюда попадает причина\
+            \ — тот же текст, что и в `handoff.reason`."
+        handoff:
+          type: "null"
+          $ref: "#/components/schemas/Handoff"
+          description: "Передача специалисту. `null`, когда ответ дан."
+        sources:
+          type: array
+          description: "Материалы, на которых построен ответ. Пуст при передаче че\
+            ловеку."
+          items:
+            $ref: "#/components/schemas/Source"
+    AskRequest:
+      type: object
+      description: Вопрос Ведалины.
+      properties:
+        question:
+          type: string
+          description: "Текст вопроса. В журнал он не попадает: посетитель может у\
+            казать в нём и клинику, и себя."
+          example: Какие каналы мониторинга у инкубатора-трансформера?
+          maxLength: 500
+          minLength: 0
+      required:
+      - question
     AuditEntry:
       type: object
       description: Запись журнала.
@@ -3281,28 +3381,6 @@ components:
         subject:
           type: string
         subjectId:
-          type: string
-    Card:
-      type: object
-      properties:
-        campaign:
-          type: string
-        id:
-          type: string
-          format: uuid
-        language:
-          type: string
-        lastAt:
-          type: string
-          format: date-time
-        owner:
-          type: string
-        page:
-          type: string
-        startedAt:
-          type: string
-          format: date-time
-        status:
           type: string
     ChatReply:
       type: object
@@ -3386,6 +3464,32 @@ components:
           format: int64
         wonAmount:
           type: number
+    Handoff:
+      type: object
+      description: "Куда обращаться, когда ассистент не отвечает."
+      properties:
+        email:
+          type: string
+          description: Почта отдела продаж.
+          example: sales@vedal-med.ru
+        forms:
+          type: array
+          description: "Формы, которые уместно предложить вместо ответа."
+          example:
+          - quote
+          - catalog
+          - consultation
+          - service
+          items:
+            type: string
+        phone:
+          type: string
+          description: Телефон отдела продаж.
+          example: 8 800 600 3449
+        reason:
+          type: string
+          description: "Почему ответа нет: вопрос отклонён ограничениями (диагноз\
+            , цена) или по опубликованному ничего не нашлось."
     Line:
       type: object
       properties:
@@ -3434,56 +3538,6 @@ components:
           format: int64
           description: Всего строк во всей выборке.
           example: 137
-    PageCard:
-      type: object
-      properties:
-        content:
-          type: array
-          items:
-            $ref: "#/components/schemas/Card"
-        empty:
-          type: boolean
-        first:
-          type: boolean
-        last:
-          type: boolean
-        number:
-          type: integer
-          format: int32
-        numberOfElements:
-          type: integer
-          format: int32
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
-        size:
-          type: integer
-          format: int32
-        sort:
-          $ref: "#/components/schemas/SortObject"
-        totalElements:
-          type: integer
-          format: int64
-        totalPages:
-          type: integer
-          format: int32
-    PageableObject:
-      type: object
-      properties:
-        offset:
-          type: integer
-          format: int64
-        pageNumber:
-          type: integer
-          format: int32
-        pageSize:
-          type: integer
-          format: int32
-        paged:
-          type: boolean
-        sort:
-          $ref: "#/components/schemas/SortObject"
-        unpaged:
-          type: boolean
     PipelineView:
       type: object
       properties:
@@ -3505,15 +3559,33 @@ components:
           description: "Стадии, которыми эта воронка заканчивается успехом."
           items:
             type: string
-    SortObject:
-      type: object
+    ProblemDetail:
+      description: "Ошибка в формате RFC 9457, `application/problem+json`."
       properties:
-        empty:
-          type: boolean
-        sorted:
-          type: boolean
-        unsorted:
-          type: boolean
+        detail:
+          type: string
+        fields:
+          additionalProperties:
+            type: string
+          description: "Только у 400 от формы: поле → причина отказа. Форма показы\
+            вает ошибку рядом с полем, а не одной строкой сверху."
+          example:
+            consent: Без согласия отправить запрос нельзя
+            email: Проверьте адрес почты
+        instance:
+          type: string
+          format: uri
+        status:
+          format: int32
+          example: 400
+        title:
+          type: string
+          description: Причина словами — её показывает сайт.
+          example: Проверьте заполнение полей
+        type:
+          type: string
+          format: uri
+          default: about:blank
     Source:
       type: object
       description: "Опубликованный материал, на который опирается ответ."

@@ -3,7 +3,9 @@ import Image from "next/image";
 import Link from "next/link";
 import VedalMap from "@/components/VedalMap";
 import { site } from "@/content/site";
-import { productionHero, facility, gallery, quality, address } from "@/content/production";
+import { productionHero, facility, gallery, address } from "@/content/production";
+import TreeMark from "@/components/TreeMark";
+import LivePattern from "@/components/LivePattern";
 import styles from "./page.module.css";
 import { mediaSrc } from "@/lib/media";
 
@@ -12,18 +14,13 @@ export const metadata: Metadata = {
   description: productionHero.lead,
 };
 
-function Arrow() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" />
-    </svg>
-  );
-}
-
 export default function ProductionPage() {
   return (
     <main className={styles.page}>
-      <section className={styles.hero}>
+      {/* Паттерна нет по той же причине, что на главной: правая половина
+          полосы занята фото во всю высоту. */}
+      <section className={`${styles.hero} patternHost`}>
+        <LivePattern variant={1} placement="seam" />
         <div className={styles.heroCopy}>
           <p className={styles.crumbs}>
             <Link href="/">Главная</Link> / Производство
@@ -34,10 +31,9 @@ export default function ProductionPage() {
           <p className={styles.lead} data-words="13" data-wdelay="400">
             {productionHero.lead}
           </p>
+          {/* «Записаться на визит» убрано по §6.1 плана: приём посетителей
+              никто не подтверждал, а кнопка его обещала. */}
           <div className={styles.heroActions} data-anim="cascade">
-            <Link className={`${styles.btn} ${styles.btnPrimary}`} href="/contacts/">
-              Записаться на визит
-            </Link>
             <a className={`${styles.btn} ${styles.btnGhost}`} href="#map">
               Схема проезда
             </a>
@@ -67,14 +63,9 @@ export default function ProductionPage() {
               {p}
             </p>
           ))}
-          <ul className={styles.facts}>
-            {facility.facts.map((f) => (
-              <li key={f.label} className={styles.fact}>
-                <span>{f.label}</span>
-                <span className={styles.factValue}>{f.value}</span>
-              </li>
-            ))}
-          </ul>
+          {/* §11.2: место маркировочного знака. Рисуется, когда заказчик
+              передаст файл — см. content/brand.ts. */}
+          <TreeMark where="production" />
         </div>
       </section>
 
@@ -92,35 +83,6 @@ export default function ProductionPage() {
           </li>
         ))}
       </ul>
-
-      <section className={styles.quality}>
-        <div data-reveal="0">
-          <p className={styles.eyebrow}>{quality.eyebrow}</p>
-          <h2 className={styles.qualityTitle} data-words="30">
-            {quality.title}
-          </h2>
-          <p className={styles.qualityText}>{quality.text}</p>
-          <Link className={`${styles.btn} ${styles.btnDark} ${styles.qualityCta}`} href="/documents/">
-            Раздел «Документы»
-            <Arrow />
-          </Link>
-        </div>
-        <ul className={styles.qualityList} data-reveal="1">
-          {quality.items.map((item) => (
-            <li key={item.n} className={styles.qualityRow}>
-              <span className={styles.num}>{item.n}</span>
-              <span className={styles.qualityRowText}>{item.text}</span>
-              <span
-                className={`${styles.badge} ${
-                  item.access === "Уточняется" ? styles.badgeMuted : styles.badgeOk
-                }`}
-              >
-                {item.access}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
 
       <section className={styles.address} id="map">
         <div className={styles.addressCopy} data-reveal="0">

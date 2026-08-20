@@ -1,5 +1,4 @@
 /* Производство. Экран 05 редизайна. */
-
 .page {
   display: flex;
   flex-direction: column;
@@ -17,11 +16,13 @@
 /* Белый вслед за первым экраном главной и шапками остальных разделов.
    Линия снизу отделяет шапку от содержимого: раньше это делал перепад
    с тёмного на белое. */
+/* То же, что на «Сервисе»: фото ужато, стык освобождён под паттерн. */
 .hero {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.15fr 0.85fr;
   background: var(--page);
   border-bottom: 1px solid var(--line);
+  --pattern-seam: 30%;
 }
 
 .heroCopy {
@@ -79,16 +80,6 @@
   white-space: nowrap;
 }
 
-.btnPrimary {
-  background: var(--green);
-  color: #fff;
-}
-
-.btnPrimary:hover {
-  background: var(--green-bright);
-  color: #fff;
-}
-
 /* Кнопка стоит теперь на белом: призрачная белая рамка с белым текстом
    на нём не видна. Обводка зелёная, надпись на тон темнее — --green
    на белом даёт 3.6:1, а это подпись 15 px. */
@@ -101,16 +92,6 @@
 .btnGhost:hover {
   border-color: var(--green-dark);
   color: var(--green-dark);
-}
-
-.btnDark {
-  background: var(--deep-2);
-  color: #fff;
-}
-
-.btnDark:hover {
-  background: var(--deep);
-  color: #fff;
 }
 
 .btnOutline {
@@ -162,28 +143,6 @@
   margin-top: 18px;
 }
 
-.facts {
-  margin-top: 30px;
-  list-style: none;
-}
-
-.fact {
-  display: flex;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 16px 0;
-  border-top: 1px solid var(--line);
-  font-size: 15px;
-}
-
-.fact:last-child {
-  border-bottom: 1px solid var(--line);
-}
-
-.factValue {
-  color: var(--muted);
-}
-
 /* ---------- галерея ---------- */
 .gallery {
   display: grid;
@@ -210,86 +169,6 @@
 
 .shot img {
   object-fit: cover;
-}
-
-/* ---------- качество ---------- */
-.quality {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 60px;
-  padding: 72px 48px;
-  background: var(--soft);
-  border-top: 1px solid var(--line);
-}
-
-.qualityTitle {
-  margin-top: 14px;
-  max-width: 18ch;
-  font-size: 34px;
-  line-height: 1.1;
-  letter-spacing: -0.03em;
-}
-
-.qualityText {
-  margin-top: 20px;
-  max-width: 44ch;
-  font-size: 15.5px;
-  line-height: 1.6;
-  color: var(--muted);
-}
-
-.qualityCta {
-  margin-top: 24px;
-}
-
-.qualityList {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  list-style: none;
-}
-
-.qualityRow {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 20px 22px;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 3px;
-}
-
-.num {
-  font-family: var(--font-mono), monospace;
-  font-size: 11px;
-  color: var(--green);
-}
-
-.qualityRowText {
-  flex: 1;
-  font-size: 15px;
-}
-
-.badge {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  height: 26px;
-  padding: 0 10px;
-  border-radius: 2px;
-  font-size: 11.5px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.badgeOk {
-  background: var(--ok-bg);
-  color: var(--ok-fg);
-}
-
-.badgeMuted {
-  background: var(--soft);
-  color: var(--muted);
 }
 
 /* ---------- адрес и карта ---------- */
@@ -345,13 +224,11 @@
 @media (max-width: 1100px) {
   .hero,
   .facility,
-  .quality,
   .address {
     grid-template-columns: 1fr;
   }
 
-  .facility,
-  .quality {
+  .facility {
     gap: 28px;
     padding: 48px 24px;
   }
@@ -374,7 +251,6 @@
   }
 
   .h2,
-  .qualityTitle,
   .addressTitle {
     font-size: 26px;
   }
@@ -387,7 +263,6 @@
 @media (max-width: 640px) {
   .heroCopy,
   .facility,
-  .quality,
   .addressCopy {
     padding-left: 18px;
     padding-right: 18px;
@@ -402,7 +277,7 @@
     justify-content: center;
   }
 
-  /* Галерея в одну колонку: сетка 2fr/1fr на 390px нечитаема. */
+/* Галерея в одну колонку: сетка 2fr/1fr на 390px нечитаема. */
   .gallery {
     grid-template-columns: 1fr;
     grid-template-rows: none;

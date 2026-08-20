@@ -26,13 +26,40 @@ public class DocumentService implements DocumentQuery {
         this.audit = audit;
     }
 
+    /**
+     * §10.3: материалы закрытого контура. Список уровней задан здесь одним
+     * местом — «public и internal», — и confidential в нём отсутствует
+     * не по недосмотру, а по правилу §7.4.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<Card> staffDocuments() {
+        return documents.findBySensitivityInOrderByDocGroupAscTitleAsc(List.of("public", "internal"))
+                .stream()
+                .map(d -> new Card(d.getSlug(), d.getTitle(), d.getDocGroup(), d.getSubject(),
+                        d.getProductSlug(), d.getAccess(), d.isPublished(),
+                        // Ссылка на файл — только у опубликованных, как и в открытом
+                        // контуре. У внутреннего документа файла по публичному
+                        // адресу нет, и собирать его здесь значило бы однажды
+                        // собрать его для закрытого.
+                        d.isPublished() ? "/api/public/v1/documents/" + d.getSlug() + "/file" : null))
+                .toList();
+    }
+
     @Override
     @Transactional(readOnly = true)
     public List<Card> listedDocuments() {
         // Перечень показывается вместе со статусом доступа, даже когда файла
         // ещё нет: страница «Документы» так и устроена — строка без файла ведёт
         // на запрос. Ссылку отдаём только у опубликованных.
-        return documents.findByListedTrueOrderByDocGroupAscTitleAsc().stream()
+        //
+        // Отбор идёт и по уровню секретности, а не по одному listed. Раньше
+        // хватало пометки «в перечне», чтобы название и предмет закрытого
+        // документа уехали в открытый API и в источники ассистента. Схема
+        // такую строку теперь не принимает (V21), но запрос всё равно
+        // фильтрует: строка может появиться миграцией или восстановлением
+        // из старого дампа, и тогда единственной защитой останется он.
+        return documents.findByListedTrueAndSensitivityOrderByDocGroupAscTitleAsc("public").stream()
                 .map(d -> new Card(d.getSlug(), d.getTitle(), d.getDocGroup(), d.getSubject(),
                         d.getProductSlug(), d.getAccess(), d.isPublished(),
                         d.isPublished() ? "/api/public/v1/documents/" + d.getSlug() + "/file" : null))

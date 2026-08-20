@@ -7,9 +7,9 @@
 - Confirm NN answers for site quiz.
 - Confirm final product list.
 - Confirm public document rules.
-- Confirm assistant name Urania.
+- Confirm assistant name Vedalina.
 - Confirm avatar direction.
-- Confirm whether Urania appears in hero, floating button, or both.
+- Confirm whether Vedalina appears in hero, floating button, or both.
 - Confirm Smart Solution wording.
 
 ## Design Package
@@ -18,7 +18,7 @@
 - Page briefs approved.
 - Content model approved.
 - Product card model approved.
-- Urania assistant states approved.
+- Vedalina assistant states approved.
 - Three frontend variants prepared.
 - One variant selected for implementation.
 
@@ -26,8 +26,8 @@
 
 - Responsive header.
 - Home hero with CTA.
-- Urania hero card.
-- Urania floating button.
+- Vedalina hero card.
+- Vedalina floating button.
 - Products page.
 - Product detail template.
 - Documents page.
@@ -43,7 +43,7 @@
 - Documents marked public/internal/confidential.
 - Product metadata present.
 - Analytics events named.
-- Urania quick actions wired to frontend states.
+- Vedalina quick actions wired to frontend states.
 
 ## Analytics Events
 
@@ -54,8 +54,8 @@ Suggested event names:
 - `product_card_open`
 - `product_quote_click`
 - `document_download_click`
-- `urania_open`
-- `urania_quick_action_click`
+- `vedalina_open`
+- `vedalina_quick_action_click`
 - `service_form_submit`
 - `quote_form_submit`
 - `catalog_form_submit`
@@ -66,15 +66,15 @@ Suggested event names:
 - No invented certificates.
 - No unapproved clinical claims.
 - No private documents in public UI.
-- Urania does not answer as a doctor.
-- Urania routes uncertain questions to a human.
+- Vedalina does not answer as a doctor.
+- Vedalina routes uncertain questions to a human.
 - Consent/privacy text present before form submission.
 
 ## Visual QA
 
 - Text fits on mobile and desktop.
-- Hero does not hide the product/production message behind Urania.
-- Urania is visible but secondary.
+- Hero does not hide the product/production message behind Vedalina.
+- Vedalina is visible but secondary.
 - Smart Solution is secondary to VEDAL.
 - Product cards do not shift layout when content is missing.
 - Buttons and forms are accessible.

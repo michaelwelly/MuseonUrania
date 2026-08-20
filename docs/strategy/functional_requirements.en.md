@@ -29,20 +29,20 @@ Required elements:
 - Supporting text focused on neonatology, resuscitation, intensive care, and production capability.
 - Primary CTA: request КП / consultation.
 - Secondary CTA: open product catalog.
-- A visible reserved area for the site assistant Urania.
+- A visible reserved area for the site assistant Vedalina.
 - Production/product visual as the main evidence image.
 - No unsupported medical claims, prices, or certification claims until approved.
 
-The assistant area should not compete with the product and production message. It should work as a guided helper: "Ask Urania about products, documents, service, or catalog selection."
+The assistant area should not compete with the product and production message. It should work as a guided helper: "Ask Vedalina about products, documents, service, or catalog selection."
 
-### Site Assistant: Urania
+### Site Assistant: Vedalina
 
-The public website should include an AI assistant named Urania.
+The public website should include an AI assistant named Vedalina.
 
 Concept:
 
-- Urania is inspired by the Greek muse of astronomy.
-- Based on Wikipedia reference, Urania is associated with astronomy and with attributes such as the celestial globe and compass.
+- Vedalina is inspired by the Greek muse of astronomy.
+- Based on Wikipedia reference, Vedalina is associated with astronomy and with attributes such as the celestial globe and compass.
 - The visual image should be calm, precise, expert, and celestial, but not fantasy-heavy.
 - The assistant should feel like a guide through products, documents, and next steps, not like a medical decision-maker.
 
@@ -57,9 +57,9 @@ Primary assistant jobs:
 
 Safety and compliance:
 
-- Urania must not provide medical diagnosis or treatment advice.
-- Urania must not invent specifications, certification status, prices, delivery times, or clinical claims.
-- Urania must cite or link to approved public source pages/documents when answering factual questions.
+- Vedalina must not provide medical diagnosis or treatment advice.
+- Vedalina must not invent specifications, certification status, prices, delivery times, or clinical claims.
+- Vedalina must cite or link to approved public source pages/documents when answering factual questions.
 - Internal/private documents must not be exposed through the public assistant.
 - Sensitive or uncertain questions should end with a human contact/lead form.
 

@@ -48,6 +48,16 @@ const nextConfig: NextConfig = {
   // в меню отвечает редиректом 308 вместо страницы.
   trailingSlash: true,
 
+  // Карточка «VEDAL R1, R2» разделена на две, и её адрес полтора месяца
+  // лежал в каталоге, в презентации и в письмах заказчику. Постоянный
+  // редирект уводит с него на R1: 404 на месте живой ссылки выглядит как
+  // снятое с производства изделие, а не как переименованную страницу.
+  async redirects() {
+    return [
+      { source: "/products/vedal-r1-r2", destination: "/products/vedal-r1/", permanent: true },
+    ];
+  },
+
   images: {
     remotePatterns,
 

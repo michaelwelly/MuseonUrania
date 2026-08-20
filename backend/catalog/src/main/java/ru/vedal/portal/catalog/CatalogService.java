@@ -48,12 +48,16 @@ public class CatalogService implements CatalogQuery {
 
     private static PublicDto.Detail toDetail(Product p) {
         return new PublicDto.Detail(p.getSlug(), p.getName(), p.getKind(), p.getSummary(),
-                p.getDetail(), p.getDocStatus(), names(p), p.getImageSrc(), p.getImageAlt(),
-                specs(p, "key_param"), specs(p, "spec"));
+                p.getDetail(), p.getPurpose(), features(p), p.getDocStatus(), names(p),
+                p.getImageSrc(), p.getImageAlt(), specs(p, "key_param"), specs(p, "spec"));
     }
 
     private static List<String> names(Product p) {
         return p.getCategories().stream().map(Category::getName).toList();
+    }
+
+    private static List<String> features(Product p) {
+        return p.getFeatures().stream().map(ProductFeature::getBody).toList();
     }
 
     private static List<PublicDto.SpecView> specs(Product p, String kind) {

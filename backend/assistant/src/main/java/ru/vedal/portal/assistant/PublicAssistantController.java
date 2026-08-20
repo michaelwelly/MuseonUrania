@@ -30,7 +30,7 @@ public class PublicAssistantController {
         this.rateLimit = rateLimit;
     }
 
-    @Operation(summary = "Спросить Уранию",
+    @Operation(summary = "Спросить Ведалину",
             description = """
                     Отвечает только по опубликованным материалам портала: каталогу, ленте
                     и перечню документов. Закрытого файла в ответе не будет, потому что
@@ -58,6 +58,6 @@ public class PublicAssistantController {
         if (!rateLimit.allow(http.getRemoteAddr())) {
             throw new TooManyRequestsException("Слишком много вопросов подряд. Попробуйте позже.");
         }
-        return ResponseEntity.ok(assistant.ask(request.question()));
+        return ResponseEntity.ok(assistant.ask(request.question(), LlmEngine.Scope.PUBLIC, "public"));
     }
 }

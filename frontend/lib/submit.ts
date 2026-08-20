@@ -1,4 +1,4 @@
-// Запись наружу: заявки и вопросы Урании. В отличие от `api.ts`, эти вызовы
+// Запись наружу: заявки и вопросы Ведалине. В отличие от `api.ts`, эти вызовы
 // идут из браузера, поэтому бэкенд должен разрешить источник сайта в CORS
 // (`VEDAL_ALLOWED_ORIGINS`).
 //
@@ -118,7 +118,7 @@ export type AskReply = {
   handoff: Handoff | null;
 };
 
-export async function askUrania(question: string): Promise<AskReply | { error: string }> {
+export async function askVedalina(question: string): Promise<AskReply | { error: string }> {
   if (!apiConfigured) return { error: NOT_CONFIGURED };
 
   let response: Response;
@@ -151,9 +151,9 @@ async function readProblem(response: Response): Promise<Problem> {
 
 // ————— разговор —————
 //
-// Отличие от `askUrania` одно, но оно меняет всё: разговор помнит. Урания
+// Отличие от `askVedalina` одно, но оно меняет всё: разговор помнит. Ведалина
 // отвечает, пока может; когда источников нет, разговор встаёт в очередь
-// к человеку, и дальше отвечает сотрудник — а Урания молчит.
+// к человеку, и дальше отвечает сотрудник — а Ведалина молчит.
 //
 // Дверь та же, `/api/assistant/v1`: она уже принимает свободный текст от
 // анонима и уже стоит под лимитом частоты. Четвёртой двери не заводится.
@@ -162,10 +162,10 @@ export type ChatAuthor = "visitor" | "assistant" | "staff";
 
 export type ChatLine = {
   author: ChatAuthor;
-  /** Имя сотрудника. У Урании и у самого посетителя пусто. */
+  /** Имя сотрудника. У Ведалины и у самого посетителя пусто. */
   actor: string | null;
   body: string;
-  /** Материалы, на которых построен ответ Урании. У остальных пусто. */
+  /** Материалы, на которых построен ответ Ведалины. У остальных пусто. */
   sources: Source[];
   /** Когда прочитано собеседником. null — ещё нет. */
   readAt: string | null;

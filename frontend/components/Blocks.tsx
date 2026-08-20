@@ -1,19 +1,14 @@
 import Link from "next/link";
+import LivePattern from "./LivePattern";
 import styles from "./Blocks.module.css";
 
-/** Полоса из четырёх цифр. Экраны «Главная» и «О компании». */
-export function StatsBand({ items }: { items: { value: string; label: string }[] }) {
-  return (
-    <ul className={styles.stats} aria-label="Ключевые цифры">
-      {items.map((s, i) => (
-        <li key={s.label} className={styles.stat} data-reveal={i}>
-          <p className={styles.statValue}>{s.value}</p>
-          <p className={styles.statLabel}>{s.label}</p>
-        </li>
-      ))}
-    </ul>
-  );
-}
+// Компонент StatsBand удалён 19 августа. Полоса из четырёх цифр стояла на
+// «Главной» и «О компании»; со второй её снял §2.1, с первой — прямое решение
+// заказчика. Полос на сайте не осталось ни одной.
+//
+// Компонент не оставлен «на всякий случай» намеренно: заказчик отказался от
+// этого блока дважды, и готовый к вставке StatsBand — это приглашение вернуть
+// его третий раз. Понадобится — есть в истории.
 
 type Action = { label: string; href: string; analytics?: string };
 
@@ -32,7 +27,13 @@ export function DarkCta({
   tone?: "deep" | "deep-2";
 }) {
   return (
-    <section className={`${styles.cta} ${tone === "deep" ? styles.ctaDeep : styles.ctaDeep2}`}>
+    <section
+      className={`${styles.cta} ${tone === "deep" ? styles.ctaDeep : styles.ctaDeep2} patternHost`}
+    >
+      {/* На тёмной полосе паттерн идёт без квадратов и сильно приглушённым:
+          насыщенный зелёный квадрат на почти чёрном превращается в световое
+          пятно и тянет взгляд сильнее, чем заголовок рядом. */}
+      <LivePattern variant={2} tone="dark" />
       <div data-reveal="0">
         <h2 className={styles.ctaTitle} data-words="30">
           {title}

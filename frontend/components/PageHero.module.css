@@ -31,8 +31,14 @@
   color: var(--green-dark);
 }
 
+/* Мера заголовка ограничена 26 знаками. Без неё «Производим медицинское
+   оборудование в России» вытягивалось в одну строку на 1310 пикселей — и
+   читать такую строку тяжело, и она заходила под живой паттерн справа.
+   На 26ch заголовок ложится в две строки, а правая треть полосы остаётся
+   паттерну. */
 .title {
   margin-top: 16px;
+  max-width: 26ch;
   font-size: 48px;
   line-height: 1.05;
   letter-spacing: -0.035em;
@@ -51,25 +57,8 @@
   padding-bottom: 6px;
 }
 
-/* Цифры справа по низу (экраны 02, 04) */
-.stats {
-  display: flex;
-  gap: 36px;
-  list-style: none;
-}
-
-.statValue {
-  font-family: var(--font-display), sans-serif;
-  font-size: 30px;
-  font-weight: 500;
-  letter-spacing: -0.03em;
-}
-
-.statLabel {
-  margin-top: 5px;
-  font-size: 13px;
-  color: var(--muted);
-}
+/* Стили полосы цифр убраны вместе с пропом stats: экранов, которые её
+   показывали, не осталось. */
 
 @media (max-width: 1100px) {
   .hero {

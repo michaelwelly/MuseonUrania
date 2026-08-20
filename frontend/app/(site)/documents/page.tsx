@@ -3,7 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import PageHero from "@/components/PageHero";
 import { documentsHero, order, request } from "@/content/documents";
-import { docsSpecialist, DEMO_NOTE } from "@/content/staff";
+import { companyContact, STAFF_AWAITING } from "@/content/staff";
+import { vedalina } from "@/content/vedalina";
 import { fetchDocuments } from "@/lib/api";
 import DocumentsTable from "./table";
 import styles from "./page.module.css";
@@ -73,18 +74,18 @@ export default async function DocumentsPage() {
 
           <div className={styles.contact}>
             <div className={styles.avatar}>
-              <Image src="/urania/urania-avatar-middle-v1.png" alt="" fill sizes="48px" />
+              <Image src={vedalina.avatar} alt="" width={34} height={34} />
             </div>
             <div>
-              <p className={styles.contactName}>{docsSpecialist.name}</p>
+              <p className={styles.contactName}>{companyContact.title}</p>
               <p className={styles.contactRole}>
-                {docsSpecialist.role} ·{" "}
-                <a href={`mailto:${docsSpecialist.email}`}>{docsSpecialist.email}</a>
+                {companyContact.scope} ·{" "}
+                <a href={`mailto:${companyContact.email}`}>{companyContact.email}</a>
               </p>
             </div>
           </div>
           {/* Контакт — заглушка из макета, см. content/staff.ts */}
-          <p className={styles.demoNote}>{DEMO_NOTE}</p>
+          <p className={styles.demoNote}>{STAFF_AWAITING}</p>
         </div>
       </section>
     </main>
