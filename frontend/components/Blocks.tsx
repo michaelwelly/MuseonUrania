@@ -1,4 +1,5 @@
 import Link from "next/link";
+import LivePattern from "./LivePattern";
 import styles from "./Blocks.module.css";
 
 // Компонент StatsBand удалён 19 августа. Полоса из четырёх цифр стояла на
@@ -27,8 +28,12 @@ export function DarkCta({
 }) {
   return (
     <section
-      className={`${styles.cta} ${tone === "deep" ? styles.ctaDeep : styles.ctaDeep2} crossField crossFieldDark`}
+      className={`${styles.cta} ${tone === "deep" ? styles.ctaDeep : styles.ctaDeep2} patternHost`}
     >
+      {/* На тёмной полосе паттерн идёт без квадратов и сильно приглушённым:
+          насыщенный зелёный квадрат на почти чёрном превращается в световое
+          пятно и тянет взгляд сильнее, чем заголовок рядом. */}
+      <LivePattern variant={2} tone="dark" />
       <div data-reveal="0">
         <h2 className={styles.ctaTitle} data-words="30">
           {title}

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import HomeLeadForm from "@/components/HomeLeadForm";
+import LivePattern from "@/components/LivePattern";
 import { site } from "@/content/site";
 import { news } from "@/content/news";
 import {
@@ -25,8 +26,13 @@ export default function Home() {
   return (
     <main className={styles.page}>
       {/* 01. Hero */}
-      {/* Фактура из фирменных знаков — §11.1. Класс глобальный, см. globals.css */}
-      <section className={`${styles.hero} crossField`}>
+      {/* Живого паттерна на этом первом экране нет намеренно. Правая
+          половина полосы — фото во всю высоту, и композиция уходила бы
+          под него на 62%, а видимой частью наезжала на текст: между
+          концом строки и краем фото всего 244 пикселя, а паттерну нужно
+          465. Паттерн стоит там, где для него есть место, — на первых
+          экранах внутренних страниц и на тёмной полосе призыва ниже. */}
+      <section className={styles.hero}>
         <div className={styles.heroCopy}>
           {/* data-anim — крючки появления первого экрана, правила в app/motion.css */}
           <p className={`${styles.eyebrow} ${styles.eyebrowLight}`} data-anim="rise-sm">
@@ -236,7 +242,12 @@ export default function Home() {
       </section>
 
       {/* 08. CTA + форма */}
-      <section className={styles.cta}>
+      {/* Тёмная полоса — единственное место на главной, где паттерну есть
+          куда лечь: остальные полосы заняты фото и карточками во всю ширину.
+          Без квадратов и на 9%: насыщенный зелёный на почти чёрном тянул бы
+          взгляд сильнее заголовка. */}
+      <section className={`${styles.cta} patternHost`}>
+        <LivePattern variant={1} tone="dark" />
         <div data-reveal="0">
           <h2 className={styles.ctaTitle} data-words="30">
             {homeCta.title}
