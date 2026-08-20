@@ -10,6 +10,7 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
@@ -42,11 +43,29 @@ public class S3FileStorage implements FileStorage {
     public void put(Area area, String key, InputStream data, long size, String contentType) {
         StorageLimits.check(size, maxFileSize());
 
+        // Медиа кладётся с public-read, документы — нет, и различие здесь
+        // не косметическое.
+        //
+        // Что было. ACL не выставлялся вовсе. На машине разработчика это
+        // не всплывало: MinIO там открыт на чтение политикой бакета, и
+        // приватный объект всё равно отдавался. На ВМ политики нет — доступ
+        // выдан пообъектно, — и снимок, загруженный редактором через админку,
+        // лёг бы приватным. Сайт показал бы вместо него пустое место, а в
+        // журнале приложения при этом стояло бы «файл сохранён».
+        //
+        // Ровно так уже случилось с четырьмя фотографиями, которые заливал
+        // media-seed: в бакете они были, но отдавали 403.
+        //
+        // DOCUMENTS остаётся без ACL намеренно. Закрытый документ отдаётся
+        // только через контроллер, который проверяет публикацию и пишет
+        // обращение в журнал; public-read на нём означал бы выдачу мимо
+        // проверки и мимо аудита — то самое, ради чего бакеты разделены.
         var request = PutObjectRequest.builder()
                 .bucket(bucket(area))
                 .key(key)
                 .contentType(contentType == null ? StorageLimits.contentType(key) : contentType)
                 .contentLength(size)
+                .acl(area == Area.MEDIA ? ObjectCannedACL.PUBLIC_READ : ObjectCannedACL.PRIVATE)
                 .build();
 
         // fromInputStream с известной длиной: поток уходит в сеть как есть.
