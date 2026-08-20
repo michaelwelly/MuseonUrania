@@ -1,0 +1,21 @@
+[Unit]
+Description=VEDAL: развернуть стенд, если main изменился
+# Сеть нужна для ls-remote, docker — для самой сборки. Without wants:
+# если docker не поднялся, деплой всё равно попробует и честно упадёт
+# в журнал, а не будет молча пропущен.
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+ExecStart=/opt/vedal-portal/scripts/autodeploy.sh
+
+# Сборка фронтенда занимает минуты. Потолок нужен, чтобы зависший деплой
+# не держал лок вечно и следующий запуск не пропускался бесконечно.
+TimeoutStartSec=30min
+
+# Вывод уходит в journalctl -u vedal-autodeploy: отдельный файл лога
+# пришлось бы ротировать руками.
+StandardOutput=journal
+StandardError=journal
