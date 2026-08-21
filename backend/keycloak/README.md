@@ -93,3 +93,28 @@ curl -s -d grant_type=password -d client_id=vedal-admin-ui -d username=editor -d
 
 Файл остаётся источником истины для чистой установки: поднятый с нуля стек
 получит эти значения сразу.
+
+## Адреса возврата
+
+Keycloak сверяет `redirect_uri` со списком у клиента `vedal-admin-ui` и
+сравнивает строки, а не машины. `localhost` и `127.0.0.1` — **разные адреса**,
+хотя это один и тот же компьютер. Адрес, которого нет в списке, даёт экран
+«We are sorry… Invalid parameter: redirect_uri» ещё до формы входа.
+
+| Realm | Разрешено |
+| --- | --- |
+| локальный | `http://localhost:8080/*`, `http://127.0.0.1:8080/*`, те же на `:3000` для `next dev` |
+| стенд | те же плюс `http://51.250.31.97:18080/*` |
+
+Новая среда — новая строка в `redirectUris` и в `webOrigins`. Пропуск
+обнаруживается только при попытке войти, и выглядит как поломка Keycloak,
+хотя это настройка клиента.
+
+Проверить, не заходя в браузер:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' \
+  'http://localhost:8180/realms/vedal/protocol/openid-connect/auth?client_id=vedal-admin-ui&response_type=code&scope=openid&state=x&code_challenge=abc&code_challenge_method=S256&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fadmin%2Fcallback%2F'
+```
+
+`302` — адрес принят, `400` — его нет в списке.
