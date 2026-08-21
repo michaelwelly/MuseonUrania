@@ -33,7 +33,9 @@
   padding: 0 20px;
   border: 0;
   border-radius: 2px;
-  background: var(--green);
+  /* --green-dark по той же причине, что и у кнопки формы: белый на --green
+     даёт 3.59 при норме 4.5. */
+  background: var(--green-dark);
   color: #fff;
   font: inherit;
   font-size: 14px;
@@ -42,7 +44,7 @@
 }
 
 .accept:hover {
-  background: var(--green-bright);
+  background: var(--green-ink-hover);
 }
 
 /* На телефоне плашка занимает ширину экрана, а кнопка уходит под текст:

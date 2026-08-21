@@ -39,7 +39,7 @@
 
 .chip:hover {
   border-color: var(--green);
-  color: var(--green);
+  color: var(--green-dark);
 }
 
 .chipActive,
@@ -258,7 +258,7 @@
   margin-top: 14px;
   font-size: 12.5px;
   line-height: 1.5;
-  color: rgba(255, 255, 255, 0.42);
+  color: var(--on-dark-3);
 }
 
 .subscribe {
@@ -319,7 +319,7 @@
   padding: 0 24px;
   border: 0;
   border-radius: 2px;
-  background: var(--green);
+  background: var(--green-dark);
   color: #fff;
   font: inherit;
   font-size: 15px;
@@ -328,7 +328,7 @@
 }
 
 .submit:hover {
-  background: var(--green-bright);
+  background: var(--green-ink-hover);
 }
 
 .result {

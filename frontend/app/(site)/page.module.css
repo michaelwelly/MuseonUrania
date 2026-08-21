@@ -48,8 +48,10 @@
   background: currentColor;
 }
 
+/* Тот же eyebrow на светлой подложке. --green-dark, а не --green: последний
+   даёт на rgb(244,248,246) контраст 3.35 при норме 4.5. */
 .eyebrowLight {
-  color: var(--green);
+  color: var(--green-dark);
 }
 
 .h1 {
@@ -102,12 +104,12 @@
 }
 
 .btnPrimary {
-  background: var(--green);
+  background: var(--green-dark);
   color: #fff;
 }
 
 .btnPrimary:hover {
-  background: var(--green-bright);
+  background: var(--green-ink-hover);
   color: #fff;
 }
 
@@ -153,7 +155,7 @@
 }
 
 .linkArrow:hover {
-  color: var(--green);
+  color: var(--green-dark);
 }
 
 /* ---------- секции ---------- */

@@ -170,7 +170,7 @@
 
 .sources a,
 .handoff a {
-  color: var(--green);
+  color: var(--green-dark);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -260,7 +260,7 @@
 
 .chip:hover {
   border-color: var(--green);
-  color: var(--green);
+  color: var(--green-dark);
 }
 
 /* --- ввод --- */
@@ -300,13 +300,13 @@
   height: 42px;
   border: 0;
   border-radius: 2px;
-  background: var(--green);
+  background: var(--green-dark);
   color: #fff;
   cursor: pointer;
 }
 
 .send:hover {
-  background: var(--green-bright);
+  background: var(--green-ink-hover);
 }
 
 .disclaimer {

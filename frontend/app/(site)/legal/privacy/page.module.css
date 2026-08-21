@@ -42,7 +42,7 @@
 }
 
 .links a {
-  color: var(--green);
+  color: var(--green-dark);
   border-bottom: 1px solid currentColor;
 }
 
@@ -101,7 +101,7 @@
 }
 
 .contacts a:hover {
-  color: var(--green);
+  color: var(--green-dark);
   border-color: currentColor;
 }
 
