@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -336,6 +336,23 @@ describe("клавиши списка", () => {
     expect(
       (screen.getByLabelText(/Выбрать заявку: Мария Соколова/) as HTMLInputElement).checked,
     ).toBe(true);
+  });
+
+  // Замер на стенде поймал то, чего не ловил userEvent: он ждёт между
+  // нажатиями, и каждое успевало увидеть свежий курсор. Настоящая
+  // клавиатура так не делает — два J приходят в одном такте, оба читают
+  // стартовое значение, и список сдвигается на одну строку вместо двух.
+  it("два нажатия подряд двигают курсор на две строки, а не на одну", async () => {
+    await экран();
+
+    act(() => {
+      fireEvent.keyDown(document, { key: "j", code: "KeyJ" });
+      fireEvent.keyDown(document, { key: "j", code: "KeyJ" });
+    });
+
+    const строки = [...document.querySelectorAll("tbody tr")];
+    const курсор = строки.findIndex((r) => r.className.includes("row--cursor"));
+    expect(курсор).toBe(2);
   });
 
   it("в поле поиска J остаётся буквой", async () => {

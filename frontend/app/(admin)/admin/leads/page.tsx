@@ -311,7 +311,6 @@ function Leads() {
 
       <Keys
         rows={ids}
-        cursor={cursor}
         onCursor={setCursor}
         selection={selection}
         // Пока панель разбора открыта, список клавиш молчит: под затемнением
@@ -734,27 +733,27 @@ function Table({
  */
 function Keys({
   rows,
-  cursor,
   onCursor,
   selection,
   off,
   onOpen,
 }: {
   rows: readonly string[];
-  cursor: number;
-  onCursor: (index: number) => void;
+  /** Только обновлением от прежнего значения: два нажатия подряд
+   *  приходят в одном такте, и оба прочитали бы один и тот же курсор. */
+  onCursor: (move: (index: number) => number) => void;
   selection: ReturnType<typeof useSelection>;
   off: boolean;
   onOpen: (id: string) => void;
 }) {
-  const свежие = useRef({ rows, cursor, onCursor, selection, off, onOpen });
+  const свежие = useRef({ rows, onCursor, selection, off, onOpen });
   useEffect(() => {
-    свежие.current = { rows, cursor, onCursor, selection, off, onOpen };
+    свежие.current = { rows, onCursor, selection, off, onOpen };
   });
 
   useEffect(() => {
     const слушатель = (e: KeyboardEvent) => {
-      const { rows, cursor, onCursor, selection, off, onOpen } = свежие.current;
+      const { rows, onCursor, selection, off, onOpen } = свежие.current;
       if (off || rows.length === 0) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
 
@@ -771,26 +770,40 @@ function Keys({
         }
       }
 
-      const вниз = e.code === "KeyJ" || e.key === "ArrowDown";
-      const вверх = e.code === "KeyK" || e.key === "ArrowUp";
+      // И по физической клавише, и по букве: `code` не зависит от
+      // раскладки, а `key` выручает там, где событие приходит без него.
+      const вниз = e.code === "KeyJ" || e.key === "j" || e.key === "ArrowDown";
+      const вверх = e.code === "KeyK" || e.key === "k" || e.key === "ArrowUp";
 
       if (вниз || вверх) {
         e.preventDefault();
         const шаг = вниз ? 1 : -1;
-        onCursor(Math.min(rows.length - 1, Math.max(0, cursor + шаг)));
+        // Обновлением от прежнего значения, а не от прочитанного:
+        // два нажатия в одном такте оба видели бы стартовый курсор
+        // и сдвигали список на одну строку вместо двух. Замер на стенде:
+        // два J подряд перемещали курсор с нулевой строки на первую.
+        onCursor((c) => Math.min(rows.length - 1, Math.max(0, c + шаг)));
         return;
       }
 
-      if (e.code === "Space") {
+      if (e.code === "Space" || e.key === " ") {
         // Иначе пробел прокручивает страницу, и выделенная строка уезжает.
         e.preventDefault();
-        selection.toggle(rows[cursor]);
+        // Курсор читается тем же способом — обновлением: между нажатием
+        // J и пробелом может не быть ни одной отрисовки.
+        onCursor((c) => {
+          selection.toggle(rows[c]);
+          return c;
+        });
         return;
       }
 
       if (e.key === "Enter") {
         e.preventDefault();
-        onOpen(rows[cursor]);
+        onCursor((c) => {
+          onOpen(rows[c]);
+          return c;
+        });
       }
     };
 

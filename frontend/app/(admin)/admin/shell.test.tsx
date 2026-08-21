@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -274,6 +274,17 @@ describe("поиск по всему", () => {
     expect(mocks.push).toHaveBeenCalledWith("/admin/clients/c7");
   });
 
+  // Каталог назван латиницей — VEDAL R1, — а ищут его по-русски.
+  // Замер на стенде: «вед» не находил ничего, «ved» находил восемь
+  // изделий, и человек делал вывод, что поиск не работает.
+  it("находит латинский каталог по русскому набору", async () => {
+    const user = await shell();
+    await user.keyboard("{Meta>}k{/Meta}");
+    await user.type(screen.getByLabelText("Что искать"), "вед");
+
+    expect(await screen.findByText("VEDAL R1")).toBeTruthy();
+  });
+
   it("до двух букв в портал не ходит", async () => {
     const user = await shell();
     await user.keyboard("{Meta>}k{/Meta}");
@@ -303,8 +314,11 @@ describe("виджет разговоров", () => {
   it("показывает, сколько ждёт ответа", async () => {
     await shell();
 
+    // Число на кнопке приезжает счётчиками оболочки, а не вместе с самой
+    // кнопкой. Проверка сразу после появления кнопки успевала посмотреть
+    // на неё раньше, чем счётчик ответил, — и падала через раз.
     const кнопка = await screen.findByRole("button", { name: /Разговоры/ });
-    expect(кнопка.textContent).toContain("3");
+    await waitFor(() => expect(within(кнопка).getByText("3")).toBeTruthy());
   });
 
   it("на самом разделе разговоров не рисуется", async () => {

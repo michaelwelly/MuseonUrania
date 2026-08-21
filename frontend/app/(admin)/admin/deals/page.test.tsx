@@ -179,6 +179,17 @@ describe("доска", () => {
     expect(сумма).toBe("3 550 000,00 RUB");
   });
 
+  // Замер на стенде: под пустой стадией стояло «0,00 RUB». Это читается
+  // как настоящая сумма, равная нулю, а означает «здесь ничего нет» —
+  // и по такой сумме принимают решения о воронке.
+  it("под пустой стадией суммы нет вовсе", async () => {
+    await доска();
+
+    const пустая = колонка("выиграна");
+    expect(пустая.querySelector(".board__count")?.textContent).toBe("0");
+    expect(пустая.querySelector(".board__sum")?.textContent).toBe("");
+  });
+
   it("не ответившая стадия названа словами, а не пустой колонкой", async () => {
     mocks.deals.mockImplementation((filter: { stage?: string }) => {
       if (filter.stage === "quoted") return Promise.reject(new Error("портал отказал"));
