@@ -129,8 +129,11 @@ export default function ProductEditor({ existing }: { existing?: Product }) {
             hint="Подтверждены ли характеристики датащитом. Это не видимость на сайте."
           >
             <select value={form.docStatus} onChange={(e) => set("docStatus", e.target.value)}>
-              <option value="confirmed">confirmed — по датащиту</option>
-              <option value="pending">pending — ожидает уточнения</option>
+              {/* Без служебного кода в подписи: выбирающему он не нужен,
+                  а в таблице та же вещь называется просто «по датащиту».
+                  Значение при этом остаётся кодом — его ждёт портал. */}
+              <option value="confirmed">по датащиту</option>
+              <option value="pending">ожидает уточнения</option>
             </select>
           </Field>
         </div>

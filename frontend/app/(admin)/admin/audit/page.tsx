@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AUDIT_SUBJECT, label } from "../labels";
 import { audit, type AuditEntry, type Page } from "@/lib/admin";
 import { Note, useLoad, when } from "../ui";
 
@@ -36,7 +37,7 @@ export default function AuditPage() {
           >
             {SUBJECTS.map((s) => (
               <option key={s} value={s}>
-                {s || "все объекты"}
+                {s ? label(AUDIT_SUBJECT, s) : "все объекты"}
               </option>
             ))}
           </select>
