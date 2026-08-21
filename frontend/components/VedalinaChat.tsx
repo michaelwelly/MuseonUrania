@@ -7,6 +7,8 @@ import { vedalina, quickReplies, answerFor } from "@/content/vedalina";
 import { site } from "@/content/site";
 import {
   apiConfigured,
+  callHuman,
+  chatPrompts,
   chatStreamUrl,
   chatThread,
   pingTyping,
@@ -14,6 +16,7 @@ import {
   visitorKey,
   type ChatLine,
   type Handoff,
+  type Prompt,
   type Source,
 } from "@/lib/submit";
 import styles from "./VedalinaChat.module.css";
@@ -39,19 +42,44 @@ type Message = {
   sources?: Source[];
   /** Заполнен, когда подходящих опубликованных источников нет. */
   handoff?: Handoff;
+  /** Когда написано. У приветствия пусто: его никто не отправлял. */
+  at?: string;
+  /**
+   * Когда прочитано другой стороной. Показывается только у своих сообщений
+   * и значит ровно одно: их увидел живой человек. Ждущему это важнее
+   * любой надписи о сроках — она обещание, а отметка факт.
+   */
+  readAt?: string | null;
 };
+
+/** Часы и минуты. Разговор возвращаются читать через час и через день. */
+function clock(iso?: string): string | null {
+  if (!iso) return null;
+  const at = new Date(iso);
+  return Number.isNaN(at.valueOf())
+    ? null
+    : at.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+}
 
 const GREETING: Message = { from: "bot", text: vedalina.greeting };
 
 /** Строка серверной ленты — в сообщение виджета. */
 function toMessage(line: ChatLine): Message {
-  if (line.author === "visitor") return { from: "me", text: line.body };
+  if (line.author === "visitor") {
+    return { from: "me", text: line.body, at: line.at, readAt: line.readAt };
+  }
   if (line.author === "staff") {
-    return { from: "staff", who: line.actor ?? "Специалист VEDAL", text: line.body };
+    return {
+      from: "staff",
+      who: line.actor ?? "Специалист VEDAL",
+      text: line.body,
+      at: line.at,
+    };
   }
   return {
     from: "bot",
     text: line.body,
+    at: line.at,
     sources: line.sources?.length ? line.sources : undefined,
   };
 }
@@ -60,6 +88,14 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
   const [list, setList] = useState<Message[]>([GREETING]);
   const [typing, setTyping] = useState(false);
   const [draft, setDraft] = useState("");
+  // Кнопки приходят с портала: подпись и заготовка, разложенные по двум
+  // местам, расходятся на первой же правке — и расходятся молча.
+  const [prompts, setPrompts] = useState<Prompt[]>([]);
+  // Разговор ждёт человека. Состояние, а не сообщение в ленте: сообщение
+  // дописывалось после ответа и пропадало на первом же обновлении ленты
+  // из потока — то есть исчезало ровно тогда, когда посетитель ждал.
+  const [waiting, setWaiting] = useState(false);
+  const feed = useRef<HTMLDivElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const visitor = useRef<string>("");
   // Сотрудник печатает. Живёт секунды и гаснет само: события «перестал»
@@ -86,10 +122,15 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
     visitor.current = visitorKey();
     let alive = true;
 
+    void chatPrompts().then((loaded) => {
+      if (alive) setPrompts(loaded);
+    });
+
     const refresh = () =>
       void chatThread(visitor.current).then((thread) => {
         if (!alive || !thread?.messages.length) return;
         setTyping(false);
+        setWaiting(thread.status === "waiting");
         setList([GREETING, ...thread.messages.map(toMessage)]);
       });
 
@@ -121,7 +162,7 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
     };
   }, []);
 
-  function ask(text: string) {
+  function ask(text: string, intent?: string) {
     const question = text.trim();
     if (!question) return;
 
@@ -140,7 +181,7 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
       return;
     }
 
-    void sayInChat(visitor.current, question).then((thread) => {
+    void sayInChat(visitor.current, question, intent).then((thread) => {
       setTyping(false);
 
       if ("error" in thread) {
@@ -160,23 +201,76 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
       // позапрошлый вопрос» здесь взяться неоткуда.
       setList([GREETING, ...thread.messages.map(toMessage)]);
 
-      // Ответа могло не быть вовсе — тогда разговор ждёт человека, и вместо
-      // выдумки посетитель получает контакты. Придумывать ответ запрещено
-      // правилами ассистента.
-      if (thread.status === "waiting") {
+      // Ответа могло не быть вовсе — тогда разговор ждёт человека.
+      // Придумывать ответ запрещено правилами ассистента.
+      setWaiting(thread.status === "waiting");
+    });
+  }
+
+  /**
+   * Позвать живого человека.
+   *
+   * Отдельная дверь, а не сообщение с особым текстом. Кнопка «Специалист
+   * VEDAL» раньше отправляла свою подпись как вопрос — поиск отвечал на неё
+   * каталогом, а разговор оставался у Ведалины: никого не звали.
+   */
+  function human() {
+    if (waiting) return;
+
+    if (!apiConfigured) {
+      setList((prev) => [
+        ...prev,
+        {
+          from: "bot",
+          text: vedalina.handoffNote,
+          handoff: { reason: vedalina.handoffNote, phone: site.phone, email: site.email, forms: [] },
+        },
+      ]);
+      return;
+    }
+
+    setTyping(true);
+    void callHuman(visitor.current).then((thread) => {
+      setTyping(false);
+      if ("error" in thread) {
+        // Портал молчит — отдаём живые контакты, а не оставляем тупик.
         setList((prev) => [
           ...prev,
           {
             from: "bot",
-            text: vedalina.handoffNote,
-            handoff: { reason: vedalina.handoffNote, phone: site.phone, email: site.email, forms: [] },
+            text: thread.error,
+            handoff: { reason: thread.error, phone: site.phone, email: site.email, forms: [] },
           },
         ]);
+        return;
       }
+      setList([GREETING, ...thread.messages.map(toMessage)]);
+      setWaiting(thread.status === "waiting");
     });
   }
 
-  const shown = list.slice(-vedalina.windowSize);
+  // Лента целиком, а не последние несколько сообщений. Окно в четыре
+  // реплики съедало разговор на третьем вопросе: посетитель терял и свой
+  // вопрос, и ссылки из ответа. Панель прокручивается — места хватает.
+  const shown = list;
+
+  // Без портала кнопки берутся из содержимого: иначе в режиме вёрстки,
+  // когда серверная часть не поднята, окно остаётся вовсе без кнопок
+  // и выглядит сломанным, а не ненастроенным.
+  const shownPrompts: Prompt[] = prompts.length
+    ? prompts
+    : quickReplies.map((label) => ({
+        intent: label,
+        label,
+        action: label === "Позвать специалиста" ? "handoff" : "ask",
+      }));
+
+  // Прокрутка вниз на каждое изменение: новое сообщение, появившееся ниже
+  // видимой части, для посетителя не появилось вовсе.
+  useEffect(() => {
+    const box = feed.current;
+    if (box) box.scrollTop = box.scrollHeight;
+  }, [shown, typing, staffTyping, waiting]);
 
   return (
     <section className={styles.chat} aria-label={`Чат с ассистентом ${vedalina.name}`}>
@@ -223,7 +317,7 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
         )}
       </div>
 
-      <div className={styles.feed} aria-live="polite">
+      <div className={styles.feed} aria-live="polite" ref={feed}>
         {shown.map((m, i) => (
           <div
             key={`${m.from}-${i}-${m.text.slice(0, 12)}`}
@@ -235,6 +329,19 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
             {m.from === "staff" && <span className={styles.who}>{m.who}</span>}
 
             <p className={`${styles.msg} ${styles[m.from]}`}>{m.text}</p>
+
+            {/* Время и отметка прочтения. Отметка стоит только у своих
+                сообщений и значит ровно одно: их увидел живой человек.
+                Ждущему это важнее любой надписи о сроках — надпись
+                обещание, отметка факт. */}
+            {(m.at || m.readAt) && (
+              <span className={styles.meta}>
+                {clock(m.at)}
+                {m.from === "me" && m.readAt && (
+                  <span className={styles.read}> · прочитано</span>
+                )}
+              </span>
+            )}
 
             {/* Ответ обязан нести ссылки на источники: правило из спеки
                 ассистента. Без них утверждение проверить нечем. */}
@@ -276,19 +383,38 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
           </p>
         )}
 
-        <div className={styles.chips}>
-          {quickReplies.map((q) => (
-            <button
-              key={q}
-              type="button"
-              className={styles.chip}
-              onClick={() => ask(q)}
-              data-analytics="vedalina_quick_action_click"
-            >
-              {q}
-            </button>
-          ))}
-        </div>
+        {/* Разговор ждёт человека. Полоса, а не сообщение в ленте: сообщение
+            дописывалось после ответа и пропадало на первом же обновлении
+            из потока — исчезало ровно тогда, когда посетитель ждал. */}
+        {waiting && (
+          <p className={styles.waiting} aria-live="polite">
+            <span className={styles.waitingDot} aria-hidden="true" />
+            Ждём специалиста. Он ответит в этом окне — можно писать дальше,
+            он прочитает всё. Не хотите ждать:{" "}
+            <a href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a>
+            {" · "}
+            <a href={`mailto:${site.email}`}>{site.email}</a>
+          </p>
+        )}
+
+        {/* Кнопки молчат, когда в разговоре человек: заготовка поверх
+            живого специалиста выглядит как сотрудник, который не читает,
+            что ему пишут. */}
+        {!waiting && (
+          <div className={styles.chips}>
+            {shownPrompts.map((p) => (
+              <button
+                key={p.intent}
+                type="button"
+                className={p.action === "handoff" ? styles.chipHuman : styles.chip}
+                onClick={() => (p.action === "handoff" ? human() : ask(p.label, p.intent))}
+                data-analytics="vedalina_quick_action_click"
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <form

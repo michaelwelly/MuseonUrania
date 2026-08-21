@@ -223,9 +223,18 @@ function freshVisitorKey(): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+/**
+ * Написать в чат.
+ *
+ * @param intent какую кнопку нажали. Пусто — человек напечатал сам.
+ *   Портал выбирает заготовку по намерению, а не по совпадению подписи:
+ *   подпись живёт здесь и меняется вместе с интерфейсом, а совпадение
+ *   по ней разъехалось бы молча — ответ просто перестал бы находиться.
+ */
 export async function sayInChat(
   visitor: string,
   text: string,
+  intent?: string,
 ): Promise<ChatThread | { error: string }> {
   if (!apiConfigured) return { error: NOT_CONFIGURED };
 
@@ -237,9 +246,63 @@ export async function sayInChat(
       body: JSON.stringify({
         visitorKey: visitor,
         text,
+        intent: intent ?? null,
         // Атрибуция снимается при отправке первого сообщения: язык страницы
         // и метка кампании — свойство того, откуда человек пришёл, и позже
         // взять их уже неоткуда.
+        language: document.documentElement.lang || null,
+        campaign: new URLSearchParams(location.search).get("utm_campaign"),
+        page: location.pathname,
+      }),
+    });
+  } catch {
+    return { error: UNREACHABLE };
+  }
+
+  if (response.ok) return (await response.json()) as ChatThread;
+
+  const problem = await readProblem(response);
+  return { error: problem.title ?? problem.detail ?? `Чат недоступен (${response.status}).` };
+}
+
+/** Кнопка быстрого ответа. Список приходит с портала, а не переписан сюда. */
+export type Prompt = { intent: string; label: string; action: "ask" | "handoff" };
+
+/**
+ * Кнопки виджета.
+ *
+ * Портал кэширует ответ на час, поэтому запрос дешёвый. Не дошёл —
+ * кнопок нет вовсе, и это правильнее, чем показать список из прошлой
+ * версии интерфейса: кнопка, отправляющая намерение, которого портал
+ * не знает, снова превращается в вопрос с подписью вместо текста.
+ */
+export async function chatPrompts(): Promise<Prompt[]> {
+  if (!apiConfigured) return [];
+  try {
+    const response = await fetch(`${apiUrl}/api/assistant/v1/prompts`);
+    return response.ok ? ((await response.json()) as Prompt[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Позвать живого человека.
+ *
+ * Отдельная дверь, а не сообщение с особым текстом. Раньше кнопка
+ * «Специалист VEDAL» отправляла свою подпись как вопрос — и поиск отвечал
+ * на неё каталогом, а разговор оставался у Ведалины.
+ */
+export async function callHuman(visitor: string): Promise<ChatThread | { error: string }> {
+  if (!apiConfigured) return { error: NOT_CONFIGURED };
+
+  let response: Response;
+  try {
+    response = await fetch(`${apiUrl}/api/assistant/v1/chat/handoff`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        visitorKey: visitor,
         language: document.documentElement.lang || null,
         campaign: new URLSearchParams(location.search).get("utm_campaign"),
         page: location.pathname,
