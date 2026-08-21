@@ -12,8 +12,6 @@ import java.util.UUID;
 @Service
 public class Mailer {
 
-    static final String QUEUED = "queued";
-
     private final OutboundMailRepository mails;
 
     public Mailer(OutboundMailRepository mails) {
@@ -30,7 +28,7 @@ public class Mailer {
         mail.setBody(template.body(context));
         mail.setLeadId(leadId);
         mail.setCorrelationId(CorrelationId.current());
-        mail.setStatus(QUEUED);
+        mail.setStatus(OutboundMail.QUEUED);
         mails.save(mail);
         return mail.getId();
     }
