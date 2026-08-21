@@ -23,6 +23,10 @@ vi.mock("@/lib/auth", () => ({
   accessToken: async () => "token",
   login: vi.fn(),
   logout: vi.fn(),
+  // Подписка на выход в соседней вкладке. Здесь она не проверяется —
+  // её поведение лежит в lib/auth.test.ts, — но без неё оболочка
+  // не поднимается вовсе.
+  onSessionLost: () => () => {},
 }));
 
 vi.mock("@/lib/admin", () => ({
