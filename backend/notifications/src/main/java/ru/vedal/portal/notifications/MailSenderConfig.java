@@ -24,13 +24,19 @@ public class MailSenderConfig {
     // автоконфигурация Spring Boot и ровно тогда, когда задан spring.mail.host.
     // Отдельного собственного флага «включить почту» нет намеренно: два
     // переключателя одного и того же рано или поздно разъезжаются.
+    // Пустой адрес проверяется отдельно от наличия бина. Условие
+    // автоконфигурации — «свойство задано», и пустая строка ему удовлетворяет:
+    // в Compose переменная, объявленная без значения, приезжает в контейнер
+    // именно пустой строкой. Без этой проверки портал счёл бы почту
+    // настроенной и ронял бы каждое письмо на пустом адресе сервера.
     @Bean
     @ConditionalOnMissingBean(MailSender.class)
     MailSender mailSender(ObjectProvider<JavaMailSender> transport,
+                          @Value("${spring.mail.host:}") String host,
                           @Value("${vedal.notifications.from:}") String from,
                           @Value("${spring.mail.username:}") String username) {
         var javaMail = transport.getIfAvailable();
-        if (javaMail == null) {
+        if (javaMail == null || host.isBlank()) {
             // Предупреждение, а не отказ подняться. Портал без почты принимает
             // заявки и показывает их в админке — это рабочее состояние машины
             // разработчика и стенда. Но проговорить последствие обязательно:
