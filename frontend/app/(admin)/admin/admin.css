@@ -4297,18 +4297,30 @@
   padding: var(--s1) 0;
 }
 
+/* Три состояния, а не два.
+
+   Незаполненное обязательное и незаполненное желательное выглядели
+   одинаково, хотя подпись под списком обещала, что различаются. Обещание
+   в подписи, которого не выполняет сам список, хуже отсутствия подписи. */
 .check__mark {
   flex: none;
   display: grid;
   place-items: center;
   width: 18px;
   height: 18px;
-  border: 1px solid var(--state-wait-line);
+  border: 1px solid var(--line);
   border-radius: var(--radius-control);
-  background: var(--state-wait-bg);
-  color: var(--state-wait);
+  background: var(--state-flat-bg);
+  color: var(--muted);
   font-size: var(--t-micro);
   font-weight: 600;
+}
+
+/* Без этого портал не опубликует. */
+.check__row--must .check__mark {
+  border-color: var(--state-wait-line);
+  background: var(--state-wait-bg);
+  color: var(--state-wait);
 }
 
 .check__row--on .check__mark {
@@ -4992,4 +5004,110 @@ a.load:hover {
     flex-wrap: wrap;
     gap: var(--s3);
   }
+}
+
+/* ————— аналитика ————— */
+
+.period {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s3);
+  margin: 0 0 var(--s4);
+  padding: var(--s1) var(--s2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--paper);
+  font-size: var(--t-micro);
+  color: var(--text-2);
+  width: fit-content;
+}
+
+.period__vs {
+  color: var(--muted);
+}
+
+/* Плитка отчёта не ведёт никуда: это число, а не вход в раздел. */
+.tile--flat {
+  cursor: default;
+}
+
+.tile__delta {
+  margin-top: var(--s1);
+  font-size: var(--t-micro);
+  color: var(--muted);
+}
+
+/* Цвет здесь про рост и падение, а не про добро и зло: рост проигранных —
+   это рост проигранных, и зелёным его красить нечего. */
+.tile__delta--up {
+  color: var(--state-ok);
+}
+
+.tile__delta--down {
+  color: var(--state-wait);
+}
+
+/* ————— путь заявки ————— */
+
+.track {
+  display: grid;
+  grid-template-columns: minmax(0, 160px) minmax(0, 1fr) minmax(0, 120px);
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s2) 0;
+}
+
+@media (max-width: 640px) {
+  .track {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 80px);
+  }
+
+  .track__bar {
+    grid-column: 1 / -1;
+    order: 3;
+  }
+}
+
+.track__name {
+  font-size: var(--t-small);
+}
+
+/* Дорожка одной длины у всех полос: разницу между ними меряют глазом,
+   и для этого шкала обязана быть общей. */
+.track__bar {
+  display: block;
+  height: 10px;
+  border-radius: var(--radius-control);
+  background: var(--line-2);
+  overflow: hidden;
+}
+
+.track__fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--green), var(--green-dark));
+}
+
+.track__fill--stop {
+  background: var(--state-stop);
+}
+
+.track__num {
+  font-size: var(--t-small);
+  font-weight: 600;
+  text-align: right;
+}
+
+.track__share {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* Итоговая строка на подложке: её ищут глазами первой, а в ряду
+   одинаковых строк она теряется. */
+.admin-table tbody tr.row--total td {
+  background: var(--paper);
+  font-weight: 600;
+  border-top: 1px solid var(--line);
 }

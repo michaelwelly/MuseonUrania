@@ -54,7 +54,9 @@ export default function QuoteCard({ params }: { params: Promise<{ id: string }> 
     <>
       <div className="admin-head">
         <div className="deal__head">
-          <h1>КП {data?.number ?? ""}</h1>
+          {/* Номер уже начинается с «КП-», и приставка давала «КП КП-2026-0001».
+              Раздел и вкладка над заголовком и так говорят, что это КП. */}
+          <h1>{data?.number ?? "Коммерческое предложение"}</h1>
           {data && (
             <p className="deal__sub">
               <Link href={`/admin/deals/${data.dealId}/`}>{data.dealTitle}</Link>
