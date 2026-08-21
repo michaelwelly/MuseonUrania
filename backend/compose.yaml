@@ -493,6 +493,23 @@ services:
       VEDAL_ADMIN_ORIGINS: ${VEDAL_ADMIN_ORIGINS:-http://localhost:8080,http://localhost:3000}
       VEDAL_PORTAL_URL: ${VEDAL_PUBLIC_URL:-http://localhost:8080}
       VEDAL_NOTIFICATIONS_MANAGER: ${VEDAL_NOTIFICATIONS_MANAGER:-}
+
+      # Почта. Пустой адрес сервера — рабочее состояние, а не поломка: письма
+      # пишутся в лог и наружу не уходят, так и живёт машина разработчика.
+      # Портал отличает пустое значение от заданного сам (MailSenderConfig),
+      # поэтому пустые строки здесь безопасны.
+      #
+      # Значения задаются в .env рядом с compose-файлом, а не здесь: пароль
+      # в репозитории убирается только перезаписью истории. Пароль нужен
+      # именно приложения — при включённом втором факторе Яндекс 360 основной
+      # пароль учётной записи по SMTP не принимает.
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:-}
+      # Обратный адрес, если он отличается от логина. Яндекс 360 принимает
+      # письмо только от ящика, под которым выполнен вход, поэтому по умолчанию
+      # пусто и берётся логин.
+      VEDAL_MAIL_FROM: ${VEDAL_MAIL_FROM:-}
     ports:
       - "${VEDAL_PORTAL_PORT:-8081}:8081"
     healthcheck:
