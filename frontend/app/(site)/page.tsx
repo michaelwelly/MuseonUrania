@@ -1,8 +1,9 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import HomeLeadForm from "@/components/HomeLeadForm";
 import LivePattern from "@/components/LivePattern";
-import { site } from "@/content/site";
+import { site, siteSeo } from "@/content/site";
 import { news } from "@/content/news";
 import {
   homeHero,
@@ -13,6 +14,13 @@ import {
 } from "@/content/home";
 import styles from "./page.module.css";
 import { mediaSrc } from "@/lib/media";
+import { pageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = pageMetadata({
+  title: siteSeo.title,
+  description: siteSeo.description,
+  path: "/",
+});
 
 function Arrow({ size = 16 }: { size?: number }) {
   return (

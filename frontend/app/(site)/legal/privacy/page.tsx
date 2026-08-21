@@ -1,14 +1,23 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import PageHero from "@/components/PageHero";
 import { privacy } from "@/content/legal";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
-  title: `${privacy.title} — VEDAL`,
-  description: privacy.lead,
+  ...pageMetadata({
+    title: `${privacy.title} — VEDAL`,
+    description: privacy.lead,
+    path: "/legal/privacy/",
+  }),
   // Страница со статусом «готовится» не должна попасть в поиск: по запросу
   // «политика VEDAL» человек должен найти документ, а не сообщение о том,
   // что документа пока нет. Снимем, когда появится согласованный текст.
+  //
+  // canonical при этом остаётся: noindex говорит «не показывать в выдаче»,
+  // а canonical — «вот основной адрес этой страницы». Второе нужно и здесь:
+  // ссылку на политику ставят из подвала каждой страницы, и адрес у неё
+  // должен быть один, а не три по числу хостов.
   robots: { index: false, follow: true },
 };
 

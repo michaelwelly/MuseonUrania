@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import Image from "next/image";
 import Link from "next/link";
 import VedalMap from "@/components/VedalMap";
@@ -9,10 +10,11 @@ import LivePattern from "@/components/LivePattern";
 import styles from "./page.module.css";
 import { mediaSrc } from "@/lib/media";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Производство — VEDAL",
   description: productionHero.lead,
-};
+  path: "/production/",
+});
 
 export default function ProductionPage() {
   return (
