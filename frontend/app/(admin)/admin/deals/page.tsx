@@ -232,10 +232,15 @@ function Board({ funnel }: { funnel: Pipeline }) {
       <div className="board">
         {funnel.stages.map((stage) => {
           const column = columns?.find((c) => c.stage === stage);
+          // Сумма показывается, только когда в колонке видно всё И там
+          // есть что складывать. «0,00 RUB» под пустой стадией читается
+          // как настоящая сумма, равная нулю, — а означает «здесь ничего
+          // нет», и это разные утверждения.
           const целиком = column !== undefined && column.rows.length === column.total;
-          const сумма = целиком
-            ? column.rows.reduce((sum, d) => sum + (d.amount ?? 0), 0)
-            : null;
+          const сумма =
+            целиком && column.rows.length > 0
+              ? column.rows.reduce((sum, d) => sum + (d.amount ?? 0), 0)
+              : null;
 
           return (
             <section
@@ -262,11 +267,13 @@ function Board({ funnel }: { funnel: Pipeline }) {
                   Сумма по сорока карточкам из ста — не сумма стадии,
                   а число, которое выглядит как сумма стадии. */}
               <p className="board__sum mono">
-                {сумма === null
-                  ? column
-                    ? `показаны ${column.rows.length} из ${column.total}`
-                    : ""
-                  : money(сумма, "RUB")}
+                {сумма !== null
+                  ? money(сумма, "RUB")
+                  : column === undefined
+                    ? ""
+                    : column.total === 0
+                      ? ""
+                      : `показаны ${column.rows.length} из ${column.total}`}
               </p>
 
               <div className="board__cards">

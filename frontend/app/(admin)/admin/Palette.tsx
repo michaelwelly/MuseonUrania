@@ -3,6 +3,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { clients, deals, news, products } from "@/lib/admin";
+import { slugify } from "@/lib/translit";
 import { SearchIcon } from "./icons";
 
 // Поиск по всему порталу.
@@ -156,13 +157,18 @@ export function Palette({ onClose }: { onClose: () => void }) {
 
   const строки = useMemo(() => {
     const низ = трим.toLowerCase();
-    const из_пула = низ
-      ? (pool ?? []).filter(
-          (r) => r.title.toLowerCase().includes(низ) || r.note.toLowerCase().includes(низ),
-        )
-      : [];
+    // Каталог назван латиницей — VEDAL R1, — а ищут его по-русски: «вед».
+    // Замер на стенде: «вед» не находил ничего, «ved» находил восемь
+    // изделий. Поэтому набранное сравнивается ещё и в транслитерации
+    // тем же правилом, которым собираются адреса страниц.
+    const латиницей = slugify(трим);
+    const совпало = (текст: string) => {
+      const t = текст.toLowerCase();
+      return t.includes(низ) || (латиницей.length > 1 && t.includes(латиницей));
+    };
+    const из_пула = низ ? (pool ?? []).filter((r) => совпало(r.title) || совпало(r.note)) : [];
     const клиенты = found.q === трим ? found.rows : [];
-    const подходящие = низ ? ДЕЙСТВИЯ.filter((r) => r.title.toLowerCase().includes(низ)) : ДЕЙСТВИЯ;
+    const подходящие = низ ? ДЕЙСТВИЯ.filter((r) => совпало(r.title)) : ДЕЙСТВИЯ;
 
     // Клиенты первыми: их ищут чаще всего, и ждать их появления после
     // каталога значит смотреть, как строка под курсором прыгает.
