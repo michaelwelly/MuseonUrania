@@ -65,3 +65,33 @@ owner brief lists MFA as mandatory, and it is switched on by realm policy in a
 deployed environment — `Authentication → Required actions → Configure OTP`. This
 does not concern the portal at all: it verifies an issued token and does not know
 how many factors were presented at sign-in.
+
+## Session lifetime
+
+| Setting | Value | What it means |
+| --- | --- | --- |
+| `accessTokenLifespan` | 900 (15 minutes) | how long an access token lives; the admin panel renews it by itself and nobody sees it happen |
+| `ssoSessionIdleTimeout` | 3600 (1 hour) | how long an admin session survives inactivity |
+| `ssoSessionMaxLifespan` | 36000 (10 hours) | the ceiling regardless of activity: a working day |
+
+An hour of idle time is a direct requirement: it used to be half an hour, and
+on the stand the access token lived five minutes against fifteen locally.
+Values that drift apart are what "works on my machine" is made of.
+
+**Editing this file does not change a realm that already exists.**
+`--import-realm` imports the realm on first start and leaves an existing one
+alone afterwards: the `vedal-keycloak` volume outlives container recreation.
+So on a running stand — and on any machine where the stack has been up before —
+the new values will not appear by themselves.
+
+Two ways to apply them:
+
+1. **In the Keycloak console** — Realm settings → Sessions (SSO Session Idle)
+   and Realm settings → Tokens (Access Token Lifespan). Thirty seconds,
+   no restart, nothing is lost. This is the way to do it.
+2. Recreate the realm by importing with overwrite. Do not do this without a
+   reason: overwriting deletes the whole realm and with it every account
+   created in the console — that is, every member of staff.
+
+The file stays the source of truth for a clean install: a stack brought up
+from scratch gets these values straight away.
