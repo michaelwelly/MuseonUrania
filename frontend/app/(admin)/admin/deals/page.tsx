@@ -16,6 +16,7 @@ import { Avatar } from "../Avatar";
 import { useToast } from "../Toast";
 import { PIPELINE, STAGE, label } from "../labels";
 import { useStored } from "../lists";
+import { Reason } from "./Reason";
 import { Empty, Note, Segments, State, message, money, useLoad, when } from "../ui";
 
 // Сделки: доска и список.
@@ -290,7 +291,7 @@ function Board({ funnel }: { funnel: Pipeline }) {
 
       {asking && (
         <Reason
-          deal={asking.deal}
+          title={asking.deal.title}
           stage={asking.stage}
           onCancel={() => setAsking(null)}
           onDone={(reason) => {
@@ -348,72 +349,6 @@ function Card({ deal, now, onDrag }: { deal: DealRow; now: number; onDrag: () =>
         </span>
       )}
     </Link>
-  );
-}
-
-/** Причина отказа. Требование домена: `lostStages` без причины портал не примет. */
-function Reason({
-  deal,
-  stage,
-  onCancel,
-  onDone,
-}: {
-  deal: DealRow;
-  stage: string;
-  onCancel: () => void;
-  onDone: (reason: string) => void;
-}) {
-  const [text, setText] = useState("");
-
-  return (
-    <div
-      className="veil"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onCancel();
-      }}
-    >
-      <div
-        className="sheet"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="reason-title"
-        onKeyDown={(e) => e.key === "Escape" && onCancel()}
-      >
-        <div className="sheet__head">
-          <h2 id="reason-title">Почему {label(STAGE, stage)}?</h2>
-        </div>
-
-        <p className="sheet__note">
-          «{deal.title}» уходит в отказ. Причина остаётся в карточке сделки и попадает
-          в аналитику: без неё через полгода нельзя ответить, почему проигрывают.
-        </p>
-
-        <label className="field">
-          <span>Причина</span>
-          <textarea
-            autoFocus
-            rows={3}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Дорого · выбрали другого поставщика · отложили закупку"
-          />
-        </label>
-
-        <div className="row row--end">
-          <button type="button" className="btn" onClick={onCancel}>
-            Отмена
-          </button>
-          <button
-            type="button"
-            className="btn btn--danger"
-            disabled={!text.trim()}
-            onClick={() => onDone(text.trim())}
-          >
-            Перевести в отказ
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
 

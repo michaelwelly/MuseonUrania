@@ -3521,3 +3521,343 @@
   color: var(--state-stop);
   font-weight: 600;
 }
+
+/* ————— карточка сделки ————— */
+
+.deal__head {
+  min-width: 0;
+}
+
+/* Клиент, сумма и ответственный одной строкой под заголовком: это три
+   ответа на вопрос «та ли это сделка», и разносить их по карточкам значит
+   заставлять искать взглядом. */
+.deal__sub {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s3);
+  margin: var(--s2) 0 0;
+  font-size: var(--t-small);
+}
+
+.deal__sum {
+  font-size: var(--t-base);
+  font-weight: 600;
+}
+
+.deal {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: var(--s4);
+  align-items: start;
+}
+
+@media (max-width: 1320px) {
+  .deal {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.deal__left,
+.deal__right {
+  min-width: 0;
+}
+
+/* ————— полоса стадий ————— */
+
+/* Блоки равной доли: полоса читается как путь, а не как список кнопок
+   разной длины. min-width держит название от переноса на двух словах. */
+.stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1);
+  margin-bottom: var(--s3);
+}
+
+.stages__one {
+  flex: 1 1 0;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.stages__one:hover:not(:disabled) {
+  border-color: var(--green);
+  color: var(--green-dark);
+}
+
+/* Текущая — заливкой: её положение в ряду и есть ответ на «где мы». */
+.stages__one--now {
+  border-color: var(--green-dark);
+  background: var(--green-dark);
+  color: #fff;
+  cursor: default;
+}
+
+.stages__one--stop {
+  border-color: var(--state-stop);
+  background: var(--state-stop);
+  color: #fff;
+  cursor: default;
+}
+
+.stages__one--past {
+  border-color: var(--state-ok-line);
+  background: var(--state-ok-bg);
+  color: var(--state-ok);
+}
+
+.stages__one--next {
+  color: var(--muted);
+}
+
+.stages__name {
+  font-size: var(--t-small);
+  font-weight: 600;
+}
+
+.stages__note {
+  font-size: var(--t-micro);
+  /* Строка есть всегда, даже пустая: иначе блоки в ряду разной высоты. */
+  min-height: var(--s4);
+  opacity: 0.85;
+}
+
+/* ————— вложения и КП в карточке ————— */
+
+.attach {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s2) 0;
+  border-bottom: 1px solid var(--line-2);
+}
+
+.attach__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+
+.attach__name {
+  font-size: var(--t-small);
+  font-weight: 600;
+}
+
+.attach__meta {
+  font-size: var(--t-micro);
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quote-line {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s2) 0;
+  border-bottom: 1px solid var(--line-2);
+  color: inherit;
+  text-decoration: none;
+}
+
+.quote-line:hover {
+  background: var(--paper);
+}
+
+.quote-line__no {
+  font-size: var(--t-small);
+  font-weight: 600;
+}
+
+.quote-line__till {
+  font-size: var(--t-micro);
+  color: var(--muted);
+}
+
+.quote-line__sum {
+  margin-left: auto;
+  font-size: var(--t-small);
+  font-weight: 600;
+}
+
+/* ————— строка списка: полоса проблемы и названное действие ————— */
+
+.admin-table tbody tr.row--stop td:first-child {
+  box-shadow: inset 3px 0 0 var(--stripe-stop);
+}
+
+/* Числа выравниваются по правому краю: «2 650 000» и «265 000» должны
+   отличаться длиной, а не вниманием читающего. */
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.row__do {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--s6);
+  color: var(--muted);
+  font-size: var(--t-small);
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+/* Действие, которое двигает работу, набрано зелёным и весом: в списке из
+   тридцати строк видно, где ждут человека, а где ждут клиента. */
+.row__do--on {
+  color: var(--green-dark);
+  font-weight: 600;
+}
+
+.row__do:hover {
+  text-decoration: underline;
+}
+
+/* ————— составление КП ————— */
+
+.quote {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 336px;
+  gap: var(--s4);
+  align-items: start;
+  margin-bottom: var(--s4);
+}
+
+@media (max-width: 1320px) {
+  .quote {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.quote__main,
+.quote__side {
+  min-width: 0;
+}
+
+.quote__side {
+  padding: var(--s4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.quote__items input {
+  width: 100%;
+}
+
+/* Ширины полей заданы, а не отданы содержимому: количество и цена стоят
+   столбиком, и колонка, которая дышит от числа знаков, ломает выравнивание
+   по разрядам. */
+.quote__qty {
+  width: 64px;
+}
+
+.quote__price {
+  width: 110px;
+}
+
+.quote__slug {
+  margin-top: var(--s1);
+  font-size: var(--t-micro);
+}
+
+.quote__sum {
+  font-weight: 600;
+}
+
+.quote__drop {
+  display: grid;
+  place-items: center;
+  width: var(--s6);
+  height: var(--s6);
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.quote__drop:hover {
+  color: var(--state-stop);
+}
+
+/* Итог на подложке: это единственное число экрана, которое читают целиком,
+   и оно должно находиться взглядом, а не поиском по столбцу. */
+.quote__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  margin-top: var(--s4);
+  padding: var(--s3) var(--s4);
+  border-radius: var(--radius-card);
+  background: var(--paper);
+}
+
+.quote__total-name {
+  font-size: var(--t-base);
+  font-weight: 600;
+}
+
+.quote__total-sum {
+  font-size: var(--t-h2);
+  font-weight: 600;
+}
+
+/* ————— карточки-предупреждения в боковой колонке ————— */
+
+.warn {
+  margin-top: var(--s4);
+  padding: var(--s3);
+  border: 1px solid var(--state-wait-line);
+  border-radius: var(--radius-card);
+  background: var(--state-wait-bg);
+}
+
+.warn__title {
+  margin: 0 0 var(--s1);
+  font-size: var(--t-small);
+  font-weight: 600;
+  color: var(--state-wait);
+}
+
+.warn__body {
+  margin: 0;
+  font-size: var(--t-micro);
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+.flat {
+  margin-top: var(--s3);
+  padding: var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--state-flat-bg);
+}
+
+.flat__title {
+  margin: 0 0 var(--s1);
+  font-size: var(--t-small);
+  font-weight: 600;
+}
+
+.flat__body {
+  margin: 0;
+  font-size: var(--t-micro);
+  line-height: 1.5;
+  color: var(--text-2);
+}
