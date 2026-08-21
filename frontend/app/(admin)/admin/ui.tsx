@@ -175,3 +175,54 @@ export function money(amount: number | null, currency: string | null): string {
 export function Empty({ children }: { children: React.ReactNode }) {
   return <p className="admin-hint">{children}</p>;
 }
+
+/**
+ * Выбор одного из немногих: статус заявки, воронка, валюта, разрез аналитики.
+ *
+ * Сегменты, а не выпадающий список, ровно там, где вариантов от двух до пяти
+ * и все они помещаются в строку. Причина не в красоте: выпадающий список
+ * прячет варианты за щелчком, и человек, который не помнит, что там,
+ * открывает его просто чтобы посмотреть. На пяти статусах заявки это
+ * лишний щелчок в каждом разборе.
+ *
+ * Больше пяти вариантов — обратно в select: сегменты начинают переноситься
+ * и превращаются в облако кнопок, где текущий теряется.
+ *
+ * Кнопки, а не радиокнопки со своей разметкой: группе нужно имя целиком
+ * (`role="radiogroup"` с подписью), а каждой кнопке — состояние, которое
+ * читается вслух. `aria-checked` на кнопке делает и то, и другое.
+ */
+export function Segments({
+  label: name,
+  value,
+  options,
+  dict,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: readonly string[];
+  /** Как называть значения по-человечески. Без словаря — как есть. */
+  dict?: Record<string, string>;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="segments" role="radiogroup" aria-label={name}>
+      {options.map((option) => {
+        const on = option === value;
+        return (
+          <button
+            key={option}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            className={`segments__one${on ? " segments__one--on" : ""}`}
+            onClick={() => onChange(option)}
+          >
+            {dict ? (dict[option] ?? option) : option}
+          </button>
+        );
+      })}
+    </div>
+  );
+}

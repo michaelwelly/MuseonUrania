@@ -84,10 +84,20 @@ async function shell(pathname: string) {
   await screen.findByText("editor");
 }
 
-/** Пункт, помеченный как текущий, в названной полосе. */
+/**
+ * Пункт, помеченный как текущий, в названной полосе.
+ *
+ * Счётчик из подписи вычитается. textContent склеивает соседние узлы,
+ * и вкладка «КП» со счётчиком ноль читается как «КП0» — тот же приём,
+ * которым замер уже однажды солгал про «11заявок».
+ */
 function currentIn(label: string): string[] {
   const strip = screen.getByRole("navigation", { name: label });
-  return [...strip.querySelectorAll('[aria-current="page"]')].map((n) => n.textContent ?? "");
+  return [...strip.querySelectorAll('[aria-current="page"]')].map((n) => {
+    const count = n.querySelector(".admin-tab__count")?.textContent ?? "";
+    const text = n.textContent ?? "";
+    return count ? text.slice(0, text.length - count.length) : text;
+  });
 }
 
 describe("навигация админки", () => {

@@ -1,440 +1,764 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  clients as loadClients,
-  convertLead,
-  eraseLeadData,
-  lead,
+  NOBODY,
   leadStatuses,
   leads,
-  pipelines as loadPipelines,
   triageLead,
-  type ClientRow,
-  type Conversion,
-  type Lead,
+  type LeadFilter,
   type LeadRow,
   type Page,
-  type Pipeline,
 } from "@/lib/admin";
-import EraseData from "../EraseData";
-import History from "../History";
+import { plural } from "@/lib/plural";
 import OwnerField from "../OwnerField";
-import { FORM, LEAD_STATUS, PIPELINE, label } from "../labels";
-import { Empty, Field, message, Note, State, useLoad, when } from "../ui";
+import { useToast } from "../Toast";
+import { useCounts } from "../counts";
+import { SearchIcon } from "../icons";
+import { FORM, LEAD_SOURCE, LEAD_STATUS, label } from "../labels";
+import { BulkBar, Columns, HeadBox, useSelection, useStored, type Column } from "../lists";
+import { Empty, Note, Segments, State, message, useLoad, when } from "../ui";
+import { useWho } from "../who";
+import { Triage } from "./Triage";
 
-// Единственная страница админки, где на экране персональные данные.
-// Отсюда и размер страницы с потолком на портале: ?size=1000000 не должен
-// превращать список в выгрузку всей базы одним запросом.
+// Заявки.
+//
+// Единственная страница админки, где на экране персональные данные, и самая
+// нагруженная работой: сюда приходят разбирать, а не смотреть. Отсюда всё
+// остальное устройство экрана.
+//
+// ───────────────────────────────────────────────────────────────────────────
+// Отбор делает портал
+//
+// Поиск и фильтры уходят в запрос, а не отбирают загруженную страницу.
+// Разница видна не сразу и оттого опасна: отбор в браузере работает по
+// пятидесяти строкам из скольких угодно и со второй страницы молча врёт —
+// «ничего не найдено» там означает «на этой странице нет». Менеджер, ищущий
+// человека по телефону, которым тот только что звонил, получил бы ответ
+// про несуществующего клиента.
+//
+// ───────────────────────────────────────────────────────────────────────────
+// Сохранённые фильтры
+//
+// Пять готовых наборов — это не украшение и не «избранное». Каждый отвечает
+// на вопрос, с которого начинается рабочий день: что никто не ведёт, что моё,
+// что новое. Счётчик рядом отвечает на них, не открывая.
+//
+// Живут в браузере: портал такого не хранит, а заводить под них таблицу
+// и дверь несоразмерно. Плата известна — на другом компьютере своих
+// фильтров не будет.
+
+type Saved = {
+  id: string;
+  name: string;
+  filter: LeadFilter;
+  /** Готовые набраны здесь, свои — сотрудником. Удалять можно только свои. */
+  own?: true;
+};
+
+const ВСЕ: Saved = { id: "all", name: "Все", filter: {} };
+
+const КОЛОНКИ: readonly Column[] = [
+  { key: "form", label: "Форма" },
+  { key: "contacts", label: "Контакты" },
+  { key: "source", label: "Источник" },
+  { key: "owner", label: "Ответственный" },
+];
+
+const ПО_УМОЛЧАНИЮ = ["form", "contacts", "source", "owner"];
 
 export default function LeadsPage() {
-  const [status, setStatus] = useState("");
+  const who = useWho();
+  const toast = useToast();
+  const counts = useCounts();
+
+  const [saved, setSaved] = useStored<Saved[]>("vedal.admin.leads.filters", []);
+  const [shown, setShown] = useStored<string[]>("vedal.admin.leads.columns", ПО_УМОЛЧАНИЮ);
+
+  const готовые = useMemo<Saved[]>(
+    () => [
+      ВСЕ,
+      { id: "nobody", name: "Без ответственного", filter: { owner: NOBODY } },
+      { id: "mine", name: "Мои в работе", filter: { owner: who.actor, status: "in_progress" } },
+      { id: "new", name: "Новые", filter: { status: "new" } },
+      { id: "quote", name: "Запросы КП", filter: { form: "quote" } },
+    ],
+    [who.actor],
+  );
+
+  const чипы = useMemo(() => [...готовые, ...saved], [готовые, saved]);
+
+  const [current, setCurrent] = useState<Saved>(ВСЕ);
+  const [typed, setTyped] = useState("");
+  const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
   const [open, setOpen] = useState<string | null>(null);
+  const [queue, setQueue] = useState<string[] | null>(null);
+  const [cursor, setCursor] = useState(0);
 
-  const { data: statuses } = useLoad<string[]>(leadStatuses);
-  const { data, error, loading, reload, setError } = useLoad<Page<LeadRow>>(
-    () => leads(status, page),
-    `${status}:${page}`,
+  const filter = useMemo<LeadFilter>(
+    () => ({ ...current.filter, ...(query ? { query } : {}) }),
+    [current, query],
   );
+  const key = JSON.stringify(filter) + `:${page}`;
+
+  const { data, error, loading, reload, setError } = useLoad<Page<LeadRow>>(
+    () => leads(filter, page),
+    key,
+  );
+  const { data: statuses } = useLoad<string[]>(leadStatuses);
+
+  const rows = useMemo(() => data?.items ?? [], [data]);
+  const ids = useMemo(() => rows.map((r) => r.id), [rows]);
+  const selection = useSelection(ids);
+
+  // Поиск с выдержкой: без неё каждая буква — запрос к порталу, и на «Петров»
+  // их шесть, из которых пять устареют раньше, чем вернутся.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setQuery(typed.trim());
+      setPage(0);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [typed]);
+
+  const обновить = useCallback(() => {
+    reload();
+    counts.refresh();
+  }, [reload, counts]);
 
   return (
     <>
       <div className="admin-head">
         <h1>Заявки</h1>
         <div className="row">
-          <select
-            aria-label="Статус заявки"
-            value={status}
-            onChange={(e) => {
-              setStatus(e.target.value);
-              setPage(0);
-            }}
-            className="admin-select"
-          >
-            <option value="">все статусы</option>
-            {(statuses ?? []).map((s) => (
-              <option key={s} value={s}>
-                {label(LEAD_STATUS, s)}
-              </option>
-            ))}
-          </select>
+          <label className="find">
+            <SearchIcon size={16} />
+            <input
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+              placeholder="Имя, компания, телефон, почта"
+              aria-label="Поиск по заявкам"
+              autoComplete="off"
+            />
+          </label>
+          <Columns columns={КОЛОНКИ} shown={shown} onChange={setShown} />
         </div>
       </div>
+
       <p className="admin-pd">На экране персональные данные</p>
-      <p className="admin-hint">
-        Заявка приходит черновиком: доступа к закрытым данным у неё нет, статус поднимает
-        менеджер. Смена статуса попадает в журнал без персональных данных — только
-        идентификатор заявки и что с ней сделали.
-      </p>
+
+      <Chips
+        chips={чипы}
+        current={current}
+        filter={filter}
+        onPick={(chip) => {
+          setCurrent(chip);
+          setPage(0);
+          selection.clear();
+        }}
+        onSave={(name) =>
+          setSaved([
+            ...saved,
+            { id: `own-${name}-${saved.length}`, name, filter, own: true },
+          ])
+        }
+        onForget={(id) => {
+          setSaved(saved.filter((s) => s.id !== id));
+          if (current.id === id) setCurrent(ВСЕ);
+        }}
+      />
 
       <Note kind="error">{error}</Note>
+
+      <BulkBar
+        count={selection.ids.length}
+        what={plural(selection.ids.length, "заявка", "заявки", "заявок")}
+        onClear={selection.clear}
+      >
+        <Bulk
+          rows={rows.filter((r) => selection.has(r.id))}
+          statuses={statuses ?? []}
+          onDone={(text, undo) => {
+            selection.clear();
+            обновить();
+            toast(text, undo);
+          }}
+          onError={setError}
+          onTriage={() => {
+            const пачка = selection.ids;
+            setQueue(пачка);
+            setOpen(пачка[0] ?? null);
+          }}
+        />
+      </BulkBar>
+
       {loading && !data && <p className="muted">Загружаем…</p>}
-      {data?.items.length === 0 && <Empty>Заявок с таким фильтром нет.</Empty>}
+      {data && rows.length === 0 && (
+        <Empty>
+          {query || current.id !== "all"
+            ? "По этому отбору заявок нет. Снимите фильтр или очистите поиск."
+            : "Заявок пока не приходило."}
+        </Empty>
+      )}
 
-      {data && data.items.length > 0 && (
+      {rows.length > 0 && (
         <>
-          <div className="admin-scroll">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Когда</th>
-                  <th>Кто</th>
-                  <th>Контакты</th>
-                  <th>Форма</th>
-                  <th>Статус</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {data.items.map((row) => (
-                  <tr key={row.id}>
-                    <td className="tight muted">{when(row.createdAt)}</td>
-                    <td>
-                      {row.name}
-                      {row.company && <div className="muted" style={{ fontSize: "var(--t-small)" }}>{row.company}</div>}
-                    </td>
-                    <td>
-                      <div className="mono">{row.phone}</div>
-                      <div className="mono">{row.email}</div>
-                    </td>
-                    <td className="tight">
-                      <span className="badge">{label(FORM, row.form)}</span>
-                      {row.productSlug && <div className="mono">{row.productSlug}</div>}
-                    </td>
-                    <td className="tight">
-                      <State value={row.status} dict={LEAD_STATUS} />
-                      {row.owner && (
-                        <div className="muted" style={{ fontSize: "var(--t-small)", marginTop: "var(--s1)" }}>
-                          {row.owner}
-                        </div>
-                      )}
-                    </td>
-                    <td className="tight">
-                      {/* Имя кнопки называет заявку.
-                          Текста «Разобрать» хватает глазами — рядом видно
-                          строку. Дереву доступности не хватает: обход
-                          с клавиатуры давал семь кнопок «Разобрать» подряд,
-                          и какая к какой заявке — узнать было неоткуда.
+          <Table
+            rows={rows}
+            shown={shown}
+            selection={selection}
+            cursor={cursor}
+            onCursor={setCursor}
+            open={open}
+            onOpen={(id) => {
+              setQueue(null);
+              setOpen(id);
+            }}
+          />
 
-                          Одного имени мало: у семи заявок оно совпадало —
-                          «Проверка стека». Различает их время обращения,
-                          оно же стоит первой колонкой. */}
-                      <button
-                        className="btn btn--small"
-                        aria-label={`${open === row.id ? "Свернуть" : "Разобрать"} заявку: ${row.name}, ${when(row.createdAt)}`}
-                        aria-expanded={open === row.id}
-                        onClick={() => setOpen(open === row.id ? null : row.id)}
-                      >
-                        {open === row.id ? "Свернуть" : "Разобрать"}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <div className="under">
+            <span className="under__count mono">
+              Показаны {data!.page * data!.size + 1}–{data!.page * data!.size + rows.length} из{" "}
+              {data!.total}
+            </span>
 
-          {open && (
-            <LeadCard
-              // key по заявке обязателен: без него выбранный, но не сохранённый
-              // статус переезжает на следующую открытую заявку, и «Сохранить
-              // разбор» ставит его чужому обращению.
-              key={open}
-              id={open}
-              statuses={statuses ?? []}
-              onDone={() => {
-                setOpen(null);
-                reload();
-              }}
-              onError={setError}
-            />
-          )}
+            <span className="under__keys mono">
+              J K — по строкам · ПРОБЕЛ — выделить · SHIFT+КЛИК — до этой строки · ⏎ — разобрать
+            </span>
 
-          {data.pages > 1 && (
-            <div className="row" style={{ marginTop: "var(--s4)" }}>
-              <button className="btn btn--small" disabled={page === 0} onClick={() => setPage(page - 1)}>
-                Назад
-              </button>
-              <span className="muted">
-                страница {data.page + 1} из {data.pages}, всего {data.total}
+            {data!.pages > 1 && (
+              <span className="under__pager">
+                <button
+                  className="btn btn--small"
+                  disabled={page === 0}
+                  onClick={() => setPage(page - 1)}
+                >
+                  Назад
+                </button>
+                <button
+                  className="btn btn--small"
+                  disabled={page + 1 >= data!.pages}
+                  onClick={() => setPage(page + 1)}
+                >
+                  Дальше
+                </button>
               </span>
-              <button
-                className="btn btn--small"
-                disabled={page + 1 >= data.pages}
-                onClick={() => setPage(page + 1)}
-              >
-                Дальше
-              </button>
-            </div>
-          )}
+            )}
+          </div>
         </>
+      )}
+
+      {open && (
+        <Triage
+          key={open}
+          id={open}
+          statuses={statuses ?? []}
+          queue={
+            queue
+              ? {
+                  list: queue,
+                  at: Math.max(0, queue.indexOf(open)),
+                  onGo: (at) => setOpen(queue[at] ?? null),
+                }
+              : undefined
+          }
+          onClose={() => {
+            setOpen(null);
+            setQueue(null);
+          }}
+          onSaved={обновить}
+        />
+      )}
+
+      <Keys
+        rows={ids}
+        cursor={cursor}
+        onCursor={setCursor}
+        selection={selection}
+        // Пока панель разбора открыта, список клавиш молчит: под затемнением
+        // J и K двигали бы строку, которую не видно.
+        off={open !== null}
+        onOpen={(id) => {
+          setQueue(null);
+          setOpen(id);
+        }}
+      />
+    </>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+
+function Chips({
+  chips,
+  current,
+  filter,
+  onPick,
+  onSave,
+  onForget,
+}: {
+  chips: readonly Saved[];
+  current: Saved;
+  filter: LeadFilter;
+  onPick: (chip: Saved) => void;
+  onSave: (name: string) => void;
+  onForget: (id: string) => void;
+}) {
+  const [naming, setNaming] = useState(false);
+  const [name, setName] = useState("");
+
+  return (
+    <div className="chips">
+      <span className="chips__label mono">Мои фильтры</span>
+
+      {chips.map((chip) => (
+        <Chip
+          key={chip.id}
+          chip={chip}
+          on={chip.id === current.id}
+          onPick={() => onPick(chip)}
+          onForget={chip.own ? () => onForget(chip.id) : undefined}
+        />
+      ))}
+
+      {naming ? (
+        <span className="chips__new">
+          <input
+            autoFocus
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Как назвать"
+            aria-label="Название фильтра"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && name.trim()) {
+                onSave(name.trim());
+                setName("");
+                setNaming(false);
+              }
+              if (e.key === "Escape") setNaming(false);
+            }}
+          />
+          <button
+            type="button"
+            className="btn btn--small"
+            disabled={!name.trim()}
+            onClick={() => {
+              onSave(name.trim());
+              setName("");
+              setNaming(false);
+            }}
+          >
+            Сохранить
+          </button>
+        </span>
+      ) : (
+        <button
+          type="button"
+          className="chips__add"
+          onClick={() => setNaming(true)}
+          // Сохранять «Все» бессмысленно: такой фильтр уже есть первым.
+          disabled={Object.keys(filter).length === 0}
+          title={
+            Object.keys(filter).length === 0
+              ? "Сначала выберите фильтр или наберите поиск"
+              : "Сохранить текущий отбор"
+          }
+        >
+          +
+        </button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Чип с числом.
+ *
+ * Число — отдельным запросом на чип, и это дорого выглядит, но дёшево стоит:
+ * `size=1` возвращает одну строку и `total`. Смысл в том, что человек видит,
+ * есть ли там работа, не открывая. Без числа чип отвечает «куда пойти»,
+ * а вопрос был «есть ли зачем».
+ */
+function Chip({
+  chip,
+  on,
+  onPick,
+  onForget,
+}: {
+  chip: Saved;
+  on: boolean;
+  onPick: () => void;
+  onForget?: () => void;
+}) {
+  const { data } = useLoad<Page<LeadRow>>(
+    () => leads(chip.filter, 0, 1),
+    JSON.stringify(chip.filter),
+  );
+
+  return (
+    <span className={`chip${on ? " chip--on" : ""}`}>
+      <button type="button" className="chip__pick" onClick={onPick} aria-pressed={on}>
+        {chip.name}
+        {data && <span className="chip__count mono">{data.total}</span>}
+      </button>
+      {onForget && (
+        <button
+          type="button"
+          className="chip__forget"
+          onClick={onForget}
+          aria-label={`Убрать фильтр «${chip.name}»`}
+        >
+          ×
+        </button>
+      )}
+    </span>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+
+/**
+ * Массовые действия.
+ *
+ * `triageLead` ставит статус и ответственного вместе — отдельной двери
+ * «только ответственный» у портала нет. Поэтому каждое действие берёт
+ * недостающее из строки на экране: смена статуса сохраняет ответственного
+ * каждой заявки, назначение ответственного сохраняет её статус. Подставить
+ * общее значение значило бы тихо снести то, чего не трогали.
+ */
+function Bulk({
+  rows,
+  statuses,
+  onDone,
+  onError,
+  onTriage,
+}: {
+  rows: readonly LeadRow[];
+  statuses: readonly string[];
+  onDone: (text: string, undo?: () => Promise<unknown>) => void;
+  onError: (message: string | null) => void;
+  onTriage: () => void;
+}) {
+  const [what, setWhat] = useState<"" | "owner" | "status">("");
+  const [owner, setOwner] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  /** Применяет к каждой строке своё значение и возвращает откат. */
+  async function apply(
+    next: (row: LeadRow) => { status: string; owner: string | null },
+    text: string,
+  ) {
+    setBusy(true);
+    onError(null);
+    const было = rows.map((r) => ({ id: r.id, status: r.status, owner: r.owner }));
+
+    try {
+      const результат = await Promise.allSettled(
+        rows.map((row) => {
+          const { status, owner } = next(row);
+          return triageLead(row.id, status, owner);
+        }),
+      );
+
+      const отказов = результат.filter((r) => r.status === "rejected").length;
+      if (отказов > 0) {
+        // Частичный отказ — не «получилось» и не «не получилось».
+        // Названо числом: остальное человек увидит в перезагруженном списке.
+        onError(
+          `Не удалось изменить ${отказов} из ${rows.length}. Остальные изменены; ` +
+            `откройте отказавшие по одной, чтобы увидеть причину.`,
+        );
+      }
+
+      onDone(text, async () => {
+        await Promise.all(было.map((r) => triageLead(r.id, r.status, r.owner)));
+      });
+    } catch (e) {
+      onError(message(e));
+    } finally {
+      setBusy(false);
+      setWhat("");
+    }
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        className="btn btn--small"
+        disabled={busy}
+        onClick={() => setWhat(what === "owner" ? "" : "owner")}
+      >
+        Назначить ответственного
+      </button>
+
+      <button
+        type="button"
+        className="btn btn--small"
+        disabled={busy}
+        onClick={() => setWhat(what === "status" ? "" : "status")}
+      >
+        Сменить статус
+      </button>
+
+      <button type="button" className="btn btn--small" disabled={busy} onClick={onTriage}>
+        Разобрать в сделки
+      </button>
+
+      {what === "owner" && (
+        <div className="bulk__pop">
+          <OwnerField
+            value={owner}
+            onChange={(login) => setOwner(login ?? "")}
+            hint="Пусто — снять ответственного у всех выбранных."
+          />
+          <button
+            type="button"
+            className="btn btn--small btn--primary"
+            disabled={busy}
+            onClick={() =>
+              void apply(
+                (row) => ({ status: row.status, owner: owner.trim() || null }),
+                `Ответственный изменён у ${rows.length} ${plural(rows.length, "заявки", "заявок", "заявок")}`,
+              )
+            }
+          >
+            Назначить
+          </button>
+        </div>
+      )}
+
+      {what === "status" && (
+        <div className="bulk__pop">
+          <Segments
+            label="Новый статус"
+            value=""
+            options={statuses}
+            dict={LEAD_STATUS}
+            onChange={(status) =>
+              void apply(
+                (row) => ({ status, owner: row.owner }),
+                `Статус «${label(LEAD_STATUS, status)}» у ${rows.length} ${plural(rows.length, "заявки", "заявок", "заявок")}`,
+              )
+            }
+          />
+        </div>
       )}
     </>
   );
 }
 
-function LeadCard({
-  id,
-  statuses,
-  onDone,
-  onError,
-}: {
-  id: string;
-  statuses: string[];
-  onDone: () => void;
-  onError: (message: string | null) => void;
-}) {
-  const { data, error, loading } = useLoad<Lead>(() => lead(id), id);
-  const [status, setStatus] = useState<string | null>(null);
-  const [owner, setOwner] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+// ───────────────────────────────────────────────────────────────────────────
 
-  async function save() {
-    if (!data) return;
-    setSaving(true);
-    onError(null);
-    try {
-      await triageLead(id, status ?? data.status, owner ?? data.owner);
-      onDone();
-    } catch (e) {
-      onError(message(e));
-    } finally {
-      setSaving(false);
-    }
-  }
+function Table({
+  rows,
+  shown,
+  selection,
+  cursor,
+  onCursor,
+  open,
+  onOpen,
+}: {
+  rows: readonly LeadRow[];
+  shown: readonly string[];
+  selection: ReturnType<typeof useSelection>;
+  cursor: number;
+  onCursor: (index: number) => void;
+  open: string | null;
+  onOpen: (id: string) => void;
+}) {
+  const видно = (key: string) => shown.includes(key);
 
   return (
-    <div className="admin-card" style={{ marginTop: "var(--s4)" }}>
-      <Note kind="error">{error}</Note>
-      {loading && !data && <p className="muted">Загружаем…</p>}
-
-      {data && (
-        <>
-          <h2 style={{ fontSize: "var(--t-base)", marginBottom: "var(--s3)" }}>
-            {data.name}
-            {data.company ? `, ${data.company}` : ""}
-          </h2>
-          <p style={{ fontSize: "var(--t-base)", lineHeight: 1.6, marginBottom: "var(--s4)", whiteSpace: "pre-wrap" }}>
-            {data.message}
-          </p>
-
-          <p className="muted" style={{ fontSize: "var(--t-small)", marginBottom: "var(--s4)" }}>
-            Источник: {data.source} · согласие версии {data.consentVersion} от{" "}
-            {when(data.consentAt)}
-            {data.correlationId && (
-              <>
-                {" · "}
-                <span className="mono">{data.correlationId}</span>
-              </>
-            )}
-          </p>
-
-          <div className="grid2">
-            <Field label="Статус">
-              <select
-                value={status ?? data.status}
-                onChange={(e) => setStatus(e.target.value)}
+    <div className="admin-scroll">
+      <table className="admin-table admin-table--pick">
+        <thead>
+          <tr>
+            <th className="tight">
+              <HeadBox selection={selection} rows={rows.map((r) => r.id)} what="заявки" />
+            </th>
+            <th>Когда</th>
+            {видно("form") && <th>Форма</th>}
+            <th>Кто обратился</th>
+            {видно("contacts") && <th>Контакты</th>}
+            {видно("source") && <th>Источник</th>}
+            <th>Статус</th>
+            {видно("owner") && <th>Ответственный</th>}
+            <th />
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => {
+            const выбрана = selection.has(row.id);
+            const ничей = row.owner === null;
+            return (
+              <tr
+                key={row.id}
+                className={[
+                  выбрана || open === row.id ? "row--on" : "",
+                  ничей ? "row--wait" : "",
+                  i === cursor ? "row--cursor" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={(e) => {
+                  onCursor(i);
+                  // SHIFT+КЛИК выделяет диапазон, обычный щелчок открывает
+                  // разбор. Разводить их некуда: строка — это и запись,
+                  // и элемент выделения.
+                  if (e.shiftKey) {
+                    e.preventDefault();
+                    selection.range(row.id);
+                    return;
+                  }
+                  onOpen(row.id);
+                }}
               >
-                {statuses.map((s) => (
-                  <option key={s} value={s}>
-                    {label(LEAD_STATUS, s)}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <OwnerField
-              value={owner ?? data.owner ?? ""}
-              onChange={setOwner}
-              hint="Пусто — снять ответственного."
-            />
-          </div>
-
-          <div className="row row--end">
-            <button className="btn btn--primary" disabled={saving} onClick={() => void save()}>
-              {saving ? "Сохраняем…" : "Сохранить разбор"}
-            </button>
-          </div>
-
-          <ConvertToDeal lead={data} onError={onError} />
-
-          {/* Обращение субъекта персональных данных исполняется здесь: это
-              единственный экран, где они на виду целиком. Стирается вместе
-              с историей переписки и с разговором, если заявка выросла из чата. */}
-          <EraseData
-            what="имя, телефон, почта, текст обращения, вся история переписки и разговор в чате, если он был"
-            erasedAt={data.erasedAt}
-            erase={() => eraseLeadData(id)}
-            onDone={onDone}
-          />
-        </>
-      )}
-
-      <History of="leads" id={id} />
-    </div>
-  );
-}
-
-// Разбор заявки в сделку.
-//
-// Клиент либо указывается существующий, либо заводится из данных заявки.
-// Портал не ищет совпадения сам: слить две карточки потом можно, разделить
-// ошибочно слитые — уже нет. Заявка разбирается в сделку один раз — это
-// ограничение схемы, и повторная попытка вернётся отказом.
-function ConvertToDeal({
-  lead: source,
-  onError,
-}: {
-  lead: Lead;
-  onError: (message: string | null) => void;
-}) {
-  const router = useRouter();
-  const { data: funnels } = useLoad<Pipeline[]>(loadPipelines);
-
-  const [existing, setExisting] = useState(false);
-  const [typed, setTyped] = useState(source.company ?? source.name);
-  const [query, setQuery] = useState("");
-  const { data: found } = useLoad<Page<ClientRow>>(
-    () => (query ? loadClients(query, 0, 20) : Promise.resolve(empty())),
-    query,
-  );
-
-  const [form, setForm] = useState<Conversion>({
-    clientId: null,
-    pipeline: "sales",
-    title: null,
-    amount: null,
-    owner: source.owner ?? "",
-  });
-  const [converting, setConverting] = useState(false);
-
-  const set = <K extends keyof Conversion>(key: K, value: Conversion[K]) =>
-    setForm((f) => ({ ...f, [key]: value }));
-
-  async function convert() {
-    setConverting(true);
-    onError(null);
-    try {
-      const deal = await convertLead(source.id, {
-        ...form,
-        clientId: existing ? form.clientId : null,
-      });
-      router.push(`/admin/deals/${deal.id}/`);
-    } catch (e) {
-      onError(message(e));
-    } finally {
-      setConverting(false);
-    }
-  }
-
-  return (
-    <div className="convert">
-      <h3 className="admin-card__title">Разобрать в сделку</h3>
-      <p className="admin-hint" style={{ marginBottom: "var(--s4)" }}>
-        Заявка разбирается в сделку один раз — это ограничение схемы, а не проверка формы.
-        Вместе со сделкой заводится карточка клиента, если не выбран существующий.
-      </p>
-
-      <div className="grid2">
-        <Field label="Воронка">
-          <select value={form.pipeline} onChange={(e) => set("pipeline", e.target.value)}>
-            {(funnels ?? []).map((f) => (
-              <option key={f.pipeline} value={f.pipeline}>
-                {label(PIPELINE, f.pipeline)}
-              </option>
-            ))}
-          </select>
-        </Field>
-
-        <OwnerField value={form.owner} onChange={(login) => set("owner", login)} />
-      </div>
-
-      <label className="field--row" style={{ marginBottom: "var(--s3)" }}>
-        <input
-          type="checkbox"
-          checked={existing}
-          onChange={(e) => {
-            setExisting(e.target.checked);
-            if (!e.target.checked) set("clientId", null);
-          }}
-        />
-        <span style={{ fontSize: "var(--t-small)" }}>Клиент уже заведён — выбрать из базы</span>
-      </label>
-
-      {existing && (
-        <>
-          <div className="row" style={{ marginBottom: "var(--s3)" }}>
-            <input
-              aria-label="Поиск клиента по наименованию или ИНН"
-              className="admin-search"
-              value={typed}
-              placeholder="Наименование или ИНН"
-              onChange={(e) => setTyped(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && setQuery(typed.trim())}
-            />
-            <button className="btn" onClick={() => setQuery(typed.trim())}>
-              Найти
-            </button>
-          </div>
-
-          {found && found.items.length > 0 && (
-            <div className="picker">
-              {found.items.map((c) => (
-                <label key={c.id} className="picker__row">
+                <td className="tight" onClick={(e) => e.stopPropagation()}>
                   <input
-                    type="radio"
-                    name={`client-${source.id}`}
-                    checked={form.clientId === c.id}
-                    onChange={() => set("clientId", c.id)}
+                    type="checkbox"
+                    checked={выбрана}
+                    onChange={() => selection.toggle(row.id)}
+                    aria-label={`Выбрать заявку: ${row.name}, ${when(row.createdAt)}`}
                   />
-                  <span>
-                    {c.name}
-                    {c.inn && <span className="mono"> · {c.inn}</span>}
-                  </span>
-                </label>
-              ))}
-            </div>
-          )}
+                </td>
 
-          {query && found?.items.length === 0 && (
-            <p className="admin-hint">
-              По этому запросу никого нет. Снимите галочку — карточка заведётся из заявки.
-            </p>
-          )}
-        </>
-      )}
+                <td className="tight mono">{when(row.createdAt)}</td>
 
-      <div className="grid2">
-        <Field label="Название сделки" hint="Пусто — портал соберёт из формы и изделия заявки.">
-          <input
-            value={form.title ?? ""}
-            onChange={(e) => set("title", e.target.value || null)}
-          />
-        </Field>
+                {видно("form") && (
+                  <td className="tight">{label(FORM, row.form)}</td>
+                )}
 
-        <Field label="Сумма" hint="Пусто — сумма ещё не названа.">
-          <input
-            type="number"
-            value={form.amount ?? ""}
-            onChange={(e) => set("amount", e.target.value === "" ? null : Number(e.target.value))}
-          />
-        </Field>
-      </div>
+                <td>
+                  <span className="row__name">{row.name}</span>
+                  {row.company && <span className="row__under">{row.company}</span>}
+                </td>
 
-      <div className="row row--end">
-        <button
-          className="btn btn--primary"
-          disabled={converting || (existing && !form.clientId)}
-          onClick={() => void convert()}
-        >
-          {converting ? "Заводим…" : "Завести сделку"}
-        </button>
-      </div>
+                {видно("contacts") && (
+                  <td className="tight">
+                    <span className="row__line mono">{row.phone}</span>
+                    <span className="row__line mono">{row.email}</span>
+                  </td>
+                )}
+
+                {видно("source") && (
+                  <td className="tight">{label(LEAD_SOURCE, row.source)}</td>
+                )}
+
+                <td className="tight">
+                  <State value={row.status} dict={LEAD_STATUS} />
+                </td>
+
+                {видно("owner") && (
+                  <td className="tight">
+                    {ничей ? <span className="nobody">не назначен</span> : row.owner}
+                  </td>
+                )}
+
+                <td className="tight">
+                  {/* Имя кнопки называет заявку: обход с клавиатуры давал
+                      семь кнопок «Разобрать» подряд, и какая к какой заявке —
+                      узнать было неоткуда. Одного имени мало, у семи заявок
+                      оно совпадало; различает их время обращения. */}
+                  <button
+                    type="button"
+                    className="row__go"
+                    aria-label={`Разобрать заявку: ${row.name}, ${when(row.createdAt)}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpen(row.id);
+                    }}
+                  >
+                    открыть ⏎
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
 
-function empty(): Page<ClientRow> {
-  return { items: [], page: 0, size: 0, total: 0, pages: 0 };
+// ───────────────────────────────────────────────────────────────────────────
+
+/**
+ * Клавиши списка.
+ *
+ * Отдельным компонентом без разметки: слушатель нужен один, а вешать его
+ * внутри таблицы значит пересобирать на каждой перерисовке строки.
+ *
+ * J и K, а не только стрелки: стрелки прокручивают страницу, и на длинном
+ * списке курсор уезжает вместе с ней. Стрелки при этом тоже работают —
+ * пришедший из почты попробует их первыми.
+ */
+function Keys({
+  rows,
+  cursor,
+  onCursor,
+  selection,
+  off,
+  onOpen,
+}: {
+  rows: readonly string[];
+  cursor: number;
+  onCursor: (index: number) => void;
+  selection: ReturnType<typeof useSelection>;
+  off: boolean;
+  onOpen: (id: string) => void;
+}) {
+  const свежие = useRef({ rows, cursor, onCursor, selection, off, onOpen });
+  useEffect(() => {
+    свежие.current = { rows, cursor, onCursor, selection, off, onOpen };
+  });
+
+  useEffect(() => {
+    const слушатель = (e: KeyboardEvent) => {
+      const { rows, cursor, onCursor, selection, off, onOpen } = свежие.current;
+      if (off || rows.length === 0) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      const target = e.target;
+      if (target instanceof HTMLElement) {
+        const тег = target.tagName;
+        if (
+          target.isContentEditable ||
+          тег === "INPUT" ||
+          тег === "TEXTAREA" ||
+          тег === "SELECT"
+        ) {
+          return;
+        }
+      }
+
+      const вниз = e.code === "KeyJ" || e.key === "ArrowDown";
+      const вверх = e.code === "KeyK" || e.key === "ArrowUp";
+
+      if (вниз || вверх) {
+        e.preventDefault();
+        const шаг = вниз ? 1 : -1;
+        onCursor(Math.min(rows.length - 1, Math.max(0, cursor + шаг)));
+        return;
+      }
+
+      if (e.code === "Space") {
+        // Иначе пробел прокручивает страницу, и выделенная строка уезжает.
+        e.preventDefault();
+        selection.toggle(rows[cursor]);
+        return;
+      }
+
+      if (e.key === "Enter") {
+        e.preventDefault();
+        onOpen(rows[cursor]);
+      }
+    };
+
+    document.addEventListener("keydown", слушатель);
+    return () => document.removeEventListener("keydown", слушатель);
+  }, []);
+
+  return null;
 }

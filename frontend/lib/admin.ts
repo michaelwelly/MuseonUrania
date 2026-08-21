@@ -258,6 +258,8 @@ export type LeadRow = {
   source: string;
   status: string;
   owner: string | null;
+  /** Сделка, в которую разобрана заявка. Пусто — ещё не разобрана. */
+  dealId: string | null;
   createdAt: string;
 };
 
@@ -270,9 +272,31 @@ export type Lead = LeadRow & {
   erasedAt: string | null;
 };
 
-export const leads = (status: string, page = 0, size = 50) => {
+/**
+ * Отбор списка заявок. Признаки складываются, а не заменяют друг друга.
+ *
+ * Отбирает портал, а не браузер, и это не безразлично: фильтр в браузере
+ * работает по загруженной странице и со второй страницы молча врёт —
+ * «ничего не найдено» там означает «на этой странице нет».
+ */
+export type LeadFilter = {
+  status?: string;
+  /** Поиск по имени, компании, телефону и почте. */
+  query?: string;
+  /** Логин ответственного. Значение «-» — заявки, которые никто не ведёт. */
+  owner?: string;
+  form?: string;
+  source?: string;
+};
+
+/** Логин, которого не бывает: им портал помечает «без ответственного». */
+export const NOBODY = "-";
+
+export const leads = (filter: LeadFilter = {}, page = 0, size = 50) => {
   const query = new URLSearchParams({ page: String(page), size: String(size) });
-  if (status) query.set("status", status);
+  for (const [key, value] of Object.entries(filter)) {
+    if (value) query.set(key, value);
+  }
   return get<Page<LeadRow>>(`/leads?${query}`);
 };
 export const leadStatuses = () => get<string[]>("/leads/statuses");

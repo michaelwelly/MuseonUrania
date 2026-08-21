@@ -65,7 +65,7 @@ const ИСТОЧНИКИ: readonly [keyof Counts, () => Promise<number>][] = [
   ["news", async () => (await news()).length],
   ["documents", async () => (await documents()).length],
   ["chats", async () => (await chatQueue(0, 1)).total],
-  ["leads", async () => (await leads("", 0, 1)).total],
+  ["leads", async () => (await leads({}, 0, 1)).total],
   ["clients", async () => (await clients("", 0, 1)).total],
   ["deals", async () => (await deals({}, 0, 1)).total],
   ["quotes", async () => (await quotes("", 0, 1)).total],

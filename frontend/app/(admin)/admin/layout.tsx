@@ -17,6 +17,7 @@ import { useShellKeys } from "./keys";
 import { Palette } from "./Palette";
 import { ToastHost } from "./Toast";
 import { Widget } from "./Widget";
+import { WhoHost } from "./who";
 
 // Оболочка админки: вход и навигация.
 //
@@ -217,9 +218,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // отказов 401 при каждом открытии двери.
   return (
     <ToastHost>
-      <CountsHost>
-        <Chrome who={state.who}>{children}</Chrome>
-      </CountsHost>
+      <WhoHost who={state.who}>
+        <CountsHost>
+          <Chrome who={state.who}>{children}</Chrome>
+        </CountsHost>
+      </WhoHost>
     </ToastHost>
   );
 }
