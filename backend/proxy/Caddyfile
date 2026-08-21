@@ -65,8 +65,25 @@
 		# Хэши не подходят: полезная нагрузка гидратации несёт содержимое
 		# страницы и меняется на каждой пересборке и на каждой правке текста.
 		#
+		# object-src 'none' — базовая мера, которая здесь ничего не стоит.
+		# Без неё <object> и <embed> подпадали под default-src 'self', то есть
+		# разрешались со своего источника; на сайте их нет ни одного, так что
+		# запрет не может ничего сломать.
+		#
+		# Честно про проверку: показать разницу измерением не вышло. Пробная
+		# страница с <object> и <embed> — на свой источник, на чужой, с типом
+		# и без — не поднимает нарушения object-src ни с директивой, ни без неё,
+		# при том что контрольная картинка с чужого источника нарушение img-src
+		# поднимает исправно. Похоже, современный Chrome плагины не запускает
+		# вовсе, и запрещать ему нечего.
+		#
+		# Директива всё равно оставлена: она входит в базовый набор строгой
+		# политики, стоит ноль, и работает там, где поведение движка другое.
+		# Но считать её проверенной нельзя — она принята на веру, в отличие
+		# от script-src выше.
+		#
 		# unsafe-inline для стилей — отдельная и прежняя цена CSS-модулей Next.
-		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data: https://{$VEDAL_MEDIA_DOMAIN}; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' https://{$VEDAL_KEYCLOAK_DOMAIN}; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://{$VEDAL_KEYCLOAK_DOMAIN}"
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; object-src 'none'; img-src 'self' data: https://{$VEDAL_MEDIA_DOMAIN}; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' https://{$VEDAL_KEYCLOAK_DOMAIN}; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://{$VEDAL_KEYCLOAK_DOMAIN}"
 
 		# Заголовок сервера ничего не защищает, но и сообщать версию незачем.
 		-Server
