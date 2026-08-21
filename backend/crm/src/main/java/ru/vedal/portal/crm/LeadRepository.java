@@ -3,6 +3,8 @@ package ru.vedal.portal.crm;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.util.List;
@@ -29,4 +31,49 @@ public interface LeadRepository extends JpaRepository<Lead, UUID> {
     Page<Lead> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
     Page<Lead> findByStatusOrderByCreatedAtDesc(String status, Pageable pageable);
+
+    // Отбор списка заявок: статус, ответственный, форма, источник и поиск
+    // по контактам — одним запросом, потому что менеджер комбинирует их
+    // как хочет. Пять отдельных методов на пять сочетаний означали бы
+    // тридцать два метода на пять признаков.
+    //
+    // Параметр owner со значением «-» означает «без ответственного». Отдельным
+    // булевым параметром это выглядело бы честнее, но два параметра на одно
+    // понятие умеют противоречить друг другу: owner=ivan вместе с
+    // unassigned=true — состояние, которого не бывает, а обработать его
+    // всё равно придётся.
+    //
+    // Поиск по телефону — тем же like, без нормализации: в базе номер лежит
+    // так, как его прислала форма, и менеджер ищет по тому, что видит
+    // в списке. Номер, записанный с пробелами, по цифрам подряд не найдётся;
+    // это станет важно, когда в форме появится маска ввода.
+    //
+    // `:query` приходит пустой строкой, а не null, и это не небрежность.
+    // Внутри lower(concat(...)) нетипизированный null уезжает в PostgreSQL
+    // как bytea, и запрос падает на «function lower(bytea) does not exist» —
+    // причём только тогда, когда поиск НЕ задан, то есть при обычном
+    // открытии списка. Пустая строка типизирована, и вопрос снимается
+    // целиком, а не подпирается приведением у каждого из четырёх полей.
+    @Query("""
+            select l from Lead l
+            where (:status is null or l.status = :status)
+              and (:form is null or l.form = :form)
+              and (:source is null or l.source = :source)
+              and (:owner is null
+                   or (:owner = '-' and l.owner is null)
+                   or l.owner = :owner)
+              and (:query = ''
+                   or lower(l.name) like lower(concat('%', :query, '%'))
+                   or lower(l.company) like lower(concat('%', :query, '%'))
+                   or l.phone like concat('%', :query, '%')
+                   or lower(l.email) like lower(concat('%', :query, '%')))
+            order by l.createdAt desc
+            """)
+    Page<Lead> filter(@Param("status") String status,
+                      /** Пустая строка — «поиска нет». Не null: см. выше. */
+                      @Param("query") String query,
+                      @Param("owner") String owner,
+                      @Param("form") String form,
+                      @Param("source") String source,
+                      Pageable pageable);
 }
