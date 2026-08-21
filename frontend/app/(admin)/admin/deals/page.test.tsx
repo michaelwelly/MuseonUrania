@@ -22,10 +22,13 @@ const mocks = vi.hoisted(() => ({
   deals: vi.fn(),
   moveDeal: vi.fn(),
   push: vi.fn(),
+  // Адрес страницы, а не константа: экран читает из него и клиента,
+  // и ответственного, и оба меняют то, что он показывает.
+  адрес: { current: "" },
 }));
 
 vi.mock("next/navigation", () => ({
-  useSearchParams: () => new URLSearchParams(""),
+  useSearchParams: () => new URLSearchParams(mocks.адрес.current),
   useRouter: () => ({ push: mocks.push }),
 }));
 
@@ -100,6 +103,7 @@ function обычно() {
 
 beforeEach(() => {
   window.localStorage.clear();
+  mocks.адрес.current = "";
   mocks.push.mockReset();
   mocks.moveDeal.mockReset().mockResolvedValue({});
   mocks.deals.mockReset();
@@ -296,5 +300,51 @@ describe("воронки и виды", () => {
     // В списке колонок стадий нет, есть таблица со столбцом «Стадия».
     expect(screen.queryByRole("region", { name: /^новая/ })).toBeNull();
     expect(await screen.findByRole("columnheader", { name: "Стадия" })).toBeTruthy();
+  });
+});
+
+// Сюда приходят с карточки сотрудника, нажав на число сделок. Число без
+// перехода — число, на которое нельзя посмотреть; переход без отбора —
+// переход не туда.
+describe("сделки одного сотрудника", () => {
+  it("отбор из адреса доезжает до портала", async () => {
+    mocks.адрес.current = "owner=i.koltsova";
+    render(
+      <ToastHost>
+        <DealsPage />
+      </ToastHost>,
+    );
+
+    await waitFor(() => {
+      expect(mocks.deals).toHaveBeenCalledWith(
+        expect.objectContaining({ owner: "i.koltsova" }),
+        0,
+      );
+    });
+  });
+
+  it("показан список, а не доска, и сказано чей он", async () => {
+    mocks.адрес.current = "owner=i.koltsova";
+    render(
+      <ToastHost>
+        <DealsPage />
+      </ToastHost>,
+    );
+
+    // Доска разложила бы сделки одного человека по трём воронкам порознь —
+    // и по колонкам воронки продаж, если бы он вёл только сервисные,
+    // не оказалось бы ни одной.
+    expect(await screen.findByRole("columnheader", { name: "Стадия" })).toBeTruthy();
+    expect(screen.queryByRole("region", { name: /^новая/ })).toBeNull();
+
+    // Отбор виден на экране: список, молча показывающий часть, читается
+    // как весь список.
+    expect(screen.getByText(/Показаны сделки одного сотрудника/)).toBeTruthy();
+    expect(screen.getByText("i.koltsova")).toBeTruthy();
+
+    // Выбор воронки при таком отборе не показывается: сделки сотрудника
+    // лежат во всех трёх, и выделенная вкладка означала бы, что показана
+    // только она.
+    expect(screen.queryByRole("radio", { name: "продажи" })).toBeNull();
   });
 });

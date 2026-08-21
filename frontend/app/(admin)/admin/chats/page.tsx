@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   chatQueue,
@@ -85,6 +86,9 @@ function Chats() {
   // состояние. Иначе кнопка «назад» в браузере возвращала бы не на прошлый
   // разговор, а на прошлый адрес, и они разъехались бы на первом же щелчке.
   const [open, setOpen] = useState<string | null>(() => params.get("id"));
+  // Ответственный приходит адресом — с карточки сотрудника. В очереди этого
+  // отбора нет и не будет: в ней по определению лежат невзятые разговоры.
+  const owner = params.get("owner") ?? "";
   // Меняется на каждое событие из потока — по нему перезагружаются и список,
   // и лента. Отдельный счётчик, а не время: время сравнивается неточно, если
   // два события пришли в одну миллисекунду.
@@ -92,8 +96,8 @@ function Chats() {
   const [now, setNow] = useState(() => Date.now());
 
   const { data, error, setError } = useLoad<Page<ChatCard>>(
-    () => (tab === "queue" ? chatQueue() : chatsAll()),
-    `${tab}:${beat}`,
+    () => (tab === "queue" && !owner ? chatQueue() : chatsAll(owner)),
+    `${tab}:${owner}:${beat}`,
   );
 
   // Число ждущих нужно и когда открыта вкладка «Все»: это единственный
@@ -144,6 +148,13 @@ function Chats() {
       </div>
 
       <p className="admin-pd">На экране могут быть персональные данные</p>
+
+      {owner && (
+        <p className="admin-hint">
+          Показаны разговоры одного сотрудника: <span className="mono">{owner}</span>.{" "}
+          <Link href="/admin/chats/">Показать все</Link>
+        </p>
+      )}
 
       <Note kind="error">{error}</Note>
 

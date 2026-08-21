@@ -54,15 +54,21 @@ export default function DealsPage() {
 }
 
 function Deals() {
-  const clientId = useSearchParams().get("client") ?? "";
+  const params = useSearchParams();
+  const clientId = params.get("client") ?? "";
+  // Ответственный приходит адресом — с карточки сотрудника. Число нагрузки
+  // без такого перехода остаётся числом, на которое нельзя посмотреть.
+  const owner = params.get("owner") ?? "";
   const { data: funnels } = useLoad<Pipeline[]>(loadPipelines);
 
   const [pipeline, setPipeline] = useState("sales");
   const [view, setView] = useStored<"board" | "list">("vedal.admin.deals.view", "board");
 
-  // Сделки одного клиента — это всегда список: у клиента бывают сделки
-  // в разных воронках, и доска показала бы их порознь.
-  const режим = clientId ? "list" : view;
+  // Сделки одного клиента или одного сотрудника — это всегда список:
+  // и у клиента, и у менеджера сделки лежат в разных воронках, а доска
+  // показала бы их порознь.
+  const узкий = Boolean(clientId || owner);
+  const режим = узкий ? "list" : view;
   const funnel = funnels?.find((f) => f.pipeline === pipeline);
 
   return (
@@ -70,7 +76,7 @@ function Deals() {
       <div className="admin-head">
         <h1>Сделки</h1>
         <div className="row">
-          {!clientId && (
+          {!узкий && (
             <>
               <Segments
                 label="Воронка"
@@ -106,6 +112,13 @@ function Deals() {
         </p>
       )}
 
+      {owner && (
+        <p className="admin-hint">
+          Показаны сделки одного сотрудника: <span className="mono">{owner}</span>.{" "}
+          <Link href="/admin/deals/">Показать все</Link>
+        </p>
+      )}
+
       {/* Пока справочник воронок не приехал, вид неизвестен: у доски без
           стадий нет колонок, а список, показанный «пока что», успевает
           сходить в портал за отбором, которого человек не просил, —
@@ -115,7 +128,7 @@ function Deals() {
       ) : режим === "board" && funnel ? (
         <Board funnel={funnel} />
       ) : (
-        <List pipeline={clientId ? "" : pipeline} clientId={clientId} />
+        <List pipeline={узкий ? "" : pipeline} clientId={clientId} owner={owner} />
       )}
     </>
   );
@@ -362,15 +375,23 @@ function Card({ deal, now, onDrag }: { deal: DealRow; now: number; onDrag: () =>
 // ───────────────────────────────────────────────────────────────────────────
 // Список
 
-function List({ pipeline, clientId }: { pipeline: string; clientId: string }) {
+function List({
+  pipeline,
+  clientId,
+  owner,
+}: {
+  pipeline: string;
+  clientId: string;
+  owner: string;
+}) {
   const router = useRouter();
   const [stage, setStage] = useState("");
   const [page, setPage] = useState(0);
 
   const { data: funnels } = useLoad<Pipeline[]>(loadPipelines);
   const { data, error, loading } = useLoad<Page<DealRow>>(
-    () => deals({ pipeline, stage, clientId }, page),
-    `${pipeline}:${stage}:${clientId}:${page}`,
+    () => deals({ pipeline, stage, clientId, owner }, page),
+    `${pipeline}:${stage}:${clientId}:${owner}:${page}`,
   );
 
   const stages = useMemo(
