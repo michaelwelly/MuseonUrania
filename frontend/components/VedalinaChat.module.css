@@ -149,6 +149,35 @@
   font-size: 14.5px;
   line-height: 1.5;
   animation: u-in 0.28s ease both;
+
+  /* Портал отдаёт ответ с переводами строк: перечень изделий приходит
+     списком через «—». Без этого правила браузер схлопывал их в пробелы,
+     и список читался одной строкой: «— VEDAL A-2000 — Инкубатор-трансформер
+     — VEDAL R1 — Система реанимационная…». Текст верный, прочесть нельзя.
+
+     pre-line, а не pre: переносы сохраняем, а перенос по ширине пузыря
+     оставляем браузеру — иначе длинная строка от сотрудника уедет
+     за край окна. */
+  white-space: pre-line;
+
+  /* Адрес или слово без пробелов, набранные посетителем, не должны
+     растягивать пузырь шире панели. */
+  overflow-wrap: anywhere;
+}
+
+/* Время сообщения и отметка прочтения. Мелко и приглушённо: это подпись
+   под репликой, а не часть текста. */
+.meta {
+  font-size: 11.5px;
+  line-height: 1;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* «Прочитано» — единственная надпись в окне, означающая факт, а не срок:
+   сообщение открыл живой человек. Ждущему это важнее любого обещания. */
+.read {
+  color: var(--green-dark);
 }
 
 .sources,
@@ -238,6 +267,50 @@
 }
 
 /* --- быстрые ответы --- */
+/* Разговор ждёт человека. Полоса остаётся на экране, пока ждут: раньше
+   на её месте было сообщение в ленте, и оно пропадало на первом же
+   обновлении из потока — то есть ровно тогда, когда посетитель ждал. */
+.waiting {
+  margin: 4px 0 0;
+  padding: 11px 13px;
+  border: 1px solid var(--ok-line);
+  border-radius: 12px;
+  background: var(--ok-bg);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.waiting a {
+  color: var(--green-dark);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+
+/* Точка живого ожидания. Пульсирует, а не крутится: крутящееся читается
+   как «идёт загрузка», а здесь ждут человека, а не ответа сервера. */
+.waitingDot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: u-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes u-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .waitingDot {
+    animation: none;
+  }
+}
+
 .chips {
   display: flex;
   flex-wrap: wrap;
@@ -261,6 +334,20 @@
 .chip:hover {
   border-color: var(--green);
   color: var(--green-dark);
+}
+
+/* «Позвать специалиста» делает не то же, что остальные: те задают вопрос
+   Ведалине, эта уводит разговор к человеку. Действие другого рода —
+   и выглядеть должно иначе, иначе его нажимают не глядя. */
+.chipHuman {
+  composes: chip;
+  border-color: var(--green);
+  color: var(--green-dark);
+  font-weight: 600;
+}
+
+.chipHuman:hover {
+  background: var(--ok-bg);
 }
 
 /* --- ввод --- */
