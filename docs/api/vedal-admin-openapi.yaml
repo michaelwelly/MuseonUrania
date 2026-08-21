@@ -313,9 +313,20 @@ paths:
       - "Админка: каталог"
   /api/admin/v1/chats:
     get:
-      description: Последние сверху.
+      description: |
+        Последние сверху. Необязательный отбор по ответственному: логин —
+        разговоры этого сотрудника, «-» — те, кого никто не взял.
+
+        У очереди такого отбора нет намеренно: в ней по определению лежат
+        невзятые разговоры.
       operationId: all
       parameters:
+      - description: Логин ответственного; «-» — без ответственного.
+        in: query
+        name: owner
+        required: false
+        schema:
+          type: string
       - in: query
         name: page
         required: false
@@ -767,19 +778,26 @@ paths:
         required: false
         schema:
           type: string
-      - description: Фильтр по стадии. Работает вместе с воронкой.
+      - description: Фильтр по стадии. Стадия из чужой воронки — «409».
         in: query
         name: stage
         required: false
         schema:
           type: string
-      - description: Все сделки одного клиента. Перекрывает фильтр по воронке.
+      - description: "Все сделки одного клиента. Сужает наравне с воронкой, а не в\
+          место неё."
         in: query
         name: clientId
         required: false
         schema:
           type: string
           format: uuid
+      - description: Логин ответственного; «-» — без ответственного.
+        in: query
+        name: owner
+        required: false
+        schema:
+          type: string
       - in: query
         name: page
         required: false
