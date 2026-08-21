@@ -165,8 +165,26 @@ public class ChatStream {
 
     private void forget(SseEmitter emitter, Runnable remove) {
         emitter.onCompletion(remove);
-        emitter.onTimeout(remove);
         emitter.onError(e -> remove.run());
+
+        // По истечении срока поток надо ещё и ЗАКРЫТЬ, а не только снять
+        // подписку. Не закрыв, мы оставляем асинхронный запрос висеть,
+        // и Spring поднимает AsyncRequestTimeoutException, пытается ответить
+        // на него 503 — а ответ давно отправлен, потому что по потоку уже
+        // шли события. В журнале на каждое истёкшее соединение появляются
+        // два предупреждения:
+        //
+        //   Resolved [AsyncRequestTimeoutException]
+        //   Ignoring exception, response committed already
+        //
+        // Само по себе это не отказ: браузер переподключается, и посетитель
+        // ничего не замечает. Но соединение живёт полчаса, а посетителей
+        // на сайте десятки — журнал заполняется предупреждениями о штатном
+        // событии, и настоящее предупреждение в нём становится незаметным.
+        emitter.onTimeout(() -> {
+            remove.run();
+            emitter.complete();
+        });
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
