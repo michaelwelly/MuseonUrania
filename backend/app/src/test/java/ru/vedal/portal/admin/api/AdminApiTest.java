@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -84,6 +86,37 @@ class AdminApiTest extends PostgresTestBase {
 
         assertThat(products.findBySlug("hidden-device")).isPresent()
                 .get().satisfies(p -> assertThat(p.isPublished()).isFalse());
+    }
+
+    // Снимок в строке списка.
+    //
+    // Изделие без снимка выглядит на сайте пустой рамкой, и редактор должен
+    // видеть такие списком, а не открывая каждое из тринадцати. Поле лежит
+    // в строке рядом с docStatus по той же причине: строка списка несёт то,
+    // по чему список читают.
+    @Test
+    @WithMockUser(username = "editor", roles = "PORTAL_ADMIN")
+    void listCarriesTheImageSoMissingPhotosAreVisibleWithoutOpening() throws Exception {
+        mvc.perform(post("/api/admin/v1/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(productJson("with-photo").replace("\"imageSrc\":null",
+                                "\"imageSrc\":\"photos/products/proba.jpg\"")))
+                .andExpect(status().isCreated());
+
+        mvc.perform(post("/api/admin/v1/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(productJson("without-photo")))
+                .andExpect(status().isCreated());
+
+        mvc.perform(get("/api/admin/v1/products"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.slug == 'with-photo')].imageSrc")
+                        .value("photos/products/proba.jpg"))
+                // Отсутствие снимка — это состояние, а не пропуск поля:
+                // строка обязана прийти со снимком null, иначе интерфейс
+                // не отличит «нет снимка» от «поле забыли положить».
+                .andExpect(jsonPath("$[?(@.slug == 'without-photo')].imageSrc",
+                        contains(nullValue())));
     }
 
     @Test
