@@ -31,11 +31,18 @@ public class LeadTriage implements LeadAdmin {
 
     @Override
     @Transactional(readOnly = true)
-    public PageView<LeadRow> leads(String status, int page, int size) {
+    public PageView<LeadRow> leads(Filter filter, int page, int size) {
         var pageable = PageRequest.of(Math.max(page, 0), Math.clamp(size, 1, MAX_PAGE_SIZE));
-        var found = status == null || status.isBlank()
-                ? leads.findAllByOrderByCreatedAtDesc(pageable)
-                : leads.findByStatusOrderByCreatedAtDesc(status, pageable);
+        // Один запрос на любое сочетание признаков: отбор собран в JPQL,
+        // где незаданный параметр себя не проявляет. Собирать выборку
+        // в памяти после «взять всё» здесь нельзя вдвойне — это
+        // персональные данные, и «всё» может не поместиться.
+        // Поиск уходит пустой строкой вместо null — иначе PostgreSQL
+        // не может вывести тип параметра внутри lower(concat(...)).
+        // Разбор в комментарии к LeadRepository.filter.
+        var query = filter.query() == null ? "" : filter.query();
+        var found = leads.filter(filter.status(), query, filter.owner(),
+                filter.form(), filter.source(), pageable);
 
         // Какие заявки уже разобраны — одним запросом на страницу. Спрашивать
         // по строке значит превратить список из пятидесяти заявок
