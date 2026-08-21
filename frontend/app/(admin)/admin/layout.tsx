@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import AnimatedLogo from "@/components/AnimatedLogo";
-import { accessToken, authConfigured, login, logout } from "@/lib/auth";
+import { accessToken, authConfigured, login, logout, onSessionLost } from "@/lib/auth";
 import { adminConfigured, session, type Session } from "@/lib/admin";
 import { message } from "./ui";
 import Entry from "./Entry";
@@ -109,6 +109,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       alive = false;
     };
   }, [isCallback, pathname]);
+
+  // Выход в соседней вкладке.
+  //
+  // Токены лежат в localStorage — он общий на весь браузер. Без этой подписки
+  // вторая вкладка продолжала бы показывать рабочий интерфейс после выхода
+  // в первой: кнопки на месте, а запросы отбиваются, и понять почему нельзя.
+  useEffect(() => {
+    if (isCallback) return;
+    return onSessionLost(() => setState({ kind: "anonymous" }));
+  }, [isCallback]);
 
   // Высота липкой навигации — числом в CSS-переменную.
   //
