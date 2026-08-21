@@ -469,6 +469,12 @@
 
 .admin-foot__link {
   margin-left: auto;
+  /* Цель нажатия: замер давал 115×20 при норме 24×24 (WCAG 2.5.8).
+     Ссылка стоит отдельно, а не внутри фразы, поэтому послабление
+     для строчных ссылок к ней не относится. */
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--s6);
   color: var(--muted);
   text-decoration: none;
 }

@@ -39,7 +39,7 @@ export default function DealCard({ params }: { params: Promise<{ id: string }> }
         {data && (
           <div className="row">
             <span className="badge">{label(PIPELINE, data.pipeline)}</span>
-            <span className="badge badge--on">{label(STAGE, data.stage)}</span>
+            <State value={data.stage} dict={STAGE} />
             <span className="mono">версия {data.version}</span>
           </div>
         )}
