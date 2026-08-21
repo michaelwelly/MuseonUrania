@@ -184,21 +184,43 @@ const VISITOR_KEY = "vedal.chat.visitor";
  * Ключ вкладки. Случайный, живёт в браузере, о человеке не сообщает ничего —
  * по нему находится разговор после перезагрузки страницы.
  *
+ * Ключ — единственное, что закрывает разговор: кто его знает, тот читает
+ * переписку. Поэтому источник случайности только криптографический.
+ *
  * Хранилище может быть недоступно: приватный режим, запрет сторонних данных.
  * Тогда ключ живёт до перезагрузки — разговор не потеряется в пределах сеанса,
  * а исключение не должно ронять виджет.
  */
 export function visitorKey(): string {
-  const fresh = () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2));
   try {
     const saved = localStorage.getItem(VISITOR_KEY);
     if (saved) return saved;
-    const key = fresh();
+    const key = freshVisitorKey();
     localStorage.setItem(VISITOR_KEY, key);
     return key;
   } catch {
-    return fresh();
+    return freshVisitorKey();
   }
+}
+
+/**
+ * Шестнадцать случайных байт.
+ *
+ * `crypto.randomUUID` существует только в защищённом контексте — https или
+ * localhost. Стенд ходит по http, и там его нет: раньше в этом случае ключ
+ * выдавал `Math.random()`, то есть на стенде работала именно слабая ветка,
+ * а не запасная. `crypto.getRandomValues` доступен и по http.
+ *
+ * Запасного пути на случай отсутствия crypto нет намеренно. Он был бы ровно
+ * тем, от чего здесь уходят, а браузера без `getRandomValues` современный
+ * сборщик всё равно не поддерживает: пусть виджет сломается заметно, чем
+ * тихо раздаст угадываемые ключи к чужой переписке.
+ */
+function freshVisitorKey(): string {
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 export async function sayInChat(
