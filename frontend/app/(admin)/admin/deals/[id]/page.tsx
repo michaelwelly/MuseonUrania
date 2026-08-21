@@ -57,8 +57,13 @@ export default function DealCard({ params }: { params: Promise<{ id: string }> }
             {data.lostReason && ` · причина: ${data.lostReason}`}
           </p>
 
-          <DealFields key={data.id} deal={data} onSaved={reload} />
+          {/* Стадия первой, а не после полей карточки.
+              Замер: блок стадии начинался на 657-м пикселе при окне 900 —
+              у нижней кромки первого экрана, а кнопка «Перевести» на 874-м.
+              Сюда заходят чаще всего именно чтобы двинуть сделку, а поля
+              карточки правят редко: название и сумму задают один раз. */}
           <StageBlock deal={data} onMoved={reload} onError={setError} />
+          <DealFields key={data.id} deal={data} onSaved={reload} />
           <Attachments deal={data} onChanged={reload} onError={setError} />
           <Quotes deal={data} onError={setError} />
           <History of="deals" id={data.id} />
