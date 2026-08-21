@@ -26,6 +26,7 @@ export default function AuditPage() {
         <h1>Журнал</h1>
         <div className="row">
           <select
+            aria-label="Объект журнала"
             value={subject}
             onChange={(e) => {
               setSubject(e.target.value);
@@ -40,6 +41,7 @@ export default function AuditPage() {
             ))}
           </select>
           <input
+            aria-label="Исполнитель"
             placeholder="исполнитель"
             value={actor}
             onChange={(e) => {

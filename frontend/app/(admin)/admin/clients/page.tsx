@@ -42,6 +42,7 @@ export default function ClientsPage() {
 
       <div className="row" style={{ marginBottom: "var(--s4)" }}>
         <input
+          aria-label="Поиск по наименованию или ИНН"
           className="admin-search"
           value={typed}
           placeholder="Наименование или ИНН"

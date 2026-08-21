@@ -141,6 +141,7 @@ export default function DocumentsPage() {
                     )}
                     <div style={{ marginTop: "var(--s2)" }}>
                       <input
+                        aria-label="Файл документа"
                         type="file"
                         style={{ fontSize: "var(--t-small)", maxWidth: 190 }}
                         disabled={busy === row.id}

@@ -184,22 +184,26 @@ function Draft({
         {form.items.map((item, i) => (
           <div key={i} className="quote-item">
             <input
+              aria-label="Наименование позиции"
               placeholder="Наименование"
               value={item.name}
               onChange={(e) => patch(i, { name: e.target.value })}
             />
             <input
+              aria-label="Изделие позиции"
               placeholder="Изделие"
               value={item.productSlug}
               onChange={(e) => patch(i, { productSlug: e.target.value })}
             />
             <input
+              aria-label="Количество"
               type="number"
               placeholder="Кол-во"
               value={item.quantity}
               onChange={(e) => patch(i, { quantity: Number(e.target.value) })}
             />
             <input
+              aria-label="Цена за единицу"
               type="number"
               placeholder="Цена"
               value={item.unitPrice}

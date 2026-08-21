@@ -45,6 +45,7 @@ export default function LeadsPage() {
         <h1>Заявки</h1>
         <div className="row">
           <select
+            aria-label="Статус заявки"
             value={status}
             onChange={(e) => {
               setStatus(e.target.value);
@@ -111,8 +112,19 @@ export default function LeadsPage() {
                       )}
                     </td>
                     <td className="tight">
+                      {/* Имя кнопки называет заявку.
+                          Текста «Разобрать» хватает глазами — рядом видно
+                          строку. Дереву доступности не хватает: обход
+                          с клавиатуры давал семь кнопок «Разобрать» подряд,
+                          и какая к какой заявке — узнать было неоткуда.
+
+                          Одного имени мало: у семи заявок оно совпадало —
+                          «Проверка стека». Различает их время обращения,
+                          оно же стоит первой колонкой. */}
                       <button
                         className="btn btn--small"
+                        aria-label={`${open === row.id ? "Свернуть" : "Разобрать"} заявку: ${row.name}, ${when(row.createdAt)}`}
+                        aria-expanded={open === row.id}
                         onClick={() => setOpen(open === row.id ? null : row.id)}
                       >
                         {open === row.id ? "Свернуть" : "Разобрать"}
@@ -354,6 +366,7 @@ function ConvertToDeal({
         <>
           <div className="row" style={{ marginBottom: "var(--s3)" }}>
             <input
+              aria-label="Поиск клиента по наименованию или ИНН"
               className="admin-search"
               value={typed}
               placeholder="Наименование или ИНН"

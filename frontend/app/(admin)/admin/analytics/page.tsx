@@ -34,7 +34,8 @@ export default function AnalyticsPage() {
       <div className="admin-head">
         <h1>Аналитика</h1>
         <div className="row">
-          <select className="admin-select" value={by} onChange={(e) => setBy(e.target.value)}>
+          <select className="admin-select" value={by}
+            aria-label="Разрез аналитики" onChange={(e) => setBy(e.target.value)}>
             {(dimensions ?? []).map((d) => (
               <option key={d} value={d}>
                 {DIMENSION_LABEL[d] ?? d}

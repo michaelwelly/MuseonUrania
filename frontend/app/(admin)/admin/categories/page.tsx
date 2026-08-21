@@ -115,6 +115,7 @@ function Row({
     <tr>
       <td>
         <input
+          aria-label="Название категории"
           value={edit.name}
           onChange={(e) => setEdit({ ...edit, name: e.target.value })}
           style={cell}
@@ -122,6 +123,7 @@ function Row({
       </td>
       <td>
         <input
+          aria-label="Адрес категории (slug)"
           value={edit.slug}
           onChange={(e) => setEdit({ ...edit, slug: e.target.value })}
           style={cell}
@@ -129,6 +131,7 @@ function Row({
       </td>
       <td className="tight">
         <input
+          aria-label="Порядок категории"
           type="number"
           value={edit.position}
           onChange={(e) => setEdit({ ...edit, position: Number(e.target.value) || 0 })}

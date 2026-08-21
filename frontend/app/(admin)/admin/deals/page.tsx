@@ -58,6 +58,7 @@ function Deals() {
 
       <div className="row" style={{ marginBottom: "var(--s4)" }}>
         <select
+          aria-label="Воронка"
           className="admin-select"
           value={pipeline}
           onChange={(e) => {
@@ -77,6 +78,7 @@ function Deals() {
         </select>
 
         <select
+          aria-label="Стадия"
           className="admin-select"
           value={stage}
           disabled={!pipeline}

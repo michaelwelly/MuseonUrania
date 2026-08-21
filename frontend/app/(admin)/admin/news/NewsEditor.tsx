@@ -87,6 +87,7 @@ export default function NewsEditor({ existing }: { existing?: News }) {
             }
           >
             <input
+              aria-label="Адрес новости (slug)"
               value={form.slug}
               disabled={existing?.published}
               onChange={(e) => set("slug", e.target.value)}

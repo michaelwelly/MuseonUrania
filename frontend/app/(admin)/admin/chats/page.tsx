@@ -238,6 +238,7 @@ function Thread({
       ) : (
         <div className="thread__reply">
           <textarea
+            aria-label="Ответ посетителю"
             value={draft}
             placeholder="Ответ посетителю"
             onChange={(e) => {

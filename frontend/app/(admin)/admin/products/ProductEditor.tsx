@@ -112,6 +112,7 @@ export default function ProductEditor({ existing }: { existing?: Product }) {
             }
           >
             <input
+              aria-label="Адрес изделия (slug)"
               value={form.slug}
               disabled={existing?.published}
               onChange={(e) => set("slug", e.target.value)}
@@ -269,6 +270,7 @@ function FeatureList({
       {rows.map((row, i) => (
         <div key={i} className="row" style={{ marginBottom: "var(--s2)" }}>
           <input
+            aria-label="Особенность изделия"
             className="admin-search" style={{ flex: "1 1 420px" }}
             placeholder="Например: переход между режимами без перекладывания новорождённого"
             value={row}
@@ -314,12 +316,14 @@ function SpecTable({
       {rows.map((row, i) => (
         <div key={i} className="row" style={{ marginBottom: "var(--s2)" }}>
           <input
+            aria-label="Название параметра"
             className="admin-search" style={{ flex: "1 1 220px" }}
             placeholder="Название"
             value={row.label}
             onChange={(e) => patch(i, { label: e.target.value })}
           />
           <input
+            aria-label="Значение параметра"
             className="admin-search" style={{ flex: "2 1 300px" }}
             placeholder="Значение"
             value={row.value}

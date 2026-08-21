@@ -25,6 +25,7 @@ export default function QuotesPage() {
       <div className="admin-head">
         <h1>Коммерческие предложения</h1>
         <select
+          aria-label="Статус КП"
           className="admin-select"
           value={status}
           onChange={(e) => {

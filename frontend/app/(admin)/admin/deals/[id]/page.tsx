@@ -309,6 +309,7 @@ function Attachments({
 
       <div className="row">
         <select
+          aria-label="Согласованный документ для приложения"
           className="admin-select"
           value={chosen}
           onChange={(e) => setChosen(e.target.value)}
