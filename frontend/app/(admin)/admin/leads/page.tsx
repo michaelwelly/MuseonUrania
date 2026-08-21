@@ -22,7 +22,7 @@ import EraseData from "../EraseData";
 import History from "../History";
 import OwnerField from "../OwnerField";
 import { FORM, LEAD_STATUS, PIPELINE, label } from "../labels";
-import { Field, Note, message, useLoad, when } from "../ui";
+import { Empty, Field, message, Note, State, useLoad, when } from "../ui";
 
 // Единственная страница админки, где на экране персональные данные.
 // Отсюда и размер страницы с потолком на портале: ?size=1000000 не должен
@@ -70,7 +70,7 @@ export default function LeadsPage() {
 
       <Note kind="error">{error}</Note>
       {loading && !data && <p className="muted">Загружаем…</p>}
-      {data?.items.length === 0 && <p className="admin-hint">Заявок с таким фильтром нет.</p>}
+      {data?.items.length === 0 && <Empty>Заявок с таким фильтром нет.</Empty>}
 
       {data && data.items.length > 0 && (
         <>
@@ -103,9 +103,7 @@ export default function LeadsPage() {
                       {row.productSlug && <div className="mono">{row.productSlug}</div>}
                     </td>
                     <td className="tight">
-                      <span className={`badge ${row.status === "draft" ? "badge--warn" : ""}`}>
-                        {label(LEAD_STATUS, row.status)}
-                      </span>
+                      <State value={row.status} dict={LEAD_STATUS} />
                       {row.owner && (
                         <div className="muted" style={{ fontSize: "var(--t-small)", marginTop: "var(--s1)" }}>
                           {row.owner}

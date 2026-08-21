@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { products, publishProduct, type ProductRow } from "@/lib/admin";
-import { Note, Published, message, useLoad, when } from "../ui";
+import { Empty, message, Note, Published, useLoad, when } from "../ui";
 
 export default function ProductsPage() {
   const { data, error, loading, reload, setError } = useLoad<ProductRow[]>(products);
@@ -38,7 +38,9 @@ export default function ProductsPage() {
       <Note kind="error">{error}</Note>
       {loading && !data && <p className="muted">Загружаем…</p>}
 
-      {data && (
+      {data?.length === 0 && <Empty>Изделий пока нет. Каталог наполняется здесь — на сайт уходит только опубликованное.</Empty>}
+
+      {data && data.length > 0 && (
         <div className="admin-scroll">
           <table className="admin-table">
             <thead>

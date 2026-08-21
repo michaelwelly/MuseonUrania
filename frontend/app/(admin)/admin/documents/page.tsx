@@ -12,7 +12,7 @@ import {
   type DocumentRow,
   type Vocabulary,
 } from "@/lib/admin";
-import { Field, Note, Published, message, useLoad, when } from "../ui";
+import { Empty, Field, message, Note, Published, useLoad, when } from "../ui";
 
 // Документы — единственное место админки, где правило доступа видно прямо
 // в интерфейсе: строка знает, почему её нельзя опубликовать, и говорит это
@@ -93,7 +93,9 @@ export default function DocumentsPage() {
 
       {loading && !data && <p className="muted">Загружаем…</p>}
 
-      {data && (
+      {data?.length === 0 && <Empty>Документов пока нет. Здесь заводятся карточки, а файл к ним прикладывается отдельно.</Empty>}
+
+      {data && data.length > 0 && (
         <div className="admin-scroll">
           <table className="admin-table">
             <thead>

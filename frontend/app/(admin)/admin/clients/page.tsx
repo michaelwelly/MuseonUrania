@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { clients, type ClientRow, type Page } from "@/lib/admin";
-import { Note, useLoad, when } from "../ui";
+import { Empty, Note, useLoad, when } from "../ui";
 
 // Клиентская база. Вторая страница админки после заявок, где на экране
 // персональные данные, — отсюда потолок размера страницы на портале.
@@ -68,9 +68,9 @@ export default function ClientsPage() {
       <Note kind="error">{error}</Note>
       {loading && !data && <p className="muted">Загружаем…</p>}
       {data?.items.length === 0 && (
-        <p className="admin-hint">
+        <Empty>
           {query ? "По этому запросу никого нет." : "Клиентов пока нет."}
-        </p>
+        </Empty>
       )}
 
       {data && data.items.length > 0 && (

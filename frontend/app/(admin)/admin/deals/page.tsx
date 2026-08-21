@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { deals, pipelines as loadPipelines, type DealRow, type Page, type Pipeline } from "@/lib/admin";
 import { PIPELINE, STAGE, label } from "../labels";
-import { Note, money, useLoad, when } from "../ui";
+import { Empty, money, Note, State, useLoad, when } from "../ui";
 
 // Сделки всех трёх воронок в одном списке. Три таблицы здесь были бы тремя
 // одинаковыми экранами: у сделок общая карточка, общий ответственный,
@@ -96,7 +96,7 @@ function Deals() {
 
       <Note kind="error">{error}</Note>
       {loading && !data && <p className="muted">Загружаем…</p>}
-      {data?.items.length === 0 && <p className="admin-hint">Сделок с таким фильтром нет.</p>}
+      {data?.items.length === 0 && <Empty>Сделок с таким фильтром нет.</Empty>}
 
       {data && data.items.length > 0 && (
         <>
@@ -126,7 +126,7 @@ function Deals() {
                     <td className="tight">
                       <span className="badge">{label(PIPELINE, row.pipeline)}</span>
                     </td>
-                    <td className="tight">{label(STAGE, row.stage)}</td>
+                    <td className="tight"><State value={row.stage} dict={STAGE} /></td>
                     <td className="tight">{money(row.amount, row.currency)}</td>
                     <td className="tight">{row.owner || <span className="muted">—</span>}</td>
                     <td className="tight muted">{when(row.updatedAt)}</td>

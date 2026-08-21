@@ -20,7 +20,7 @@ import {
 import History from "../../History";
 import OwnerField from "../../OwnerField";
 import { PIPELINE, QUOTE_STATUS as QS, STAGE, label } from "../../labels";
-import { Field, Note, day, fieldErrors, isConflict, message, money, useLoad, when } from "../../ui";
+import { day, Empty, Field, fieldErrors, isConflict, message, money, Note, State, useLoad, when } from "../../ui";
 
 // Карточка сделки: правка, перевод по воронке, вложения, КП и история.
 //
@@ -269,7 +269,7 @@ function Attachments({
         с оригиналом при замене ревизии.
       </p>
 
-      {deal.attachments.length === 0 && <p className="admin-hint">Документов не приложено.</p>}
+      {deal.attachments.length === 0 && <Empty>Документов не приложено.</Empty>}
 
       {deal.attachments.length > 0 && (
         <div className="admin-scroll">
@@ -374,7 +374,7 @@ function Quotes({ deal, onError }: { deal: Deal; onError: (message: string | nul
         </button>
       </div>
 
-      {data?.length === 0 && <p className="admin-hint">По этой сделке КП ещё не заводили.</p>}
+      {data?.length === 0 && <Empty>По этой сделке КП ещё не заводили.</Empty>}
 
       {data && data.length > 0 && (
         <div className="admin-scroll">
@@ -395,7 +395,7 @@ function Quotes({ deal, onError }: { deal: Deal; onError: (message: string | nul
                     <Link href={`/admin/quotes/${q.id}/`}>{q.number}</Link>
                   </td>
                   <td className="tight">
-                    <span className="badge">{label(QS, q.status)}</span>
+                    <State value={q.status} dict={QS} />
                   </td>
                   <td className="tight">{money(q.total, q.currency)}</td>
                   <td className="tight">{day(q.validUntil)}</td>

@@ -1070,6 +1070,51 @@
   color: var(--state-wait);
 }
 
+.badge--stop {
+  background: var(--state-stop-bg);
+  border-color: var(--state-stop-line);
+  color: var(--state-stop);
+}
+
+/* Знак состояния — форма, а не цвет.
+ *
+ * В замысле файла это записано с самого начала: «состояние читается без
+ * цвета». В коде до сих пор было не так — badge--on и badge--warn отличались
+ * ровно цветом заливки, и для восьми процентов мужчин, не различающих красный
+ * и зелёный, зелёная «выиграна» и красная «отклонено» выглядели одинаково.
+ *
+ * Теперь у каждого состояния своя геометрия: закрашенный круг — исход
+ * достигнут, кольцо — в работе, ромб — отказ. Знак рисуется псевдоэлементом
+ * без текста, поэтому скринридер его не читает: ему хватает самого слова
+ * «выиграна» или «отклонено».
+ *
+ * Нейтральная метка (воронка, рубрика, форма заявки) знака не получает —
+ * это не состояние, и притворяться им она не должна. */
+.badge--on::before,
+.badge--warn::before,
+.badge--stop::before {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin-right: var(--s1);
+  background: currentColor;
+}
+
+.badge--on::before {
+  border-radius: 50%;
+}
+
+.badge--warn::before {
+  border-radius: 50%;
+  background: none;
+  box-shadow: inset 0 0 0 2px currentColor;
+}
+
+.badge--stop::before {
+  transform: rotate(45deg);
+}
+
 /* ————— сообщения ————— */
 
 .note {

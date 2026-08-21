@@ -108,6 +108,30 @@ export function Field({
   );
 }
 
+/*
+ * Состояние рабочего процесса: заявка, КП, стадия сделки.
+ *
+ * Отдельно от Published, потому что это разные оси. Published отвечает
+ * на вопрос «видно ли это на сайте» — там два значения и никакой тревоги.
+ * Здесь — где вещь стоит в работе, и таких значений двенадцать на три
+ * воронки, но состояний у них ровно три: исход достигнут, идёт работа,
+ * отказ.
+ *
+ * Раньше статусы рисовались нейтральной меткой — той же, что воронка,
+ * рубрика новости и форма заявки. Интерфейс не отличал «это ярлык»
+ * от «это состояние», и «проиграна» выглядела как «сервис».
+ *
+ * Сведение живёт здесь, а не в каждой странице: четвёртая воронка добавит
+ * стадии, и разъехаться они должны в одном месте, а не в шести.
+ */
+const ДОСТИГНУТО = new Set(["won", "accepted", "active", "closed"]);
+const ОТКАЗ = new Set(["lost", "rejected", "expired", "declined"]);
+
+export function State({ value, dict }: { value: string; dict: Record<string, string> }) {
+  const tone = ДОСТИГНУТО.has(value) ? "on" : ОТКАЗ.has(value) ? "stop" : "warn";
+  return <span className={`badge badge--${tone}`}>{dict[value] ?? value}</span>;
+}
+
 export function Published({ on }: { on: boolean }) {
   return (
     <span className={`badge ${on ? "badge--on" : "badge--off"}`}>

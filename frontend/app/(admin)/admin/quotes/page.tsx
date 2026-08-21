@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { quoteStatuses, quotes, type Page, type QuoteRow } from "@/lib/admin";
 import { QUOTE_STATUS, label } from "../labels";
-import { Note, day, money, useLoad, when } from "../ui";
+import { day, Empty, money, Note, State, useLoad, when } from "../ui";
 
 // Коммерческие предложения по всем сделкам сразу. Заводятся они на карточке
 // сделки — КП без сделки не бывает, и заводить его отсюда значило бы сначала
@@ -48,7 +48,7 @@ export default function QuotesPage() {
 
       <Note kind="error">{error}</Note>
       {loading && !data && <p className="muted">Загружаем…</p>}
-      {data?.items.length === 0 && <p className="admin-hint">КП с таким фильтром нет.</p>}
+      {data?.items.length === 0 && <Empty>КП с таким фильтром нет.</Empty>}
 
       {data && data.items.length > 0 && (
         <>
@@ -74,9 +74,7 @@ export default function QuotesPage() {
                       <Link href={`/admin/deals/${row.dealId}/`}>{row.dealTitle}</Link>
                     </td>
                     <td className="tight">
-                      <span className={`badge ${row.status === "accepted" ? "badge--on" : ""}`}>
-                        {label(QUOTE_STATUS, row.status)}
-                      </span>
+                      <State value={row.status} dict={QUOTE_STATUS} />
                     </td>
                     <td className="tight">{money(row.total, row.currency)}</td>
                     <td className="tight">{day(row.validUntil)}</td>

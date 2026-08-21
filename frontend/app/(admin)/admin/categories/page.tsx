@@ -8,7 +8,7 @@ import {
   updateCategory,
   type Category,
 } from "@/lib/admin";
-import { Field, Note, message, useLoad } from "../ui";
+import { Empty, Field, message, Note, useLoad } from "../ui";
 
 export default function CategoriesPage() {
   const { data, error, loading, reload, setError } = useLoad<Category[]>(categories);
@@ -41,7 +41,9 @@ export default function CategoriesPage() {
       <Note kind="error">{error}</Note>
       {loading && !data && <p className="muted">Загружаем…</p>}
 
-      {data && (
+      {data?.length === 0 && <Empty>Категорий пока нет. Они задают порядок разделов в каталоге на сайте.</Empty>}
+
+      {data && data.length > 0 && (
         <div className="admin-scroll">
           <table className="admin-table">
             <thead>

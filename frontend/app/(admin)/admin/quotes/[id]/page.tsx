@@ -11,8 +11,8 @@ import {
   type QuoteForm,
   type QuoteItemForm,
 } from "@/lib/admin";
-import { QUOTE_STATUS, label } from "../../labels";
-import { Field, Note, day, fieldErrors, isConflict, message, money, useLoad, when } from "../../ui";
+import { QUOTE_STATUS } from "../../labels";
+import { day, Field, fieldErrors, isConflict, message, money, Note, State, useLoad, when } from "../../ui";
 
 // Карточка КП.
 //
@@ -36,9 +36,7 @@ export default function QuoteCard({ params }: { params: Promise<{ id: string }> 
         <h1>КП {data?.number ?? ""}</h1>
         {data && (
           <div className="row">
-            <span className={`badge ${data.status === "accepted" ? "badge--on" : ""}`}>
-              {label(QUOTE_STATUS, data.status)}
-            </span>
+            <State value={data.status} dict={QUOTE_STATUS} />
             <span className="mono">версия {data.version}</span>
           </div>
         )}

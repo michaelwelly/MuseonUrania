@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { deleteNews, news, publishNews, type NewsRow } from "@/lib/admin";
-import { Note, Published, message, useLoad, when } from "../ui";
+import { Empty, message, Note, Published, useLoad, when } from "../ui";
 
 export default function NewsPage() {
   const { data, error, loading, reload, setError } = useLoad<NewsRow[]>(news);
@@ -38,10 +38,10 @@ export default function NewsPage() {
       <Note kind="error">{error}</Note>
       {loading && !data && <p className="muted">Загружаем…</p>}
       {data?.length === 0 && (
-        <p className="admin-hint">
+        <Empty>
           Пока пусто. Демонстрационные публикации из макета в базу не переносились —
           это прямое указание в HANDOFF.md.
-        </p>
+        </Empty>
       )}
 
       {data && data.length > 0 && (
