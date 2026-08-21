@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { clients, deals, documents, leads, news, products, quotes } from "@/lib/admin";
+import { chatQueue, clients, deals, documents, leads, news, products, quotes } from "@/lib/admin";
+import { plural } from "@/lib/plural";
 import { Note, useLoad } from "./ui";
 
 // Сводка.
@@ -17,6 +18,7 @@ type Summary = {
   news: { total: number; draft: number };
   documents: { total: number; published: number; awaitingFile: number };
   leads: { total: number; fresh: number };
+  waitingChats: number;
   clients: number;
   deals: number;
   awaitingDecision: number;
@@ -25,12 +27,36 @@ type Summary = {
 /** Строка очереди: сколько, что это значит и куда идти. */
 type Task = { count: number; what: string; why: string; href: string };
 
+/*
+ * Подписи очереди согласуются с числом.
+ *
+ * lib/plural написан ровно под эту ошибку — «4 моделей» на сайте, — но его
+ * единственные потребители исчезли вместе с полосой цифр, и помощник остался
+ * без применения. А в сводке ровно то же: «1 разговоров ждут ответа»,
+ * «4 клиентов в базе». Числа здесь считаются от данных и меняются каждый день,
+ * значит и форма слова обязана считаться, а не стоять константой.
+ */
+const склонения = {
+  разговоры: (n: number) =>
+    plural(n, "разговор ждёт ответа", "разговора ждут ответа", "разговоров ждут ответа"),
+  заявки: (n: number) =>
+    plural(n, "заявка ждёт разбора", "заявки ждут разбора", "заявок ждут разбора"),
+  кп: (n: number) =>
+    plural(n, "КП отправлено и ждёт ответа", "КП отправлены и ждут ответа", "КП отправлены и ждут ответа"),
+  документы: (n: number) =>
+    plural(n, "документ без файла", "документа без файла", "документов без файла"),
+  изделия: (n: number) =>
+    plural(n, "изделие в черновиках", "изделия в черновиках", "изделий в черновиках"),
+  материалы: (n: number) =>
+    plural(n, "материал в черновиках", "материала в черновиках", "материалов в черновиках"),
+};
+
 export default function Dashboard() {
   const { data, error, loading } = useLoad<Summary>(async () => {
     // Все запросы разом, а не по очереди: они независимы, и последовательный
     // вызов складывал бы задержки в сумму на ровном месте. Счётчики просят
     // одну строку — нужно только число в `total`, а не сама страница.
-    const [p, n, d, all, draft, base, pipeline, sent] = await Promise.all([
+    const [p, n, d, all, draft, base, pipeline, sent, waiting] = await Promise.all([
       products(),
       news(),
       documents(),
@@ -39,6 +65,7 @@ export default function Dashboard() {
       clients("", 0, 1),
       deals({}, 0, 1),
       quotes("sent", 0, 1),
+      chatQueue(0, 1),
     ]);
 
     return {
@@ -50,6 +77,7 @@ export default function Dashboard() {
         awaitingFile: d.filter((x) => !x.hasFile).length,
       },
       leads: { total: all.total, fresh: draft.total },
+      waitingChats: waiting.total,
       clients: base.total,
       deals: pipeline.total,
       awaitingDecision: sent.total,
@@ -59,32 +87,44 @@ export default function Dashboard() {
   const tasks: Task[] = data
     ? [
         {
+          // Первой строкой, и это не про важность, а про время.
+          //
+          // Замер: разговор ждал живого ответа четвёртый день, а сводка
+          // о нём молчала — она считала заявки, документы, изделия, новости
+          // и КП, но не людей, которые ждут прямо сейчас. Черновик подождёт
+          // до конца дня, посетитель — нет.
+          count: data.waitingChats,
+          what: склонения.разговоры(data.waitingChats),
+          why: "Посетитель ждёт живого ответа. Ваш ответ и есть взятие разговора.",
+          href: "/admin/chats/",
+        },
+        {
           count: data.leads.fresh,
-          what: "заявок ждут разбора",
+          what: склонения.заявки(data.leads.fresh),
           why: "Заявка приходит черновиком. Пока статус не поднят, её никто не ведёт.",
           href: "/admin/leads/",
         },
         {
           count: data.awaitingDecision,
-          what: "КП отправлены и ждут ответа",
+          what: склонения.кп(data.awaitingDecision),
           why: "Отправленное КП не правится. Решение клиента отмечается вручную.",
           href: "/admin/quotes/",
         },
         {
           count: data.documents.awaitingFile,
-          what: "документов без файла",
+          what: склонения.документы(data.documents.awaitingFile),
           why: "Опубликовать документ без загруженного файла портал не даст.",
           href: "/admin/documents/",
         },
         {
           count: data.products.draft,
-          what: "изделий в черновиках",
+          what: склонения.изделия(data.products.draft),
           why: "На сайте их нет: публикация — отдельное действие, не правка.",
           href: "/admin/products/",
         },
         {
           count: data.news.draft,
-          what: "материалов в черновиках",
+          what: склонения.материалы(data.news.draft),
           why: "В ленту не попадут, пока не опубликованы.",
           href: "/admin/news/",
         },
@@ -135,21 +175,21 @@ export default function Dashboard() {
             <Tile
               href="/admin/products/"
               num={data.products.total - data.products.draft}
-              label={`изделий на сайте${всего(data.products.total)}`}
+              label={`${plural(data.products.total - data.products.draft, "изделие", "изделия", "изделий")} на сайте${всего(data.products.total)}`}
             />
             <Tile
               href="/admin/news/"
               num={data.news.total - data.news.draft}
-              label={`материалов в ленте${всего(data.news.total)}`}
+              label={`${plural(data.news.total - data.news.draft, "материал", "материала", "материалов")} в ленте${всего(data.news.total)}`}
             />
             <Tile
               href="/admin/documents/"
               num={data.documents.published}
-              label={`документов доступно${всего(data.documents.total)}`}
+              label={`${plural(data.documents.published, "документ доступен", "документа доступны", "документов доступно")}${всего(data.documents.total)}`}
             />
-            <Tile href="/admin/leads/" num={data.leads.total} label="заявок всего" />
-            <Tile href="/admin/clients/" num={data.clients} label="клиентов в базе" />
-            <Tile href="/admin/deals/" num={data.deals} label="сделок во всех воронках" />
+            <Tile href="/admin/leads/" num={data.leads.total} label={`${plural(data.leads.total, "заявка", "заявки", "заявок")} всего`} />
+            <Tile href="/admin/clients/" num={data.clients} label={`${plural(data.clients, "клиент", "клиента", "клиентов")} в базе`} />
+            <Tile href="/admin/deals/" num={data.deals} label={`${plural(data.deals, "сделка", "сделки", "сделок")} во всех воронках`} />
           </div>
         </>
       )}
