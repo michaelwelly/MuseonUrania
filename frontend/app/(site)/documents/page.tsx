@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import Image from "next/image";
 import Link from "next/link";
 import PageHero from "@/components/PageHero";
@@ -9,10 +10,11 @@ import { fetchDocuments } from "@/lib/api";
 import DocumentsTable from "./table";
 import styles from "./page.module.css";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Документы и лицензирование — VEDAL",
   description: documentsHero.lead,
-};
+  path: "/documents/",
+});
 
 export default async function DocumentsPage() {
   const documents = await fetchDocuments();

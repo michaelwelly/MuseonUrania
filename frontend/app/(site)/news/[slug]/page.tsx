@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { fetchNews, fetchNewsEntry } from "@/lib/api";
 import { mediaSrc } from "@/lib/media";
+import { pageMetadata } from "@/lib/seo";
 import styles from "./page.module.css";
 
 // §8.3 плана: согласованный формат новости — заголовок, краткий анонс, полный
@@ -28,17 +29,14 @@ export async function generateMetadata(props: PageProps<"/news/[slug]">): Promis
   // SEO собирается из заголовка и анонса. Отдельных полей title/description
   // у новости нет: §8.3 их называет, но формат ещё не согласован, и пока
   // анонс — честный источник описания, он для того и написан.
-  return {
+  return pageMetadata({
     title: `${entry.title} — VEDAL`,
     description: entry.excerpt,
-    openGraph: {
-      type: "article",
-      title: entry.title,
-      description: entry.excerpt,
-      publishedTime: entry.isoDate,
-      images: entry.image ? [{ url: mediaSrc(entry.image.src), alt: entry.image.alt }] : undefined,
-    },
-  };
+    path: `/news/${entry.slug}/`,
+    type: "article",
+    publishedTime: entry.isoDate,
+    image: entry.image ? { url: mediaSrc(entry.image.src), alt: entry.image.alt } : undefined,
+  });
 }
 
 export default async function NewsEntryPage(props: PageProps<"/news/[slug]">) {

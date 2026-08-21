@@ -7,6 +7,7 @@ import { fetchProduct, fetchProducts } from "@/lib/api";
 import ProductTabs from "./tabs";
 import styles from "./page.module.css";
 import { mediaSrc } from "@/lib/media";
+import { pageMetadata } from "@/lib/seo";
 
 export async function generateStaticParams() {
   const products = await fetchProducts();
@@ -17,10 +18,15 @@ export async function generateMetadata(props: PageProps<"/products/[slug]">): Pr
   const { slug } = await props.params;
   const product = await fetchProduct(slug);
   if (!product) return {};
-  return {
+  // Адрес берётся из ответа API, а не из сегмента маршрута: canonical обязан
+  // указывать на один адрес страницы, а прийти на неё можно и по кодировке,
+  // отличной от каноничной.
+  return pageMetadata({
     title: `${product.name} — ${product.kind} — VEDAL`,
     description: product.detail ?? product.summary,
-  };
+    path: `/products/${product.slug}/`,
+    image: product.image ? { url: mediaSrc(product.image.src), alt: product.image.alt } : undefined,
+  });
 }
 
 function Arrow() {

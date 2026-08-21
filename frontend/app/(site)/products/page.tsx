@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import PageHero from "@/components/PageHero";
 import { DarkCta } from "@/components/Blocks";
 import { fetchProducts } from "@/lib/api";
@@ -8,10 +9,11 @@ import styles from "./page.module.css";
 const lead =
   "Изделия для неонатологии, реанимации, анестезиологии, мониторинга и интенсивной терапии. У каждой позиции указан статус документации.";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Каталог оборудования — VEDAL",
   description: lead,
-};
+  path: "/products/",
+});
 
 export default async function ProductsPage() {
   // Категории больше не запрашиваются: фильтр по ним убран, и полоса цифр

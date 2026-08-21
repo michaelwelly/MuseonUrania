@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import PageHero from "@/components/PageHero";
 import LeadForm from "@/components/LeadForm";
@@ -17,10 +18,11 @@ import {
 } from "@/content/contacts";
 import styles from "./page.module.css";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Контакты — VEDAL",
   description: contactsHero.lead,
-};
+  path: "/contacts/",
+});
 
 const mainClass = (title: string) =>
   title === "Телефон" ? styles.mainPhone : title === "Почта" ? styles.mainMail : styles.mainAddress;

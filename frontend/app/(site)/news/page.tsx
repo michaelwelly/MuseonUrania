@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import Image from "next/image";
 import PageHero from "@/components/PageHero";
 import { newsHero, press } from "@/content/news";
@@ -9,10 +10,11 @@ import NewsFeed from "./feed";
 import NewsSubscribe from "./subscribe";
 import styles from "./page.module.css";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Новости и пресс-центр — VEDAL",
   description: newsHero.lead,
-};
+  path: "/news/",
+});
 
 export default async function NewsPage() {
   const news = await fetchNews();
