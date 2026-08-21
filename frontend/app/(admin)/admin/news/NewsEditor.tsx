@@ -341,9 +341,17 @@ export default function NewsEditor({ existing }: { existing?: News }) {
           <p className="side__eyebrow mono">Готовность к публикации</p>
           <ul className="check">
             {готово.map((п) => (
-              <li key={п.что} className={`check__row${п.есть ? " check__row--on" : ""}`}>
+              // Незаполненное обязательное и незаполненное желательное
+              // выглядели одинаково — оранжевым восклицательным знаком, —
+              // хотя подпись под списком обещала, что различаются. Обещание
+              // в подписи, которого не выполняет сам список, хуже
+              // отсутствия подписи.
+              <li
+                key={п.что}
+                className={`check__row${п.есть ? " check__row--on" : п.нужно ? " check__row--must" : ""}`}
+              >
                 <span className="check__mark" aria-hidden="true">
-                  {п.есть ? "✓" : "!"}
+                  {п.есть ? "✓" : п.нужно ? "!" : "·"}
                 </span>
                 <span className="check__body">
                   <span className="check__what">{п.что}</span>
@@ -353,7 +361,7 @@ export default function NewsEditor({ existing }: { existing?: News }) {
             ))}
           </ul>
           <p className="cols__note">
-            Восклицательным знаком помечено то, без чего портал не опубликует. Остальное —
+            Восклицательным знаком помечено то, без чего портал не опубликует; точкой —
             то, без чего материал выйдет хуже, но выйдет.
           </p>
 

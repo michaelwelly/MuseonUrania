@@ -18,7 +18,7 @@ import { accessToken } from "@/lib/auth";
 import { apiUrl } from "@/lib/submit";
 import EraseData from "../EraseData";
 import { CHAT_STATUS, LEAD_LANGUAGE, label } from "../labels";
-import { Note, message, useLoad, when } from "../ui";
+import { Note, message, useLoad, waited, when } from "../ui";
 
 // Разговоры посетителей.
 //
@@ -198,7 +198,7 @@ function Chats() {
                   <span
                     className={`talk__waited mono${ждёт && мин >= 5 ? " talk__waited--late" : ""}`}
                   >
-                    {мин} мин
+                    {waited(мин)}
                   </span>
                 </span>
                 <span className="talk__first">{first[c.id] ?? "обращение читается…"}</span>
@@ -292,12 +292,24 @@ function Known({ card, onDone }: { card: ChatCard; onDone: () => void }) {
     <div className="side__card">
       <span className="side__eyebrow mono">Что известно</span>
 
+      {/* У каждой пустоты своё слово, и это не украшение.
+          «Ожидает уточнения» означает «данные должны быть, но их нет
+          и кто-то должен внести». Разговор без ответственного не ждёт
+          уточнения — его просто никто не взял, и это состояние, а не
+          пробел. Разговор без кампании пришёл сам, и уточнять там
+          нечего. Пометив всё одним словом, метка перестаёт значить
+          что-либо, а вместе с ней и «ожидает уточнения» на карточке
+          изделия. */}
       <dl className="pairs">
-        <Pair name="Страница" value={card.page} />
-        <Pair name="Язык" value={card.language ? label(LEAD_LANGUAGE, card.language) : null} />
-        <Pair name="Кампания" value={card.campaign} />
+        <Pair name="Страница" value={card.page} empty="не записана" />
+        <Pair
+          name="Язык"
+          value={card.language ? label(LEAD_LANGUAGE, card.language) : null}
+          empty="не записан"
+        />
+        <Pair name="Кампания" value={card.campaign} empty="пришёл сам, без кампании" />
         <Pair name="Начат" value={when(card.startedAt)} />
-        <Pair name="Ответственный" value={card.owner} />
+        <Pair name="Ответственный" value={card.owner} empty="никто не взял" />
       </dl>
 
       <p className="triage__note">
@@ -317,12 +329,20 @@ function Known({ card, onDone }: { card: ChatCard; onDone: () => void }) {
   );
 }
 
-/** Пара «ключ — значение». Незаполненное помечено словами, а не пустотой. */
-function Pair({ name, value }: { name: string; value: string | null }) {
+/** Пара «ключ — значение». Незаполненное названо своими словами. */
+function Pair({
+  name,
+  value,
+  empty = "ожидает уточнения",
+}: {
+  name: string;
+  value: string | null;
+  empty?: string;
+}) {
   return (
     <div className="pairs__row">
       <dt>{name}</dt>
-      <dd className={value ? "mono" : "nobody"}>{value ?? "ожидает уточнения"}</dd>
+      <dd className={value ? "mono" : "nobody"}>{value ?? empty}</dd>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AdminError } from "@/lib/admin";
+import { plural } from "@/lib/plural";
 
 // Мелочи, которые иначе повторялись бы на каждой странице админки.
 
@@ -170,6 +171,28 @@ export function money(amount: number | null, currency: string | null): string {
     maximumFractionDigits: 2,
   });
   return currency ? `${shown} ${currency}` : shown;
+}
+
+/**
+ * Сколько ждёт — так, как это читает человек.
+ *
+ * Разговор, который ждёт четвёртые сутки, портал честно считает
+ * в минутах. Замер на стенде: в очереди стояло «5796 мин». Число
+ * правильное и совершенно нечитаемое — сравнить «5796» и «1481»
+ * с одного взгляда нельзя, а очередь для того и нужна.
+ *
+ * Порог у каждой ступени свой и не круглый: до часа минуты полезны
+ * («ждёт 7 мин» — это ещё разговор), после суток бесполезны и часы.
+ */
+export function waited(minutes: number): string {
+  if (minutes < 1) return "только что";
+  if (minutes < 60) return `${minutes} мин`;
+
+  const часов = Math.floor(minutes / 60);
+  if (часов < 24) return `${часов} ${plural(часов, "час", "часа", "часов")}`;
+
+  const дней = Math.floor(часов / 24);
+  return `${дней} ${plural(дней, "день", "дня", "дней")}`;
 }
 
 export function Empty({ children }: { children: React.ReactNode }) {

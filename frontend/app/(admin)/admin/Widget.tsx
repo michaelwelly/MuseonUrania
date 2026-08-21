@@ -6,6 +6,7 @@ import { chatQueue, chatThread, type ChatCard } from "@/lib/admin";
 import { plural } from "@/lib/plural";
 import { useCounts } from "./counts";
 import { CloseIcon, CrossIcon } from "./icons";
+import { waited as словами } from "./ui";
 
 // Виджет разговоров.
 //
@@ -128,7 +129,7 @@ function Queue({ ждут, onClose }: { ждут: number; onClose: () => void })
             {ждут === 0
               ? "никто не ждёт ответа"
               : `${ждут} ${plural(ждут, "ждёт", "ждут", "ждут")} ответа${
-                  дольше_всех === null ? "" : ` · дольше всех ${дольше_всех} мин`
+                  дольше_всех === null ? "" : ` · дольше всех ${словами(дольше_всех)}`
                 }`}
           </span>
         </span>
@@ -169,7 +170,7 @@ function Queue({ ждут, onClose }: { ждут: number; onClose: () => void })
                 <span className="widget__where mono">{c.page ?? "страница неизвестна"}</span>
               </span>
               <span className={`widget__waited mono${поздно ? " widget__waited--late" : ""}`}>
-                {мин} мин
+                {словами(мин)}
               </span>
             </Link>
           );

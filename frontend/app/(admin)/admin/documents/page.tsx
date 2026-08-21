@@ -32,7 +32,10 @@ const MAX_MB = 20;
  */
 function размер(bytes: number): string {
   const мб = bytes / 1024 / 1024;
-  if (мб >= 0.1) return `${мб.toFixed(1)} МБ`;
+  // Разряды по-русски: «2,9 МБ», а не «2.9 МБ». Весь остальной портал
+  // набирает числа через toLocaleString, и точка здесь выдаёт чужой
+  // формат посреди русского текста.
+  if (мб >= 0.1) return `${мб.toLocaleString("ru-RU", { maximumFractionDigits: 1 })} МБ`;
   return `${Math.max(1, Math.round(bytes / 1024))} КБ`;
 }
 
@@ -240,9 +243,18 @@ export default function DocumentsPage() {
                   </td>
 
                   <td className="tight">
+                    {/* Тип файла не называем.
+
+                        В макете здесь «PDF · 1,2 МБ», и первое время так
+                        и было. Но портал принимает не только PDF —
+                        StorageLimits знает png, jpg, webp и svg, — а тип
+                        загруженного файла в базе не хранится вовсе:
+                        у Document есть file_size и нет content_type.
+                        «PDF» в строке было бы утверждением, которое
+                        неоткуда взять и которое однажды окажется ложью. */}
                     {row.hasFile ? (
                       <span className="mono">
-                        PDF · {row.fileSize ? размер(row.fileSize) : "размер неизвестен"}
+                        {row.fileSize ? размер(row.fileSize) : "размер неизвестен"}
                       </span>
                     ) : (
                       <span className="nobody">файла нет</span>

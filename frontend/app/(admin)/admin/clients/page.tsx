@@ -216,7 +216,7 @@ function Preview({ id, onClose }: { id: string; onClose: () => void }) {
             <Pair name="Город" value={[data.country, data.city].filter(Boolean).join(", ")} />
             <Pair name="Телефон" value={data.phone} mono />
             <Pair name="Почта" value={data.email} mono />
-            <Pair name="Ответственный" value={data.owner} />
+            <Pair name="Ответственный" value={data.owner} empty="не назначен" />
             <Pair name="Заведён" value={when(data.createdAt)} mono />
           </dl>
 
@@ -252,12 +252,29 @@ function Preview({ id, onClose }: { id: string; onClose: () => void }) {
 }
 
 /** Пара «ключ — значение». Пустое — прочерк, а не исчезнувшая строка:
- *  отсутствие ИНН у клиента это факт, и видеть его надо. */
-function Pair({ name, value, mono }: { name: string; value: string | null; mono?: boolean }) {
+ *  отсутствие ИНН у клиента это факт, и видеть его надо.
+ *
+ *  Там, где у пустоты есть имя, оно называется: «не назначен» читается
+ *  так же, как в списке заявок, и означает то же самое. Прочерк на этом
+ *  месте заставлял бы догадываться. */
+function Pair({
+  name,
+  value,
+  mono,
+  empty = "—",
+}: {
+  name: string;
+  value: string | null;
+  mono?: boolean;
+  empty?: string;
+}) {
+  const пусто = !value;
   return (
     <div className="pairs__row">
       <dt>{name}</dt>
-      <dd className={mono ? "mono" : undefined}>{value || "—"}</dd>
+      <dd className={пусто ? (empty === "—" ? undefined : "nobody") : mono ? "mono" : undefined}>
+        {value || empty}
+      </dd>
     </div>
   );
 }
