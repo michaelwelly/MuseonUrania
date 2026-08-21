@@ -1,7 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { leads, staff as loadStaff, type LeadRow, type Page, type StaffMember } from "@/lib/admin";
+import {
+  chatsAll,
+  deals,
+  leads,
+  staff as loadStaff,
+  type ChatCard,
+  type DealRow,
+  type LeadRow,
+  type Page,
+  type StaffMember,
+} from "@/lib/admin";
 import { plural } from "@/lib/plural";
 import { Avatar } from "../Avatar";
 import { Empty, Note, useLoad } from "../ui";
@@ -28,10 +38,13 @@ import { useWho } from "../who";
 // ───────────────────────────────────────────────────────────────────────────
 // Что портал знает по-настоящему
 //
-// Сколько заявок числится за человеком. Это единственное число нагрузки,
-// которое можно спросить: у заявок есть отбор по ответственному, у сделок
-// и разговоров такого отбора нет. Показывать два выдуманных числа рядом
-// с одним настоящим — значит обесценить настоящее.
+// Сколько заявок, сделок и разговоров числится за человеком. Раньше здесь
+// было одно число и два прочерка: отбор по ответственному был только
+// у заявок. Теперь он есть у всех трёх дверей, и все три числа настоящие.
+//
+// Три запроса на карточку вместо одного — по строке из каждого списка,
+// ради `total`. Сотрудников десятки, а не тысячи; когда их станет столько,
+// что это заметно, считать нагрузку будет отдельная дверь, а не карточка.
 
 export default function StaffPage() {
   const who = useWho();
@@ -68,10 +81,18 @@ export default function StaffPage() {
 function Card({ person, me }: { person: StaffMember; me: boolean }) {
   const имя = person.name?.trim() || person.login;
 
-  // Заявки этого человека — настоящим числом, отдельным запросом на карточку.
-  // Пять карточек — пять запросов по одной строке: `total` без самой страницы.
+  // Нагрузка — настоящими числами, по запросу на список. Просится одна
+  // строка ради `total`: сама страница здесь не нужна.
   const { data: заявки } = useLoad<Page<LeadRow>>(
     () => leads({ owner: person.login }, 0, 1),
+    person.login,
+  );
+  const { data: сделки } = useLoad<Page<DealRow>>(
+    () => deals({ owner: person.login }, 0, 1),
+    person.login,
+  );
+  const { data: разговоры } = useLoad<Page<ChatCard>>(
+    () => chatsAll(person.login, 0, 1),
     person.login,
   );
 
@@ -115,16 +136,19 @@ function Card({ person, me }: { person: StaffMember; me: boolean }) {
           </span>
         </Link>
 
-        {/* Два пустых места, а не два выдуманных числа: у сделок и разговоров
-            отбора по ответственному у портала нет, и посчитать их нечем. */}
-        <span className="load load--none">
-          <span className="load__num nobody">—</span>
-          <span className="load__what">сделки: нет отбора</span>
-        </span>
-        <span className="load load--none">
-          <span className="load__num nobody">—</span>
-          <span className="load__what">разговоры: нет отбора</span>
-        </span>
+        <Link className="load" href={`/admin/deals/?owner=${encodeURIComponent(person.login)}`}>
+          <span className="load__num mono">{сделки ? сделки.total : "…"}</span>
+          <span className="load__what">
+            {сделки ? plural(сделки.total, "сделка", "сделки", "сделок") : "сделок"}
+          </span>
+        </Link>
+
+        <Link className="load" href={`/admin/chats/?owner=${encodeURIComponent(person.login)}`}>
+          <span className="load__num mono">{разговоры ? разговоры.total : "…"}</span>
+          <span className="load__what">
+            {разговоры ? plural(разговоры.total, "разговор", "разговора", "разговоров") : "разговоров"}
+          </span>
+        </Link>
       </div>
 
       <div className="person__go">

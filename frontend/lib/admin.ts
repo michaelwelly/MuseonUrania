@@ -502,7 +502,7 @@ export type Conversion = {
 
 export const pipelines = () => get<Pipeline[]>("/deals/pipelines");
 export const deals = (
-  filter: { pipeline?: string; stage?: string; clientId?: string },
+  filter: { pipeline?: string; stage?: string; clientId?: string; owner?: string },
   page = 0,
   size = 50,
 ) => {
@@ -510,6 +510,9 @@ export const deals = (
   if (filter.pipeline) params.set("pipeline", filter.pipeline);
   if (filter.stage) params.set("stage", filter.stage);
   if (filter.clientId) params.set("clientId", filter.clientId);
+  // «-» — «без ответственного». Отдельный вопрос менеджера, а не пустой
+  // фильтр: те же слова, что у заявок и разговоров.
+  if (filter.owner) params.set("owner", filter.owner);
   return get<Page<DealRow>>(`/deals?${params}`);
 };
 export const deal = (id: string) => get<Deal>(`/deals/${id}`);
@@ -707,8 +710,11 @@ export type ChatThread = { id: string | null; status: ChatStatus; messages: Chat
 export const chatQueue = (page = 0, size = 20) =>
   get<Page<ChatCard>>(`/chats/queue?page=${page}&size=${size}`);
 
-export const chatsAll = (page = 0, size = 20) =>
-  get<Page<ChatCard>>(`/chats?page=${page}&size=${size}`);
+export const chatsAll = (owner = "", page = 0, size = 20) => {
+  const params = new URLSearchParams({ page: String(page), size: String(size) });
+  if (owner) params.set("owner", owner);
+  return get<Page<ChatCard>>(`/chats?${params}`);
+};
 
 export const chatThread = (id: string) => get<ChatThread>(`/chats/${id}`);
 
