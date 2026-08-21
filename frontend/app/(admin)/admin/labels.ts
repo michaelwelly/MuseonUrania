@@ -162,3 +162,18 @@ export const AUDIT_SUBJECT: Record<string, string> = {
   category: "Категории",
   media: "Медиа",
 };
+
+/**
+ * Откуда пришла заявка. Набор замкнут ограничением схемы (миграция V5).
+ */
+export const LEAD_SOURCE: Record<string, string> = {
+  site: "сайт",
+  yandex_form: "Яндекс Форма",
+  email: "почта",
+};
+
+/** Язык страницы, с которой пришла заявка. */
+export const LEAD_LANGUAGE: Record<string, string> = {
+  ru: "русский",
+  en: "английский",
+};

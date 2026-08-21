@@ -141,8 +141,13 @@ function Row({
       <td className="tight">{row.productCount}</td>
       <td className="tight">
         <div className="row">
+          {/* Имена называют категорию. На экране пять одинаковых «Сохранить»
+              и пять «Удалить»: глазами понятно по строке, при обходе
+              с клавиатуры — нет. У необратимого действия это дороже:
+              «Удалить» без указания чего звучит одинаково пять раз. */}
           <button
             className="btn btn--small"
+            aria-label={`Сохранить категорию: ${edit.name || row.name}`}
             disabled={busy}
             onClick={() =>
               void act(row.id, () =>
@@ -158,6 +163,7 @@ function Row({
           </button>
           <button
             className="btn btn--small btn--danger"
+            aria-label={`Удалить категорию: ${row.name}`}
             disabled={busy || row.productCount > 0}
             title={row.productCount > 0 ? "В категории есть изделия" : undefined}
             onClick={() => void act(row.id, () => deleteCategory(row.id))}
