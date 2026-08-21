@@ -159,9 +159,58 @@ public interface DealAdmin {
                                 + "с доменом на первой же новой воронке.")
                         List<String> lostStages) {}
 
+    @Schema(name = "AdminDealFilter", description = """
+            Отбор списка сделок. Все поля необязательны и складываются:
+            заданные сужают выборку, пустые её не трогают.
+            """)
+    record Filter(
+            @Schema(description = "Воронка: sales, dealer, service. Пусто — все.",
+                    nullable = true)
+            String pipeline,
+
+            @Schema(description = """
+                    Стадия. Работает и вместе с воронкой, и сама по себе: начальная
+                    стадия у всех трёх воронок зовётся одинаково, и «все сделки
+                    на стадии new» — осмысленный вопрос. Стадия вместе с чужой
+                    воронкой — опечатка, и на неё дверь отвечает отказом,
+                    а не пустым списком.
+                    """, nullable = true)
+            String stage,
+
+            @Schema(description = """
+                    Клиент. Сужает выборку наравне с остальными признаками,
+                    а не вместо них. Раньше отменял воронку, и админке
+                    приходилось посылать воронку пустой, чтобы получить
+                    ожидаемое, — подпорка снаружи вместо ответа на заданный
+                    вопрос.
+                    """, nullable = true)
+            UUID clientId,
+
+            @Schema(description = """
+                    Логин ответственного. Значение «-» означает «без ответственного» —
+                    это отдельный вопрос менеджера, а не отсутствие фильтра.
+                    Та же договорённость, что у заявок: два списка, спрашивающие
+                    одно и то же разными словами, — это два места, где потом чинить.
+                    """, example = "-", nullable = true)
+            String owner) {
+
+        /** Пустая строка и строка из пробелов — это «фильтра нет», а не «пусто». */
+        static String clean(String value) {
+            return value == null || value.isBlank() ? null : value.trim();
+        }
+
+        // public обязателен: запись объявлена внутри интерфейса, а значит уже
+        // публична, и компактный конструктор не может быть строже её самой.
+        public Filter {
+            pipeline = clean(pipeline);
+            stage = clean(stage);
+            owner = clean(owner);
+        }
+    }
+
     List<PipelineView> pipelines();
 
-    PageView<DealRow> deals(String pipeline, String stage, UUID clientId, int page, int size);
+    PageView<DealRow> deals(Filter filter, int page, int size);
 
     DealView deal(UUID id);
 
