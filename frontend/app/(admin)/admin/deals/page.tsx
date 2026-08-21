@@ -56,7 +56,7 @@ function Deals() {
         </p>
       )}
 
-      <div className="row" style={{ marginBottom: 16 }}>
+      <div className="row" style={{ marginBottom: "var(--s4)" }}>
         <select
           className="admin-select"
           value={pipeline}
@@ -137,7 +137,7 @@ function Deals() {
           </div>
 
           {data.pages > 1 && (
-            <div className="row" style={{ marginTop: 16 }}>
+            <div className="row" style={{ marginTop: "var(--s4)" }}>
               <button
                 className="btn btn--small"
                 disabled={page === 0}

@@ -174,13 +174,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         >
           Войти по рабочей учётной записи
         </button>
-        <p className="muted" style={{ fontSize: 13, marginBottom: 18 }}>
+        <p className="muted" style={{ fontSize: "var(--t-small)", marginBottom: "var(--s5)" }}>
           Откроется страница входа компании. После неё вернётесь сюда же — на ту страницу,
           с которой ушли.
         </p>
         {/* Техническая часть остаётся, но ниже и мельче: она нужна тому, кто
             настраивает вход, а не тому, кто им пользуется. */}
-        <p style={{ fontSize: 12.5 }}>
+        <p style={{ fontSize: "var(--t-small)" }}>
           Пароль и второй фактор портал не хранит и не проверяет: они живут в системе входа
           компании. Портал проверяет уже выданный токен и разбирает роли из него.
         </p>

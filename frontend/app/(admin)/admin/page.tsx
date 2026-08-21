@@ -127,7 +127,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          <h2 className="admin-card__title" style={{ marginTop: 30 }}>
+          <h2 className="admin-card__title" style={{ marginTop: "var(--s7)" }}>
             Всего в портале
           </h2>
 

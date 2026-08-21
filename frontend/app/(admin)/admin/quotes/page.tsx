@@ -88,7 +88,7 @@ export default function QuotesPage() {
           </div>
 
           {data.pages > 1 && (
-            <div className="row" style={{ marginTop: 16 }}>
+            <div className="row" style={{ marginTop: "var(--s4)" }}>
               <button
                 className="btn btn--small"
                 disabled={page === 0}

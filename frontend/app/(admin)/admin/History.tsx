@@ -54,7 +54,7 @@ export default function History({ of, id }: { of: HistoryOf; id: string }) {
   return (
     <div className="admin-card">
       <h2 className="admin-card__title">История</h2>
-      <p className="admin-hint" style={{ marginBottom: 14 }}>
+      <p className="admin-hint" style={{ marginBottom: "var(--s4)" }}>
         Только дописывается. Текст записи — персональные данные: в топики и в журнал он
         не уходит, туда идёт идентификатор.
       </p>

@@ -178,7 +178,7 @@ function Draft({
 
       <div className="admin-card">
         <h2 className="admin-card__title">Позиции</h2>
-        <p className="admin-hint" style={{ marginBottom: 12 }}>
+        <p className="admin-hint" style={{ marginBottom: "var(--s3)" }}>
           Наименование хранится своё, а не берётся из каталога по ссылке: переименование
           изделия не должно задним числом менять уже отправленное предложение.
         </p>
@@ -226,7 +226,7 @@ function Draft({
 
         {errors.items && <p className="note note--error">{errors.items}</p>}
 
-        <div className="row" style={{ marginTop: 12 }}>
+        <div className="row" style={{ marginTop: "var(--s3)" }}>
           <button
             className="btn btn--small"
             onClick={() =>
@@ -266,7 +266,7 @@ function Draft({
         </button>
       </div>
 
-      <p className="admin-hint" style={{ marginTop: 12 }}>
+      <p className="admin-hint" style={{ marginTop: "var(--s3)" }}>
         Письмо портал пока не шлёт: `MailSender` пишет в лог, SMTP Яндекс 360 — следующий шаг.
         Отметка фиксирует, что предложение ушло, и с этого момента КП не правится.
       </p>
@@ -326,10 +326,10 @@ function Settled({
           </table>
         </div>
 
-        <p className="row row--end" style={{ marginTop: 14, fontSize: 15 }}>
+        <p className="row row--end" style={{ marginTop: "var(--s4)", fontSize: "var(--t-base)" }}>
           Итого: <strong>{money(quote.total, quote.currency)}</strong>
         </p>
-        <p className="muted" style={{ fontSize: 13 }}>
+        <p className="muted" style={{ fontSize: "var(--t-small)" }}>
           Действует до {day(quote.validUntil)}
           {quote.note && ` · ${quote.note}`}
         </p>
@@ -338,7 +338,7 @@ function Settled({
       {quote.status === "sent" && (
         <div className="admin-card">
           <h2 className="admin-card__title">Решение клиента</h2>
-          <p className="admin-hint" style={{ marginBottom: 14 }}>
+          <p className="admin-hint" style={{ marginBottom: "var(--s4)" }}>
             Отмечается только по отправленному: клиент не может согласиться с тем, чего
             не получал.
           </p>

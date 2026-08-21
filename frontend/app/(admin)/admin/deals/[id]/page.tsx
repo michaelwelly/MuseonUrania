@@ -192,7 +192,7 @@ function StageBlock({
   return (
     <div className="admin-card">
       <h2 className="admin-card__title">Стадия</h2>
-      <p className="admin-hint" style={{ marginBottom: 14 }}>
+      <p className="admin-hint" style={{ marginBottom: "var(--s4)" }}>
         Стадия обязана быть из воронки этой сделки — набор приходит с карточкой. Воронка
         без причин проигрыша показывает, сколько потеряли, и молчит о том, почему.
       </p>
@@ -264,7 +264,7 @@ function Attachments({
   return (
     <div className="admin-card">
       <h2 className="admin-card__title">Вложения</h2>
-      <p className="admin-hint" style={{ marginBottom: 14 }}>
+      <p className="admin-hint" style={{ marginBottom: "var(--s4)" }}>
         Прикладывается ссылка на карточку документа, а не копия файла: копия разошлась бы
         с оригиналом при замене ревизии.
       </p>
@@ -273,7 +273,7 @@ function Attachments({
 
       {deal.attachments.length > 0 && (
         <div className="admin-scroll">
-          <table className="admin-table" style={{ marginBottom: 14 }}>
+          <table className="admin-table" style={{ marginBottom: "var(--s4)" }}>
             <thead>
               <tr>
                 <th>Документ</th>
@@ -330,7 +330,7 @@ function Attachments({
       </div>
 
       {all && offered.length === 0 && (
-        <p className="admin-hint" style={{ marginTop: 10 }}>
+        <p className="admin-hint" style={{ marginTop: "var(--s3)" }}>
           Согласованных документов, ещё не приложенных к этой сделке, нет.
         </p>
       )}

@@ -197,11 +197,11 @@ export default function ProductEditor({ existing }: { existing?: Product }) {
       </div>
 
       <div className="admin-card">
-        <h2 style={{ fontSize: 15, marginBottom: 12 }}>Категории</h2>
+        <h2 style={{ fontSize: "var(--t-base)", marginBottom: "var(--s3)" }}>Категории</h2>
         {!cats && <p className="muted">Загружаем…</p>}
         <div className="row">
           {cats?.map((c) => (
-            <label key={c.id} className="field--row" style={{ marginRight: 14 }}>
+            <label key={c.id} className="field--row" style={{ marginRight: "var(--s4)" }}>
               <input
                 type="checkbox"
                 checked={form.categorySlugs.includes(c.slug)}
@@ -260,17 +260,16 @@ function FeatureList({
 }) {
   return (
     <div className="admin-card">
-      <h2 style={{ fontSize: 15, marginBottom: 4 }}>Ключевые особенности</h2>
-      <p className="admin-hint" style={{ marginBottom: 12 }}>
+      <h2 style={{ fontSize: "var(--t-base)", marginBottom: "var(--s1)" }}>Ключевые особенности</h2>
+      <p className="admin-hint" style={{ marginBottom: "var(--s3)" }}>
         По одному утверждению в строке, в порядке важности. Пусто — карточка покажет «ожидает
         уточнения».
       </p>
 
       {rows.map((row, i) => (
-        <div key={i} className="row" style={{ marginBottom: 8 }}>
+        <div key={i} className="row" style={{ marginBottom: "var(--s2)" }}>
           <input
-            style={{ flex: "1 1 420px", font: "inherit", fontSize: 14, padding: "8px 10px",
-              border: "1px solid var(--line-3)", borderRadius: 8 }}
+            className="admin-search" style={{ flex: "1 1 420px" }}
             placeholder="Например: переход между режимами без перекладывания новорождённого"
             value={row}
             onChange={(e) => onChange(rows.map((r, index) => (index === i ? e.target.value : r)))}
@@ -307,23 +306,21 @@ function SpecTable({
 
   return (
     <div className="admin-card">
-      <h2 style={{ fontSize: 15, marginBottom: 4 }}>{title}</h2>
-      <p className="admin-hint" style={{ marginBottom: 12 }}>
+      <h2 style={{ fontSize: "var(--t-base)", marginBottom: "var(--s1)" }}>{title}</h2>
+      <p className="admin-hint" style={{ marginBottom: "var(--s3)" }}>
         {hint}
       </p>
 
       {rows.map((row, i) => (
-        <div key={i} className="row" style={{ marginBottom: 8 }}>
+        <div key={i} className="row" style={{ marginBottom: "var(--s2)" }}>
           <input
-            style={{ flex: "1 1 220px", font: "inherit", fontSize: 14, padding: "8px 10px",
-              border: "1px solid var(--line-3)", borderRadius: 8 }}
+            className="admin-search" style={{ flex: "1 1 220px" }}
             placeholder="Название"
             value={row.label}
             onChange={(e) => patch(i, { label: e.target.value })}
           />
           <input
-            style={{ flex: "2 1 300px", font: "inherit", fontSize: 14, padding: "8px 10px",
-              border: "1px solid var(--line-3)", borderRadius: 8 }}
+            className="admin-search" style={{ flex: "2 1 300px" }}
             placeholder="Значение"
             value={row.value}
             onChange={(e) => patch(i, { value: e.target.value })}
@@ -334,7 +331,7 @@ function SpecTable({
               checked={row.muted}
               onChange={(e) => patch(i, { muted: e.target.checked })}
             />
-            <span style={{ fontSize: 13 }}>приглушить</span>
+            <span style={{ fontSize: "var(--t-small)" }}>приглушить</span>
           </label>
           <button
             className="btn btn--small btn--danger"

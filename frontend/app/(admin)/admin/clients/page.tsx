@@ -40,7 +40,7 @@ export default function ClientsPage() {
         по двум местам — портал такую не заведёт.
       </p>
 
-      <div className="row" style={{ marginBottom: 16 }}>
+      <div className="row" style={{ marginBottom: "var(--s4)" }}>
         <input
           className="admin-search"
           value={typed}
@@ -92,7 +92,7 @@ export default function ClientsPage() {
                   <tr key={row.id}>
                     <td>
                       <Link href={`/admin/clients/${row.id}/`}>{row.name}</Link>
-                      <div className="muted" style={{ fontSize: 12 }}>
+                      <div className="muted" style={{ fontSize: "var(--t-small)" }}>
                         {row.kind === "company" ? "организация" : "человек"}
                       </div>
                     </td>
@@ -114,7 +114,7 @@ export default function ClientsPage() {
           </div>
 
           {data.pages > 1 && (
-            <div className="row" style={{ marginTop: 16 }}>
+            <div className="row" style={{ marginTop: "var(--s4)" }}>
               <button
                 className="btn btn--small"
                 disabled={page === 0}

@@ -28,7 +28,7 @@ export default function Entry({
       <div className="login__about">
         <div>
           <div className="login__mark">VEDAL Portal</div>
-          <div className="admin-circuit" style={{ marginTop: 8 }}>
+          <div className="admin-circuit" style={{ marginTop: "var(--s2)" }}>
             закрытый контур
           </div>
         </div>
