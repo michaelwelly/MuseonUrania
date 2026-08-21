@@ -1272,6 +1272,30 @@ paths:
         required: false
         schema:
           type: string
+      - description: "Поиск по имени, компании, телефону и почте."
+        in: query
+        name: query
+        required: false
+        schema:
+          type: string
+      - description: Логин ответственного; «-» — без ответственного.
+        in: query
+        name: owner
+        required: false
+        schema:
+          type: string
+      - description: "Форма, с которой пришла заявка."
+        in: query
+        name: form
+        required: false
+        schema:
+          type: string
+      - description: Источник перехода.
+        in: query
+        name: source
+        required: false
+        schema:
+          type: string
       - in: query
         name: page
         required: false
