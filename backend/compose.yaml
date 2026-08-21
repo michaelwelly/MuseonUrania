@@ -565,6 +565,16 @@ services:
       VEDAL_API_INTERNAL_URL: http://portal:8081
       NEXT_PUBLIC_API_URL: ${VEDAL_PUBLIC_URL:-http://localhost:8080}
 
+      # Адрес сайта наружу — для canonical и og:url. Они обязаны быть
+      # абсолютными: относительный адрес мессенджер и поисковик разбирают
+      # каждый по-своему, обычно относительно собственного домена.
+      #
+      # Пусто — сайт берёт NEXT_PUBLIC_API_URL: сегодня сайт и API стоят
+      # за одним шлюзом, и адрес у них общий. Задавать отдельно нужно в день,
+      # когда API переедет на свой поддомен: canonical обязан остаться
+      # на сайте, а не уехать на api.
+      NEXT_PUBLIC_SITE_URL: ${VEDAL_SITE_URL:-}
+
       NEXT_PUBLIC_MEDIA_URL: ${VEDAL_MEDIA_URL:-http://localhost:9000/vedal-media}
 
       # Админка ходит за токеном сама, публичным клиентом с PKCE.
