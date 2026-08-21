@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   NOBODY,
   leadStatuses,
@@ -67,8 +68,26 @@ const КОЛОНКИ: readonly Column[] = [
 
 const ПО_УМОЛЧАНИЮ = ["form", "contacts", "source", "owner"];
 
+// Заявки одного человека адресуемы: `/admin/leads/?owner=irina`.
+//
+// Понадобилось карточке сотрудника и профилю — там число заявок стоит
+// рядом с человеком, и щёлкнуть по нему должно быть можно. Польза шире:
+// «посмотри, что на Антоне» перестало означать «открой заявки и вспомни,
+// как его логин».
+//
+// Suspense обязателен: без границы useSearchParams уводит страницу
+// в отрисовку на клиенте целиком, и сборка об этом предупреждает.
 export default function LeadsPage() {
+  return (
+    <Suspense fallback={<p className="muted">Загружаем…</p>}>
+      <Leads />
+    </Suspense>
+  );
+}
+
+function Leads() {
   const who = useWho();
+  const asked = useSearchParams().get("owner");
   const toast = useToast();
   const counts = useCounts();
 
@@ -86,9 +105,28 @@ export default function LeadsPage() {
     [who.actor],
   );
 
-  const чипы = useMemo(() => [...готовые, ...saved], [готовые, saved]);
+  const чипы = useMemo(() => {
+    const все = [...готовые, ...saved];
+    // Отбор, пришедший адресом, встаёт в полосу первым: без него
+    // выбранного фильтра в полосе нет вовсе, и человек не понимает,
+    // почему список короче обычного.
+    if (asked && !все.some((c) => c.filter.owner === asked)) {
+      все.unshift({
+        id: `owner-${asked}`,
+        name: `Заявки: ${asked}`,
+        filter: { owner: asked },
+      });
+    }
+    return все;
+  }, [готовые, saved, asked]);
 
-  const [current, setCurrent] = useState<Saved>(ВСЕ);
+  // Отбор из адреса — только начальное значение: дальше выбор ведёт
+  // состояние, иначе щелчок по чипу спорил бы с адресом в строке браузера.
+  const [current, setCurrent] = useState<Saved>(() =>
+    asked
+      ? { id: `owner-${asked}`, name: `Заявки: ${asked}`, filter: { owner: asked } }
+      : ВСЕ,
+  );
   const [typed, setTyped] = useState("");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
