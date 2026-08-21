@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 // Ранняя реализация порта: поиск по словам, без модели. Ходит только через
 // интерфейсы модулей, а они отдают ровно то, что положено области: посетителю —
@@ -24,6 +25,31 @@ public class DeterministicSearch implements LlmEngine {
     // Четыре символа, а не три: на трёх «про» из «расскажи про погоду» находится
     // внутри «запросу», и ассистент отвечает каталогом на вопрос не по теме.
     private static final int MIN_TOKEN = 4;
+
+    // Марка стоит в названии каждого изделия и в подписи каждого документа,
+    // поэтому совпадением она не является: по слову «vedal» находится вообще
+    // всё. Замерено на живом стенде — вопрос «What is VEDAL A-2000? price?»
+    // приводил в ответ ещё и VEDAL R1, попавший туда единственным словом,
+    // которое есть у всех.
+    //
+    // Строка «ведал» здесь тоже намеренно: посетитель пишет марку и кириллицей.
+    // Совпадение с формой глагола «ведал» роли не играет — слово выбрасывается
+    // только из подсчёта, а не из вопроса.
+    private static final Set<String> BRAND = Set.of("vedal", "ведал", "вэдал");
+
+    // Совпадение в названии весит больше, чем в описании. Без веса «инкубатор»
+    // в названии изделия и «инкубатор», случайно попавший в текст новости,
+    // стоят одинаково, и новость обгоняет изделие, если слов в ней больше.
+    private static final int NAME = 3;
+    private static final int TEXT = 1;
+
+    // Порог: одного случайного слова в описании мало, чтобы назвать материал
+    // подходящим. Совпадение по названию (вес 3) порог проходит сразу,
+    // одинокое слово из описания (вес 1) — нет.
+    //
+    // Не пройти порог — штатный исход, а не пустой ответ: разговор уходит
+    // к человеку. Это лучше, чем список изделий, подобранный по слову «для».
+    private static final int MIN_SCORE = 2;
 
     private final CatalogQuery catalog;
     private final ContentQuery content;
@@ -44,16 +70,18 @@ public class DeterministicSearch implements LlmEngine {
         var hits = new ArrayList<Hit>();
 
         for (var p : catalog.publishedProducts()) {
-            var score = score(tokens, p.name(), p.kind(), p.summary(), String.join(" ", p.categories()));
-            if (score > 0) {
+            var score = score(tokens,
+                    named(p.name(), p.kind()),
+                    text(p.summary(), String.join(" ", p.categories())));
+            if (score >= MIN_SCORE) {
                 hits.add(new Hit(new Source(p.name() + " — " + p.kind(),
                         "/products/" + p.slug() + "/", "product"), score));
             }
         }
 
         for (var n : content.publishedNews()) {
-            var score = score(tokens, n.title(), n.excerpt(), n.tag());
-            if (score > 0) {
+            var score = score(tokens, named(n.title()), text(n.excerpt(), n.tag()));
+            if (score >= MIN_SCORE) {
                 hits.add(new Hit(new Source(n.title(), "/news/", "news"), score));
             }
         }
@@ -63,8 +91,8 @@ public class DeterministicSearch implements LlmEngine {
         // сотруднику показывать незачем, он смотрит его в админке.
         var visible = scope == Scope.STAFF ? documents.staffDocuments() : documents.listedDocuments();
         for (var d : visible) {
-            var score = score(tokens, d.title(), d.subject(), d.group());
-            if (score > 0) {
+            var score = score(tokens, named(d.title(), d.subject()), text(d.group()));
+            if (score >= MIN_SCORE) {
                 hits.add(new Hit(new Source(label(d), d.published() ? d.fileUrl() : "/documents/",
                         "document"), score));
             }
@@ -123,22 +151,48 @@ public class DeterministicSearch implements LlmEngine {
     private static List<String> tokens(String question) {
         return words(question).stream()
                 .filter(t -> t.length() >= MIN_TOKEN)
+                .filter(t -> !BRAND.contains(t))
                 .distinct()
                 .toList();
     }
 
-    // Совпадение по началу слова, а не по подстроке: подстрока находит «про»
-    // внутри «запросу» и склеивает несвязанные вещи. Начало слова терпимо
-    // к русской морфологии — «инкубатор» найдёт и «инкубаторы».
-    private static int score(List<String> tokens, String... fields) {
-        var haystack = words(String.join(" ", fields));
+    /** Поле, совпадение в котором весит как название. */
+    private static Weighted named(String... fields) {
+        return new Weighted(NAME, words(String.join(" ", fields)));
+    }
+
+    /** Поле, совпадение в котором весит как описание. */
+    private static Weighted text(String... fields) {
+        return new Weighted(TEXT, words(String.join(" ", fields)));
+    }
+
+    private record Weighted(int weight, List<String> words) {}
+
+    /**
+     * Насколько материал подходит вопросу.
+     *
+     * <p>За каждое слово вопроса берётся ЛУЧШИЙ вес, а не сумма по полям:
+     * «инкубатор», стоящий и в названии, и в описании, — это одно совпадение,
+     * а не два. Суммируя, мы дали бы преимущество карточкам с длинным текстом,
+     * то есть тем, кто больше про себя написал, а не тем, кто ближе к вопросу.
+     *
+     * <p>Совпадение по началу слова, а не по подстроке: подстрока находит «про»
+     * внутри «запросу» и склеивает несвязанные вещи. Начало слова терпимо
+     * к русской морфологии — «инкубатор» найдёт и «инкубаторы».
+     */
+    private static int score(List<String> tokens, Weighted... fields) {
         var score = 0;
         for (var token : tokens) {
-            // Обратное направление тоже нужно («инкубаторы» в вопросе против
-            // «инкубатор» в каталоге), но короткие служебные слова вроде «для»
-            // и «при» в нём участвовать не должны — под них подойдёт слишком много.
-            if (haystack.stream().anyMatch(w ->
-                    w.startsWith(token) || (w.length() >= MIN_TOKEN && token.startsWith(w)))) score++;
+            var best = 0;
+            for (var field : fields) {
+                // Обратное направление тоже нужно («инкубаторы» в вопросе против
+                // «инкубатор» в каталоге), но короткие служебные слова вроде «для»
+                // и «при» в нём участвовать не должны — под них подойдёт слишком много.
+                var hit = field.words().stream().anyMatch(w ->
+                        w.startsWith(token) || (w.length() >= MIN_TOKEN && token.startsWith(w)));
+                if (hit) best = Math.max(best, field.weight());
+            }
+            score += best;
         }
         return score;
     }
