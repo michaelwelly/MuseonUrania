@@ -347,4 +347,18 @@ describe("сделки одного сотрудника", () => {
     // только она.
     expect(screen.queryByRole("radio", { name: "продажи" })).toBeNull();
   });
+
+  it("«без ответственного» названо словами, а не дефисом на месте человека", async () => {
+    mocks.адрес.current = "owner=-";
+    render(
+      <ToastHost>
+        <DealsPage />
+      </ToastHost>,
+    );
+
+    // «-» — договорённость двери, а не логин. «Сделки одного сотрудника: -» —
+    // предложение, в котором на месте человека стоит дефис.
+    expect(await screen.findByText(/Показаны сделки без ответственного/)).toBeTruthy();
+    expect(screen.queryByText(/одного сотрудника/)).toBeNull();
+  });
 });
