@@ -167,7 +167,7 @@
 }
 
 .admin-section:hover {
-  color: var(--green);
+  color: var(--green-dark);
 }
 
 /* Текущий раздел: цвет, вес и полоса, прижатая к низу полосы, — как в шапке
@@ -251,7 +251,7 @@
   height: 48px;
   padding: 0 22px;
   border-radius: 2px;
-  background: var(--green);
+  background: var(--green-dark);
   color: #fff;
   font-size: 14.5px;
   font-weight: 600;
@@ -260,7 +260,7 @@
 }
 
 .admin-cta:hover {
-  background: var(--green-dark);
+  background: var(--green-ink-hover);
   color: #fff;
 }
 
@@ -294,7 +294,7 @@
 }
 
 .admin-tab:hover {
-  color: var(--green);
+  color: var(--green-dark);
 }
 
 .admin-tab--on {
@@ -822,14 +822,14 @@
 }
 
 .btn--primary {
-  background: var(--green);
+  background: var(--green-dark);
   border-color: var(--green);
   color: #fff;
   font-weight: 600;
 }
 
 .btn--primary:hover:not(:disabled) {
-  background: var(--green-dark);
+  background: var(--green-ink-hover);
   border-color: var(--green-dark);
   color: #fff;
 }
