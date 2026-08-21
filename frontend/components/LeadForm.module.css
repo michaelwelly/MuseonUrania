@@ -30,7 +30,7 @@
 }
 
 .required {
-  color: var(--green);
+  color: var(--green-dark);
 }
 
 .input,
@@ -110,7 +110,7 @@
   padding: 0 30px;
   border: 0;
   border-radius: 2px;
-  background: var(--green);
+  background: var(--green-dark);
   color: #fff;
   font: inherit;
   font-size: 16px;
@@ -119,7 +119,7 @@
 }
 
 .submit:hover {
-  background: var(--green-bright);
+  background: var(--green-ink-hover);
 }
 
 .hint {
@@ -141,7 +141,7 @@
 
 .pending a {
   font-weight: 600;
-  color: var(--green);
+  color: var(--green-dark);
 }
 
 /* Ловушка для ботов. Убираем из потока, а не через display:none: часть

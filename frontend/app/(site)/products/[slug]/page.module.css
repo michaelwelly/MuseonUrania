@@ -17,7 +17,7 @@
 }
 
 .crumbs a:hover {
-  color: var(--green);
+  color: var(--green-dark);
 }
 
 /* ---------- основной блок ---------- */
@@ -156,12 +156,12 @@
 }
 
 .btnPrimary {
-  background: var(--green);
+  background: var(--green-dark);
   color: #fff;
 }
 
 .btnPrimary:hover {
-  background: var(--green-bright);
+  background: var(--green-ink-hover);
   color: #fff;
 }
 
@@ -201,7 +201,7 @@
 }
 
 .tab:hover {
-  color: var(--green);
+  color: var(--green-dark);
 }
 
 .tabActive {
@@ -312,7 +312,7 @@
 }
 
 .docArrow {
-  color: var(--green);
+  color: var(--green-dark);
 }
 
 .service {
@@ -342,14 +342,14 @@
   height: 46px;
   padding: 0 20px;
   border-radius: 2px;
-  background: var(--green);
+  background: var(--green-dark);
   color: #fff;
   font-size: 14.5px;
   font-weight: 600;
 }
 
 .serviceBtn:hover {
-  background: var(--green-bright);
+  background: var(--green-ink-hover);
   color: #fff;
 }
 

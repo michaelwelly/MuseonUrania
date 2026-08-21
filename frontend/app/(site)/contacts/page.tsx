@@ -87,7 +87,7 @@ export default async function ContactsPage() {
           не мешает по такому телефону позвонить. Вернётся, когда заказчик
           подтвердит список — §9.3 плана, см. content/staff.ts. */}
       <section className={styles.staffPending} data-reveal="0">
-        <p className={styles.eyebrow} style={{ color: "var(--green)" }}>
+        <p className={styles.eyebrow} style={{ color: "var(--green-dark)" }}>
           {staffSection.eyebrow}
         </p>
         <h2 className={styles.h2} data-words="30">

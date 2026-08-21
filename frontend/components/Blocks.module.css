@@ -52,12 +52,12 @@
 }
 
 .btnPrimary {
-  background: var(--green);
+  background: var(--green-dark);
   color: #fff;
 }
 
 .btnPrimary:hover {
-  background: var(--green-bright);
+  background: var(--green-ink-hover);
   color: #fff;
 }
 
