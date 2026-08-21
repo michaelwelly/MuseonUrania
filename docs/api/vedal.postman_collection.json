@@ -19,7 +19,7 @@
     {
       "listen": "prerequest",
       "script": {
-        "id": "vedal-0096",
+        "id": "vedal-0098",
         "type": "text/javascript",
         "exec": [
           "// Токен берётся сам и обновляется, когда протух. Вручную его вставлять",
@@ -142,7 +142,7 @@
       "item": [
         {
           "name": "Категории каталога",
-          "id": "vedal-0007",
+          "id": "vedal-0009",
           "request": {
             "method": "GET",
             "header": [],
@@ -165,7 +165,7 @@
         },
         {
           "name": "Опубликованные изделия",
-          "id": "vedal-0012",
+          "id": "vedal-0014",
           "request": {
             "method": "GET",
             "header": [],
@@ -188,7 +188,7 @@
         },
         {
           "name": "Карточка изделия",
-          "id": "vedal-0013",
+          "id": "vedal-0015",
           "request": {
             "method": "GET",
             "header": [],
@@ -220,7 +220,7 @@
       "item": [
         {
           "name": "Лента материалов",
-          "id": "vedal-0010",
+          "id": "vedal-0012",
           "request": {
             "method": "GET",
             "header": [],
@@ -243,7 +243,7 @@
         },
         {
           "name": "Материал целиком",
-          "id": "vedal-0011",
+          "id": "vedal-0013",
           "request": {
             "method": "GET",
             "header": [],
@@ -275,7 +275,7 @@
       "item": [
         {
           "name": "Перечень документов",
-          "id": "vedal-0008",
+          "id": "vedal-0010",
           "request": {
             "method": "GET",
             "header": [],
@@ -298,7 +298,7 @@
         },
         {
           "name": "Файл документа",
-          "id": "vedal-0009",
+          "id": "vedal-0011",
           "request": {
             "method": "GET",
             "header": [],
@@ -331,12 +331,12 @@
       "item": [
         {
           "name": "Отправить заявку",
-          "id": "vedal-0005",
+          "id": "vedal-0007",
           "event": [
             {
               "listen": "test",
               "script": {
-                "id": "vedal-0006",
+                "id": "vedal-0008",
                 "type": "text/javascript",
                 "exec": [
                   "// Идентификатор уезжает в переменную коллекции: следующий запрос",
@@ -445,7 +445,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"campaign\": null,\n  \"language\": null,\n  \"page\": null,\n  \"text\": \"\",\n  \"visitorKey\": \"b1f0c2de-9a7e-4d21-8c33-0f2a5e6d7b48\"\n}",
+              "raw": "{\n  \"campaign\": null,\n  \"intent\": \"quote\",\n  \"language\": null,\n  \"page\": null,\n  \"text\": \"\",\n  \"visitorKey\": \"b1f0c2de-9a7e-4d21-8c33-0f2a5e6d7b48\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -470,8 +470,46 @@
           "response": []
         },
         {
-          "name": "Прочитать разговор",
+          "name": "Позвать специалиста",
           "id": "vedal-0002",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"campaign\": null,\n  \"language\": null,\n  \"page\": null,\n  \"visitorKey\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway}}/api/assistant/v1/chat/handoff",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "assistant",
+                "v1",
+                "chat",
+                "handoff"
+              ],
+              "query": []
+            },
+            "description": "Переводит разговор в состояние `waiting` — он встаёт в очередь\nрабочего места, и с этого момента Ведалина в нём молчит.\n\nДо этой двери попасть к человеку можно было единственным способом:\nзадать вопрос, на который Ведалина не найдёт ответа. Человека\nполучал тот, кому не повезло, а не тот, кто его попросил.\n\nПовторный вызов ничего не меняет: разговор уже у человека,\nвторого сообщения и второй записи в журнале не будет.\n\nЛимит частоты общий с `ask`.\n\n\nПозвать специалиста"
+          },
+          "response": []
+        },
+        {
+          "name": "Прочитать разговор",
+          "id": "vedal-0003",
           "request": {
             "method": "GET",
             "header": [],
@@ -495,7 +533,7 @@
         },
         {
           "name": "Поток обновлений разговора",
-          "id": "vedal-0003",
+          "id": "vedal-0004",
           "request": {
             "method": "GET",
             "header": [],
@@ -520,7 +558,7 @@
         },
         {
           "name": "Посетитель набирает текст",
-          "id": "vedal-0004",
+          "id": "vedal-0005",
           "request": {
             "method": "POST",
             "header": [],
@@ -542,6 +580,29 @@
             "description": "Сообщает сотруднику, что человек печатает. Ничего не записывает\nи ничего не возвращает: факт живёт секунды и интересен только тому,\nкто смотрит в экран прямо сейчас.\n\nВиджет шлёт это не на каждую букву, а раз в несколько секунд, пока\nполе не пустое: на каждое нажатие получился бы поток запросов\nради надписи, которая и так не меняется.\n\n\nПосетитель набирает текст"
           },
           "response": []
+        },
+        {
+          "name": "Кнопки быстрых ответов",
+          "id": "vedal-0006",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway}}/api/assistant/v1/prompts",
+              "host": [
+                "{{gateway}}"
+              ],
+              "path": [
+                "api",
+                "assistant",
+                "v1",
+                "prompts"
+              ],
+              "query": []
+            },
+            "description": "Подписи кнопок виджета и то, что делает каждая. Список приходит\nотсюда, а не переписан в интерфейс: подпись и заготовка,\nразложенные по двум местам, расходятся на первой же правке —\nи расходятся молча.\n\nКнопка с `action: ask` отправляется в чат как сообщение\nс полем `intent`, и на неё приходит заготовка. Кнопка\nс `action: handoff` зовёт специалиста отдельной дверью —\n`POST /chat/{visitorKey}/handoff`.\n\nБез лимита частоты: ответ не зависит от запроса и кэшируется\nна час, как остальные справочники портала.\n\n\nКнопки быстрых ответов"
+          },
+          "response": []
         }
       ],
       "auth": {
@@ -553,7 +614,7 @@
       "item": [
         {
           "name": "Кто вошёл",
-          "id": "vedal-0094",
+          "id": "vedal-0096",
           "request": {
             "method": "GET",
             "header": [],
@@ -581,7 +642,7 @@
       "item": [
         {
           "name": "Заявки постранично, свежие сверху",
-          "id": "vedal-0060",
+          "id": "vedal-0062",
           "request": {
             "method": "GET",
             "header": [],
@@ -646,7 +707,7 @@
         },
         {
           "name": "Статусы заявки",
-          "id": "vedal-0061",
+          "id": "vedal-0063",
           "request": {
             "method": "GET",
             "header": [],
@@ -670,7 +731,7 @@
         },
         {
           "name": "Заявка целиком, с текстом и версией согласия",
-          "id": "vedal-0062",
+          "id": "vedal-0064",
           "request": {
             "method": "GET",
             "header": [],
@@ -694,12 +755,12 @@
         },
         {
           "name": "Разобрать заявку в сделку",
-          "id": "vedal-0063",
+          "id": "vedal-0065",
           "event": [
             {
               "listen": "test",
               "script": {
-                "id": "vedal-0064",
+                "id": "vedal-0066",
                 "type": "text/javascript",
                 "exec": [
                   "// Идентификатор уезжает в переменную коллекции: следующий запрос",
@@ -751,7 +812,7 @@
         },
         {
           "name": "История переписки и звонков по заявке",
-          "id": "vedal-0065",
+          "id": "vedal-0067",
           "request": {
             "method": "GET",
             "header": [],
@@ -776,7 +837,7 @@
         },
         {
           "name": "Дописать в историю заявки",
-          "id": "vedal-0066",
+          "id": "vedal-0068",
           "request": {
             "method": "POST",
             "header": [
@@ -815,7 +876,7 @@
         },
         {
           "name": "Разобрать заявку: статус и ответственный",
-          "id": "vedal-0068",
+          "id": "vedal-0070",
           "request": {
             "method": "POST",
             "header": [
@@ -859,7 +920,7 @@
       "item": [
         {
           "name": "Клиенты постранично, по алфавиту",
-          "id": "vedal-0031",
+          "id": "vedal-0033",
           "request": {
             "method": "GET",
             "header": [],
@@ -900,12 +961,12 @@
         },
         {
           "name": "Завести клиента",
-          "id": "vedal-0032",
+          "id": "vedal-0034",
           "event": [
             {
               "listen": "test",
               "script": {
-                "id": "vedal-0033",
+                "id": "vedal-0035",
                 "type": "text/javascript",
                 "exec": [
                   "// Идентификатор уезжает в переменную коллекции: следующий запрос",
@@ -954,7 +1015,7 @@
         },
         {
           "name": "Виды клиента",
-          "id": "vedal-0034",
+          "id": "vedal-0036",
           "request": {
             "method": "GET",
             "header": [],
@@ -978,7 +1039,7 @@
         },
         {
           "name": "Карточка клиента",
-          "id": "vedal-0035",
+          "id": "vedal-0037",
           "request": {
             "method": "GET",
             "header": [],
@@ -1002,7 +1063,7 @@
         },
         {
           "name": "Править карточку клиента",
-          "id": "vedal-0036",
+          "id": "vedal-0038",
           "request": {
             "method": "PUT",
             "header": [
@@ -1040,7 +1101,7 @@
         },
         {
           "name": "История переписки и звонков по клиенту",
-          "id": "vedal-0037",
+          "id": "vedal-0039",
           "request": {
             "method": "GET",
             "header": [],
@@ -1065,7 +1126,7 @@
         },
         {
           "name": "Дописать в историю клиента",
-          "id": "vedal-0038",
+          "id": "vedal-0040",
           "request": {
             "method": "POST",
             "header": [
@@ -1109,7 +1170,7 @@
       "item": [
         {
           "name": "Сделки постранично, свежие сверху",
-          "id": "vedal-0040",
+          "id": "vedal-0042",
           "request": {
             "method": "GET",
             "header": [],
@@ -1168,12 +1229,12 @@
         },
         {
           "name": "Завести сделку по существующему клиенту",
-          "id": "vedal-0041",
+          "id": "vedal-0043",
           "event": [
             {
               "listen": "test",
               "script": {
-                "id": "vedal-0042",
+                "id": "vedal-0044",
                 "type": "text/javascript",
                 "exec": [
                   "// Идентификатор уезжает в переменную коллекции: следующий запрос",
@@ -1222,7 +1283,7 @@
         },
         {
           "name": "Воронки и их стадии",
-          "id": "vedal-0043",
+          "id": "vedal-0045",
           "request": {
             "method": "GET",
             "header": [],
@@ -1246,7 +1307,7 @@
         },
         {
           "name": "Карточка сделки",
-          "id": "vedal-0044",
+          "id": "vedal-0046",
           "request": {
             "method": "GET",
             "header": [],
@@ -1270,7 +1331,7 @@
         },
         {
           "name": "Править карточку сделки",
-          "id": "vedal-0045",
+          "id": "vedal-0047",
           "request": {
             "method": "PUT",
             "header": [
@@ -1308,7 +1369,7 @@
         },
         {
           "name": "Приложить согласованный документ к сделке",
-          "id": "vedal-0046",
+          "id": "vedal-0048",
           "request": {
             "method": "POST",
             "header": [
@@ -1347,7 +1408,7 @@
         },
         {
           "name": "Отцепить документ от сделки",
-          "id": "vedal-0047",
+          "id": "vedal-0049",
           "request": {
             "method": "DELETE",
             "header": [],
@@ -1373,7 +1434,7 @@
         },
         {
           "name": "История переписки и звонков по сделке",
-          "id": "vedal-0048",
+          "id": "vedal-0050",
           "request": {
             "method": "GET",
             "header": [],
@@ -1398,7 +1459,7 @@
         },
         {
           "name": "Дописать в историю сделки",
-          "id": "vedal-0049",
+          "id": "vedal-0051",
           "request": {
             "method": "POST",
             "header": [
@@ -1437,7 +1498,7 @@
         },
         {
           "name": "КП по сделке, свежие сверху",
-          "id": "vedal-0050",
+          "id": "vedal-0052",
           "request": {
             "method": "GET",
             "header": [],
@@ -1462,7 +1523,7 @@
         },
         {
           "name": "Перевести сделку на другую стадию",
-          "id": "vedal-0051",
+          "id": "vedal-0053",
           "request": {
             "method": "POST",
             "header": [
@@ -1506,7 +1567,7 @@
       "item": [
         {
           "name": "КП постранично, свежие сверху",
-          "id": "vedal-0086",
+          "id": "vedal-0088",
           "request": {
             "method": "GET",
             "header": [],
@@ -1547,12 +1608,12 @@
         },
         {
           "name": "Завести КП по сделке",
-          "id": "vedal-0087",
+          "id": "vedal-0089",
           "event": [
             {
               "listen": "test",
               "script": {
-                "id": "vedal-0088",
+                "id": "vedal-0090",
                 "type": "text/javascript",
                 "exec": [
                   "// Идентификатор уезжает в переменную коллекции: следующий запрос",
@@ -1602,7 +1663,7 @@
         },
         {
           "name": "Статусы КП",
-          "id": "vedal-0089",
+          "id": "vedal-0091",
           "request": {
             "method": "GET",
             "header": [],
@@ -1626,7 +1687,7 @@
         },
         {
           "name": "КП целиком, вместе с позициями",
-          "id": "vedal-0090",
+          "id": "vedal-0092",
           "request": {
             "method": "GET",
             "header": [],
@@ -1650,7 +1711,7 @@
         },
         {
           "name": "Править КП",
-          "id": "vedal-0091",
+          "id": "vedal-0093",
           "request": {
             "method": "PUT",
             "header": [
@@ -1688,7 +1749,7 @@
         },
         {
           "name": "Решение клиента по КП",
-          "id": "vedal-0092",
+          "id": "vedal-0094",
           "request": {
             "method": "POST",
             "header": [
@@ -1727,7 +1788,7 @@
         },
         {
           "name": "Отметить КП отправленным",
-          "id": "vedal-0093",
+          "id": "vedal-0095",
           "request": {
             "method": "POST",
             "header": [],
@@ -1757,7 +1818,7 @@
       "item": [
         {
           "name": "Воронка в одном разрезе за период",
-          "id": "vedal-0014",
+          "id": "vedal-0016",
           "request": {
             "method": "GET",
             "header": [],
@@ -1799,7 +1860,7 @@
         },
         {
           "name": "Разрезы отчёта",
-          "id": "vedal-0015",
+          "id": "vedal-0017",
           "request": {
             "method": "GET",
             "header": [],
@@ -1828,7 +1889,7 @@
       "item": [
         {
           "name": "Категории каталога",
-          "id": "vedal-0019",
+          "id": "vedal-0021",
           "request": {
             "method": "GET",
             "header": [],
@@ -1851,7 +1912,7 @@
         },
         {
           "name": "Завести категорию",
-          "id": "vedal-0020",
+          "id": "vedal-0022",
           "request": {
             "method": "POST",
             "header": [
@@ -1888,7 +1949,7 @@
         },
         {
           "name": "Удалить категорию",
-          "id": "vedal-0021",
+          "id": "vedal-0023",
           "request": {
             "method": "DELETE",
             "header": [],
@@ -1912,7 +1973,7 @@
         },
         {
           "name": "Правка категории",
-          "id": "vedal-0022",
+          "id": "vedal-0024",
           "request": {
             "method": "PUT",
             "header": [
@@ -1950,7 +2011,7 @@
         },
         {
           "name": "Все изделия, включая неопубликованные",
-          "id": "vedal-0079",
+          "id": "vedal-0081",
           "request": {
             "method": "GET",
             "header": [],
@@ -1973,12 +2034,12 @@
         },
         {
           "name": "Завести изделие",
-          "id": "vedal-0080",
+          "id": "vedal-0082",
           "event": [
             {
               "listen": "test",
               "script": {
-                "id": "vedal-0081",
+                "id": "vedal-0083",
                 "type": "text/javascript",
                 "exec": [
                   "// Идентификатор уезжает в переменную коллекции: следующий запрос",
@@ -2027,7 +2088,7 @@
         },
         {
           "name": "Изделие целиком",
-          "id": "vedal-0082",
+          "id": "vedal-0084",
           "request": {
             "method": "GET",
             "header": [],
@@ -2051,7 +2112,7 @@
         },
         {
           "name": "Правка изделия",
-          "id": "vedal-0083",
+          "id": "vedal-0085",
           "request": {
             "method": "PUT",
             "header": [
@@ -2089,7 +2150,7 @@
         },
         {
           "name": "Опубликовать изделие",
-          "id": "vedal-0084",
+          "id": "vedal-0086",
           "request": {
             "method": "POST",
             "header": [],
@@ -2114,7 +2175,7 @@
         },
         {
           "name": "Снять изделие с публикации",
-          "id": "vedal-0085",
+          "id": "vedal-0087",
           "request": {
             "method": "POST",
             "header": [],
@@ -2144,7 +2205,7 @@
       "item": [
         {
           "name": "Все материалы, включая черновики",
-          "id": "vedal-0070",
+          "id": "vedal-0072",
           "request": {
             "method": "GET",
             "header": [],
@@ -2167,12 +2228,12 @@
         },
         {
           "name": "Завести материал",
-          "id": "vedal-0071",
+          "id": "vedal-0073",
           "event": [
             {
               "listen": "test",
               "script": {
-                "id": "vedal-0072",
+                "id": "vedal-0074",
                 "type": "text/javascript",
                 "exec": [
                   "// Идентификатор уезжает в переменную коллекции: следующий запрос",
@@ -2221,7 +2282,7 @@
         },
         {
           "name": "Рубрики",
-          "id": "vedal-0073",
+          "id": "vedal-0075",
           "request": {
             "method": "GET",
             "header": [],
@@ -2245,7 +2306,7 @@
         },
         {
           "name": "Удалить материал",
-          "id": "vedal-0074",
+          "id": "vedal-0076",
           "request": {
             "method": "DELETE",
             "header": [],
@@ -2269,7 +2330,7 @@
         },
         {
           "name": "Материал целиком",
-          "id": "vedal-0075",
+          "id": "vedal-0077",
           "request": {
             "method": "GET",
             "header": [],
@@ -2293,7 +2354,7 @@
         },
         {
           "name": "Правка материала",
-          "id": "vedal-0076",
+          "id": "vedal-0078",
           "request": {
             "method": "PUT",
             "header": [
@@ -2331,7 +2392,7 @@
         },
         {
           "name": "Опубликовать материал",
-          "id": "vedal-0077",
+          "id": "vedal-0079",
           "request": {
             "method": "POST",
             "header": [],
@@ -2356,7 +2417,7 @@
         },
         {
           "name": "Снять материал с публикации",
-          "id": "vedal-0078",
+          "id": "vedal-0080",
           "request": {
             "method": "POST",
             "header": [],
@@ -2386,7 +2447,7 @@
       "item": [
         {
           "name": "Все документы",
-          "id": "vedal-0052",
+          "id": "vedal-0054",
           "request": {
             "method": "GET",
             "header": [],
@@ -2409,7 +2470,7 @@
         },
         {
           "name": "Завести документ",
-          "id": "vedal-0053",
+          "id": "vedal-0055",
           "request": {
             "method": "POST",
             "header": [
@@ -2446,7 +2507,7 @@
         },
         {
           "name": "Справочники разделов, секретности и доступа",
-          "id": "vedal-0054",
+          "id": "vedal-0056",
           "request": {
             "method": "GET",
             "header": [],
@@ -2470,7 +2531,7 @@
         },
         {
           "name": "Документ",
-          "id": "vedal-0055",
+          "id": "vedal-0057",
           "request": {
             "method": "GET",
             "header": [],
@@ -2494,7 +2555,7 @@
         },
         {
           "name": "Правка карточки документа",
-          "id": "vedal-0056",
+          "id": "vedal-0058",
           "request": {
             "method": "PUT",
             "header": [
@@ -2532,7 +2593,7 @@
         },
         {
           "name": "Загрузить файл",
-          "id": "vedal-0057",
+          "id": "vedal-0059",
           "request": {
             "method": "POST",
             "header": [],
@@ -2567,7 +2628,7 @@
         },
         {
           "name": "Опубликовать документ",
-          "id": "vedal-0058",
+          "id": "vedal-0060",
           "request": {
             "method": "POST",
             "header": [],
@@ -2592,7 +2653,7 @@
         },
         {
           "name": "Снять документ с публикации",
-          "id": "vedal-0059",
+          "id": "vedal-0061",
           "request": {
             "method": "POST",
             "header": [],
@@ -2622,7 +2683,7 @@
       "item": [
         {
           "name": "Загрузить изображение",
-          "id": "vedal-0069",
+          "id": "vedal-0071",
           "request": {
             "method": "POST",
             "header": [],
@@ -2672,7 +2733,7 @@
       "item": [
         {
           "name": "Журнал постранично, свежие сверху",
-          "id": "vedal-0017",
+          "id": "vedal-0019",
           "request": {
             "method": "GET",
             "header": [],
@@ -2724,7 +2785,7 @@
         },
         {
           "name": "Весь путь одного запроса",
-          "id": "vedal-0018",
+          "id": "vedal-0020",
           "request": {
             "method": "GET",
             "header": [],
@@ -2754,7 +2815,7 @@
       "item": [
         {
           "name": "Спросить Ведалину по внутренним материалам",
-          "id": "vedal-0016",
+          "id": "vedal-0018",
           "request": {
             "method": "POST",
             "header": [
@@ -2797,7 +2858,7 @@
       "item": [
         {
           "name": "Все разговоры",
-          "id": "vedal-0023",
+          "id": "vedal-0025",
           "request": {
             "method": "GET",
             "header": [],
@@ -2837,7 +2898,7 @@
         },
         {
           "name": "Очередь: кто ждёт живого ответа",
-          "id": "vedal-0024",
+          "id": "vedal-0026",
           "request": {
             "method": "GET",
             "header": [],
@@ -2872,7 +2933,7 @@
         },
         {
           "name": "Поток обновлений по всем разговорам",
-          "id": "vedal-0025",
+          "id": "vedal-0027",
           "request": {
             "method": "GET",
             "header": [],
@@ -2896,7 +2957,7 @@
         },
         {
           "name": "Лента разговора",
-          "id": "vedal-0026",
+          "id": "vedal-0028",
           "request": {
             "method": "GET",
             "header": [],
@@ -2920,7 +2981,7 @@
         },
         {
           "name": "Закрыть разговор",
-          "id": "vedal-0027",
+          "id": "vedal-0029",
           "request": {
             "method": "POST",
             "header": [],
@@ -2945,7 +3006,7 @@
         },
         {
           "name": "Ответить посетителю",
-          "id": "vedal-0028",
+          "id": "vedal-0030",
           "request": {
             "method": "POST",
             "header": [
@@ -2984,7 +3045,7 @@
         },
         {
           "name": "Сотрудник набирает ответ",
-          "id": "vedal-0030",
+          "id": "vedal-0032",
           "request": {
             "method": "POST",
             "header": [],
@@ -3014,7 +3075,7 @@
       "item": [
         {
           "name": "Уничтожить персональные данные разговора",
-          "id": "vedal-0029",
+          "id": "vedal-0031",
           "request": {
             "method": "DELETE",
             "header": [],
@@ -3039,7 +3100,7 @@
         },
         {
           "name": "Уничтожить персональные данные клиента",
-          "id": "vedal-0039",
+          "id": "vedal-0041",
           "request": {
             "method": "DELETE",
             "header": [],
@@ -3064,7 +3125,7 @@
         },
         {
           "name": "Уничтожить персональные данные заявки",
-          "id": "vedal-0067",
+          "id": "vedal-0069",
           "request": {
             "method": "DELETE",
             "header": [],
@@ -3094,7 +3155,7 @@
       "item": [
         {
           "name": "Сотрудники для выбора ответственного",
-          "id": "vedal-0095",
+          "id": "vedal-0097",
           "request": {
             "method": "GET",
             "header": [],
