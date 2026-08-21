@@ -38,6 +38,8 @@ import java.util.UUID;
 @Service
 public class ChatDesk {
 
+    private static final int MAX_PAGE_SIZE = 200;
+
     private final ConversationRepository conversations;
     private final ChatMessageRepository messages;
     private final AssistantService assistant;
@@ -162,15 +164,31 @@ public class ChatDesk {
         // с внутренностями пейджера, и контракт админки от них не зависит.
         // Так отдают списки все остальные двери админки.
         return PageView.of(conversations
-                .findByStatusOrderByLastAtAsc(Conversation.WAITING, PageRequest.of(page, size)),
+                .findByStatusOrderByLastAtAsc(Conversation.WAITING, page(page, size)),
                 this::card);
     }
 
-    /** Все разговоры, последние сверху. */
+    /**
+     * Все разговоры, последние сверху.
+     *
+     * <p>Ответственный — необязательный отбор; «-» означает «никто не взял».
+     * В очереди такого отбора нет и не будет: там по определению лежат
+     * разговоры, которых ещё никто не взял, и фильтр по ответственному
+     * отвечал бы на вопрос, ответ на который известен заранее.
+     */
     @Transactional(readOnly = true)
-    public PageView<Card> all(int page, int size) {
-        return PageView.of(
-                conversations.findByOrderByLastAtDesc(PageRequest.of(page, size)), this::card);
+    public PageView<Card> all(String owner, int page, int size) {
+        return PageView.of(conversations.filter(
+                owner == null || owner.isBlank() ? null : owner.trim(), page(page, size)),
+                this::card);
+    }
+
+    // Страница списка. Границы здесь, а не в контроллере: PageRequest.of
+    // падает на отрицательной странице, а размер без верхней границы
+    // превращает «?size=1000000» в выгрузку всей таблицы разговоров одним
+    // запросом. Остальные списки админки давно так и делают — этот отстал.
+    private static PageRequest page(int page, int size) {
+        return PageRequest.of(Math.max(page, 0), Math.clamp(size, 1, MAX_PAGE_SIZE));
     }
 
     /**

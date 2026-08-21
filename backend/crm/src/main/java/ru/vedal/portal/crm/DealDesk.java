@@ -1,6 +1,5 @@
 package ru.vedal.portal.crm;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -70,20 +69,17 @@ public class DealDesk implements DealAdmin {
 
     @Override
     @Transactional(readOnly = true)
-    public PageView<DealRow> deals(String pipeline, String stage, UUID clientId, int page, int size) {
-        var pageable = PageRequest.of(Math.max(page, 0), Math.clamp(size, 1, MAX_PAGE_SIZE));
-
-        Page<Deal> found;
-        if (clientId != null) {
-            found = deals.findByClientIdOrderByCreatedAtDesc(clientId, pageable);
-        } else if (blank(pipeline)) {
-            found = deals.findAllByOrderByCreatedAtDesc(pageable);
-        } else if (blank(stage)) {
-            found = deals.findByPipelineOrderByCreatedAtDesc(pipeline, pageable);
-        } else {
-            Pipelines.check(pipeline, stage);
-            found = deals.findByPipelineAndStageOrderByCreatedAtDesc(pipeline, stage, pageable);
+    public PageView<DealRow> deals(Filter filter, int page, int size) {
+        // Стадия проверяется до запроса, а не после. Стадия из чужой воронки —
+        // опечатка в адресе, и пустой список в ответ читается как «таких сделок
+        // нет», то есть отвечает не на тот вопрос, который задали.
+        if (filter.pipeline() != null && filter.stage() != null) {
+            Pipelines.check(filter.pipeline(), filter.stage());
         }
+
+        var pageable = PageRequest.of(Math.max(page, 0), Math.clamp(size, 1, MAX_PAGE_SIZE));
+        var found = deals.filter(filter.pipeline(), filter.stage(), filter.clientId(),
+                filter.owner(), pageable);
 
         // Имена клиентов — одним запросом на страницу, а не по запросу
         // на строку: иначе список из пятидесяти сделок это пятьдесят

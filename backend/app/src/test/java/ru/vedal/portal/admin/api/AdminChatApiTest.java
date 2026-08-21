@@ -65,6 +65,56 @@ class AdminChatApiTest extends PostgresTestBase {
                 .andExpect(jsonPath("$.items[0].status").value("waiting"));
     }
 
+    // Отбор по ответственному. Появился ради карточки сотрудника: до него
+    // на месте числа разговоров стоял прочерк, потому что спросить было нечем.
+    @Test
+    @WithMockUser(username = "manager", roles = "PORTAL_ADMIN")
+    void listTellsWhoseConversationsAreWhose() throws Exception {
+        var взятый = desk.say(UUID.randomUUID().toString(), "Нужен сервис R1.",
+                new ChatDesk.Context("ru", null, "/service/")).id();
+        desk.say(UUID.randomUUID().toString(), "Сколько стоит инкубатор?",
+                new ChatDesk.Context("ru", null, "/products/"));
+
+        // Ответ и есть взятие: отдельной кнопки «взять» в портале нет.
+        desk.reply(взятый, "irina", "Здравствуйте, смотрю вашу заявку.");
+
+        mvc.perform(get("/api/admin/v1/chats?owner=irina"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.items[0].owner").value("irina"));
+
+        // «-» — «никто не взял». У разговоров это не «ожидает уточнения»:
+        // данных не не хватает, разговор просто ещё ничей.
+        mvc.perform(get("/api/admin/v1/chats?owner=-"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.items[0].owner").doesNotExist());
+
+        // Пустое значение — это «фильтра нет», а не «найти пустоту».
+        mvc.perform(get("/api/admin/v1/chats").param("owner", "  "))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(2));
+
+        mvc.perform(get("/api/admin/v1/chats?owner=никто-такой"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(0));
+    }
+
+    // Размер страницы без верхней границы означает «отдать всю таблицу
+    // разговоров одним запросом» — и PageRequest.of ещё и падает на
+    // отрицательной странице, превращая опечатку в адресе в 500.
+    @Test
+    @WithMockUser(username = "manager", roles = "PORTAL_ADMIN")
+    void pageSizeIsBoundedAndNegativePageIsNotACrash() throws Exception {
+        desk.say(UUID.randomUUID().toString(), "Сколько стоит инкубатор?",
+                new ChatDesk.Context("ru", null, "/products/"));
+
+        mvc.perform(get("/api/admin/v1/chats?size=1000000&page=-3"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size").value(200))
+                .andExpect(jsonPath("$.page").value(0));
+    }
+
     @Test
     void withoutATokenTheDoorIsClosed() throws Exception {
         mvc.perform(get("/api/admin/v1/chats")).andExpect(status().isUnauthorized());

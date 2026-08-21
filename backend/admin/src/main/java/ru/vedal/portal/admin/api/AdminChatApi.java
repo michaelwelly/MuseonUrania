@@ -1,6 +1,7 @@
 package ru.vedal.portal.admin.api;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -61,11 +62,20 @@ public class AdminChatApi {
         return desk.queue(page, size);
     }
 
-    @Operation(summary = "Все разговоры", description = "Последние сверху.")
+    @Operation(summary = "Все разговоры", description = """
+            Последние сверху. Необязательный отбор по ответственному: логин —
+            разговоры этого сотрудника, «-» — те, кого никто не взял.
+
+            У очереди такого отбора нет намеренно: в ней по определению лежат
+            невзятые разговоры.
+            """)
     @GetMapping
-    public PageView<ChatDesk.Card> all(@RequestParam(defaultValue = "0") int page,
-                                   @RequestParam(defaultValue = "20") int size) {
-        return desk.all(page, size);
+    public PageView<ChatDesk.Card> all(
+            @Parameter(description = "Логин ответственного; «-» — без ответственного.")
+            @RequestParam(required = false) String owner,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return desk.all(owner, page, size);
     }
 
     @Operation(summary = "Лента разговора")
