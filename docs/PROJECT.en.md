@@ -710,13 +710,14 @@ Working routes:
 | `/api/admin/v1/documents` | admin UI | the card, file upload up to 20 MB, publication with the refusal explained |
 | `/api/admin/v1/leads` | admin UI | leads by page, status and owner; conversion into a deal |
 | `/api/admin/v1/clients` | admin UI | client base: search, card, editing, history |
-| `/api/admin/v1/deals` | admin UI | deals of three pipelines: stages, attachments, quotes, history |
+| `/api/admin/v1/deals` | admin UI | deals of three pipelines: stages, attachments, quotes, history; filtering by pipeline, stage, client and owner |
 | `/api/admin/v1/quotes` | admin UI | quotes: lines, total, sending, the client's decision |
 | `/api/admin/v1/analytics` | admin UI | the funnel by product, source, language and campaign |
 | `/api/admin/v1/audit` | admin UI | the log with filters and the chain by `correlation_id` |
 | `/api/admin/v1/media` | admin UI | image upload into the read-open bucket |
 | `/api/admin/v1/session` | admin UI | who signed in and which roles the portal parsed |
 | `/api/admin/v1/staff` | admin UI | employees to pick an owner from; read only |
+| `/api/admin/v1/chats` | admin UI | conversations and the queue of those waiting; the list filters by owner |
 
 The forty-seven routes and sixty-five operations of the admin API are described by
 a separate specification group —
