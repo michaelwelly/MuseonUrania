@@ -79,11 +79,25 @@ export default function LeadForm({
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
+    const formEl = event.currentTarget;
+    const data = new FormData(formEl);
 
     const found = validate(data);
     setErrors(found);
-    if (Object.keys(found).length > 0) return;
+    if (Object.keys(found).length > 0) {
+      // Фокус на первое поле с ошибкой. Без этого для незрячего посетителя
+      // нажатие «Отправить» выглядит как «ничего не произошло»: сообщения
+      // появляются рядом с полями, но ни фокус, ни живая область о них
+      // не сообщают, и найти их можно, только заново обойдя всю форму.
+      //
+      // Порядок обхода — порядок полей в форме, а не порядок ключей объекта:
+      // человек должен попасть на первую ошибку сверху, а не на случайную.
+      const order = ["name", "phone", "email", "message", "consent"] as const;
+      const first = order.find((field) => found[field]);
+      const control = first ? formEl.elements.namedItem(first) : null;
+      if (control instanceof HTMLElement) control.focus();
+      return;
+    }
 
     setStatus("sending");
     setNotice("");
@@ -179,8 +193,10 @@ export default function LeadForm({
             className={`${styles.input} ${errors.name ? styles.invalid : ""}`}
             autoComplete="name"
             aria-invalid={!!errors.name}
+            aria-required="true"
+            aria-describedby={errors.name ? "name-error" : undefined}
           />
-          {errors.name && <span className={styles.error}>{errors.name}</span>}
+          {errors.name && <span id="name-error" className={styles.error}>{errors.name}</span>}
         </div>
 
         <div className={styles.field}>
@@ -206,8 +222,10 @@ export default function LeadForm({
             className={`${styles.input} ${errors.phone ? styles.invalid : ""}`}
             autoComplete="tel"
             aria-invalid={!!errors.phone}
+            aria-required="true"
+            aria-describedby={errors.phone ? "phone-error" : undefined}
           />
-          {errors.phone && <span className={styles.error}>{errors.phone}</span>}
+          {errors.phone && <span id="phone-error" className={styles.error}>{errors.phone}</span>}
         </div>
 
         <div className={styles.field}>
@@ -221,8 +239,10 @@ export default function LeadForm({
             className={`${styles.input} ${errors.email ? styles.invalid : ""}`}
             autoComplete="email"
             aria-invalid={!!errors.email}
+            aria-required="true"
+            aria-describedby={errors.email ? "email-error" : undefined}
           />
-          {errors.email && <span className={styles.error}>{errors.email}</span>}
+          {errors.email && <span id="email-error" className={styles.error}>{errors.email}</span>}
         </div>
       </div>
 
@@ -253,8 +273,10 @@ export default function LeadForm({
           name="message"
           className={`${styles.textarea} ${errors.message ? styles.invalid : ""}`}
           aria-invalid={!!errors.message}
+          aria-required="true"
+          aria-describedby={errors.message ? "message-error" : undefined}
         />
-        {errors.message && <span className={styles.error}>{errors.message}</span>}
+        {errors.message && <span id="message-error" className={styles.error}>{errors.message}</span>}
       </div>
 
       {/* Ловушка для ботов. Скрыта от человека и от скринридера, автозаполнение
@@ -271,14 +293,20 @@ export default function LeadForm({
       {/* §14.6: рядом с согласием стоит ссылка на политику — иначе человек
           подписывается под документом, которого не видел. */}
       <label className={styles.consent}>
-        <input type="checkbox" name="consent" aria-invalid={!!errors.consent} />
+        <input
+          type="checkbox"
+          name="consent"
+          aria-invalid={!!errors.consent}
+          aria-required="true"
+          aria-describedby={errors.consent ? "consent-error" : undefined}
+        />
         <span>
           {consentCopy.label} <span className={styles.required}>*</span>
           {" · "}
           <Link href={consentCopy.href}>{consentCopy.linkLabel}</Link>
         </span>
       </label>
-      {errors.consent && <span className={styles.error}>{errors.consent}</span>}
+      {errors.consent && <span id="consent-error" className={styles.error}>{errors.consent}</span>}
       <p className={styles.consentNote}>{consentCopy.note}</p>
 
       <div className={styles.actions}>
