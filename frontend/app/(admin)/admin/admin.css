@@ -1600,72 +1600,6 @@
   }
 }
 
-/* ————— разговоры ————— */
-
-/* Список слева, лента справа. На узком экране — друг под другом, и первым
-   идёт список: выбрать разговор надо раньше, чем его читать. */
-.chats {
-  display: grid;
-  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
-  gap: var(--s5);
-  align-items: start;
-}
-
-@media (max-width: 900px) {
-  .chats {
-    grid-template-columns: 1fr;
-  }
-}
-
-.chats__list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s2);
-  max-height: 70vh;
-  overflow-y: auto;
-}
-
-.chats__row {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s1);
-  width: 100%;
-  padding: var(--s3) var(--s3);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-card);
-  background: var(--surface);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.chats__row:hover {
-  border-color: var(--green);
-}
-
-/* Выбранный — зелёной чертой слева, а не заливкой: заливка спорила бы
-   с бейджами состояния внутри самой строки. */
-.chats__row--open {
-  border-color: var(--green);
-  box-shadow: inset 3px 0 0 var(--green);
-}
-
-.chats__where {
-  font-size: var(--t-small);
-  color: var(--text-2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.chats__thread {
-  border: 1px solid var(--line);
-  border-radius: var(--radius-card);
-  background: var(--surface);
-  padding: var(--s4);
-  min-height: 320px;
-}
-
 .thread {
   display: flex;
   flex-direction: column;
@@ -3860,4 +3794,202 @@
   font-size: var(--t-micro);
   line-height: 1.5;
   color: var(--text-2);
+}
+
+/* ————— разговоры в три колонки ————— */
+
+/* Очередь — кому отвечать, переписка — что говорили, «что известно» — кто это.
+   Средняя тянется, крайние держат ширину: в очереди карточки, в правой
+   колонке пары «ключ — значение», и лишняя ширина им не даёт ничего. */
+.chats3 {
+  display: grid;
+  grid-template-columns: minmax(260px, 322px) minmax(0, 1fr) minmax(240px, 300px);
+  gap: var(--s4);
+  align-items: start;
+}
+
+@media (max-width: 1320px) {
+  .chats3 {
+    grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  }
+
+  /* Третья колонка уходит под переписку, а не пропадает: то, что известно
+     о посетителе, нужно ровно тогда, когда ему отвечают. */
+  .chats3__known {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 900px) {
+  .chats3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.chats3__queue,
+.chats3__thread,
+.chats3__known {
+  min-width: 0;
+}
+
+.chats3__queue {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  max-height: calc(100vh - var(--chrome, 78px) - 160px);
+  overflow-y: auto;
+}
+
+.chats3__thread {
+  display: flex;
+  flex-direction: column;
+  min-height: 420px;
+  padding: var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+/* ————— плашка дежурства ————— */
+
+.duty {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s3);
+  margin: 0;
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--state-wait-line);
+  border-radius: var(--radius-card);
+  background: var(--state-wait-bg);
+}
+
+.duty__label {
+  font-size: var(--t-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--state-wait);
+}
+
+.duty__wait {
+  font-size: var(--t-small);
+  font-weight: 600;
+  color: var(--state-wait);
+}
+
+.duty__why {
+  font-size: var(--t-micro);
+  color: var(--text-2);
+}
+
+/* ————— карточка разговора в очереди ————— */
+
+.talk {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  width: 100%;
+  padding: var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.talk:hover {
+  border-color: var(--line-3);
+}
+
+/* Выбранный — заливкой и полосой слева: в столбце из двадцати одинаковых
+   карточек рамка не читается, а полоса читается. */
+.talk--on {
+  background: var(--row-on);
+  box-shadow: inset 3px 0 0 var(--stripe-on);
+}
+
+.talk__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+
+.talk__waited {
+  font-size: var(--t-micro);
+  color: var(--muted);
+}
+
+/* Дольше пяти минут — это уже не «сейчас ответят». */
+.talk__waited--late {
+  color: var(--state-stop);
+  font-weight: 600;
+}
+
+/* Две строки обращения: очередь читают по диагонали, и третья строка
+   сдвигает следующую карточку за край колонки. */
+.talk__first {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: var(--t-small);
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.talk__where {
+  font-size: var(--t-micro);
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ————— быстрые заготовки ответа ————— */
+
+.quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin-bottom: var(--s2);
+}
+
+/* Заготовка дописывается в поле, а не отправляется: обещание, отправляемое
+   одним щелчком, отправляется не читая. */
+.quick__one {
+  max-width: 100%;
+  padding: var(--s1) var(--s2);
+  border: 1px solid var(--line-3);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text-2);
+  font: inherit;
+  font-size: var(--t-micro);
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quick__one:hover {
+  border-color: var(--green);
+  color: var(--green-dark);
+}
+
+.thread__go {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin-top: var(--s2);
+}
+
+.thread__hint {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--t-micro);
+  color: var(--muted);
 }

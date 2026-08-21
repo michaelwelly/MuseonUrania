@@ -43,11 +43,11 @@ const ЧЕТЫРЕ = [
 ];
 
 beforeEach(() => {
-  mocks.quotes.mockReset().mockImplementation((_status: string, _page = 0, size = 50) =>
+  mocks.quotes.mockReset().mockImplementation((_status: string, page = 0, size = 50) =>
     Promise.resolve(
       size === 1
         ? { items: [], page: 0, size: 1, total: 8, pages: 8 }
-        : { items: ЧЕТЫРЕ, page: 0, size: 50, total: 4, pages: 1 },
+        : { items: ЧЕТЫРЕ, page, size: 50, total: 4, pages: 1 },
     ),
   );
 });
