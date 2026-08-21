@@ -31,7 +31,12 @@ public class MailSenderConfig {
     // настроенной и ронял бы каждое письмо на пустом адресе сервера.
     @Bean
     @ConditionalOnMissingBean(MailSender.class)
-    MailSender mailSender(ObjectProvider<JavaMailSender> transport,
+    // Имя бина не mailSender: под этим именем автоконфигурация Spring Boot
+    // заводит свой JavaMailSender, и при заданном spring.mail.host два
+    // определения сталкиваются — переопределение бинов выключено, приложение
+    // не поднимается вовсе. Столкновение случилось бы ровно тогда, когда SMTP
+    // наконец настроят, то есть на первом боевом запуске почты.
+    MailSender portalMailSender(ObjectProvider<JavaMailSender> transport,
                           @Value("${spring.mail.host:}") String host,
                           @Value("${vedal.notifications.from:}") String from,
                           @Value("${spring.mail.username:}") String username) {
