@@ -83,6 +83,14 @@ const NAV: readonly Section[] = [
       { href: "/admin/analytics/", label: "Аналитика" },
     ],
   },
+  {
+    label: "Команда",
+    href: "/admin/staff/",
+    items: [
+      { href: "/admin/staff/", label: "Сотрудники" },
+      { href: "/admin/profile/", label: "Мой профиль" },
+    ],
+  },
   { label: "Журнал", href: "/admin/audit/", items: [] },
 ] as const;
 
@@ -534,7 +542,10 @@ function Chrome({ who, children }: { who: Session; children: React.ReactNode }) 
  */
 function Who({ who }: { who: Session }) {
   return (
-    <div className="admin-who">
+    // Ссылка, а не просто блок: у кружка с именем в шапке ровно одно
+    // назначение — попасть в свой профиль. До появления раздела «Команда»
+    // вести ему было некуда, и блок был мёртвым местом на экране.
+    <Link className="admin-who" href="/admin/profile/">
       {/* Кружок с инициалами появился не ради красоты: в журнале и на карточке
           сделки тот же кружок помечает, кто что сделал, и в шапке он говорит,
           какой именно кружок означает «я». Точка присутствия серая — портал
@@ -547,7 +558,7 @@ function Who({ who }: { who: Session }) {
           {who.roles.length > 0 ? who.roles.join(" · ") : "без ролей"}
         </span>
       </span>
-    </div>
+    </Link>
   );
 }
 
