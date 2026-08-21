@@ -95,3 +95,29 @@ Two ways to apply them:
 
 The file stays the source of truth for a clean install: a stack brought up
 from scratch gets these values straight away.
+
+## Redirect addresses
+
+Keycloak checks `redirect_uri` against the list on the `vedal-admin-ui` client,
+and it compares strings, not machines. `localhost` and `127.0.0.1` are
+**different addresses** even though they are the same computer. An address
+missing from the list produces "We are sorry… Invalid parameter: redirect_uri"
+before the sign-in form is ever shown.
+
+| Realm | Allowed |
+| --- | --- |
+| local | `http://localhost:8080/*`, `http://127.0.0.1:8080/*`, and the same on `:3000` for `next dev` |
+| stand | the same plus `http://51.250.31.97:18080/*` |
+
+A new environment means a new entry in `redirectUris` and in `webOrigins`.
+A missing one surfaces only when somebody tries to sign in, and it looks like
+Keycloak is broken when it is in fact client configuration.
+
+To check without opening a browser:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' \
+  'http://localhost:8180/realms/vedal/protocol/openid-connect/auth?client_id=vedal-admin-ui&response_type=code&scope=openid&state=x&code_challenge=abc&code_challenge_method=S256&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fadmin%2Fcallback%2F'
+```
+
+`302` means the address is accepted, `400` means it is not on the list.
