@@ -227,6 +227,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       ? active.items.find((item) => within(pathname ?? "", item.href))
       : active;
 
+  // Стоим ровно на пункте навигации, а не глубже. within() совпадает и со
+  // списком, и с карточкой внутри него, поэтому здесь нужна точность.
+  const наСписке =
+    here != null && (pathname ?? "").replace(/[/]+$/, "") === here.href.replace(/[/]+$/, "");
+
   return (
     <div className="admin-shell">
       {/* Обе полосы в одной липкой обёртке, а не по отдельности: высота шапки
@@ -363,21 +368,34 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             на вопрос, которого не было при колонке слева: раздел теперь
             свёрнут в четыре слова наверху, и «где я» должно читаться
             в самом содержимом, а не только по подсветке вкладки. */}
-        <div className="admin-crumbs">
-          <Link href="/admin/">Админка</Link>
-          {active && active.items.length > 0 && (
-            <>
-              <span aria-hidden="true"> / </span>
-              <Link href={active.href}>{active.label}</Link>
-            </>
-          )}
-          {here && (
-            <>
-              <span aria-hidden="true"> / </span>
-              <span className="admin-crumbs__here">{here.label}</span>
-            </>
-          )}
-        </div>
+        {/* Крошки — только глубже навигации.
+            Замер на экране заявок: раздел «Работа с клиентами» подсвечен
+            в шапке, вкладка «Заявки» подсвечена и помечена aria-current,
+            заголовок страницы говорит «Заявки» — и крошки говорили то же
+            самое четвёртый раз, занимая 41 пиксель на каждом списке.
+            До первой строки данных уходило 469 пикселей из 900, больше
+            половины экрана.
+
+            Там, где человек стоит глубже — карточка сделки, клиента, КП, —
+            крошки остаются: навигация показывает раздел и вкладку, но не
+            запись, и путь наверх есть только здесь. */}
+        {!наСписке && (
+          <div className="admin-crumbs">
+            <Link href="/admin/">Админка</Link>
+            {active && active.items.length > 0 && (
+              <>
+                <span aria-hidden="true"> / </span>
+                <Link href={active.href}>{active.label}</Link>
+              </>
+            )}
+            {here && (
+              <>
+                <span aria-hidden="true"> / </span>
+                <span className="admin-crumbs__here">{here.label}</span>
+              </>
+            )}
+          </div>
+        )}
 
         {children}
       </main>

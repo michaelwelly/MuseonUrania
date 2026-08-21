@@ -135,17 +135,17 @@ export default function Dashboard() {
             <Tile
               href="/admin/products/"
               num={data.products.total - data.products.draft}
-              label={`изделий на сайте из ${data.products.total}`}
+              label={`изделий на сайте${всего(data.products.total)}`}
             />
             <Tile
               href="/admin/news/"
               num={data.news.total - data.news.draft}
-              label={`материалов в ленте из ${data.news.total}`}
+              label={`материалов в ленте${всего(data.news.total)}`}
             />
             <Tile
               href="/admin/documents/"
               num={data.documents.published}
-              label={`документов доступно из ${data.documents.total}`}
+              label={`документов доступно${всего(data.documents.total)}`}
             />
             <Tile href="/admin/leads/" num={data.leads.total} label="заявок всего" />
             <Tile href="/admin/clients/" num={data.clients} label="клиентов в базе" />
@@ -155,6 +155,16 @@ export default function Dashboard() {
       )}
     </>
   );
+}
+
+/**
+ * Хвост «из N» — только когда есть из чего выбирать.
+ *
+ * «0 материалов в ленте из 0» звучит как поломка счётчика, хотя означает
+ * пустую ленту. Ноль из нуля — не доля, и говорить о ней нечего.
+ */
+function всего(total: number): string {
+  return total > 0 ? ` из ${total}` : "";
 }
 
 function Tile({ href, num, label }: { href: string; num: number; label: string }) {
