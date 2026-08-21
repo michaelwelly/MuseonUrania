@@ -200,25 +200,76 @@ export async function accessToken(): Promise<string | null> {
   return (await refreshing)?.accessToken ?? null;
 }
 
-async function refresh(refreshToken: string): Promise<Tokens | null> {
-  const response = await fetch(tokenUrl(), {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      client_id: CLIENT_ID,
-      refresh_token: refreshToken,
-    }),
-  });
+// Сколько ждать между попытками обновления. Сбой на той стороне —
+// перезапуск Keycloak, перезапуск шлюза, обрыв — обычно короче, чем пауза
+// между двумя действиями человека.
+const RETRY_MS = 700;
 
-  if (!response.ok) {
-    forget();
-    return null;
+async function refresh(refreshToken: string): Promise<Tokens | null> {
+  // Две попытки, потому что отказ отказу рознь.
+  //
+  // Раньше вход стирался при любом неуспешном ответе. Отказ «refresh-токен
+  // мёртв» и отказ «Keycloak сейчас перезапускается» выглядели одинаково,
+  // и секундная заминка на той стороне возвращала человека на экран пароля.
+  // На стенде, где шлюз перезапускается при каждой выкатке, это означало
+  // вход заново несколько раз за час.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    let response: Response;
+    try {
+      response = await fetch(tokenUrl(), {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          grant_type: "refresh_token",
+          client_id: CLIENT_ID,
+          refresh_token: refreshToken,
+        }),
+      });
+    } catch {
+      // Сеть не ответила. Токен от этого не перестал действовать —
+      // выбрасывать его нельзя.
+      if (attempt === 0) {
+        await pause(RETRY_MS);
+        continue;
+      }
+      return null;
+    }
+
+    if (response.ok) {
+      const tokens = toTokens(await response.json());
+      store(tokens);
+      return tokens;
+    }
+
+    // invalid_grant — единственный ответ, означающий «этот токен больше
+    // не действует». Держать его дальше незачем, и вход честно сбрасывается.
+    if (await isDeadToken(response)) {
+      forget();
+      return null;
+    }
+
+    // Всё остальное — сбой на той стороне. Токены остаются: следующее
+    // действие человека попробует снова, и обычно этого хватает.
+    if (attempt === 0) await pause(RETRY_MS);
   }
 
-  const tokens = toTokens(await response.json());
-  store(tokens);
-  return tokens;
+  return null;
+}
+
+const pause = (ms: number) => new Promise((done) => setTimeout(done, ms));
+
+/** Отличает мёртвый refresh-токен от сбоя на стороне Keycloak. */
+async function isDeadToken(response: Response): Promise<boolean> {
+  // 5xx — это никогда не про токен.
+  if (response.status >= 500) return false;
+  try {
+    const body = (await response.json()) as { error?: string };
+    return body.error === "invalid_grant" || body.error === "invalid_token";
+  } catch {
+    // Тело не разобралось. На 400 это всё равно отказ по запросу,
+    // а не по связи.
+    return response.status === 400;
+  }
 }
 
 type TokenResponse = {

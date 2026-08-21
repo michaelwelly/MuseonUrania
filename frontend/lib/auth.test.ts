@@ -143,6 +143,69 @@ describe("действующий токен", () => {
     expect(storedTokens()).toBeNull();
   });
 
+  // Отказ отказу рознь.
+  //
+  // Раньше вход стирался при любом неуспешном ответе, и перезапуск Keycloak
+  // или шлюза был неотличим от мёртвого токена. На стенде шлюз перезапускается
+  // при каждой выкатке — человек возвращался на экран пароля по нескольку раз
+  // за час, хотя его сессия была жива.
+  it("не выбрасывает вход из-за сбоя на стороне Keycloak", async () => {
+    const { accessToken, storedTokens } = await auth();
+    sessionStorage.setItem(
+      "vedal.admin.tokens",
+      JSON.stringify({ accessToken: "old", refreshToken: "refresh-1", expiresAt: Date.now() - 1 }),
+    );
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 503, json: async () => ({}) } as Response);
+    vi.stubGlobal("fetch", fetchMock);
+
+    expect(await accessToken()).toBeNull();
+    expect(storedTokens(), "токены остаются: следующее действие попробует снова").not.toBeNull();
+    expect(fetchMock, "одна повторная попытка").toHaveBeenCalledTimes(2);
+  });
+
+  it("не выбрасывает вход, если сеть не ответила", async () => {
+    const { accessToken, storedTokens } = await auth();
+    sessionStorage.setItem(
+      "vedal.admin.tokens",
+      JSON.stringify({ accessToken: "old", refreshToken: "refresh-1", expiresAt: Date.now() - 1 }),
+    );
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("сеть недоступна")));
+
+    expect(await accessToken()).toBeNull();
+    expect(storedTokens()).not.toBeNull();
+  });
+
+  it("переживает разовый сбой и обновляет со второй попытки", async () => {
+    const { accessToken } = await auth();
+    sessionStorage.setItem(
+      "vedal.admin.tokens",
+      JSON.stringify({ accessToken: "old", refreshToken: "refresh-1", expiresAt: Date.now() - 1 }),
+    );
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 502, json: async () => ({}) } as Response)
+      .mockResolvedValueOnce(tokenResponse({ access_token: "fresh" }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    expect(await accessToken()).toBe("fresh");
+  });
+
+  // Единственный ответ, означающий «этот токен больше не действует».
+  it("сбрасывает вход на invalid_grant", async () => {
+    const { accessToken, storedTokens } = await auth();
+    sessionStorage.setItem(
+      "vedal.admin.tokens",
+      JSON.stringify({ accessToken: "old", refreshToken: "refresh-1", expiresAt: Date.now() - 1 }),
+    );
+    const fetchMock = vi.fn().mockResolvedValue(
+      { ok: false, status: 400, json: async () => ({ error: "invalid_grant" }) } as Response,
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    expect(await accessToken()).toBeNull();
+    expect(storedTokens()).toBeNull();
+    expect(fetchMock, "повторять мёртвый токен незачем").toHaveBeenCalledTimes(1);
+  });
+
   it("без refresh-токена не делает вид, что вход есть", async () => {
     const { accessToken } = await auth();
     sessionStorage.setItem(
