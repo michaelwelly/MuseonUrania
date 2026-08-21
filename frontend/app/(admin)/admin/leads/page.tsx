@@ -50,8 +50,7 @@ export default function LeadsPage() {
               setStatus(e.target.value);
               setPage(0);
             }}
-            style={{ font: "inherit", fontSize: 14, padding: "8px 10px",
-              border: "1px solid var(--line-3)", borderRadius: 8, background: "#fff" }}
+            className="admin-select"
           >
             <option value="">все статусы</option>
             {(statuses ?? []).map((s) => (
@@ -93,7 +92,7 @@ export default function LeadsPage() {
                     <td className="tight muted">{when(row.createdAt)}</td>
                     <td>
                       {row.name}
-                      {row.company && <div className="muted" style={{ fontSize: 12 }}>{row.company}</div>}
+                      {row.company && <div className="muted" style={{ fontSize: "var(--t-small)" }}>{row.company}</div>}
                     </td>
                     <td>
                       <div className="mono">{row.phone}</div>
@@ -108,7 +107,7 @@ export default function LeadsPage() {
                         {label(LEAD_STATUS, row.status)}
                       </span>
                       {row.owner && (
-                        <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                        <div className="muted" style={{ fontSize: "var(--t-small)", marginTop: "var(--s1)" }}>
                           {row.owner}
                         </div>
                       )}
@@ -144,7 +143,7 @@ export default function LeadsPage() {
           )}
 
           {data.pages > 1 && (
-            <div className="row" style={{ marginTop: 16 }}>
+            <div className="row" style={{ marginTop: "var(--s4)" }}>
               <button className="btn btn--small" disabled={page === 0} onClick={() => setPage(page - 1)}>
                 Назад
               </button>
@@ -197,21 +196,21 @@ function LeadCard({
   }
 
   return (
-    <div className="admin-card" style={{ marginTop: 16 }}>
+    <div className="admin-card" style={{ marginTop: "var(--s4)" }}>
       <Note kind="error">{error}</Note>
       {loading && !data && <p className="muted">Загружаем…</p>}
 
       {data && (
         <>
-          <h2 style={{ fontSize: 15, marginBottom: 10 }}>
+          <h2 style={{ fontSize: "var(--t-base)", marginBottom: "var(--s3)" }}>
             {data.name}
             {data.company ? `, ${data.company}` : ""}
           </h2>
-          <p style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 14, whiteSpace: "pre-wrap" }}>
+          <p style={{ fontSize: "var(--t-base)", lineHeight: 1.6, marginBottom: "var(--s4)", whiteSpace: "pre-wrap" }}>
             {data.message}
           </p>
 
-          <p className="muted" style={{ fontSize: 12, marginBottom: 14 }}>
+          <p className="muted" style={{ fontSize: "var(--t-small)", marginBottom: "var(--s4)" }}>
             Источник: {data.source} · согласие версии {data.consentVersion} от{" "}
             {when(data.consentAt)}
             {data.correlationId && (
@@ -322,7 +321,7 @@ function ConvertToDeal({
   return (
     <div className="convert">
       <h3 className="admin-card__title">Разобрать в сделку</h3>
-      <p className="admin-hint" style={{ marginBottom: 14 }}>
+      <p className="admin-hint" style={{ marginBottom: "var(--s4)" }}>
         Заявка разбирается в сделку один раз — это ограничение схемы, а не проверка формы.
         Вместе со сделкой заводится карточка клиента, если не выбран существующий.
       </p>
@@ -341,7 +340,7 @@ function ConvertToDeal({
         <OwnerField value={form.owner} onChange={(login) => set("owner", login)} />
       </div>
 
-      <label className="field--row" style={{ marginBottom: 12 }}>
+      <label className="field--row" style={{ marginBottom: "var(--s3)" }}>
         <input
           type="checkbox"
           checked={existing}
@@ -350,12 +349,12 @@ function ConvertToDeal({
             if (!e.target.checked) set("clientId", null);
           }}
         />
-        <span style={{ fontSize: 13 }}>Клиент уже заведён — выбрать из базы</span>
+        <span style={{ fontSize: "var(--t-small)" }}>Клиент уже заведён — выбрать из базы</span>
       </label>
 
       {existing && (
         <>
-          <div className="row" style={{ marginBottom: 10 }}>
+          <div className="row" style={{ marginBottom: "var(--s3)" }}>
             <input
               className="admin-search"
               value={typed}

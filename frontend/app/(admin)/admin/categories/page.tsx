@@ -62,8 +62,8 @@ export default function CategoriesPage() {
         </div>
       )}
 
-      <div className="admin-card" style={{ marginTop: 18 }}>
-        <h2 style={{ fontSize: 15, marginBottom: 12 }}>Новая категория</h2>
+      <div className="admin-card" style={{ marginTop: "var(--s5)" }}>
+        <h2 style={{ fontSize: "var(--t-base)", marginBottom: "var(--s3)" }}>Новая категория</h2>
         <div className="grid2">
           <Field label="Название">
             <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
@@ -167,9 +167,9 @@ function Row({
 
 const cell: React.CSSProperties = {
   font: "inherit",
-  fontSize: 14,
-  padding: "6px 9px",
+  fontSize: "var(--t-base)",
+  padding: "var(--s2) var(--s2)",
   border: "1px solid var(--line-3)",
-  borderRadius: 7,
+  borderRadius: "var(--radius-control)",
   width: "100%",
 };

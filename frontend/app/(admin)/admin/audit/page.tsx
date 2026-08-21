@@ -31,7 +31,7 @@ export default function AuditPage() {
               setSubject(e.target.value);
               setPage(0);
             }}
-            style={select}
+            className="admin-select"
           >
             {SUBJECTS.map((s) => (
               <option key={s} value={s}>
@@ -46,7 +46,7 @@ export default function AuditPage() {
               setActor(e.target.value);
               setPage(0);
             }}
-            style={select}
+            className="admin-select"
           />
         </div>
       </div>
@@ -87,7 +87,7 @@ export default function AuditPage() {
                     <td>
                       {row.payload && <div className="mono">{row.payload}</div>}
                       {row.ip && (
-                        <div className="muted" style={{ fontSize: 12 }}>
+                        <div className="muted" style={{ fontSize: "var(--t-small)" }}>
                           {row.ip}
                         </div>
                       )}
@@ -99,7 +99,7 @@ export default function AuditPage() {
           </div>
 
           {data.pages > 1 && (
-            <div className="row" style={{ marginTop: 16 }}>
+            <div className="row" style={{ marginTop: "var(--s4)" }}>
               <button className="btn btn--small" disabled={page === 0} onClick={() => setPage(page - 1)}>
                 Назад
               </button>
@@ -121,11 +121,3 @@ export default function AuditPage() {
   );
 }
 
-const select: React.CSSProperties = {
-  font: "inherit",
-  fontSize: 14,
-  padding: "8px 10px",
-  border: "1px solid var(--line-3)",
-  borderRadius: 8,
-  background: "#fff",
-};

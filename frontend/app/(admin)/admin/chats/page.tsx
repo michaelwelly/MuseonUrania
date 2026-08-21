@@ -122,10 +122,10 @@ export default function ChatsPage() {
                 <span className={`badge ${BADGE[c.status] ?? ""}`}>
                   {label(CHAT_STATUS, c.status)}
                 </span>
-                <span className="muted" style={{ fontSize: 12 }}>{when(c.lastAt)}</span>
+                <span className="muted" style={{ fontSize: "var(--t-small)" }}>{when(c.lastAt)}</span>
               </span>
               <span className="chats__where mono">{c.page ?? "—"}</span>
-              {c.owner && <span className="muted" style={{ fontSize: 12 }}>{c.owner}</span>}
+              {c.owner && <span className="muted" style={{ fontSize: "var(--t-small)" }}>{c.owner}</span>}
             </button>
           ))}
         </div>

@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -7,6 +7,14 @@ import { describe, expect, it } from "vitest";
 // Двадцать два кегля, тридцать четыре отступа и четыре скругления набрались
 // не разом, а по одному: каждое отдельное «тут на два пикселя побольше»
 // выглядит безобидно. Поэтому считает сборка, а не внимание.
+
+function tsxFiles(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const p = join(dir, entry.name);
+    if (entry.isDirectory()) return tsxFiles(p);
+    return p.endsWith(".tsx") && !p.includes(".test.") ? [p] : [];
+  });
+}
 
 const css = readFileSync(join("app", "(admin)", "admin", "admin.css"), "utf8");
 
@@ -61,6 +69,22 @@ describe("шкала админки", () => {
   it("у рабочей поверхности задан базовый кегль", () => {
     // Без него всё без явного кегля падает на браузерные 16px — размер,
     // которого в шкале нет. На экране входа так набралось четыре обёртки.
-    expect(css).toMatch(/\.admin-body \{[^}]*font-size: var\(--t-base\)/s);
+    expect(css).toMatch(/\.admin-body \{[^}]*font-size: var\(--t-base\)/);
+  });
+  // Инлайновые стили в разметке — отдельная история: пока они там есть,
+  // числа в них обязаны быть теми же токенами. Иначе шкала держится только
+  // в таблице стилей, а треть оформления живёт мимо неё, как и было до правки.
+  it("в разметке нет чисел вместо токенов", () => {
+    const files = tsxFiles(join("app", "(admin)"));
+    const guilty: string[] = [];
+    for (const file of files) {
+      const source = readFileSync(file, "utf8");
+      for (const m of source.matchAll(/(fontSize|borderRadius|margin[A-Z][a-z]+|padding[A-Z]*[a-z]*|gap):[ ]*([0-9.]+)/g)) {
+        if (m[2] === "0") continue;
+        guilty.push(file.split(/[\/]/).slice(-2).join("/") + "  " + m[0]);
+      }
+    }
+
+    expect([...new Set(guilty)], "используйте var(--t-*) и var(--s*)").toEqual([]);
   });
 });

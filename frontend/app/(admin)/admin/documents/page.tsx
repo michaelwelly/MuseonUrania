@@ -118,14 +118,14 @@ export default function DocumentsPage() {
                       {row.title}
                     </button>
                     <div className="mono">{row.slug}</div>
-                    <div className="muted" style={{ fontSize: 12 }}>{row.subject}</div>
+                    <div className="muted" style={{ fontSize: "var(--t-small)" }}>{row.subject}</div>
                   </td>
                   <td className="tight">{row.group}</td>
                   <td className="tight">
                     <span className={`badge ${row.sensitivity === "public" ? "" : "badge--warn"}`}>
                       {row.sensitivity}
                     </span>
-                    <div style={{ marginTop: 4 }}>
+                    <div style={{ marginTop: "var(--s1)" }}>
                       <span className="badge">{row.access}</span>
                     </div>
                   </td>
@@ -137,10 +137,10 @@ export default function DocumentsPage() {
                     ) : (
                       <span className="badge badge--off">нет</span>
                     )}
-                    <div style={{ marginTop: 6 }}>
+                    <div style={{ marginTop: "var(--s2)" }}>
                       <input
                         type="file"
-                        style={{ fontSize: 12, maxWidth: 190 }}
+                        style={{ fontSize: "var(--t-small)", maxWidth: 190 }}
                         disabled={busy === row.id}
                         onChange={(e) => {
                           const file = e.target.files?.[0];
@@ -152,15 +152,15 @@ export default function DocumentsPage() {
                   <td>
                     <Published on={row.published} />
                     {row.approvedBy && (
-                      <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                      <div className="muted" style={{ fontSize: "var(--t-small)", marginTop: "var(--s1)" }}>
                         согласовал {row.approvedBy}
                       </div>
                     )}
-                    <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                    <div className="muted" style={{ fontSize: "var(--t-small)", marginTop: "var(--s1)" }}>
                       {when(row.updatedAt)}
                     </div>
                     {row.publishBlockedBy && (
-                      <div className="muted" style={{ fontSize: 12, marginTop: 6, maxWidth: 280 }}>
+                      <div className="muted" style={{ fontSize: "var(--t-small)", marginTop: "var(--s2)", maxWidth: 280 }}>
                         {row.publishBlockedBy}
                       </div>
                     )}
@@ -249,7 +249,7 @@ function DocumentCard({
 
   return (
     <div className="admin-card">
-      <h2 style={{ fontSize: 15, marginBottom: 12 }}>
+      <h2 style={{ fontSize: "var(--t-base)", marginBottom: "var(--s3)" }}>
         {existing ? "Правка карточки документа" : "Новый документ"}
       </h2>
       <Note kind="error">{failure}</Note>

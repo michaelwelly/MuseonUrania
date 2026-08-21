@@ -69,7 +69,7 @@ export default function NewsPage() {
                   <td className="tight muted">{row.publishedOn ?? "—"}</td>
                   <td className="tight">
                     <Published on={row.published} />
-                    <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                    <div className="muted" style={{ fontSize: "var(--t-small)", marginTop: "var(--s1)" }}>
                       {when(row.updatedAt)}
                     </div>
                   </td>
