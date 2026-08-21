@@ -24,5 +24,12 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
+		<!-- Транспорт писем. Бин JavaMailSender заводит автоконфигурация Boot
+		     и только при заданном spring.mail.host: без него модуль работает
+		     как раньше и пишет письма в лог. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
 	</dependencies>
 </project>

@@ -12,6 +12,14 @@ import java.util.UUID;
 @Table(name = "outbound_mail")
 public class OutboundMail {
 
+    // Статусы письма. Список совпадает с check-ограничением в миграции V7:
+    // разойдись они — вставка упала бы, а не завела тихо четвёртое состояние.
+    static final String QUEUED = "queued";
+    static final String SENT = "sent";
+    // failed — это и есть разбор руками: письмо, не ушедшее после всех попыток
+    // или отвергнутое окончательно. Из очереди оно больше не берётся.
+    static final String FAILED = "failed";
+
     @Id
     private UUID id;
 
@@ -41,6 +49,13 @@ public class OutboundMail {
     @Column(name = "sent_at")
     private Instant sentAt;
 
+    // Когда письмо можно пробовать снова. Заполнено всегда, а не только
+    // у отложенных: у только что поставленного в очередь это момент постановки,
+    // и запрос «что пора отправлять» остаётся одним условием без ветвления
+    // на null.
+    @Column(name = "next_attempt_at")
+    private Instant nextAttemptAt = Instant.now();
+
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
     public String getTemplate() { return template; }
@@ -65,4 +80,6 @@ public class OutboundMail {
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     public Instant getSentAt() { return sentAt; }
     public void setSentAt(Instant sentAt) { this.sentAt = sentAt; }
+    public Instant getNextAttemptAt() { return nextAttemptAt; }
+    public void setNextAttemptAt(Instant nextAttemptAt) { this.nextAttemptAt = nextAttemptAt; }
 }

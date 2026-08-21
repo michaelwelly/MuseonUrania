@@ -30,3 +30,53 @@ The boundary is enforced by the build rather than by discipline: importing
 from a module that is not among the dependencies fails compilation. Previously
 all the code sat in one heap under `backend/src/`, and the boundaries held
 only as long as someone was paying attention.
+
+## Transport
+
+The sender is chosen at startup in `MailSenderConfig` by the presence of a
+`JavaMailSender` bean, and Spring Boot autoconfiguration creates that bean
+exactly when `spring.mail.host` is set.
+
+| What is set | What happens |
+| --- | --- |
+| `SPRING_MAIL_HOST` not set | the letter goes to the log and is marked sent; a warning is logged at startup |
+| set together with username and password | the letter goes out over Yandex 360 SMTP |
+
+Three variables, and from the environment only — a literal password in the
+repository can be removed only by rewriting history:
+
+```
+SPRING_MAIL_HOST=smtp.yandex.ru
+SPRING_MAIL_USERNAME=<full mailbox address on the domain>
+SPRING_MAIL_PASSWORD=<application password>
+```
+
+An application password, not the account password: with the second factor
+enabled Yandex 360 does not accept the account password over SMTP. The envelope
+sender defaults to the username — Yandex 360 accepts a letter only from the
+mailbox that authenticated.
+
+Port 465 (implicit TLS) rather than 587 (STARTTLS): with STARTTLS the
+connection starts in the clear, and an intermediary can strip the server's
+offer to negotiate encryption.
+
+## Queue and failures
+
+A letter is not sent at the moment it is queued: `Mailer` puts it into
+`outbound_mail`, and every five seconds `MailSchedule` asks `MailDispatch` to
+walk the queue. Each letter is sent in its own transaction (`MailAttempt`).
+
+Failures come in two kinds, and that distinction is the central one here:
+
+| Kind | When | What happens |
+| --- | --- | --- |
+| `MailTransientFailure` | server unreachable, timeout, 4xx refusal, credentials not accepted | the letter stays queued, the next attempt follows a backoff |
+| `MailPermanentFailure` | address rejected (5xx), control character in the address or subject, the message did not assemble | straight to `failed`, skipping the remaining attempts |
+
+The backoff grows: 1 minute, 5, 15, 1 hour, 6 hours — five attempts fit into
+roughly seven hours. Without it, a server being unreachable for twenty-five
+seconds would exhaust every attempt and move the whole queue to `failed` at
+once.
+
+`failed` means manual review. The `vedal.mail.queued` and `vedal.mail.failed`
+metrics report both figures.
