@@ -3215,3 +3215,309 @@
     margin-left: 0;
   }
 }
+
+/* ————— список с боковой панелью ————— */
+
+/* Ширина панели фиксирована, список тянется: в панели пары «ключ — значение»
+   и суммы, которым лишняя ширина не даёт ничего, а таблице даёт колонку.
+
+   minmax(0, 1fr), а не 1fr: без нуля в минимуме колонка не сжимается ниже
+   своего содержимого, и широкая таблица выдавливает панель за край экрана. */
+.with-side {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 356px;
+  gap: var(--s4);
+  align-items: start;
+}
+
+@media (max-width: 1320px) {
+  .with-side {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Липкая — иначе при прокрутке длинного списка карточка уезжает вверх,
+   и выбранная строка оказывается напротив пустоты. Отступ считается
+   от высоты навигации: она меняется на трёх порогах, и число здесь
+   разъехалось бы с вёрсткой ровно там, где полоса переносится. */
+.side {
+  position: sticky;
+  top: calc(var(--chrome, 78px) + var(--s4));
+}
+
+@media (max-width: 1320px) {
+  .side {
+    position: static;
+  }
+}
+
+.side__card {
+  padding: var(--s4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.side__head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+
+.side__eyebrow {
+  font-size: var(--t-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.side__close {
+  display: grid;
+  place-items: center;
+  width: var(--s6);
+  height: var(--s6);
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--t-base);
+  cursor: pointer;
+}
+
+.side__close:hover {
+  color: var(--state-stop);
+}
+
+.side__title {
+  margin: var(--s2) 0 var(--s4);
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: var(--t-lead);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.side__label {
+  margin: var(--s4) 0 var(--s2);
+  font-size: var(--t-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.side__idle {
+  margin: 0;
+  padding: var(--s4);
+  font-size: var(--t-small);
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.side__deal {
+  display: block;
+  padding: var(--s2) 0;
+  border-bottom: 1px solid var(--line-2);
+  color: inherit;
+  text-decoration: none;
+}
+
+.side__deal:hover {
+  background: var(--paper);
+}
+
+.side__deal-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+
+.side__deal-name {
+  font-size: var(--t-small);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.side__deal-sum {
+  flex: none;
+  font-size: var(--t-small);
+  font-weight: 600;
+}
+
+.side__deal-under {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-top: var(--s1);
+}
+
+.side__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin-top: var(--s4);
+}
+
+/* ————— доска сделок ————— */
+
+/* Колонки задаются потоком, а не числом: у воронок разное число стадий —
+   пять в продажах, четыре в сервисе, — и `repeat(5, …)` оставлял бы
+   в сервисной пустую пятую колонку. */
+.board {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(210px, 1fr);
+  gap: var(--s3);
+  margin-bottom: var(--s4);
+  overflow-x: auto;
+  /* Уезжает вбок сама, не таща за собой страницу. */
+  padding-bottom: var(--s2);
+}
+
+.board__col {
+  display: flex;
+  flex-direction: column;
+  min-height: 420px;
+  padding: var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+/* Колонка под курсором с карточкой. Обводка внутренней тенью, а не рамкой:
+   рамка меняет размер колонки, и соседние прыгают на пиксель при каждом
+   проносе карточки мимо. */
+.board__col--over {
+  background: var(--row-on);
+  box-shadow: inset 0 0 0 2px var(--green);
+}
+
+.board__head {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.board__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  background: var(--line-3);
+}
+
+.board__dot--first {
+  background: var(--line-3);
+}
+
+.board__dot--work {
+  background: #7fb894;
+}
+
+.board__dot--won {
+  background: var(--green);
+}
+
+.board__dot--stop {
+  background: var(--state-stop);
+}
+
+.board__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--t-small);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.board__count {
+  flex: none;
+  font-size: var(--t-small);
+  color: var(--muted);
+}
+
+.board__sum {
+  margin: var(--s1) 0 var(--s3);
+  font-size: var(--t-micro);
+  color: var(--muted);
+  min-height: var(--s4);
+}
+
+.board__cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.board__idle {
+  margin: 0;
+  font-size: var(--t-micro);
+  color: var(--muted);
+}
+
+/* ————— карточка сделки на доске ————— */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  padding: var(--s2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+  cursor: grab;
+}
+
+.card:hover {
+  border-color: var(--line-3);
+  box-shadow: 0 4px 12px rgba(8, 33, 29, 0.07);
+}
+
+.card:active {
+  cursor: grabbing;
+}
+
+.card__title {
+  font-size: var(--t-small);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.card__client {
+  font-size: var(--t-micro);
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  margin-top: var(--s1);
+}
+
+.card__sum {
+  font-size: var(--t-small);
+  font-weight: 600;
+}
+
+.card__idle {
+  font-size: var(--t-micro);
+  color: var(--muted);
+}
+
+/* Две недели без движения — это уже не «идёт работа». Красным, потому что
+   на доске такую карточку надо находить не читая. */
+.card__idle--long {
+  color: var(--state-stop);
+  font-weight: 600;
+}
