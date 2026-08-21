@@ -53,10 +53,18 @@ class OpenApiDocsTest extends PostgresTestBase {
                 "/api/public/v1/documents/{slug}/file",
                 "/api/forms/v1/leads",
                 "/api/assistant/v1/ask",
+                // Кнопки виджета приходят с портала, а не переписаны в интерфейс:
+                // подпись и заготовка, разложенные по двум местам, расходятся
+                // на первой же правке — и расходятся молча.
+                "/api/assistant/v1/prompts",
                 // Разговор живёт под дверью ассистента, а не заводит четвёртую:
                 // /ask уже принимает свободный текст от анонима и уже стоит
                 // под лимитом частоты. Периметр проверяется там же, где и был.
                 "/api/assistant/v1/chat",
+                // Явная просьба позвать человека. До неё попасть к сотруднику
+                // можно было единственным способом: задать вопрос, на который
+                // Ведалина не найдёт ответа.
+                "/api/assistant/v1/chat/handoff",
                 "/api/assistant/v1/chat/{visitorKey}",
                 "/api/assistant/v1/chat/{visitorKey}/typing",
                 "/api/assistant/v1/chat/{visitorKey}/stream")));

@@ -85,11 +85,33 @@ public class ChatDesk {
      */
     @Transactional
     public Thread say(String visitorKey, String text, Context context) {
+        return say(visitorKey, text, null, context);
+    }
+
+    /**
+     * Посетитель написал или нажал кнопку.
+     *
+     * @param intent какую кнопку нажали. Пусто — человек напечатал сам,
+     *               и вопрос идёт обычным путём. Заготовка выбирается
+     *               по намерению, а не по совпадению с подписью кнопки:
+     *               подпись живёт в интерфейсе и меняется вместе с ним.
+     */
+    @Transactional
+    public Thread say(String visitorKey, String text, String intent, Context context) {
         var conversation = openFor(visitorKey, context);
         append(conversation, ChatMessage.VISITOR, null, text, null);
 
         // Человек в разговоре — ассистенту здесь делать нечего.
         if (conversation.handedToHuman()) return thread(conversation);
+
+        // Кнопка — известный вопрос с известным ответом. В поиск он не идёт:
+        // именно там «Запросить КП» превращалось в список изделий, у которых
+        // в описании нашлось похожее слово.
+        var canned = assistant.scripted(intent, "public");
+        if (canned.isPresent()) {
+            append(conversation, ChatMessage.ASSISTANT, null, canned.get().answer(), null);
+            return thread(conversation);
+        }
 
         // Чат на сайте — открытый контур: посетитель, не сотрудник.
         var reply = assistant.ask(text, LlmEngine.Scope.PUBLIC, "public");
@@ -107,6 +129,37 @@ public class ChatDesk {
             append(conversation, ChatMessage.ASSISTANT, null, reply.answer(),
                     serialize(reply.sources()));
         }
+
+        return thread(conversation);
+    }
+
+    /**
+     * Посетитель позвал живого человека.
+     *
+     * <p>До этой двери попасть к сотруднику можно было единственным способом:
+     * задать вопрос, на который Ведалина не найдёт ответа. То есть человека
+     * получал тот, кому не повезло, а не тот, кто его попросил. Кнопка
+     * «Специалист VEDAL» при этом в виджете была — и отправляла свою
+     * подпись в поиск, который отвечал на неё каталогом.
+     *
+     * <p>Повторное нажатие ничего не меняет и второго сообщения не пишет:
+     * посетитель, нажавший дважды, не должен видеть «зову специалиста»
+     * два раза, а очередь — считать это двумя обращениями.
+     */
+    @Transactional
+    public Thread callHuman(String visitorKey, Context context) {
+        var conversation = openFor(visitorKey, context);
+        if (conversation.handedToHuman()) return thread(conversation);
+
+        append(conversation, ChatMessage.ASSISTANT, null,
+                assistant.callingHuman().answer(), null);
+        conversation.setStatus(Conversation.WAITING);
+
+        // Причина отличается от той, что пишется при отсутствии источников:
+        // «asked» — посетитель попросил сам. Свалив их в одно, разбор качества
+        // ответов посчитал бы просьбы о человеке за провалы ассистента.
+        audit.record("public", "chat.handoff", "conversation",
+                conversation.getId().toString(), Map.of("reason", "asked"));
 
         return thread(conversation);
     }
@@ -221,7 +274,10 @@ public class ChatDesk {
         var now = Instant.now();
         var changed = false;
 
-        for (var message : messages.findByConversationIdOrderByAtAsc(conversation.getId())) {
+        // Только непрочитанное: по частичному индексу, заведённому под это
+        // ещё в V19. Проход по всей ленте повторялся на каждое открытие
+        // виджета, а виджет открывает её на каждое событие из потока.
+        for (var message : messages.findByConversationIdAndReadAtIsNull(conversation.getId())) {
             var mine = ChatMessage.VISITOR.equals(side)
                     ? ChatMessage.VISITOR.equals(message.getAuthor())
                     // Для сотрудника «своё» — и его ответ, и ответ Ведалины:
@@ -229,7 +285,7 @@ public class ChatDesk {
                     // означала бы, что портал прочитал сам себя.
                     : !ChatMessage.VISITOR.equals(message.getAuthor());
 
-            if (mine || message.getReadAt() != null) continue;
+            if (mine) continue;
             message.setReadAt(now);
             changed = true;
         }

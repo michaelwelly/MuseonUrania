@@ -57,6 +57,14 @@ public class PublicChatController {
 
             @Schema(description = "Текст сообщения.") @NotBlank @Size(max = 1000) String text,
 
+            @Schema(description = """
+                    Нажатая кнопка быстрого ответа — из `GET /api/assistant/v1/prompts`.
+                    Пусто — человек напечатал сам. На известное намерение приходит
+                    заготовка, минуя поиск: подпись кнопки в поиске находила изделия
+                    по случайным словам.
+                    """, example = "quote", nullable = true)
+            @Size(max = 32) String intent,
+
             @Schema(description = "Язык страницы, с которой пишут.", nullable = true)
             @Size(max = 8) String language,
 
@@ -94,7 +102,48 @@ public class PublicChatController {
         if (!rateLimit.allow(http.getRemoteAddr())) {
             throw new TooManyRequestsException("Слишком много сообщений подряд. Попробуйте позже.");
         }
-        return desk.say(request.visitorKey(), request.text(),
+        return desk.say(request.visitorKey(), request.text(), request.intent(),
+                new ChatDesk.Context(request.language(), request.campaign(), request.page()));
+    }
+
+    @Schema(name = "ChatCallHuman", description = "Просьба позвать специалиста.")
+    public record CallHuman(
+            @Schema(description = "Ключ разговора в браузере.")
+            @NotBlank @Size(max = 64) String visitorKey,
+
+            @Schema(description = "Язык страницы.", nullable = true)
+            @Size(max = 8) String language,
+
+            @Schema(description = "Метка кампании.", nullable = true)
+            @Size(max = 128) String campaign,
+
+            @Schema(description = "Страница, с которой позвали.", nullable = true)
+            @Size(max = 512) String page) {}
+
+    @Operation(summary = "Позвать специалиста",
+            description = """
+                    Переводит разговор в состояние `waiting` — он встаёт в очередь
+                    рабочего места, и с этого момента Ведалина в нём молчит.
+
+                    До этой двери попасть к человеку можно было единственным способом:
+                    задать вопрос, на который Ведалина не найдёт ответа. Человека
+                    получал тот, кому не повезло, а не тот, кто его попросил.
+
+                    Повторный вызов ничего не меняет: разговор уже у человека,
+                    второго сообщения и второй записи в журнале не будет.
+
+                    Лимит частоты общий с `ask`.
+                    """)
+    @ApiResponse(responseCode = "200", description = "Лента разговора; статус — `waiting`.")
+    @ApiResponse(responseCode = "429", description = "Превышен лимит частоты.",
+            content = @Content(mediaType = "application/problem+json",
+                    schema = @Schema(ref = "#/components/schemas/ProblemDetail")))
+    @PostMapping("/handoff")
+    public ChatDesk.Thread handoff(@Valid @RequestBody CallHuman request, HttpServletRequest http) {
+        if (!rateLimit.allow(http.getRemoteAddr())) {
+            throw new TooManyRequestsException("Слишком много обращений подряд. Попробуйте позже.");
+        }
+        return desk.callHuman(request.visitorKey(),
                 new ChatDesk.Context(request.language(), request.campaign(), request.page()));
     }
 
