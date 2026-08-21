@@ -200,9 +200,14 @@ function StageBlock({
       <div className="grid2">
         <Field label="Стадия">
           <select value={stage} onChange={(e) => setStage(e.target.value)}>
+            {/* Название, а не код. Набор стадий приходит с карточкой
+                служебными значениями — new, qualified, quoted, — и они
+                уходили на экран как есть: менеджер выбирал «quoted»
+                вместо «выставлено КП». Словарь STAGE рядом, им подписаны
+                и список сделок, и бейдж стадии в шапке этой же карточки. */}
             {deal.stages.map((s) => (
               <option key={s} value={s}>
-                {s}
+                {label(STAGE, s)}
               </option>
             ))}
           </select>

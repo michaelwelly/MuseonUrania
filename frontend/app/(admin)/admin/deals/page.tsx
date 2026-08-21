@@ -90,7 +90,7 @@ function Deals() {
           <option value="">все стадии</option>
           {stages.map((s) => (
             <option key={s} value={s}>
-              {s}
+              {label(STAGE, s)}
             </option>
           ))}
         </select>
