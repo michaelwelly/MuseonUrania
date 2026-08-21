@@ -152,13 +152,35 @@ export async function fetchProducts(): Promise<Product[]> {
   return cards.map(toProduct);
 }
 
+
+/**
+ * Ключ ресурса в адресе API.
+ *
+ * Сегмент маршрута приезжает из Next в том виде, в каком стоял в адресе, —
+ * то есть уже процентно-закодированным. Ещё одно кодирование превращает
+ * `%D0%BD` в `%25D0%25BD`, и в API уходит не тот ключ. На латинских slug это
+ * незаметно: экранировать там нечего. На кириллическом адресе портал отвечал
+ * четырёхсотой, а страница падала пятисотой вместо «не найдено».
+ *
+ * Поэтому декодируем перед тем, как закодировать. Некорректная
+ * последовательность — ссылка в cp1251, забредший бот — роняет
+ * decodeURIComponent; такой ключ ничего не именует, и он уходит в API как
+ * обычный текст, чтобы вернуться оттуда честной 404, а не ошибкой сервера.
+ */
+function slugParam(slug: string): string {
+  try {
+    return encodeURIComponent(decodeURIComponent(slug));
+  } catch {
+    return encodeURIComponent(slug);
+  }
+}
 export async function fetchProduct(slug: string): Promise<Product | null> {
   if (!apiConfigured) return localProducts.find((p) => p.slug === slug) ?? null;
 
   // buildUrl, а не apiUrl: этот запрос идёт на сборке, из процесса Node.
   // Собственный fetch здесь нужен ради разбора 404 — общий get() на нём
   // бросает исключение, а неопубликованное изделие это не сбой.
-  const url = `${buildUrl}/api/public/v1/products/${encodeURIComponent(slug)}`;
+  const url = `${buildUrl}/api/public/v1/products/${slugParam(slug)}`;
   const response = await fetch(url, { next: { revalidate: REVALIDATE } });
 
   // 404 — это не сбой, а неопубликованное или несуществующее изделие.
@@ -236,7 +258,7 @@ export async function fetchNewsEntry(slug: string): Promise<NewsEntry | null> {
 
   // buildUrl и revalidate — как в fetchProduct рядом: запрос идёт на сборке,
   // а собственный fetch нужен ради разбора 404 (общий get() на нём бросает).
-  const url = `${buildUrl}/api/public/v1/news/${encodeURIComponent(slug)}`;
+  const url = `${buildUrl}/api/public/v1/news/${slugParam(slug)}`;
   const response = await fetch(url, { next: { revalidate: REVALIDATE } });
 
   // 404 — неопубликованный или несуществующий материал, а не сбой сборки.
