@@ -12,6 +12,7 @@ import {
   type DocumentRow,
   type Vocabulary,
 } from "@/lib/admin";
+import { DOC_ACCESS, DOC_SENSITIVITY, label } from "../labels";
 import { Empty, Field, message, Note, Published, useLoad, when } from "../ui";
 
 // Документы — единственное место админки, где правило доступа видно прямо
@@ -20,6 +21,19 @@ import { Empty, Field, message, Note, Published, useLoad, when } from "../ui";
 // их правкой интерфейса нельзя.
 
 const MAX_MB = 20;
+
+/**
+ * Размер файла человеку.
+ *
+ * «0.0 МБ» читается как поломка счётчика, а означает файл меньше пятидесяти
+ * килобайт — например, однострочный PDF-заглушку, которую редактор загрузил
+ * по ошибке. В килобайтах это видно сразу.
+ */
+function размер(bytes: number): string {
+  const мб = bytes / 1024 / 1024;
+  if (мб >= 0.1) return `${мб.toFixed(1)} МБ`;
+  return `${Math.max(1, Math.round(bytes / 1024))} КБ`;
+}
 
 export default function DocumentsPage() {
   const { data, error, loading, reload, setError } = useLoad<DocumentRow[]>(documents);
@@ -125,16 +139,16 @@ export default function DocumentsPage() {
                   <td className="tight">{row.group}</td>
                   <td className="tight">
                     <span className={`badge ${row.sensitivity === "public" ? "" : "badge--warn"}`}>
-                      {row.sensitivity}
+                      {label(DOC_SENSITIVITY, row.sensitivity)}
                     </span>
                     <div style={{ marginTop: "var(--s1)" }}>
-                      <span className="badge">{row.access}</span>
+                      <span className="badge">{label(DOC_ACCESS, row.access)}</span>
                     </div>
                   </td>
                   <td className="tight">
                     {row.hasFile ? (
                       <span className="badge badge--on">
-                        {row.fileSize ? `${(row.fileSize / 1024 / 1024).toFixed(1)} МБ` : "есть"}
+                        {row.fileSize ? размер(row.fileSize) : "есть"}
                       </span>
                     ) : (
                       <span className="badge badge--off">нет</span>
@@ -287,14 +301,18 @@ function DocumentCard({
         >
           <select value={form.sensitivity} onChange={(e) => set("sensitivity", e.target.value)}>
             {vocabulary.sensitivities.map((s) => (
-              <option key={s}>{s}</option>
+              <option key={s} value={s}>
+                {label(DOC_SENSITIVITY, s)}
+              </option>
             ))}
           </select>
         </Field>
         <Field label="Бейдж доступа на сайте">
           <select value={form.access} onChange={(e) => set("access", e.target.value)}>
             {vocabulary.access.map((a) => (
-              <option key={a}>{a}</option>
+              <option key={a} value={a}>
+                {label(DOC_ACCESS, a)}
+              </option>
             ))}
           </select>
         </Field>
