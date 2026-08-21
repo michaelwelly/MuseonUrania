@@ -28,10 +28,40 @@ of the table changed.
 | `route.topic.replacement` | `${routedByValue}` | `type` already holds the full topic name (`vedal.leads.v1`). The default appends `.events` and sends events to topics nobody listens to. |
 | `table.expand.json.payload` | `true` | `payload` is `jsonb`. Without expansion the topic receives a string with escaped quotes instead of an object. |
 | `table.fields.additional.placement` | `aggregate`, `correlation_id` into headers | Without `correlationId` the request chain breaks at the broker boundary, and an email stops being linked to the lead that produced it. |
+| `errors.max.retries` | `-1` | The database restarts — the connector must wait for it rather than die with it. See below. |
+| `retriable.restart.connector.wait.ms` | `10000` | Pause between attempts. Ten seconds outlive an ordinary database restart and do not turn waiting into a loop without a breath. |
 
 `EventRouter` puts the event id into the `id` header. That is what the consumer
 uses to cut off duplicates — a message without that header goes to the DLQ
 rather than being handled "somehow".
+
+## Why retries are unlimited
+
+On 19 August the `vedal-outbox-0` task died from a brief database outage:
+`Couldn't obtain encoding for database vedal` → `Connection to db:5432 refused`.
+Retries ran out and Kafka Connect killed the task. It does not restart failed
+tasks by itself.
+
+For the next two days no events reached the topics at all, and **nobody saw
+a failure**: the connector read `RUNNING`, the container read `healthy`,
+and the portal log said nothing. Only the task inside the connector was
+`FAILED`, and its state had to be asked for by hand.
+
+The worst consequence is not the stopped events. With a dead task the
+replication slot stays inactive (`pg_replication_slots.active = f`) and holds
+WAL that PostgreSQL is not allowed to remove. It grows until the disk runs
+out — and then the whole database stops, not just one connector.
+
+Hence unlimited retries: a missing database is a temporary state, while
+a dead task next to a live database is a state that is fixed only by hand
+and discovered a week later.
+
+The container healthcheck in `compose.yaml` has likewise stopped asking
+"does REST answer" and asks "is anything `FAILED`":
+
+```bash
+curl -s 'http://localhost:8083/connectors?expand=status'
+```
 
 ## Database requirements
 

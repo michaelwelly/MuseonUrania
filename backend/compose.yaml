@@ -378,8 +378,19 @@ services:
       VEDAL_DB_NAME: ${VEDAL_DB_NAME:-vedal}
       VEDAL_DB_USER: ${VEDAL_DB_USER:-vedal}
       VEDAL_DB_PASSWORD: ${VEDAL_DB_PASSWORD:-vedal}
+    # Здоровье — это не «отвечает ли REST», а «работают ли задачи».
+    #
+    # Прежняя проверка спрашивала GET / и была довольна. 19 августа задача
+    # vedal-outbox-0 умерла от короткого пропадания базы, Kafka Connect
+    # упавшие задачи сам не поднимает — и два дня контейнер показывал
+    # healthy, пока события никуда не уезжали, а неактивный слот репликации
+    # копил WAL. Увидеть отказ можно было только спросив статус руками.
+    #
+    # curl обязан пройти (иначе REST мёртв), и в ответе не должно быть
+    # ни одной FAILED — ни у коннектора, ни у задачи: ?expand=status
+    # отдаёт оба состояния одной строкой.
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8083/ >/dev/null || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS 'http://localhost:8083/connectors?expand=status' -o /tmp/connect-status && ! grep -q '\"state\":\"FAILED\"' /tmp/connect-status"]
       interval: 10s
       timeout: 5s
       retries: 20

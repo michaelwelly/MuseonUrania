@@ -15,6 +15,9 @@
   "slot.name": "vedal_outbox",
   "publication.name": "vedal_outbox_pub",
 
+  "errors.max.retries": "-1",
+  "retriable.restart.connector.wait.ms": "10000",
+
   "topic.prefix": "vedal.cdc",
   "table.include.list": "public.outbox",
 
