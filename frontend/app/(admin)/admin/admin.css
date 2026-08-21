@@ -8,7 +8,7 @@
  * было не так: сайт встречал белой липкой шапкой, админка — тёмной колонкой
  * на 232 пикселя слева, и один и тот же человек перестраивался на каждом
  * переходе. Теперь оболочка повторяет шапку сайта до размеров — полоса 78,
- * поля 48, знак слева, разделы 15 пикселей с зелёной чертой под текущим,
+ * поля 40, знак слева, разделы 15 пикселей с зелёной чертой под текущим,
  * справа две строки на месте телефона и зелёная кнопка на месте «Связаться»,
  * — а рабочая поверхность остаётся плотной, как хорошо набранный бланк:
  * менеджер смотрит в список сделок весь день, и каждый лишний отступ — это
@@ -100,6 +100,13 @@
   --radius-card: 3px;
   --radius-control: 2px;
 
+  /* Третий радиус — ровно у одной вещи: кнопки виджета разговоров.
+     Она не элемент админки, а тот же плавающий знак, которым Ведалина
+     здоровается с посетителем на сайте (VedalinaWidget: высота 64,
+     радиус 32). По обе стороны разговора это одна вещь, и разводить их
+     скруглением значило бы делать вид, что это две. */
+  --radius-pill: 30px;
+
   /* Смысловые цвета: опубликовано, ждёт действия, отказано. */
   --state-ok: #0f7c30;
   --state-ok-bg: #eaf6ee;
@@ -112,6 +119,26 @@
   --state-stop: #9c2718;
   --state-stop-bg: #fdf1ef;
   --state-stop-line: #e8c8c2;
+
+  /* Нейтральное состояние: воронка, рубрика, счётчик вкладки. Отдельно
+     от трёх смысловых — это не состояние, а ярлык. */
+  --state-flat: var(--text-2);
+  --state-flat-bg: #f1f5f3;
+  --state-flat-line: var(--line);
+
+  /* Полосы у строк таблиц. Отдельно от смысловых цветов текста: полоса
+     в три пикселя должна быть видна краем глаза, а текстовый #8a5310
+     на белом читается как коричневый и с расстояния теряется.
+
+     Три значения и ровно три смысла: требует действия, проблема, выбрано.
+     Четвёртого не заводить — полоса перестанет читаться с одного взгляда. */
+  --stripe-wait: #d99a3c;
+  --stripe-stop: var(--state-stop);
+  --stripe-on: var(--green);
+
+  /* Строка под курсором выбора: список поиска, выделенная строка таблицы.
+     Светлее подсветки наведения, потому что держится, а не мигает. */
+  --row-on: #f2f9f4;
 
   /* Тёмный фон остался только на экране до входа: там перепад с тёмного
      на светлое означает дверь в закрытый контур. */
@@ -155,13 +182,20 @@
 
 /* ————— верхняя полоса ————— */
 
-/* Размеры из Header.module.css: 78 пикселей высоты, поля по 48, зазор 36. */
+/* Размеры из Header.module.css: 78 пикселей высоты, зазор 24, поля по 40.
+   Поля сорок, а не сорок восемь: в правом краю теперь стоят поиск, колокол
+   и кружок, и восемь пикселей с каждой стороны — это ровно та ширина,
+   на которой поиск переставал помещаться в одну строку с разделами.
+
+   Высота задана минимумом, а не числом: полоса переносится, когда содержимое
+   перестаёт помещаться, и жёсткие 78 при переносе обрезали бы вторую строку. */
 .admin-bar {
   display: flex;
   align-items: center;
-  gap: 36px;
-  height: 78px;
-  padding: 0 var(--s9);
+  gap: 0 var(--s6);
+  flex-wrap: wrap;
+  min-height: 78px;
+  padding: 0 var(--s8);
   border-bottom: 1px solid var(--line);
 }
 
@@ -248,21 +282,30 @@
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: var(--s6);
+  gap: var(--s3);
 }
 
 /* Две строки с выключкой вправо — ровно там же и в том же виде, что телефон
    с часами работы в шапке сайта. */
 .admin-who {
   display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-width: 0;
+}
+
+/* Две строки рядом с кружком. Выключка вправо ушла вместе с тем, что
+   раньше блок стоял у самого края: теперь слева от него инициалы, и
+   правый край строк перестал быть линией, по которой что-то читается. */
+.admin-who__lines {
+  display: flex;
   flex-direction: column;
   gap: 1px;
-  text-align: right;
   min-width: 0;
 }
 
 .admin-who__name {
-  font-size: var(--t-lead);
+  font-size: var(--t-base);
   font-weight: 600;
   letter-spacing: -0.01em;
   white-space: nowrap;
@@ -283,8 +326,8 @@
   flex: none;
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border: 1px solid var(--line);
   border-radius: var(--radius-control);
   background: var(--page);
@@ -302,8 +345,8 @@
   display: inline-flex;
   align-items: center;
   gap: var(--s3);
-  height: 48px;
-  padding: 0 var(--s6);
+  height: 44px;
+  padding: 0 var(--s5);
   border-radius: var(--radius-control);
   background: var(--green-dark);
   color: #fff;
@@ -320,13 +363,13 @@
 
 /* ————— вкладки раздела ————— */
 
-/* Та же полоса, что на карточке изделия: зазор 34, поля 48, черта под
+/* Та же полоса, что на карточке изделия: зазор 28, поля 40, черта под
    текущей. Отдельного элемента для админки не заводим — у одного продукта
    один способ показывать вкладки. */
 .admin-tabs {
   display: flex;
-  gap: 36px;
-  padding: 0 var(--s9);
+  gap: 28px;
+  padding: 0 var(--s8);
   background: var(--page);
   border-bottom: 1px solid var(--line);
   overflow-x: auto;
@@ -451,7 +494,8 @@
   align-items: center;
   flex-wrap: wrap;
   gap: var(--s2) var(--s5);
-  padding: var(--s5) var(--s9);
+  min-height: 64px;
+  padding: var(--s2) var(--s8);
   border-top: 1px solid var(--line);
   background: var(--page);
   font-size: var(--t-small);
@@ -587,7 +631,7 @@
    совпадать с краем экрана, и это будет видно. */
 
 .admin-main {
-  --gutter: 48px;
+  --gutter: 40px;
   flex: 1;
   min-width: 0;
   padding: 0 var(--gutter) 64px;
@@ -1556,72 +1600,6 @@
   }
 }
 
-/* ————— разговоры ————— */
-
-/* Список слева, лента справа. На узком экране — друг под другом, и первым
-   идёт список: выбрать разговор надо раньше, чем его читать. */
-.chats {
-  display: grid;
-  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
-  gap: var(--s5);
-  align-items: start;
-}
-
-@media (max-width: 900px) {
-  .chats {
-    grid-template-columns: 1fr;
-  }
-}
-
-.chats__list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s2);
-  max-height: 70vh;
-  overflow-y: auto;
-}
-
-.chats__row {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s1);
-  width: 100%;
-  padding: var(--s3) var(--s3);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-card);
-  background: var(--surface);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.chats__row:hover {
-  border-color: var(--green);
-}
-
-/* Выбранный — зелёной чертой слева, а не заливкой: заливка спорила бы
-   с бейджами состояния внутри самой строки. */
-.chats__row--open {
-  border-color: var(--green);
-  box-shadow: inset 3px 0 0 var(--green);
-}
-
-.chats__where {
-  font-size: var(--t-small);
-  color: var(--text-2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.chats__thread {
-  border: 1px solid var(--line);
-  border-radius: var(--radius-card);
-  background: var(--surface);
-  padding: var(--s4);
-  min-height: 320px;
-}
-
 .thread {
   display: flex;
   flex-direction: column;
@@ -1751,4 +1729,2267 @@
   color: var(--muted);
   margin: 0;
   padding-top: var(--s4);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ОБЩИЕ МЕХАНИЗМЫ ОБОЛОЧКИ
+
+   Поиск по всему, уведомления, полоса-сообщение с отменой, окно горячих
+   клавиш и виджет разговоров. Они не принадлежат ни одному экрану и живут
+   в оболочке — иначе каждый экран заводил бы свои.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ————— поиск в шапке ————— */
+
+/* Выглядит полем, работает кнопкой: набор идёт в окне поверх страницы.
+   Поле в шапке обещало бы, что печатать можно прямо здесь, а печатать
+   здесь негде — окну нужна вся ширина под найденное. */
+.admin-find {
+  flex: 0 1 250px;
+  /* Ниже сорока четырёх сжиматься некуда: остаётся лупа и цель нажатия. */
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  height: 40px;
+  padding: 0 var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--paper);
+  color: var(--muted);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.admin-find:hover {
+  border-color: var(--line-3);
+  background: var(--surface);
+}
+
+.admin-find__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--t-small);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-find__key {
+  flex: none;
+  padding: 1px var(--s1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  font-family: var(--font-mono), monospace;
+  font-size: var(--t-micro);
+  color: var(--muted);
+}
+
+/* ————— колокол ————— */
+
+.bell {
+  position: relative;
+  flex: none;
+}
+
+.bell__button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.bell__button:hover {
+  border-color: var(--green);
+  color: var(--green-dark);
+}
+
+/* Счётчика на колоколе нет намеренно: цифра — утверждение, а ленты
+   уведомлений портал не отдаёт. Разбор — в комментарии к Bell.tsx. */
+.bell__panel {
+  position: absolute;
+  top: calc(100% + var(--s2));
+  right: 0;
+  z-index: 70;
+  width: 380px;
+  max-width: 80vw;
+  padding: var(--s4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: 0 18px 40px rgba(8, 33, 29, 0.14);
+}
+
+.bell__title {
+  margin: 0 0 var(--s2);
+  font-size: var(--t-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.bell__wait {
+  margin: 0 0 var(--s3);
+  font-size: var(--t-base);
+  font-weight: 600;
+  color: var(--state-wait);
+}
+
+.bell__why {
+  margin: 0 0 var(--s3);
+  font-size: var(--t-small);
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+.bell__why:last-child {
+  margin-bottom: 0;
+}
+
+/* ————— кружок с инициалами ————— */
+
+.avatar {
+  position: relative;
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--state-ok-line);
+  background: var(--state-ok-bg);
+  color: var(--state-ok);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
+/* Ведалина и портал — не люди: фирменный зелёный у них означал бы, что
+   в журнале действие совершил сотрудник. */
+.avatar--machine {
+  border-color: var(--line);
+  background: var(--state-flat-bg);
+  color: var(--muted);
+}
+
+.avatar--s {
+  width: 22px;
+  height: 22px;
+  font-size: var(--t-micro);
+}
+
+.avatar--m {
+  width: 36px;
+  height: 36px;
+  font-size: var(--t-small);
+}
+
+.avatar--l {
+  width: 56px;
+  height: 56px;
+  font-size: var(--t-base);
+}
+
+.avatar--xl {
+  width: 104px;
+  height: 104px;
+  font-size: var(--t-h2);
+}
+
+/* Точка присутствия. Серая, пока портал не научится его хранить: зелёная
+   точка у человека, ушедшего вчера, — выдуманный факт. */
+.avatar__dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+  background: var(--line-3);
+}
+
+.avatar--xl .avatar__dot {
+  width: 16px;
+  height: 16px;
+}
+
+.avatar__dot--off {
+  background: var(--state-stop);
+}
+
+/* ————— счётчик на вкладке ————— */
+
+.admin-tab__count {
+  margin-left: var(--s2);
+  padding: 1px var(--s1);
+  border-radius: var(--radius-control);
+  background: var(--state-flat-bg);
+  color: var(--muted);
+  font-size: var(--t-micro);
+  font-weight: 500;
+}
+
+.admin-tab--on .admin-tab__count {
+  background: var(--state-ok-bg);
+  color: var(--state-ok);
+}
+
+/* ————— футер ————— */
+
+/* Фраза про периметр схлопывается первой: в одной строке с меткой контура,
+   клавишами и ссылкой она единственная, которую можно дочитать позже. */
+.admin-foot__say {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-foot__keys {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--s6);
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--t-small);
+  cursor: pointer;
+}
+
+.admin-foot__keys:hover {
+  color: var(--green-dark);
+}
+
+/* ————— затемнение под всплывающим ————— */
+
+.veil {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: var(--s5);
+  background: rgba(8, 33, 29, 0.42);
+}
+
+/* Поиск не по центру, а ближе к верху: список найденного растёт вниз,
+   и окно, выровненное по центру, прыгало бы на каждой букве. */
+.veil--top {
+  align-items: start;
+  padding-top: 12vh;
+  background: rgba(8, 33, 29, 0.42);
+}
+
+/* ————— окно поиска ————— */
+
+.palette {
+  width: min(640px, 100%);
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: 0 28px 70px rgba(8, 33, 29, 0.3);
+  overflow: hidden;
+}
+
+.palette__head {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s4) var(--s5);
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.palette__field {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--t-lead);
+  color: var(--ink);
+  outline: none;
+}
+
+.palette__esc {
+  flex: none;
+  font-size: var(--t-micro);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.palette__body {
+  overflow-y: auto;
+  padding: var(--s2) 0;
+}
+
+.palette__group {
+  margin: var(--s2) var(--s5) var(--s1);
+  font-size: var(--t-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.palette__row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  padding: var(--s2) var(--s5);
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.palette__row--on {
+  background: var(--row-on);
+}
+
+/* Вид записи столбиком: восемь строк подряд читаются по левому краю,
+   и «клиент» под «клиент» видно раньше, чем прочитано название. */
+.palette__kind {
+  flex: none;
+  width: 74px;
+  font-family: var(--font-mono), monospace;
+  font-size: var(--t-micro);
+  text-transform: uppercase;
+  color: var(--state-ok);
+}
+
+/* Действие — не находка: оно есть всегда и от набранного не зависит. */
+.palette__kind--act {
+  color: var(--muted);
+}
+
+.palette__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--t-base);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.palette__note {
+  flex: none;
+  max-width: 40%;
+  font-size: var(--t-micro);
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.palette__none {
+  padding: var(--s4) var(--s5);
+  font-size: var(--t-small);
+  color: var(--muted);
+}
+
+.palette__foot {
+  margin: 0;
+  padding: var(--s3) var(--s5);
+  border-top: 1px solid var(--line);
+  background: var(--paper);
+  font-size: var(--t-micro);
+  color: var(--muted);
+}
+
+/* ————— окно поверх страницы ————— */
+
+.sheet {
+  width: min(620px, 100%);
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: var(--s6);
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: 0 28px 70px rgba(8, 33, 29, 0.3);
+}
+
+.sheet__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s4);
+  margin-bottom: var(--s5);
+}
+
+.sheet__head h2 {
+  margin: 0;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: var(--t-h2);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.sheet__close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.sheet__close:hover {
+  border-color: var(--green);
+  color: var(--green-dark);
+}
+
+.sheet__note {
+  margin: var(--s5) 0 0;
+  font-size: var(--t-small);
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.keys {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s2) var(--s6);
+}
+
+@media (max-width: 640px) {
+  .keys {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.keys__row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+
+.keys__key {
+  flex: none;
+  min-width: 74px;
+  padding: var(--s1) var(--s2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--paper);
+  font-size: var(--t-micro);
+  text-align: center;
+  color: var(--text-2);
+}
+
+.keys__what {
+  margin: 0;
+  font-size: var(--t-small);
+  color: var(--text-2);
+}
+
+/* ————— полоса-сообщение с отменой ————— */
+
+/* Внизу слева: справа стоит виджет разговоров, и две плавающие вещи
+   в одном углу перекрывают друг друга ровно тогда, когда нужны обе. */
+.toast-slot {
+  position: fixed;
+  left: var(--s8);
+  bottom: var(--s8);
+  z-index: 90;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  max-width: 520px;
+  padding: var(--s3) var(--s4);
+  border-radius: var(--radius-card);
+  background: var(--deep);
+  color: #fff;
+  box-shadow: 0 18px 40px -14px rgba(8, 33, 29, 0.6);
+  animation: toast-rise 180ms ease-out;
+}
+
+.toast__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green-on-dark);
+}
+
+.toast__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--t-small);
+}
+
+.toast__undo {
+  flex: none;
+  padding: var(--s1) var(--s3);
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: var(--radius-control);
+  background: none;
+  color: #fff;
+  font: inherit;
+  font-size: var(--t-small);
+  cursor: pointer;
+}
+
+.toast__undo:hover:not(:disabled) {
+  border-color: #fff;
+}
+
+.toast__undo:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.toast__close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--s6);
+  height: var(--s6);
+  border: 0;
+  background: none;
+  color: var(--on-dark-2);
+  cursor: pointer;
+}
+
+.toast__close:hover {
+  color: #fff;
+}
+
+@keyframes toast-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ————— виджет разговоров ————— */
+
+.widget {
+  position: fixed;
+  right: var(--s8);
+  bottom: var(--s8);
+  z-index: 85;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--s3);
+}
+
+.widget__button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s3);
+  height: 60px;
+  padding: 0 var(--s5) 0 var(--s2);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--deep);
+  color: #fff;
+  font: inherit;
+  font-size: var(--t-base);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 16px 36px -16px rgba(8, 33, 29, 0.6);
+}
+
+.widget__button:hover {
+  background: var(--deep-2);
+}
+
+.widget__disc {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--green-dark);
+}
+
+.widget__head .widget__disc {
+  width: 36px;
+  height: 36px;
+}
+
+.widget__pulse {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 0 rgba(20, 156, 60, 0.55);
+  animation: widget-pulse 2.4s infinite;
+}
+
+@keyframes widget-pulse {
+  to {
+    box-shadow: 0 0 0 8px rgba(20, 156, 60, 0);
+  }
+}
+
+.widget__label {
+  white-space: nowrap;
+}
+
+.widget__count {
+  flex: none;
+  display: grid;
+  place-items: center;
+  min-width: var(--s6);
+  height: var(--s6);
+  border-radius: 50%;
+  background: var(--state-stop);
+  color: #fff;
+  font-size: var(--t-micro);
+  font-weight: 600;
+}
+
+.widget__panel {
+  width: min(392px, calc(100vw - 80px));
+  max-height: min(560px, calc(100vh - 200px));
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: 0 16px 36px -16px rgba(8, 33, 29, 0.6);
+  overflow: hidden;
+}
+
+.widget__head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  background: var(--deep);
+  color: #fff;
+}
+
+.widget__headings {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.widget__title {
+  font-size: var(--t-small);
+  font-weight: 600;
+}
+
+.widget__sub {
+  font-size: var(--t-micro);
+  color: var(--on-dark-2);
+}
+
+.widget__more {
+  flex: none;
+  color: var(--green-on-dark);
+  font-size: var(--t-small);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.widget__more:hover {
+  color: #fff;
+}
+
+.widget__close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--s6);
+  height: var(--s6);
+  border: 0;
+  background: none;
+  color: var(--on-dark-2);
+  cursor: pointer;
+}
+
+.widget__close:hover {
+  color: #fff;
+}
+
+.widget__list {
+  overflow-y: auto;
+}
+
+.widget__row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  border-bottom: 1px solid var(--line-2);
+  color: inherit;
+  text-decoration: none;
+}
+
+.widget__row:hover {
+  background: var(--paper);
+}
+
+.widget__mark {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-top: var(--s1);
+  border-radius: 50%;
+  background: var(--state-wait);
+}
+
+.widget__mark--late {
+  background: var(--state-stop);
+}
+
+.widget__row-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+
+/* Две строки обращения, дальше многоточие: очередь читают глазами по
+   диагонали, и третья строка сдвигает следующую карточку за край панели. */
+.widget__first {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: var(--t-small);
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.widget__where {
+  font-size: var(--t-micro);
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.widget__waited {
+  flex: none;
+  font-size: var(--t-micro);
+  color: var(--muted);
+}
+
+/* Дольше пяти минут — это уже не «сейчас ответят». */
+.widget__waited--late {
+  color: var(--state-stop);
+  font-weight: 600;
+}
+
+.widget__none {
+  margin: 0;
+  padding: var(--s5) var(--s4);
+  font-size: var(--t-small);
+  color: var(--muted);
+}
+
+/* Плавающее по краям экрана прижимается к полям страницы, а не к нулю:
+   иначе виджет наезжает на последнюю колонку таблицы. */
+@media (max-width: 1320px) {
+  .toast-slot {
+    left: var(--s6);
+    bottom: var(--s6);
+  }
+
+  .widget {
+    right: var(--s6);
+    bottom: var(--s6);
+  }
+}
+
+@media (max-width: 640px) {
+  .toast-slot {
+    left: var(--s4);
+    right: var(--s4);
+    bottom: var(--s4);
+  }
+
+  .widget {
+    right: var(--s4);
+    bottom: var(--s4);
+  }
+
+  /* На узком экране от кнопки остаётся диск со счётчиком: подпись
+     «Разговоры» съедает половину строки, а знак узнаётся и без неё. */
+  .widget__label {
+    display: none;
+  }
+
+  .widget__button {
+    padding: 0 var(--s2);
+  }
+}
+
+/* Проявление и пульсация — украшение, а не сообщение: под запретом движения
+   выключаются целиком, ничего не теряя. */
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+
+  .widget__pulse {
+    animation: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   СПИСКИ: ПОИСК, ФИЛЬТРЫ, ВЫДЕЛЕНИЕ, МАССОВЫЕ ДЕЙСТВИЯ
+
+   Общая механика заявок, продукции, новостей и документов. Заведена под
+   заявки — там она нужнее всего, — но заводилась сразу общей: четыре
+   реализации выделения означают четыре разных ответа на SHIFT+КЛИК.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ————— поиск в шапке экрана ————— */
+
+/* Отличается от поиска в шапке портала тем, что здесь печатают прямо в поле:
+   искать надо по этому списку, и окно поверх страницы закрыло бы его собой. */
+.find {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  flex: 0 1 300px;
+  min-width: 44px;
+  height: 40px;
+  padding: 0 var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--paper);
+  color: var(--muted);
+}
+
+.find:focus-within {
+  border-color: var(--green);
+  outline: 2px solid rgba(20, 156, 60, 0.18);
+  outline-offset: -1px;
+}
+
+.find input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--t-small);
+  color: var(--ink);
+  outline: none;
+}
+
+/* ————— сохранённые фильтры ————— */
+
+.chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin-bottom: var(--s4);
+}
+
+.chips__label {
+  font-size: var(--t-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-right: var(--s1);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--line-3);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.chip__pick {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: var(--s7);
+  padding: 0 var(--s3);
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: var(--t-small);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.chip:hover {
+  border-color: var(--green);
+}
+
+/* Текущий фильтр залит, а не подчёркнут: чипы стоят в ряд без общей линии,
+   и подчёркивание у одного из восьми читается как случайность. */
+.chip--on {
+  border-color: var(--green-dark);
+  background: var(--green-dark);
+}
+
+.chip--on .chip__pick {
+  color: #fff;
+  font-weight: 600;
+}
+
+.chip__count {
+  font-size: var(--t-micro);
+  color: var(--muted);
+}
+
+.chip--on .chip__count {
+  color: var(--on-dark-lead);
+}
+
+.chip__forget {
+  display: grid;
+  place-items: center;
+  width: var(--s6);
+  border: 0;
+  border-left: 1px solid var(--line-3);
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--t-small);
+  cursor: pointer;
+}
+
+.chip__forget:hover {
+  background: var(--state-stop-bg);
+  color: var(--state-stop);
+}
+
+.chips__add {
+  display: grid;
+  place-items: center;
+  width: var(--s7);
+  height: var(--s7);
+  border: 1px dashed var(--line-3);
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--t-base);
+  cursor: pointer;
+}
+
+.chips__add:hover:not(:disabled) {
+  border-color: var(--green);
+  color: var(--green-dark);
+}
+
+.chips__add:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.chips__new {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.chips__new input {
+  height: var(--s7);
+  padding: 0 var(--s2);
+  border: 1px solid var(--line-3);
+  border-radius: var(--radius-control);
+  font: inherit;
+  font-size: var(--t-small);
+}
+
+/* ————— выбор колонок ————— */
+
+.cols {
+  position: relative;
+  display: inline-flex;
+}
+
+.cols__panel {
+  position: absolute;
+  top: calc(100% + var(--s2));
+  right: 0;
+  z-index: 60;
+  width: 236px;
+  padding: var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: 0 16px 36px -14px rgba(8, 33, 29, 0.35);
+}
+
+.cols__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--s2);
+}
+
+.cols__title {
+  font-size: var(--t-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.cols__close {
+  display: grid;
+  place-items: center;
+  width: var(--s6);
+  height: var(--s6);
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.cols__row {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s1) 0;
+  font-size: var(--t-small);
+  cursor: pointer;
+}
+
+.cols__note {
+  margin: var(--s2) 0 0;
+  font-size: var(--t-micro);
+  color: var(--muted);
+}
+
+/* ————— полоса массовых действий ————— */
+
+/* Появляется при первом выделении и стоит над таблицей, а не под ней:
+   выделяют сверху вниз, и действие должно быть там, куда смотрят. */
+.bulk {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s3);
+  margin-bottom: var(--s3);
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--state-ok-line);
+  border-radius: var(--radius-card);
+  background: var(--state-ok-bg);
+}
+
+.bulk__count {
+  font-size: var(--t-small);
+  font-weight: 600;
+  color: var(--state-ok);
+  white-space: nowrap;
+}
+
+.bulk__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  position: relative;
+}
+
+.bulk__clear {
+  margin-left: auto;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--t-small);
+  cursor: pointer;
+}
+
+.bulk__clear:hover {
+  color: var(--state-stop);
+}
+
+/* Выбор значения для массового действия. Поверх полосы, а не внутри неё:
+   встроенное поле раздвигает полосу и сдвигает таблицу под ней. */
+.bulk__pop {
+  position: absolute;
+  top: calc(100% + var(--s2));
+  left: 0;
+  z-index: 60;
+  min-width: 280px;
+  padding: var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: 0 16px 36px -14px rgba(8, 33, 29, 0.35);
+}
+
+/* ————— сегменты ————— */
+
+.segments {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 1px;
+  padding: 1px;
+  border: 1px solid var(--line-3);
+  border-radius: var(--radius-control);
+  background: var(--line-2);
+}
+
+.segments__one {
+  min-height: var(--s8);
+  padding: 0 var(--s3);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text-2);
+  font: inherit;
+  font-size: var(--t-small);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.segments__one:hover {
+  color: var(--green-dark);
+}
+
+.segments__one--on {
+  background: var(--green-dark);
+  color: #fff;
+  font-weight: 600;
+}
+
+.segments__one--on:hover {
+  color: #fff;
+}
+
+/* ————— строки таблицы со свойствами ————— */
+
+.admin-table--pick tbody tr {
+  cursor: pointer;
+}
+
+/* Выбранная строка держится подсветкой, а не рамкой: рамка сдвигает
+   соседние строки на пиксель, и список «дышит» при каждом выделении. */
+.admin-table tbody tr.row--on td {
+  background: var(--row-on);
+}
+
+/* Полоса слева — вторая примета состояния помимо цвета. Строка, которую
+   никто не ведёт, помечена ею же, чем и «требует действия» везде: одно
+   значение — один знак. */
+.admin-table tbody tr.row--wait td:first-child {
+  box-shadow: inset 3px 0 0 var(--stripe-wait);
+}
+
+.admin-table tbody tr.row--cursor td {
+  box-shadow: inset 0 1px 0 var(--green), inset 0 -1px 0 var(--green);
+}
+
+.admin-table tbody tr.row--cursor td:first-child {
+  box-shadow: inset 0 1px 0 var(--green), inset 0 -1px 0 var(--green),
+    inset 1px 0 0 var(--green);
+}
+
+.admin-table tbody tr.row--cursor.row--wait td:first-child {
+  box-shadow: inset 0 1px 0 var(--green), inset 0 -1px 0 var(--green),
+    inset 3px 0 0 var(--stripe-wait);
+}
+
+.admin-table tbody tr.row--cursor td:last-child {
+  box-shadow: inset 0 1px 0 var(--green), inset 0 -1px 0 var(--green),
+    inset -1px 0 0 var(--green);
+}
+
+.row__name {
+  display: block;
+  font-weight: 600;
+}
+
+.row__under,
+.row__line {
+  display: block;
+  font-size: var(--t-small);
+  color: var(--muted);
+}
+
+/* «Не назначен» курсивом и цветом ожидания: это не пустое значение,
+   а состояние — заявка не потеряна, но и не взята. */
+.nobody {
+  font-style: italic;
+  color: var(--state-wait);
+}
+
+.row__go {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--t-micro);
+  font-family: var(--font-mono), monospace;
+  white-space: nowrap;
+  cursor: pointer;
+  /* Цель нажатия не меньше 24×24 (WCAG 2.5.8): текст сам по себе даёт 14. */
+  min-height: var(--s6);
+  padding: 0 var(--s1);
+}
+
+.row__go:hover {
+  color: var(--green-dark);
+}
+
+/* ————— под таблицей ————— */
+
+.under {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s4);
+  margin-top: var(--s3);
+}
+
+.under__count {
+  font-size: var(--t-small);
+  color: var(--text-2);
+}
+
+.under__keys {
+  font-size: var(--t-micro);
+  color: var(--muted);
+}
+
+.under__pager {
+  margin-left: auto;
+  display: inline-flex;
+  gap: var(--s2);
+}
+
+/* ————— панель справа ————— */
+
+.veil--right {
+  place-items: stretch;
+  justify-content: end;
+  padding: 0;
+  background: rgba(8, 33, 29, 0.22);
+}
+
+.sheet-right {
+  width: min(520px, 100%);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  box-shadow: -24px 0 60px rgba(8, 33, 29, 0.22);
+  outline: none;
+}
+
+.sheet-right__head {
+  position: relative;
+  flex: none;
+  padding: var(--s5) var(--s8) var(--s4) var(--s5);
+  border-bottom: 1px solid var(--line);
+}
+
+.sheet-right__eyebrow {
+  font-size: var(--t-micro);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.sheet-right__title {
+  margin: var(--s2) 0 0;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: var(--t-h2);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.sheet-right__sub {
+  margin: var(--s1) 0 0;
+  font-size: var(--t-small);
+  color: var(--muted);
+}
+
+.sheet-right__close {
+  position: absolute;
+  top: var(--s4);
+  right: var(--s4);
+  display: grid;
+  place-items: center;
+  width: var(--s7);
+  height: var(--s7);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.sheet-right__close:hover {
+  border-color: var(--green);
+  color: var(--green-dark);
+}
+
+.sheet-right__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--s5);
+}
+
+/* ————— разбор заявки ————— */
+
+/* Текст обращения — на подложке и без обрезки. Это единственное, что
+   человек написал сам, и читать его надо целиком, а не в три строки
+   с многоточием. */
+.triage__message {
+  margin: 0 0 var(--s4);
+  padding: var(--s3);
+  border-radius: var(--radius-card);
+  background: var(--paper);
+  font-size: var(--t-small);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.pairs {
+  margin: 0 0 var(--s5);
+}
+
+.pairs__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s1) 0;
+  border-bottom: 1px solid var(--line-2);
+}
+
+.pairs__row dt {
+  font-size: var(--t-small);
+  color: var(--muted);
+}
+
+.pairs__row dd {
+  margin: 0;
+  font-size: var(--t-small);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.triage__field {
+  margin-bottom: var(--s4);
+}
+
+.triage__label {
+  display: block;
+  margin-bottom: var(--s2);
+  font-size: var(--t-small);
+  font-weight: 600;
+}
+
+.triage__note {
+  margin: 0 0 var(--s2);
+  font-size: var(--t-micro);
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.triage__sum {
+  margin: 0 0 var(--s4);
+  font-size: var(--t-lead);
+  font-weight: 600;
+}
+
+.triage__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin: var(--s5) 0 var(--s4);
+}
+
+@media (max-width: 640px) {
+  .sheet-right {
+    width: 100%;
+  }
+
+  .under__pager {
+    margin-left: 0;
+  }
+}
+
+/* ————— список с боковой панелью ————— */
+
+/* Ширина панели фиксирована, список тянется: в панели пары «ключ — значение»
+   и суммы, которым лишняя ширина не даёт ничего, а таблице даёт колонку.
+
+   minmax(0, 1fr), а не 1fr: без нуля в минимуме колонка не сжимается ниже
+   своего содержимого, и широкая таблица выдавливает панель за край экрана. */
+.with-side {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 356px;
+  gap: var(--s4);
+  align-items: start;
+}
+
+@media (max-width: 1320px) {
+  .with-side {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Липкая — иначе при прокрутке длинного списка карточка уезжает вверх,
+   и выбранная строка оказывается напротив пустоты. Отступ считается
+   от высоты навигации: она меняется на трёх порогах, и число здесь
+   разъехалось бы с вёрсткой ровно там, где полоса переносится. */
+.side {
+  position: sticky;
+  top: calc(var(--chrome, 78px) + var(--s4));
+}
+
+@media (max-width: 1320px) {
+  .side {
+    position: static;
+  }
+}
+
+.side__card {
+  padding: var(--s4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.side__head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+
+.side__eyebrow {
+  font-size: var(--t-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.side__close {
+  display: grid;
+  place-items: center;
+  width: var(--s6);
+  height: var(--s6);
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--t-base);
+  cursor: pointer;
+}
+
+.side__close:hover {
+  color: var(--state-stop);
+}
+
+.side__title {
+  margin: var(--s2) 0 var(--s4);
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: var(--t-lead);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.side__label {
+  margin: var(--s4) 0 var(--s2);
+  font-size: var(--t-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.side__idle {
+  margin: 0;
+  padding: var(--s4);
+  font-size: var(--t-small);
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.side__deal {
+  display: block;
+  padding: var(--s2) 0;
+  border-bottom: 1px solid var(--line-2);
+  color: inherit;
+  text-decoration: none;
+}
+
+.side__deal:hover {
+  background: var(--paper);
+}
+
+.side__deal-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+
+.side__deal-name {
+  font-size: var(--t-small);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.side__deal-sum {
+  flex: none;
+  font-size: var(--t-small);
+  font-weight: 600;
+}
+
+.side__deal-under {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-top: var(--s1);
+}
+
+.side__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin-top: var(--s4);
+}
+
+/* ————— доска сделок ————— */
+
+/* Колонки задаются потоком, а не числом: у воронок разное число стадий —
+   пять в продажах, четыре в сервисе, — и `repeat(5, …)` оставлял бы
+   в сервисной пустую пятую колонку. */
+.board {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(210px, 1fr);
+  gap: var(--s3);
+  margin-bottom: var(--s4);
+  overflow-x: auto;
+  /* Уезжает вбок сама, не таща за собой страницу. */
+  padding-bottom: var(--s2);
+}
+
+.board__col {
+  display: flex;
+  flex-direction: column;
+  min-height: 420px;
+  padding: var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+/* Колонка под курсором с карточкой. Обводка внутренней тенью, а не рамкой:
+   рамка меняет размер колонки, и соседние прыгают на пиксель при каждом
+   проносе карточки мимо. */
+.board__col--over {
+  background: var(--row-on);
+  box-shadow: inset 0 0 0 2px var(--green);
+}
+
+.board__head {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.board__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  background: var(--line-3);
+}
+
+.board__dot--first {
+  background: var(--line-3);
+}
+
+.board__dot--work {
+  background: #7fb894;
+}
+
+.board__dot--won {
+  background: var(--green);
+}
+
+.board__dot--stop {
+  background: var(--state-stop);
+}
+
+.board__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--t-small);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.board__count {
+  flex: none;
+  font-size: var(--t-small);
+  color: var(--muted);
+}
+
+.board__sum {
+  margin: var(--s1) 0 var(--s3);
+  font-size: var(--t-micro);
+  color: var(--muted);
+  min-height: var(--s4);
+}
+
+.board__cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.board__idle {
+  margin: 0;
+  font-size: var(--t-micro);
+  color: var(--muted);
+}
+
+/* ————— карточка сделки на доске ————— */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  padding: var(--s2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+  cursor: grab;
+}
+
+.card:hover {
+  border-color: var(--line-3);
+  box-shadow: 0 4px 12px rgba(8, 33, 29, 0.07);
+}
+
+.card:active {
+  cursor: grabbing;
+}
+
+.card__title {
+  font-size: var(--t-small);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.card__client {
+  font-size: var(--t-micro);
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  margin-top: var(--s1);
+}
+
+.card__sum {
+  font-size: var(--t-small);
+  font-weight: 600;
+}
+
+.card__idle {
+  font-size: var(--t-micro);
+  color: var(--muted);
+}
+
+/* Две недели без движения — это уже не «идёт работа». Красным, потому что
+   на доске такую карточку надо находить не читая. */
+.card__idle--long {
+  color: var(--state-stop);
+  font-weight: 600;
+}
+
+/* ————— карточка сделки ————— */
+
+.deal__head {
+  min-width: 0;
+}
+
+/* Клиент, сумма и ответственный одной строкой под заголовком: это три
+   ответа на вопрос «та ли это сделка», и разносить их по карточкам значит
+   заставлять искать взглядом. */
+.deal__sub {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s3);
+  margin: var(--s2) 0 0;
+  font-size: var(--t-small);
+}
+
+.deal__sum {
+  font-size: var(--t-base);
+  font-weight: 600;
+}
+
+.deal {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: var(--s4);
+  align-items: start;
+}
+
+@media (max-width: 1320px) {
+  .deal {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.deal__left,
+.deal__right {
+  min-width: 0;
+}
+
+/* ————— полоса стадий ————— */
+
+/* Блоки равной доли: полоса читается как путь, а не как список кнопок
+   разной длины. min-width держит название от переноса на двух словах. */
+.stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1);
+  margin-bottom: var(--s3);
+}
+
+.stages__one {
+  flex: 1 1 0;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.stages__one:hover:not(:disabled) {
+  border-color: var(--green);
+  color: var(--green-dark);
+}
+
+/* Текущая — заливкой: её положение в ряду и есть ответ на «где мы». */
+.stages__one--now {
+  border-color: var(--green-dark);
+  background: var(--green-dark);
+  color: #fff;
+  cursor: default;
+}
+
+.stages__one--stop {
+  border-color: var(--state-stop);
+  background: var(--state-stop);
+  color: #fff;
+  cursor: default;
+}
+
+.stages__one--past {
+  border-color: var(--state-ok-line);
+  background: var(--state-ok-bg);
+  color: var(--state-ok);
+}
+
+.stages__one--next {
+  color: var(--muted);
+}
+
+.stages__name {
+  font-size: var(--t-small);
+  font-weight: 600;
+}
+
+.stages__note {
+  font-size: var(--t-micro);
+  /* Строка есть всегда, даже пустая: иначе блоки в ряду разной высоты. */
+  min-height: var(--s4);
+  opacity: 0.85;
+}
+
+/* ————— вложения и КП в карточке ————— */
+
+.attach {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s2) 0;
+  border-bottom: 1px solid var(--line-2);
+}
+
+.attach__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+
+.attach__name {
+  font-size: var(--t-small);
+  font-weight: 600;
+}
+
+.attach__meta {
+  font-size: var(--t-micro);
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quote-line {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s2) 0;
+  border-bottom: 1px solid var(--line-2);
+  color: inherit;
+  text-decoration: none;
+}
+
+.quote-line:hover {
+  background: var(--paper);
+}
+
+.quote-line__no {
+  font-size: var(--t-small);
+  font-weight: 600;
+}
+
+.quote-line__till {
+  font-size: var(--t-micro);
+  color: var(--muted);
+}
+
+.quote-line__sum {
+  margin-left: auto;
+  font-size: var(--t-small);
+  font-weight: 600;
+}
+
+/* ————— строка списка: полоса проблемы и названное действие ————— */
+
+.admin-table tbody tr.row--stop td:first-child {
+  box-shadow: inset 3px 0 0 var(--stripe-stop);
+}
+
+/* Числа выравниваются по правому краю: «2 650 000» и «265 000» должны
+   отличаться длиной, а не вниманием читающего. */
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.row__do {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--s6);
+  color: var(--muted);
+  font-size: var(--t-small);
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+/* Действие, которое двигает работу, набрано зелёным и весом: в списке из
+   тридцати строк видно, где ждут человека, а где ждут клиента. */
+.row__do--on {
+  color: var(--green-dark);
+  font-weight: 600;
+}
+
+.row__do:hover {
+  text-decoration: underline;
+}
+
+/* ————— составление КП ————— */
+
+.quote {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 336px;
+  gap: var(--s4);
+  align-items: start;
+  margin-bottom: var(--s4);
+}
+
+@media (max-width: 1320px) {
+  .quote {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.quote__main,
+.quote__side {
+  min-width: 0;
+}
+
+.quote__side {
+  padding: var(--s4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.quote__items input {
+  width: 100%;
+}
+
+/* Ширины полей заданы, а не отданы содержимому: количество и цена стоят
+   столбиком, и колонка, которая дышит от числа знаков, ломает выравнивание
+   по разрядам. */
+.quote__qty {
+  width: 64px;
+}
+
+.quote__price {
+  width: 110px;
+}
+
+.quote__slug {
+  margin-top: var(--s1);
+  font-size: var(--t-micro);
+}
+
+.quote__sum {
+  font-weight: 600;
+}
+
+.quote__drop {
+  display: grid;
+  place-items: center;
+  width: var(--s6);
+  height: var(--s6);
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.quote__drop:hover {
+  color: var(--state-stop);
+}
+
+/* Итог на подложке: это единственное число экрана, которое читают целиком,
+   и оно должно находиться взглядом, а не поиском по столбцу. */
+.quote__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  margin-top: var(--s4);
+  padding: var(--s3) var(--s4);
+  border-radius: var(--radius-card);
+  background: var(--paper);
+}
+
+.quote__total-name {
+  font-size: var(--t-base);
+  font-weight: 600;
+}
+
+.quote__total-sum {
+  font-size: var(--t-h2);
+  font-weight: 600;
+}
+
+/* ————— карточки-предупреждения в боковой колонке ————— */
+
+.warn {
+  margin-top: var(--s4);
+  padding: var(--s3);
+  border: 1px solid var(--state-wait-line);
+  border-radius: var(--radius-card);
+  background: var(--state-wait-bg);
+}
+
+.warn__title {
+  margin: 0 0 var(--s1);
+  font-size: var(--t-small);
+  font-weight: 600;
+  color: var(--state-wait);
+}
+
+.warn__body {
+  margin: 0;
+  font-size: var(--t-micro);
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+.flat {
+  margin-top: var(--s3);
+  padding: var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--state-flat-bg);
+}
+
+.flat__title {
+  margin: 0 0 var(--s1);
+  font-size: var(--t-small);
+  font-weight: 600;
+}
+
+.flat__body {
+  margin: 0;
+  font-size: var(--t-micro);
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+/* ————— разговоры в три колонки ————— */
+
+/* Очередь — кому отвечать, переписка — что говорили, «что известно» — кто это.
+   Средняя тянется, крайние держат ширину: в очереди карточки, в правой
+   колонке пары «ключ — значение», и лишняя ширина им не даёт ничего. */
+.chats3 {
+  display: grid;
+  grid-template-columns: minmax(260px, 322px) minmax(0, 1fr) minmax(240px, 300px);
+  gap: var(--s4);
+  align-items: start;
+}
+
+@media (max-width: 1320px) {
+  .chats3 {
+    grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  }
+
+  /* Третья колонка уходит под переписку, а не пропадает: то, что известно
+     о посетителе, нужно ровно тогда, когда ему отвечают. */
+  .chats3__known {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 900px) {
+  .chats3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.chats3__queue,
+.chats3__thread,
+.chats3__known {
+  min-width: 0;
+}
+
+.chats3__queue {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  max-height: calc(100vh - var(--chrome, 78px) - 160px);
+  overflow-y: auto;
+}
+
+.chats3__thread {
+  display: flex;
+  flex-direction: column;
+  min-height: 420px;
+  padding: var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+/* ————— плашка дежурства ————— */
+
+.duty {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s3);
+  margin: 0;
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--state-wait-line);
+  border-radius: var(--radius-card);
+  background: var(--state-wait-bg);
+}
+
+.duty__label {
+  font-size: var(--t-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--state-wait);
+}
+
+.duty__wait {
+  font-size: var(--t-small);
+  font-weight: 600;
+  color: var(--state-wait);
+}
+
+.duty__why {
+  font-size: var(--t-micro);
+  color: var(--text-2);
+}
+
+/* ————— карточка разговора в очереди ————— */
+
+.talk {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  width: 100%;
+  padding: var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.talk:hover {
+  border-color: var(--line-3);
+}
+
+/* Выбранный — заливкой и полосой слева: в столбце из двадцати одинаковых
+   карточек рамка не читается, а полоса читается. */
+.talk--on {
+  background: var(--row-on);
+  box-shadow: inset 3px 0 0 var(--stripe-on);
+}
+
+.talk__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+
+.talk__waited {
+  font-size: var(--t-micro);
+  color: var(--muted);
+}
+
+/* Дольше пяти минут — это уже не «сейчас ответят». */
+.talk__waited--late {
+  color: var(--state-stop);
+  font-weight: 600;
+}
+
+/* Две строки обращения: очередь читают по диагонали, и третья строка
+   сдвигает следующую карточку за край колонки. */
+.talk__first {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: var(--t-small);
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.talk__where {
+  font-size: var(--t-micro);
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ————— быстрые заготовки ответа ————— */
+
+.quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin-bottom: var(--s2);
+}
+
+/* Заготовка дописывается в поле, а не отправляется: обещание, отправляемое
+   одним щелчком, отправляется не читая. */
+.quick__one {
+  max-width: 100%;
+  padding: var(--s1) var(--s2);
+  border: 1px solid var(--line-3);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text-2);
+  font: inherit;
+  font-size: var(--t-micro);
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quick__one:hover {
+  border-color: var(--green);
+  color: var(--green-dark);
+}
+
+.thread__go {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin-top: var(--s2);
+}
+
+.thread__hint {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--t-micro);
+  color: var(--muted);
 }

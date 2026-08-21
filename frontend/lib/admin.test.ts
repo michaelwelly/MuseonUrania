@@ -148,7 +148,7 @@ describe("клиент админского API", () => {
     const fetchMock = vi.fn().mockResolvedValue(json({ items: [], page: 0, size: 50, total: 0, pages: 0 }));
     vi.stubGlobal("fetch", fetchMock);
 
-    await leads("in_progress", 2, 25);
+    await leads({ status: "in_progress" }, 2, 25);
 
     const url = new URL(fetchMock.mock.calls[0][0] as string);
     expect(url.pathname).toBe("/api/admin/v1/leads");
@@ -162,7 +162,7 @@ describe("клиент админского API", () => {
     const fetchMock = vi.fn().mockResolvedValue(json({ items: [], page: 0, size: 50, total: 0, pages: 0 }));
     vi.stubGlobal("fetch", fetchMock);
 
-    await leads("", 0);
+    await leads({}, 0);
 
     expect(new URL(fetchMock.mock.calls[0][0] as string).searchParams.has("status")).toBe(false);
   });

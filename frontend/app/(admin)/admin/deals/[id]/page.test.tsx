@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Suspense } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -56,6 +56,13 @@ vi.mock("@/lib/admin", () => ({
 
 import DealCard from "./page";
 
+/** Кнопка стадии в полосе. В шапке есть своя «Отказ» — она ведёт туда же,
+ *  но проверять надо то, по чему щёлкают в полосе. */
+function стадия(name: string) {
+  const полоса = screen.getByRole("group", { name: "Стадии сделки" });
+  return within(полоса).getByRole("button", { name: new RegExp(name) });
+}
+
 function deal(overrides: Record<string, unknown> = {}) {
   return {
     id: "deal-1",
@@ -110,22 +117,24 @@ beforeEach(() => {
 });
 
 describe("карточка сделки", () => {
+  // Стадию теперь переводит полоса, а не выпадающий список: вопрос был
+  // «где мы сейчас и что дальше», а список отвечал «какие бывают стадии».
+  // Проверяемое правило от этого не изменилось — в отказ только с причиной.
   it("не даёт перевести в проигранную стадию без причины", async () => {
     const user = userEvent.setup();
     await open();
 
     await screen.findByDisplayValue("Поставка двух систем VEDAL R2");
-    await user.selectOptions(screen.getByLabelText("Стадия"), "lost");
+    await user.click(стадия("проиграна"));
 
-    const move = screen.getByRole("button", { name: "Перевести" });
-    expect(move).toBeDisabled();
+    // Портал не позвали: причину спрашивают до запроса, иначе человек
+    // нажимает, получает отказ и не понимает, почему сделка на месте.
+    expect(mocks.moveDeal).not.toHaveBeenCalled();
+    const окно = await screen.findByRole("dialog", { name: /проиграна/ });
 
-    // Подсказка поля лежит внутри <label>, и доступное имя поля — это подпись
-    // вместе с ней. Отсюда поиск по части имени, а не по точному совпадению.
-    await user.type(screen.getByLabelText(/Причина проигрыша/), "Выбрали другого поставщика");
-    expect(move).toBeEnabled();
+    await user.type(screen.getByLabelText("Причина"), "Выбрали другого поставщика");
+    await user.click(within(окно).getByRole("button", { name: "Перевести в отказ" }));
 
-    await user.click(move);
     await waitFor(() => expect(mocks.moveDeal).toHaveBeenCalled());
     expect(mocks.moveDeal.mock.calls[0]).toEqual([
       "deal-1",
@@ -139,11 +148,11 @@ describe("карточка сделки", () => {
     await open();
 
     await screen.findByDisplayValue("Поставка двух систем VEDAL R2");
-    await user.selectOptions(screen.getByLabelText("Стадия"), "won");
-    await user.click(screen.getByRole("button", { name: "Перевести" }));
+    await user.click(стадия("выиграна"));
 
     await waitFor(() => expect(mocks.moveDeal).toHaveBeenCalled());
     expect(mocks.moveDeal.mock.calls[0]).toEqual(["deal-1", "won", null]);
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   // Исходы у трёх воронок зовутся по-разному, а четвёртая — правка домена,
@@ -162,19 +171,20 @@ describe("карточка сделки", () => {
       }),
     );
     await open();
-
     await screen.findByDisplayValue("Поставка двух систем VEDAL R2");
-    const move = screen.getByRole("button", { name: "Перевести" });
 
-    await user.selectOptions(screen.getByLabelText("Стадия"), "cancelled");
-    expect(screen.getByLabelText(/Причина проигрыша/)).toBeInTheDocument();
-    expect(move).toBeDisabled();
+    // Незнакомое словарю значение показывается как есть — и всё равно
+    // опознаётся как отказ, потому что так сказала карточка.
+    await user.click(стадия("cancelled"));
+    expect(await screen.findByRole("dialog", { name: /cancelled/ })).toBeTruthy();
+    expect(mocks.moveDeal).not.toHaveBeenCalled();
 
-    await user.selectOptions(screen.getByLabelText("Стадия"), "awarded");
-    expect(screen.queryByLabelText(/Причина проигрыша/)).not.toBeInTheDocument();
-    expect(move).toBeEnabled();
+    await user.click(screen.getByRole("button", { name: "Отмена" }));
+    await user.click(стадия("awarded"));
+
+    await waitFor(() => expect(mocks.moveDeal).toHaveBeenCalled());
+    expect(mocks.moveDeal.mock.calls[0]).toEqual(["deal-1", "awarded", null]);
   });
-
   it("второе сохранение подряд уходит с версией из ответа портала", async () => {
     const user = userEvent.setup();
     await open();
