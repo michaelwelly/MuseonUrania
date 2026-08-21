@@ -12,10 +12,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   pathname: "/admin/",
   session: vi.fn(),
+  push: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
   usePathname: () => mocks.pathname,
+  // Оболочка слушает клавиши и уводит по ним в разделы; сам переход
+  // проверяется в shell.test.tsx, здесь нужен только рабочий крючок.
+  useRouter: () => ({ push: mocks.push }),
 }));
 
 vi.mock("@/lib/auth", () => ({
@@ -29,11 +33,30 @@ vi.mock("@/lib/auth", () => ({
   onSessionLost: () => () => {},
 }));
 
-vi.mock("@/lib/admin", () => ({
-  adminConfigured: true,
-  session: mocks.session,
-  AdminError: class AdminError extends Error {},
-}));
+// Счётчики вкладок ходят в восемь дверей сразу. Здесь они не проверяются
+// (это shell.test.tsx), но подставить их надо: без них оболочка зовёт
+// undefined и падает раньше первой проверки навигации.
+vi.mock("@/lib/admin", () => {
+  // Объявления внутри фабрики, а не над ней: vi.mock уезжает наверх файла,
+  // и внешняя переменная к этому моменту ещё не создана.
+  const пусто = () => Promise.resolve([]);
+  const страница = () => Promise.resolve({ items: [], page: 0, size: 1, total: 0, pages: 0 });
+
+  return {
+    adminConfigured: true,
+    session: mocks.session,
+    AdminError: class AdminError extends Error {},
+    products: пусто,
+    news: пусто,
+    documents: пусто,
+    chatQueue: страница,
+    chatThread: () => Promise.resolve({ id: null, status: "closed", messages: [] }),
+    leads: страница,
+    clients: страница,
+    deals: страница,
+    quotes: страница,
+  };
+});
 
 import AdminLayout from "./layout";
 

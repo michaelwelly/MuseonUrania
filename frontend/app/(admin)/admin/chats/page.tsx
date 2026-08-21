@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   chatQueue,
   chatThread,
@@ -32,7 +33,25 @@ const BADGE: Record<string, string> = {
   closed: "badge--off",
 };
 
+// Разговор адресуем: `/admin/chats/?id=…` открывает ленту сразу.
+//
+// Понадобилось виджету в оболочке — его карточка должна вести в этот же
+// раздел на этом же разговоре, — но польза шире: разговор стал вещью,
+// на которую можно дать ссылку в переписке между сотрудниками. До этого
+// «посмотри вон тот» означало «открой раздел и ищи глазами».
+//
+// Suspense обязателен: без границы useSearchParams уводит страницу
+// в отрисовку на клиенте целиком, и сборка об этом предупреждает.
 export default function ChatsPage() {
+  return (
+    <Suspense fallback={<p className="muted">Загружаем…</p>}>
+      <Chats />
+    </Suspense>
+  );
+}
+
+function Chats() {
+  const params = useSearchParams();
   // По умолчанию — ВСЕ разговоры, свежие сверху, а не очередь ожидающих.
   //
   // Сначала было наоборот, и это была ошибка замысла: очередь показывает
@@ -44,7 +63,10 @@ export default function ChatsPage() {
   // по-прежнему отдельный вопрос. Но первым ответом на вопрос «что сейчас
   // происходит» должно быть «вот что происходит».
   const [tab, setTab] = useState<"all" | "queue">("all");
-  const [open, setOpen] = useState<string | null>(null);
+  // Разговор из адреса — только начальное значение: дальше выбор ведёт
+  // состояние. Иначе кнопка «назад» в браузере возвращала бы не на прошлый
+  // разговор, а на прошлый адрес, и они разъехались бы на первом же щелчке.
+  const [open, setOpen] = useState<string | null>(() => params.get("id"));
   // Меняется на каждое событие из потока — по нему перезагружаются и список,
   // и лента. Отдельный счётчик, а не время: время сравнивается неточно, если
   // два события пришли в одну миллисекунду.
