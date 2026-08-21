@@ -26,6 +26,21 @@ public class DeterministicSearch implements LlmEngine {
     // внутри «запросу», и ассистент отвечает каталогом на вопрос не по теме.
     private static final int MIN_TOKEN = 4;
 
+    // Обозначение модели короче четырёх знаков, и порог его съедал целиком.
+    // Замерено на живом стенде: «R1», «R2», «VEDAL R1», «Т-100», «N15» —
+    // ни одно изделие не находилось по собственному названию, ассистент
+    // отвечал «нет согласованных материалов» и звал человека. То есть хуже
+    // всего он отвечал ровно на то, что посетитель печатает чаще всего.
+    //
+    // Разделять по длине нельзя, а по составу можно: короткие слова, под
+    // которые подходит слишком много, — это служебные «для», «при», «про»,
+    // и все они из одних букв. Короткое слово с цифрой — обозначение:
+    // «r1», «n15», «100».
+    //
+    // Два знака, а не один: одинокая «2» из «нужно 2 инкубатора» совпала бы
+    // с «2000» в названии A-2000 — сравнение идёт по началу слова.
+    private static final int MIN_MODEL_TOKEN = 2;
+
     // Марка стоит в названии каждого изделия и в подписи каждого документа,
     // поэтому совпадением она не является: по слову «vedal» находится вообще
     // всё. Замерено на живом стенде — вопрос «What is VEDAL A-2000? price?»
@@ -150,10 +165,23 @@ public class DeterministicSearch implements LlmEngine {
 
     private static List<String> tokens(String question) {
         return words(question).stream()
-                .filter(t -> t.length() >= MIN_TOKEN)
+                .filter(DeterministicSearch::meaningful)
                 .filter(t -> !BRAND.contains(t))
                 .distinct()
                 .toList();
+    }
+
+    /** Слово, по которому есть смысл искать: обычное — от четырёх знаков, обозначение — от двух. */
+    private static boolean meaningful(String token) {
+        if (token.length() >= MIN_TOKEN) return true;
+        return token.length() >= MIN_MODEL_TOKEN && hasDigit(token);
+    }
+
+    private static boolean hasDigit(String token) {
+        for (var i = 0; i < token.length(); i++) {
+            if (Character.isDigit(token.charAt(i))) return true;
+        }
+        return false;
     }
 
     /** Поле, совпадение в котором весит как название. */

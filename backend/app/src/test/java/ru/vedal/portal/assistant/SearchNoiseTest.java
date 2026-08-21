@@ -66,6 +66,56 @@ class SearchNoiseTest extends PostgresTestBase {
                 .isEmpty();
     }
 
+    // ————— обозначение модели —————
+    //
+    // Замерено на живом стенде: «R1», «R2», «VEDAL R1», «Т-100», «N15» —
+    // ни одно изделие не находилось по собственному названию. Ассистент
+    // отвечал «нет согласованных материалов» и звал человека, то есть хуже
+    // всего отвечал ровно на то, что посетитель печатает чаще всего.
+    //
+    // Виноват был порог длины слова: обозначение короче четырёх знаков,
+    // а после разбиения по дефису от «Т-100» остаются «т» и «100».
+
+    @Test
+    void aProductIsFoundByItsOwnModelName() {
+        var r1 = engine.answer("R1", LlmEngine.Scope.PUBLIC).orElseThrow();
+        assertThat(r1.sources()).anyMatch(s -> s.title().contains("R1"));
+
+        var r2 = engine.answer("нужен R2", LlmEngine.Scope.PUBLIC).orElseThrow();
+        assertThat(r2.sources()).anyMatch(s -> s.title().contains("R2"));
+    }
+
+    @Test
+    void theModelNameSurvivesTheBrandBeingDropped() {
+        // «VEDAL R1»: марка выброшена как совпадение, и всё, что остаётся, —
+        // это «r1». Если и его съест порог, от вопроса не остаётся ничего.
+        var found = engine.answer("VEDAL R1", LlmEngine.Scope.PUBLIC).orElseThrow();
+        assertThat(found.sources()).anyMatch(s -> s.title().contains("R1"));
+    }
+
+    @Test
+    void aModelNameSplitByAHyphenIsStillFound() {
+        // «Т-100» распадается на «т» и «100». Первое — одна буква, второе —
+        // три знака: под прежним порогом не проходило ни то, ни другое.
+        //
+        // Тут же вторая ловушка: «Т» в названии этого изделия кириллическая,
+        // а посетитель наберёт латинскую. Обе формы обязаны находить, и находят
+        // они по цифрам — буква в совпадении не участвует вовсе.
+        assertThat(engine.answer("Т-100", LlmEngine.Scope.PUBLIC).orElseThrow().sources())
+                .anyMatch(s -> s.title().contains("100"));
+        assertThat(engine.answer("T-100", LlmEngine.Scope.PUBLIC).orElseThrow().sources())
+                .anyMatch(s -> s.title().contains("100"));
+    }
+
+    @Test
+    void aLoneDigitIsNotAModelName() {
+        // «нужно 2 инкубатора»: одинокая «2» совпала бы с «2000» в названии
+        // A-2000 — сравнение идёт по началу слова. Изделие в ответе появиться
+        // должно, но по слову «инкубатор», а не по количеству.
+        var found = engine.answer("нужно 2 штуки", LlmEngine.Scope.PUBLIC);
+        assertThat(found).as("Количество — не обозначение модели").isEmpty();
+    }
+
     // Правило проекта: ответ обязан нести ссылки. Утверждение без ссылки
     // проверить нечем, и порог не должен превратить ответ в текст без источников.
     @Test
