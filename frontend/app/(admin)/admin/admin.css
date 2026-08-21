@@ -3993,3 +3993,585 @@
   font-size: var(--t-micro);
   color: var(--muted);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   СОДЕРЖИМОЕ САЙТА: ПРОДУКЦИЯ, НОВОСТИ, ДОКУМЕНТЫ
+
+   Общее у трёх экранов — тумблер публикации и предпросмотр: и то, и другое
+   отвечает на один вопрос, «что увидит посетитель».
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ————— тумблер публикации ————— */
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  white-space: nowrap;
+}
+
+.toggle__box {
+  flex: none;
+  position: relative;
+  width: 32px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--line);
+  cursor: pointer;
+  transition: background 120ms ease-out;
+}
+
+.toggle__box--on {
+  background: var(--green-dark);
+}
+
+.toggle__box:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.toggle__dot {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 120ms ease-out;
+}
+
+.toggle__box--on .toggle__dot {
+  transform: translateX(14px);
+}
+
+/* Подпись словом обязательна и не декоративна: положение тумблера — это
+   одна примета, и притом чисто зрительная. На чёрно-белом экране, при слабом
+   зрении и в дереве доступности она не читается, а слово читается везде. */
+.toggle__word {
+  font-size: var(--t-micro);
+  color: var(--state-wait);
+}
+
+.toggle__word--on {
+  color: var(--state-ok);
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toggle__box,
+  .toggle__dot {
+    transition: none;
+  }
+}
+
+/* ————— строка изделия ————— */
+
+.thing {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.thing__body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.thumb {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--img-bg);
+}
+
+/* Отсутствие снимка — состояние, а не пустое место: изделие без фотографии
+   выглядит на сайте пустой рамкой, и здесь она такая же. */
+.thumb--none {
+  border-style: dashed;
+  border-color: var(--stripe-wait);
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--img-bg),
+    var(--img-bg) 4px,
+    var(--surface) 4px,
+    var(--surface) 8px
+  );
+}
+
+/* Значение, которое правится щелчком. Пунктирная рамка при наведении:
+   до наведения строка читается как текст, а не как поле. */
+.inline-edit {
+  display: inline-block;
+  max-width: 100%;
+  padding: 1px var(--s1);
+  border: 1px dashed transparent;
+  border-radius: var(--radius-control);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.inline-edit:hover {
+  border-color: var(--line-3);
+  background: var(--paper);
+}
+
+/* Панель выбора у левого края ячейки: у правого она уезжала бы за границу
+   таблицы на узких колонках. */
+.cols__panel--left {
+  position: absolute;
+  left: 0;
+  right: auto;
+  margin-top: var(--s1);
+}
+
+/* ————— тег материала ————— */
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px var(--s2);
+  border: 1px solid var(--line-3);
+  border-radius: var(--radius-control);
+  font-size: var(--t-micro);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+/* ————— публикация документа словами ————— */
+
+.pub {
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--s1);
+  font-size: var(--t-small);
+  font-weight: 600;
+}
+
+.pub--live {
+  color: var(--state-ok);
+}
+
+.pub--inside,
+.pub--draft {
+  color: var(--state-wait);
+}
+
+.pub--no {
+  color: var(--state-stop);
+}
+
+.pub__why {
+  max-width: 280px;
+  font-size: var(--t-micro);
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+/* Поле выбора файла спрятано, а видна подпись: браузерная кнопка «Обзор…»
+   переводится системой и в русской системе занимает половину колонки. */
+.file {
+  display: inline-block;
+  margin-top: var(--s1);
+  cursor: pointer;
+}
+
+.file input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.file__word {
+  font-size: var(--t-micro);
+  color: var(--green-dark);
+  text-decoration: underline;
+}
+
+.file input:focus-visible + .file__word,
+.file:hover .file__word {
+  color: var(--green-ink-hover);
+}
+
+/* ————— форма материала ————— */
+
+.editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: var(--s4);
+  align-items: start;
+}
+
+@media (max-width: 1320px) {
+  .editor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.editor__main {
+  min-width: 0;
+  padding: var(--s4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.editor__side {
+  min-width: 0;
+  padding: var(--s4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+/* Счётчик под полем, а не рядом с подписью: он меняется на каждую букву,
+   и рядом с подписью дёргал бы её. */
+.counter {
+  margin: calc(-1 * var(--s2)) 0 var(--s4);
+  font-size: var(--t-micro);
+  color: var(--muted);
+}
+
+.counter--over {
+  color: var(--state-stop);
+  font-weight: 600;
+}
+
+/* Адрес с приставкой: `/news/` — не часть значения, и правится не он. */
+.slug {
+  display: flex;
+  align-items: stretch;
+}
+
+.slug__prefix {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--s2);
+  border: 1px solid var(--line);
+  border-right: 0;
+  border-radius: var(--radius-control) 0 0 var(--radius-control);
+  background: var(--paper);
+  font-size: var(--t-small);
+  color: var(--muted);
+}
+
+.slug input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
+}
+
+/* ————— чек-лист готовности ————— */
+
+.check {
+  margin: 0 0 var(--s3);
+  padding: 0;
+  list-style: none;
+}
+
+.check__row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  padding: var(--s1) 0;
+}
+
+.check__mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--state-wait-line);
+  border-radius: var(--radius-control);
+  background: var(--state-wait-bg);
+  color: var(--state-wait);
+  font-size: var(--t-micro);
+  font-weight: 600;
+}
+
+.check__row--on .check__mark {
+  border-color: var(--state-ok);
+  background: var(--state-ok);
+  color: #fff;
+}
+
+.check__body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.check__what {
+  font-size: var(--t-small);
+}
+
+.check__why {
+  font-size: var(--t-micro);
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+/* ————— как это будет в ленте ————— */
+
+.feed {
+  margin-bottom: var(--s3);
+  padding: var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--paper);
+}
+
+.feed__meta {
+  margin: 0 0 var(--s1);
+  font-size: var(--t-micro);
+  color: var(--muted);
+}
+
+.feed__title {
+  margin: 0 0 var(--s1);
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: var(--t-lead);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.feed__lead {
+  margin: 0;
+  font-size: var(--t-small);
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+/* ————— конфликт версий ————— */
+
+.clash {
+  margin-bottom: var(--s4);
+  padding: var(--s3);
+  border: 1px solid var(--state-wait-line);
+  border-radius: var(--radius-card);
+  background: var(--state-wait-bg);
+}
+
+.clash__title {
+  margin: 0 0 var(--s1);
+  font-size: var(--t-base);
+  font-weight: 600;
+  color: var(--state-wait);
+}
+
+.clash__body {
+  margin: 0 0 var(--s3);
+  font-size: var(--t-small);
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+.diff {
+  width: 100%;
+  margin-top: var(--s3);
+  border-collapse: collapse;
+  font-size: var(--t-small);
+}
+
+.diff th,
+.diff td {
+  padding: var(--s1) var(--s2);
+  border: 1px solid var(--state-wait-line);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.diff thead th {
+  font-size: var(--t-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+/* ————— предпросмотр ————— */
+
+.veil--paper {
+  place-items: start center;
+  padding: var(--s5) var(--s4);
+  overflow-y: auto;
+  background: rgba(8, 33, 29, 0.55);
+}
+
+.look {
+  width: min(1120px, 100%);
+}
+
+.look__bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s3);
+  padding: var(--s2) var(--s3);
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  background: var(--deep);
+  color: #fff;
+}
+
+.look__what {
+  font-size: var(--t-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--on-dark-2);
+}
+
+.look__address {
+  padding: 1px var(--s2);
+  border: 1px solid var(--on-dark-line);
+  border-radius: var(--radius-control);
+  font-size: var(--t-micro);
+}
+
+.look__live {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  color: var(--green-on-dark);
+  font-size: var(--t-small);
+  text-decoration: none;
+}
+
+.look__live:hover {
+  color: #fff;
+}
+
+/* У черновика адреса на сайте ещё нет — и сказать это надо, а не оставить
+   ссылку, которая приведёт на 404. */
+.look__draft {
+  font-size: var(--t-micro);
+  color: var(--on-dark-2);
+}
+
+.look__close {
+  margin-left: auto;
+  padding: var(--s1) var(--s2);
+  border: 1px solid var(--on-dark-ghost);
+  border-radius: var(--radius-control);
+  background: none;
+  color: #fff;
+  font: inherit;
+  font-size: var(--t-small);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.look__close:hover {
+  border-color: #fff;
+}
+
+.look__sheet {
+  padding: var(--s8);
+  background: #fff;
+}
+
+@media (max-width: 640px) {
+  .look__sheet {
+    padding: var(--s4);
+  }
+}
+
+.look__foot {
+  margin: 0;
+  padding: var(--s3);
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
+  background: var(--deep);
+  font-size: var(--t-micro);
+  line-height: 1.5;
+  color: var(--on-dark-2);
+}
+
+/* Набор внутри листа — сайтовый, а не админский, и это весь смысл окна:
+   ширина колонки и кегль решают, как материал читается. Свои ступени
+   заведены нарочно и живут только здесь; в шкале админки их нет. */
+.look__article {
+  --look-title: 42px;
+  --look-lead: 19px;
+  --look-text: 17px;
+  max-width: 68ch;
+}
+
+.look__eyebrow {
+  margin: 0 0 var(--s3);
+  font-size: var(--t-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.look__title {
+  margin: 0 0 var(--s4);
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: var(--look-title);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+
+.look__lead {
+  margin: 0 0 var(--s5);
+  font-size: var(--look-lead);
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+.look__text {
+  font-size: var(--look-text);
+  line-height: 1.7;
+}
+
+.look__text p {
+  margin: 0 0 var(--s4);
+}
+
+.look__list {
+  margin: 0 0 var(--s5);
+  padding-left: var(--s5);
+  font-size: var(--look-text);
+  line-height: 1.7;
+}
+
+.look__specs {
+  width: 100%;
+  margin-bottom: var(--s5);
+  border-collapse: collapse;
+  font-size: var(--t-base);
+}
+
+.look__specs th,
+.look__specs td {
+  padding: var(--s2) 0;
+  border-bottom: 1px solid var(--line-2);
+  text-align: left;
+}
+
+.look__specs th {
+  width: 40%;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.look__price,
+.look__shot,
+.look__when {
+  margin: 0 0 var(--s4);
+  font-size: var(--t-small);
+  color: var(--muted);
+}

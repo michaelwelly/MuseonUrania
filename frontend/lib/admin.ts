@@ -100,6 +100,9 @@ export type ProductRow = {
   docStatus: string;
   published: boolean;
   sortOrder: number;
+  /** Снимок изделия. Пусто — снимка нет; на сайте это пустая рамка. */
+  imageSrc: string | null;
+  /** Названия категорий, а не адреса: список читает человек. */
   categories: string[];
   updatedAt: string;
 };

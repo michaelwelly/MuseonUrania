@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -167,15 +167,23 @@ describe("клавиши оболочки", () => {
 
     fireEvent.keyDown(document, { key: "л", code: "KeyK", metaKey: true });
     expect(screen.getByRole("dialog", { name: "Поиск по всему порталу" })).toBeTruthy();
+
+    // Дождаться закрытия обязательно, а не желательно: пока окно открыто,
+    // одиночные буквы намеренно молчат. Без ожидания тест иногда успевал
+    // нажать N раньше, чем оболочка узнала, что окна больше нет, —
+    // и падал через раз, обвиняя раскладку.
     fireEvent.keyDown(document, { key: "Escape", code: "Escape" });
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Поиск по всему порталу" })).toBeNull(),
+    );
 
     fireEvent.keyDown(document, { key: "т", code: "KeyN" });
-    expect(mocks.push).toHaveBeenCalledWith("/admin/deals/new");
+    await waitFor(() => expect(mocks.push).toHaveBeenCalledWith("/admin/deals/new"));
 
     mocks.push.mockReset();
     fireEvent.keyDown(document, { key: "п", code: "KeyG" });
     fireEvent.keyDown(document, { key: "в", code: "KeyD" });
-    expect(mocks.push).toHaveBeenCalledWith("/admin/deals/");
+    await waitFor(() => expect(mocks.push).toHaveBeenCalledWith("/admin/deals/"));
   });
 
   it("G сама по себе никуда не ведёт", async () => {

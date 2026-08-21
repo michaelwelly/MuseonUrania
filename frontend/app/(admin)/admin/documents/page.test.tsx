@@ -65,11 +65,11 @@ describe("страница документов", () => {
     const user = userEvent.setup();
     render(<DocumentsPage />);
 
-    await user.click(await screen.findByRole("button", { name: "Лицензия на производство" }));
+    await user.click(await screen.findByRole("button", { name: "Правка карточки: Лицензия на производство" }));
     expect(await screen.findByDisplayValue("licenziya")).toBeInTheDocument();
 
     // Переключаемся на второй документ, не закрывая карточку.
-    await user.click(screen.getByRole("button", { name: "Сертификат ISO 13485" }));
+    await user.click(screen.getByRole("button", { name: "Правка карточки: Сертификат ISO 13485" }));
 
     await waitFor(() => expect(screen.getByDisplayValue("sertifikat")).toBeInTheDocument());
     expect(screen.queryByDisplayValue("licenziya")).not.toBeInTheDocument();
@@ -79,9 +79,9 @@ describe("страница документов", () => {
     const user = userEvent.setup();
     render(<DocumentsPage />);
 
-    await user.click(await screen.findByRole("button", { name: "Лицензия на производство" }));
+    await user.click(await screen.findByRole("button", { name: "Правка карточки: Лицензия на производство" }));
     await screen.findByDisplayValue("licenziya");
-    await user.click(screen.getByRole("button", { name: "Сертификат ISO 13485" }));
+    await user.click(screen.getByRole("button", { name: "Правка карточки: Сертификат ISO 13485" }));
     await screen.findByDisplayValue("sertifikat");
 
     await user.click(screen.getByRole("button", { name: "Сохранить" }));
