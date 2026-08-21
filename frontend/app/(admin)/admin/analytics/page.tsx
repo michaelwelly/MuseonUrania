@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { LEAD_LANGUAGE, LEAD_SOURCE, label } from "../labels";
 import { analytics, analyticsDimensions, type Analytics } from "@/lib/admin";
 import { Note, money, useLoad } from "../ui";
 
@@ -10,6 +11,19 @@ import { Note, money, useLoad } from "../ui";
 // откуда человек пришёл. Сделка, заведённая руками, в разрезы не попадает,
 // потому что её никто не приводил, и приписывать её кампании значит завысить
 // эффект кампании.
+
+/*
+ * Как называется значение разреза.
+ *
+ * Подписываются только замкнутые наборы: источник и язык заданы ограничением
+ * схемы. По изделию ключ — это slug, по кампании — произвольная utm-метка;
+ * переводить их нечем и не нужно, они и есть то, что искали.
+ */
+function значение(dimension: string, key: string): string {
+  if (dimension === "source") return label(LEAD_SOURCE, key);
+  if (dimension === "language") return label(LEAD_LANGUAGE, key);
+  return key;
+}
 
 const DIMENSION_LABEL: Record<string, string> = {
   product: "по изделию",
@@ -87,7 +101,7 @@ export default function AnalyticsPage() {
             <tbody>
               {data.rows.map((row) => (
                 <tr key={row.key}>
-                  <td>{row.key}</td>
+                  <td>{значение(data.by, row.key)}</td>
                   <td className="tight">{row.leads}</td>
                   <td className="tight">{row.deals}</td>
                   <td className="tight">{row.won}</td>
