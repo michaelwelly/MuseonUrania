@@ -19,29 +19,32 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // Слово на кнопке. Одинаковое «Открыть →» у восьми строк отвечает на вопрос
 // «куда», а вопрос был «что делать».
 
-const mocks = vi.hoisted(() => ({ leads: vi.fn(), quotes: vi.fn(), chatQueue: vi.fn() }));
+// Все двери — шпионы, а не постоянные функции. Сводка спрашивает только
+// свой контур, и проверять надо не только то, что нарисовано, но и то,
+// что в чужую дверь никто не постучался.
+const mocks = vi.hoisted(() => ({
+  leads: vi.fn(),
+  quotes: vi.fn(),
+  chatQueue: vi.fn(),
+  products: vi.fn(),
+  news: vi.fn(),
+  documents: vi.fn(),
+  clients: vi.fn(),
+  deals: vi.fn(),
+}));
 
 vi.mock("@/lib/admin", () => {
-  const страница = (total: number) => ({ items: [], page: 0, size: 1, total, pages: 1 });
   return {
     AdminError: class AdminError extends Error {},
     NOBODY: "-",
     leads: mocks.leads,
     quotes: mocks.quotes,
     chatQueue: mocks.chatQueue,
-    products: () =>
-      Promise.resolve([
-        { id: "p1", published: true },
-        { id: "p2", published: false },
-      ]),
-    news: () => Promise.resolve([{ id: "n1", published: true }]),
-    documents: () =>
-      Promise.resolve([
-        { id: "d1", published: true, hasFile: true },
-        { id: "d2", published: false, hasFile: true },
-      ]),
-    clients: () => Promise.resolve(страница(112)),
-    deals: () => Promise.resolve(страница(19)),
+    products: mocks.products,
+    news: mocks.news,
+    documents: mocks.documents,
+    clients: mocks.clients,
+    deals: mocks.deals,
     audit: () => Promise.resolve({ items: [], page: 0, size: 5, total: 0, pages: 1 }),
     staff: () =>
       Promise.resolve([{ login: "i.koltsova", name: "Ирина Кольцова", enabled: true }]),
@@ -71,6 +74,20 @@ beforeEach(() => {
   mocks.quotes.mockReset();
   mocks.chatQueue.mockReset();
   обычно();
+
+  // Значения по умолчанию: те же, что стояли в самом моке до перевода
+  // в шпионы. Отдельный тест переопределяет их у себя.
+  mocks.products.mockReset().mockResolvedValue([
+    { id: "p1", published: true },
+    { id: "p2", published: false },
+  ]);
+  mocks.news.mockReset().mockResolvedValue([{ id: "n1", published: true }]);
+  mocks.documents.mockReset().mockResolvedValue([
+    { id: "d1", published: true, hasFile: true },
+    { id: "d2", published: false, hasFile: true },
+  ]);
+  mocks.clients.mockReset().mockResolvedValue({ items: [], page: 0, size: 1, total: 112, pages: 1 });
+  mocks.deals.mockReset().mockResolvedValue({ items: [], page: 0, size: 1, total: 19, pages: 1 });
 });
 
 async function сводка() {
@@ -136,13 +153,95 @@ describe("что требует внимания", () => {
     );
 
     render(
-      <WhoHost who={{ actor: "i.koltsova", roles: [], authentication: "keycloak" }}>
+      <WhoHost who={{ actor: "i.koltsova", roles: ["portal-admin"], authentication: "keycloak" }}>
         <Dashboard />
       </WhoHost>,
     );
 
     // Один черновик изделия в сиде остаётся — но и он строка, а не пустота.
     expect(await screen.findByText(/изделие в черновиках/)).toBeTruthy();
+  });
+});
+
+// Сводка — единственный экран, который смотрит в оба контура сразу.
+//
+// Раньше она грузила всё одним Promise.all, а он отвергается ПЕРВЫМ же
+// отказом. У продаж отказом отвечают три двери содержимого, у редактора
+// сайта — восемь дверей продаж: стартовая страница админки открывалась
+// ошибкой у двух ролей из трёх, и ни одна не увидела бы ни своих дел,
+// ни своих чисел.
+describe("сводка под ролями", () => {
+  const отказ = () => Promise.reject(new Error("403"));
+
+  function сессия(roles: string[]) {
+    return { actor: "кто-то", roles, authentication: "keycloak" };
+  }
+
+  async function открыть(roles: string[]) {
+    render(
+      <WhoHost who={сессия(roles)}>
+        <Dashboard />
+      </WhoHost>,
+    );
+    await screen.findByRole("heading", { level: 1 });
+  }
+
+  it("у продаж открывается, даже когда содержимое сайта отвечает отказом", async () => {
+    // Двери чужого контура ОТВЕЧАЮТ ОТКАЗОМ — ровно как настоящий портал.
+    // Если сводка их спросит, страница ляжет целиком.
+    mocks.products.mockImplementation(отказ);
+    mocks.news.mockImplementation(отказ);
+    mocks.documents.mockImplementation(отказ);
+
+    await открыть(["portal-sales"]);
+
+    // Свои числа на месте.
+    expect(await screen.findByText(/заявк/)).toBeTruthy();
+    // Чужих плиток нет: «0 изделий на сайте» сказало бы неправду тому,
+    // у кого их просто нет в предмете работы.
+    expect(screen.queryByText(/изделия на сайте/)).toBeNull();
+    expect(screen.queryByText(/материала в ленте/)).toBeNull();
+
+    // И главное: в чужую дверь никто не постучался. Работа, которая
+    // не может дать результата, — это не только отказ в журнале портала,
+    // это ещё и задержка на каждом открытии сводки.
+    expect(mocks.products).not.toHaveBeenCalled();
+    expect(mocks.news).not.toHaveBeenCalled();
+    expect(mocks.documents).not.toHaveBeenCalled();
+  });
+
+  it("у редактора сайта открывается, даже когда продажи отвечают отказом", async () => {
+    mocks.leads.mockImplementation(отказ);
+    mocks.clients.mockImplementation(отказ);
+    mocks.deals.mockImplementation(отказ);
+    mocks.quotes.mockImplementation(отказ);
+    mocks.chatQueue.mockImplementation(отказ);
+
+    await открыть(["portal-production"]);
+
+    expect(await screen.findByText(/изделия на сайте|изделие на сайте/)).toBeTruthy();
+    expect(screen.queryByText(/клиент/)).toBeNull();
+    expect(screen.queryByText(/во всех воронках/)).toBeNull();
+
+    expect(mocks.leads).not.toHaveBeenCalled();
+    expect(mocks.clients).not.toHaveBeenCalled();
+    expect(mocks.deals).not.toHaveBeenCalled();
+    expect(mocks.quotes).not.toHaveBeenCalled();
+    expect(mocks.chatQueue).not.toHaveBeenCalled();
+  });
+
+  it("кнопка шапки ведёт в свой контур, а не на страницу «раздел закрыт»", async () => {
+    await открыть(["portal-production"]);
+
+    expect(screen.getByRole("link", { name: "Добавить материал" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Новая сделка" })).toBeNull();
+  });
+
+  it("журнал на сводке — администратору, остальным сказано почему", async () => {
+    await открыть(["portal-sales"]);
+
+    // Не пустой блок и не полоса ошибки: объяснение.
+    expect(await screen.findByText(/Журнал доступен администратору/)).toBeTruthy();
   });
 });
 

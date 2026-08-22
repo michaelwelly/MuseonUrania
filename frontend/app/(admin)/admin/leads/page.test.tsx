@@ -83,6 +83,12 @@ vi.mock("@/lib/admin", () => {
 import LeadsPage from "./page";
 import { ToastHost } from "../Toast";
 import { CountsHost } from "../counts";
+
+const ПРОДАВЕЦ = {
+  actor: "sales",
+  roles: ["portal-sales"],
+  authentication: "keycloak",
+};
 import { WhoHost } from "../who";
 
 type Row = {
@@ -149,7 +155,9 @@ async function экран() {
   render(
     <ToastHost>
       <WhoHost who={{ actor: "irina", roles: ["portal-admin"], authentication: "keycloak" }}>
-        <CountsHost>
+        {/* Счётчики спрашивают только двери своего контура, поэтому им нужна
+            сессия. Здесь — продажи: заявки их предмет. */}
+        <CountsHost who={ПРОДАВЕЦ}>
           <LeadsPage />
         </CountsHost>
       </WhoHost>
