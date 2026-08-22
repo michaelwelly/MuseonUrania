@@ -90,6 +90,7 @@ The website should be driven by structured content so that NN answers can be ins
     "phone",
     "email",
     "product_interest",
+    "serial_number",
     "message",
     "consent"
   ],
@@ -98,6 +99,14 @@ The website should be driven by structured content so that NN answers can be ins
   "success_message": "Спасибо. Специалист VEDAL свяжется с вами."
 }
 ```
+
+`serial_number` — the equipment serial number. Shown in the service form only:
+in a quote or catalog request the person does not own the equipment yet. Optional
+— the number is not always at hand, and a lead without it is an ordinary lead.
+
+The format is not validated: the shape of a VEDAL serial number is not described
+in any approved material, and a made-up mask would reject real numbers. Only the
+length is bounded — 100 characters.
 
 ## Vedalina Assistant Model
 
