@@ -60,7 +60,6 @@ class RoleMatrixTest extends PostgresTestBase {
     // Двери, которые не нужны для работы ни одного контура.
     private static final String[] ТОЛЬКО_АДМИН = {
             "/api/admin/v1/audit",
-            "/api/admin/v1/staff",
     };
 
     // ————— продажи —————
@@ -83,10 +82,30 @@ class RoleMatrixTest extends PostgresTestBase {
 
     @Test
     @WithMockUser(username = "sales", roles = "PORTAL_SALES")
-    void salesSeesNeitherTheJournalNorTheStaffList() throws Exception {
+    void salesDoesNotSeeTheJournal() throws Exception {
         for (var дверь : ТОЛЬКО_АДМИН) {
             mvc.perform(get(дверь)).andExpect(status().isForbidden());
         }
+    }
+
+    // Справочник сотрудников — исключение, и оно рабочее, а не уступка.
+    // Сначала он был закрыт администратором, и без него продажи не выбрали
+    // бы ответственного ни у заявки, ни у сделки: поле «ответственный»
+    // берёт список отсюда. Отдаётся логин, имя и «работает» — ни клиентов,
+    // ни сумм, ни персональных данных посетителей.
+    @Test
+    @WithMockUser(username = "sales", roles = "PORTAL_SALES")
+    void everyRoleMayPickAnOwnerFromTheStaffDirectory() throws Exception {
+        mvc.perform(get("/api/admin/v1/staff")).andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(username = "production", roles = "PORTAL_PRODUCTION")
+    void theSiteEditorAlsoResolvesLoginsToNames() throws Exception {
+        // Приветствие на сводке и подписи в журнале превращают логин в имя
+        // тем же справочником. Без него человек здоровается сам с собой
+        // по логину.
+        mvc.perform(get("/api/admin/v1/staff")).andExpect(status().isOk());
     }
 
     // ————— содержимое сайта —————

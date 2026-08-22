@@ -253,6 +253,12 @@ function Form({
             <dd className="mono">{lead.productSlug}</dd>
           </div>
         )}
+        {lead.serialNumber && (
+          <div className="pairs__row">
+            <dt>Серийный номер</dt>
+            <dd className="mono">{lead.serialNumber}</dd>
+          </div>
+        )}
         <div className="pairs__row">
           <dt>Согласие</dt>
           <dd className="mono">

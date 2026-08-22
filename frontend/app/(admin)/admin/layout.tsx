@@ -244,7 +244,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <ToastHost>
       <WhoHost who={state.who}>
-        <CountsHost>
+        <CountsHost who={state.who}>
           <Chrome who={state.who}>{children}</Chrome>
         </CountsHost>
       </WhoHost>
@@ -573,7 +573,10 @@ function Chrome({ who, children }: { who: Session; children: React.ReactNode }) 
 
       {/* На самом разделе разговоров виджета нет: он повторял бы список,
           который человек уже открыл, и закрывал бы собой третью колонку. */}
-      {!within(pathname, "/admin/chats/") && <Widget />}
+      {/* Виджет разговоров — контур продаж. У того, кто ведёт сайт, он
+          висел бы поверх каждой страницы и раз в несколько секунд просил
+          очередь, которой ему не отдадут. */}
+      {may(who, "sales") && !within(pathname, "/admin/chats/") && <Widget />}
     </div>
   );
 }

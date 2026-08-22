@@ -146,7 +146,7 @@ class CrmAnalyticsTest extends PostgresTestBase {
 
     private UUID accept(String key, String source, String language, String campaign, String product) {
         return intake.accept(new LeadIntake.Draft("quote", "Иван Петров", "Клиника " + key,
-                "+7 343 555-22-11", key + "@example.ru", product,
+                "+7 343 555-22-11", key + "@example.ru", product, null,
                 "Прошу коммерческое предложение.", source, language, campaign), key).id();
     }
 

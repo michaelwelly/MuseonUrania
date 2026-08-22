@@ -116,6 +116,60 @@ class FormsApiTest extends PostgresTestBase {
                 .andExpect(jsonPath("$.fields.language").value("Язык — двухбуквенный код"));
     }
 
+    // ————— серийный номер —————
+
+    @Test
+    void serviceLeadCarriesSerialNumberThrough() throws Exception {
+        leads.deleteAll();
+
+        mvc.perform(post("/api/forms/v1/leads")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"form":"service","name":"Ольга Кузнецова","company":"Роддом №2",
+                                 "phone":"+7 343 200-10-10","email":"olga@rd2.ru",
+                                 "productSlug":"vedal-r1","serialNumber":"R2-2026-00417",
+                                 "message":"Аппарат не выходит на режим после включения.",
+                                 "consent":true}
+                                """))
+                .andExpect(status().isAccepted());
+
+        assertThat(leads.findAll()).singleElement()
+                .satisfies(l -> assertThat(l.getSerialNumber()).isEqualTo("R2-2026-00417"));
+    }
+
+    @Test
+    void blankSerialNumberIsStoredAsNothing() throws Exception {
+        leads.deleteAll();
+
+        // Форма отдаёт пустое поле как пустую строку, а не как отсутствие поля.
+        // Сохранить её как есть — значит завести заявки, у которых номер
+        // «есть, но пустой»: в карточке появится пустая строка «Серийный
+        // номер», а «номер не указан» и «номер стёрли» станут неразличимы.
+        mvc.perform(post("/api/forms/v1/leads")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID.replace("\"consent\":true",
+                                "\"serialNumber\":\"   \",\"consent\":true")))
+                .andExpect(status().isAccepted());
+
+        assertThat(leads.findAll()).singleElement()
+                .satisfies(l -> assertThat(l.getSerialNumber()).isNull());
+    }
+
+    @Test
+    void overlongSerialNumberIsRejectedByField() throws Exception {
+        // Единственная проверка номера — длина, и она есть граница хранения,
+        // а не утверждение о формате: вид серийного номера VEDAL в согласованных
+        // материалах не описан. Без неё поле принимает килобайт текста, который
+        // база всё равно отвергнет — но уже пятисотой ошибкой, без объяснения.
+        mvc.perform(post("/api/forms/v1/leads")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID.replace("\"consent\":true",
+                                "\"serialNumber\":\"" + "1".repeat(101) + "\",\"consent\":true")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fields.serialNumber")
+                        .value("Серийный номер не длиннее 100 символов"));
+    }
+
     @Test
     void unknownFormTypeIsRejected() throws Exception {
         mvc.perform(post("/api/forms/v1/leads")

@@ -48,6 +48,9 @@ public class LeadService implements LeadIntake, LeadContacts {
         lead.setPhone(draft.phone());
         lead.setEmail(draft.email());
         lead.setProductSlug(blankToNull(draft.productSlug()));
+        // Пустое поле формы — это «номер не указан», а не строка нулевой
+        // длины: иначе поиск по номеру находил бы каждую заявку без номера.
+        lead.setSerialNumber(blankToNull(draft.serialNumber()));
         lead.setMessage(draft.message());
         lead.setConsentVersion(consentVersion);
         lead.setConsentAt(Instant.now());

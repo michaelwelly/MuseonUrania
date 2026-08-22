@@ -223,7 +223,7 @@ class AdminQuoteApiTest extends PostgresTestBase {
 
     private String deal(String key) throws Exception {
         var leadId = intake.accept(new LeadIntake.Draft("quote", "Иван Петров", "Клиника " + key,
-                "+7 343 555-22-11", "ivan@example.ru", "vedal-r1",
+                "+7 343 555-22-11", "ivan@example.ru", "vedal-r1", null,
                 "Прошу коммерческое предложение.", "site", "ru", null), key).id();
 
         var body = mvc.perform(post("/api/admin/v1/leads/" + leadId + "/convert")
