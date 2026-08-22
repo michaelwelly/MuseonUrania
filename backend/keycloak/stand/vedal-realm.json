@@ -4,10 +4,10 @@
   "displayName": "VEDAL Portal",
   "sslRequired": "none",
   "registrationAllowed": false,
-  "resetPasswordAllowed": false,
+  "resetPasswordAllowed": true,
   "rememberMe": false,
   "verifyEmail": false,
-  "loginWithEmailAllowed": true,
+  "loginWithEmailAllowed": false,
   "duplicateEmailsAllowed": false,
   "accessTokenLifespan": 900,
   "ssoSessionIdleTimeout": 3600,
@@ -40,16 +40,14 @@
       "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": false,
       "redirectUris": [
-        "http://localhost:3000/*",
+        "http://51.250.31.97:18080/*",
         "http://localhost:8080/*",
-        "http://127.0.0.1:8080/*",
-        "http://127.0.0.1:3000/*"
+        "http://localhost:3000/*"
       ],
       "webOrigins": [
-        "http://localhost:3000",
+        "http://51.250.31.97:18080",
         "http://localhost:8080",
-        "http://127.0.0.1:8080",
-        "http://127.0.0.1:3000"
+        "http://localhost:3000"
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
@@ -90,73 +88,119 @@
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": true,
       "clientAuthenticatorType": "client-secret",
-      "secret": "vedal-portal-svc-local"
+      "secret": "${VEDAL_OIDC_SVC_CLIENT_SECRET}"
     }
   ],
-  "users": [
+  "users": [],
+  "passwordPolicy": "length(12) and notUsername(undefined) and notEmail(undefined) and passwordHistory(3) and specialChars(1) and upperCase(1) and digits(1)",
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "failureFactor": 10,
+  "waitIncrementSeconds": 60,
+  "maxFailureWaitSeconds": 900,
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyDigits": 6,
+  "otpPolicyPeriod": 30,
+  "requiredActions": [
     {
-      "username": "editor",
+      "alias": "CONFIGURE_TOTP",
+      "name": "Configure OTP",
+      "providerId": "CONFIGURE_TOTP",
       "enabled": true,
-      "emailVerified": true,
-      "firstName": "Локальный",
-      "lastName": "редактор",
-      "email": "editor@vedal.local",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "editor-local",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "portal-admin"
-      ]
+      "defaultAction": true,
+      "priority": 10,
+      "config": {}
     },
     {
-      "username": "sales",
-      "enabled": true,
-      "emailVerified": true,
-      "firstName": "Локальный",
-      "lastName": "продавец",
-      "email": "sales@vedal.local",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "sales-local",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "portal-sales"
-      ]
+      "alias": "TERMS_AND_CONDITIONS",
+      "name": "Terms and Conditions",
+      "providerId": "TERMS_AND_CONDITIONS",
+      "enabled": false,
+      "defaultAction": false,
+      "priority": 20,
+      "config": {}
     },
     {
-      "username": "production",
+      "alias": "UPDATE_PASSWORD",
+      "name": "Update Password",
+      "providerId": "UPDATE_PASSWORD",
       "enabled": true,
-      "emailVerified": true,
-      "firstName": "Локальный",
-      "lastName": "редактор сайта",
-      "email": "production@vedal.local",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "production-local",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "portal-production"
-      ]
+      "defaultAction": false,
+      "priority": 30,
+      "config": {}
     },
     {
-      "username": "service-account-vedal-portal-svc",
+      "alias": "UPDATE_PROFILE",
+      "name": "Update Profile",
+      "providerId": "UPDATE_PROFILE",
       "enabled": true,
-      "serviceAccountClientId": "vedal-portal-svc",
-      "clientRoles": {
-        "realm-management": [
-          "view-users"
-        ]
-      }
+      "defaultAction": false,
+      "priority": 40,
+      "config": {}
+    },
+    {
+      "alias": "VERIFY_EMAIL",
+      "name": "Verify Email",
+      "providerId": "VERIFY_EMAIL",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 50,
+      "config": {}
+    },
+    {
+      "alias": "delete_account",
+      "name": "Delete Account",
+      "providerId": "delete_account",
+      "enabled": false,
+      "defaultAction": false,
+      "priority": 60,
+      "config": {}
+    },
+    {
+      "alias": "webauthn-register",
+      "name": "Webauthn Register",
+      "providerId": "webauthn-register",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 70,
+      "config": {}
+    },
+    {
+      "alias": "webauthn-register-passwordless",
+      "name": "Webauthn Register Passwordless",
+      "providerId": "webauthn-register-passwordless",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 80,
+      "config": {}
+    },
+    {
+      "alias": "VERIFY_PROFILE",
+      "name": "Verify Profile",
+      "providerId": "VERIFY_PROFILE",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 90,
+      "config": {}
+    },
+    {
+      "alias": "delete_credential",
+      "name": "Delete Credential",
+      "providerId": "delete_credential",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 100,
+      "config": {}
+    },
+    {
+      "alias": "update_user_locale",
+      "name": "Update User Locale",
+      "providerId": "update_user_locale",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 1000,
+      "config": {}
     }
   ]
 }
