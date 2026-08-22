@@ -363,7 +363,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"campaign\": \"innoprom-2026\",\n  \"company\": \"Областной перинатальный центр\",\n  \"consent\": true,\n  \"email\": \"i.petrova@example.ru\",\n  \"form\": \"quote\",\n  \"language\": \"ru\",\n  \"message\": \"Интересует поставка двух систем R2 и сроки изготовления.\",\n  \"name\": \"Ирина Петрова\",\n  \"phone\": \"+7 343 300-00-00\",\n  \"productSlug\": \"vedal-r1-r2\",\n  \"trap\": \"\"\n}",
+              "raw": "{\n  \"campaign\": \"innoprom-2026\",\n  \"company\": \"Областной перинатальный центр\",\n  \"consent\": true,\n  \"email\": \"i.petrova@example.ru\",\n  \"form\": \"quote\",\n  \"language\": \"ru\",\n  \"message\": \"Интересует поставка двух систем R2 и сроки изготовления.\",\n  \"name\": \"Ирина Петрова\",\n  \"phone\": \"+7 343 300-00-00\",\n  \"productSlug\": \"vedal-r1-r2\",\n  \"serialNumber\": \"R2-2026-00417\",\n  \"trap\": \"\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
