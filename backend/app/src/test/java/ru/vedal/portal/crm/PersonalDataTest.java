@@ -36,6 +36,7 @@ class PersonalDataTest extends PostgresTestBase {
         lead.setCompany("ООО «Больница»");
         lead.setPhone("+7 900 000-00-00");
         lead.setEmail("ivanov@example.ru");
+        lead.setSerialNumber("R2-2026-00417");
         lead.setMessage("Меня зовут Иванов Иван, мой телефон +7 900 000-00-00.");
         lead.setConsentVersion("v1");
         lead.setConsentAt(Instant.now());
@@ -86,6 +87,11 @@ class PersonalDataTest extends PostgresTestBase {
         assertThat(after.getForm()).isEqualTo("quote");
         // Организация персональными данными не является.
         assertThat(after.getCompany()).isEqualTo("ООО «Больница»");
+        // Серийный номер — характеристика аппарата, а не человека, и стоит
+        // в одном ряду с организацией. По нему видна история обслуживания
+        // изделия, а опознать по нему человека нельзя — стирать его значило
+        // бы обменять работающий сервис на ноль прибавки к защите данных.
+        assertThat(after.getSerialNumber()).isEqualTo("R2-2026-00417");
     }
 
     // История переписки — носитель персональных данных не меньший, чем поля
