@@ -1,8 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { clients, deals, documents, leads, news, products, quotes } from "@/lib/admin";
-import { Note, useLoad } from "./ui";
+import { useState } from "react";
+import {
+  NOBODY,
+  audit,
+  chatQueue,
+  clients,
+  deals,
+  documents,
+  leads,
+  news,
+  products,
+  quotes,
+  staff as loadStaff,
+  type AuditEntry,
+  type Page,
+  type StaffMember,
+} from "@/lib/admin";
+import { plural } from "@/lib/plural";
+import { AUDIT_ACTION, label } from "./labels";
+import { useStored } from "./lists";
+import { Note, useLoad, when } from "./ui";
+import { may } from "./roles";
+import { useWho } from "./who";
 
 // Сводка.
 //
@@ -11,150 +32,446 @@ import { Note, useLoad } from "./ui";
 // «12 документов» — это норма, а «3 без файла» — работа на сегодня.
 // Витрина чисел выглядит содержательной и не отвечает на единственный
 // вопрос, с которым сюда заходят утром.
+//
+// ───────────────────────────────────────────────────────────────────────────
+// Почему у каждой строки своё слово на кнопке
+//
+// «Открыть →» одинаково у всех восьми строк отвечает на вопрос «куда»,
+// а вопрос был «что делать». Разговор ждёт ответа, заявка — разбора,
+// документ — файла, и слово на кнопке и есть ответ, ради которого сюда
+// заходят утром.
 
+// Пусто — не «ноль», а «этой роли не положено». Разница важная: ноль
+// изделий на сайте это работа, которую надо сделать, а отсутствие чисел
+// у продавца — просто не его предмет. Первое показываем, второе нет.
 type Summary = {
-  products: { total: number; draft: number };
-  news: { total: number; draft: number };
-  documents: { total: number; published: number; awaitingFile: number };
-  leads: { total: number; fresh: number };
-  clients: number;
-  deals: number;
-  awaitingDecision: number;
+  products?: { total: number; draft: number };
+  news?: { total: number; draft: number };
+  documents?: { total: number; published: number; awaitingFile: number };
+  leads?: { total: number; fresh: number; nobody: number };
+  waitingChats?: number;
+  clients?: number;
+  deals?: number;
+  awaitingDecision?: number;
+  expiredQuotes?: number;
 };
 
-/** Строка очереди: сколько, что это значит и куда идти. */
-type Task = { count: number; what: string; why: string; href: string };
+/** Строка очереди: сколько, что это значит, зачем и что с этим делать. */
+type Task = {
+  count: number;
+  what: string;
+  why: string;
+  action: string;
+  href: string;
+  /** Насколько горит: посетитель ждёт сейчас, остальное — до конца дня. */
+  tone: "danger" | "wait" | "flat";
+};
+
+/*
+ * Подписи очереди согласуются с числом.
+ *
+ * lib/plural написан ровно под эту ошибку — «4 моделей» на сайте. В сводке
+ * ровно то же: «1 разговоров ждут ответа», «4 клиентов в базе». Числа здесь
+ * считаются от данных и меняются каждый день, значит и форма слова обязана
+ * считаться, а не стоять константой.
+ */
+const склонения = {
+  разговоры: (n: number) =>
+    plural(n, "разговор ждёт ответа", "разговора ждут ответа", "разговоров ждут ответа"),
+  заявки: (n: number) =>
+    plural(n, "заявка ждёт разбора", "заявки ждут разбора", "заявок ждут разбора"),
+  ничьи: (n: number) =>
+    plural(
+      n,
+      "заявка без ответственного",
+      "заявки без ответственного",
+      "заявок без ответственного",
+    ),
+  кп: (n: number) =>
+    plural(
+      n,
+      "КП отправлено и ждёт ответа",
+      "КП отправлены и ждут ответа",
+      "КП отправлены и ждут ответа",
+    ),
+  истекло: (n: number) => plural(n, "КП истекло", "КП истекли", "КП истекли"),
+  документы: (n: number) =>
+    plural(n, "документ без файла", "документа без файла", "документов без файла"),
+  изделия: (n: number) =>
+    plural(n, "изделие в черновиках", "изделия в черновиках", "изделий в черновиках"),
+  материалы: (n: number) =>
+    plural(n, "материал в черновиках", "материала в черновиках", "материалов в черновиках"),
+};
 
 export default function Dashboard() {
-  const { data, error, loading } = useLoad<Summary>(async () => {
-    // Все запросы разом, а не по очереди: они независимы, и последовательный
-    // вызов складывал бы задержки в сумму на ровном месте. Счётчики просят
-    // одну строку — нужно только число в `total`, а не сама страница.
-    const [p, n, d, all, draft, base, pipeline, sent] = await Promise.all([
-      products(),
-      news(),
-      documents(),
-      leads("", 0, 1),
-      leads("draft", 0, 1),
-      clients("", 0, 1),
-      deals({}, 0, 1),
-      quotes("sent", 0, 1),
-    ]);
+  const who = useWho();
+  const [hints, setHints] = useStored<boolean>("vedal.admin.hints", true);
+  // Время дня берётся один раз при открытии: сводку не держат открытой
+  // до полуночи, а если держат — «доброе утро» в час ночи смешнее,
+  // чем неверно.
+  const [now] = useState(() => new Date());
 
-    return {
-      products: { total: p.length, draft: p.filter((x) => !x.published).length },
-      news: { total: n.length, draft: n.filter((x) => !x.published).length },
-      documents: {
-        total: d.length,
-        published: d.filter((x) => x.published).length,
-        awaitingFile: d.filter((x) => !x.hasFile).length,
-      },
-      leads: { total: all.total, fresh: draft.total },
-      clients: base.total,
-      deals: pipeline.total,
-      awaitingDecision: sent.total,
-    };
-  });
+  // Что этому человеку вообще положено. Сводка — единственный экран,
+  // который смотрит в оба контура сразу, и без отбора она спрашивала бы
+  // двери, закрытые для роли.
+  const продажи = may(who, "sales");
+  const сайт = may(who, "production");
+  const журнал = may(who, "admin");
+
+  const { data, error, loading } = useLoad<Summary>(
+    async () => {
+      // Два независимых набора запросов вместо одного Promise.all.
+      //
+      // Раньше здесь был именно он, и это гасило страницу целиком:
+      // Promise.all отвергается ПЕРВЫМ же отказом, а у продаж отказом
+      // отвечают три двери содержимого, у редактора сайта — восемь
+      // дверей продаж. Стартовая страница админки открывалась ошибкой
+      // у двух ролей из трёх, и ни одна из них не увидела бы ни своих
+      // дел, ни своих чисел.
+      //
+      // Внутри каждого набора запросы по-прежнему разом: они независимы,
+      // и последовательный вызов складывал бы задержки в сумму.
+      // Счётчики просят одну строку — нужно только число в `total`.
+      const [клиенты, содержимое] = await Promise.all([
+        продажи
+          ? Promise.all([
+              leads({}, 0, 1),
+              leads({ status: "draft" }, 0, 1),
+              leads({ owner: NOBODY }, 0, 1),
+              clients("", 0, 1),
+              deals({}, 0, 1),
+              quotes("sent", 0, 1),
+              quotes("expired", 0, 1),
+              chatQueue(0, 1),
+            ])
+          : null,
+        сайт ? Promise.all([products(), news(), documents()]) : null,
+      ]);
+
+      const [p, n, d] = содержимое ?? [];
+      const [all, fresh, ничьи, base, pipeline, sent, expired, waiting] = клиенты ?? [];
+
+      return {
+        products: p && { total: p.length, draft: p.filter((x) => !x.published).length },
+        news: n && { total: n.length, draft: n.filter((x) => !x.published).length },
+        documents: d && {
+          total: d.length,
+          published: d.filter((x) => x.published).length,
+          awaitingFile: d.filter((x) => !x.hasFile).length,
+        },
+        leads: all && fresh && ничьи
+          ? { total: all.total, fresh: fresh.total, nobody: ничьи.total }
+          : undefined,
+        waitingChats: waiting?.total,
+        clients: base?.total,
+        deals: pipeline?.total,
+        awaitingDecision: sent?.total,
+        expiredQuotes: expired?.total,
+      };
+    },
+    // Ключ с контурами: человек, вошедший другой учётной записью в той же
+    // вкладке, обязан получить свой набор, а не прошлый.
+    `${продажи}:${сайт}`,
+  );
 
   const tasks: Task[] = data
-    ? [
+    ? ([
         {
-          count: data.leads.fresh,
-          what: "заявок ждут разбора",
-          why: "Заявка приходит черновиком. Пока статус не поднят, её никто не ведёт.",
+          // Первой строкой, и это не про важность, а про время.
+          //
+          // Замер прошлой сессии: разговор ждал живого ответа четвёртый день,
+          // а сводка о нём молчала — она считала заявки, документы, изделия,
+          // новости и КП, но не людей, которые ждут прямо сейчас. Черновик
+          // подождёт до конца дня, посетитель — нет.
+          count: data.waitingChats ?? 0,
+          what: склонения.разговоры(data.waitingChats ?? 0),
+          why: "Посетитель ждёт живого ответа. Ваш ответ и есть взятие разговора.",
+          action: "Ответить",
+          href: "/admin/chats/",
+          tone: "danger",
+        },
+        {
+          count: data.leads?.nobody ?? 0,
+          what: склонения.ничьи(data.leads?.nobody ?? 0),
+          why: "Не потеряна, но и не взята: пока ответственного нет, её никто не ведёт.",
+          action: "Назначить",
           href: "/admin/leads/",
+          tone: "wait",
         },
         {
-          count: data.awaitingDecision,
-          what: "КП отправлены и ждут ответа",
-          why: "Отправленное КП не правится. Решение клиента отмечается вручную.",
+          count: data.leads?.fresh ?? 0,
+          what: склонения.заявки(data.leads?.fresh ?? 0),
+          why: "Заявка приходит черновиком. Пока статус не поднят, работа по ней не идёт.",
+          action: "Разобрать",
+          href: "/admin/leads/",
+          tone: "wait",
+        },
+        {
+          count: data.expiredQuotes ?? 0,
+          what: склонения.истекло(data.expiredQuotes ?? 0),
+          why: "Срок вышел. Нужны прежние условия — составляется новое КП со своим номером.",
+          action: "Составить заново",
           href: "/admin/quotes/",
+          tone: "wait",
         },
         {
-          count: data.documents.awaitingFile,
-          what: "документов без файла",
+          count: data.awaitingDecision ?? 0,
+          what: склонения.кп(data.awaitingDecision ?? 0),
+          why: "Отправленное КП не правится. Решение клиента отмечается вручную.",
+          action: "Отметить решение",
+          href: "/admin/quotes/",
+          tone: "wait",
+        },
+        {
+          count: data.documents?.awaitingFile ?? 0,
+          what: склонения.документы(data.documents?.awaitingFile ?? 0),
           why: "Опубликовать документ без загруженного файла портал не даст.",
+          action: "Загрузить",
           href: "/admin/documents/",
+          tone: "flat",
         },
         {
-          count: data.products.draft,
-          what: "изделий в черновиках",
+          count: data.products?.draft ?? 0,
+          what: склонения.изделия(data.products?.draft ?? 0),
           why: "На сайте их нет: публикация — отдельное действие, не правка.",
+          action: "Проверить",
           href: "/admin/products/",
+          tone: "flat",
         },
         {
-          count: data.news.draft,
-          what: "материалов в черновиках",
+          count: data.news?.draft ?? 0,
+          what: склонения.материалы(data.news?.draft ?? 0),
           why: "В ленту не попадут, пока не опубликованы.",
+          action: "Проверить",
           href: "/admin/news/",
+          tone: "flat",
         },
-      ].filter((t) => t.count > 0)
+        // Строка с нулём не показывается вовсе: «0 документов без файла» —
+        // это не работа, а шум, и в списке дел ему не место.
+      ] as Task[]).filter((t) => t.count > 0)
     : [];
 
   return (
     <>
       <div className="admin-head">
-        <h1>Сводка</h1>
+        <div className="deal__head">
+          <p className="hello__date mono">{дата(now)}</p>
+          <h1>
+            {приветствие(now)}, <Greeting login={who.actor} />
+          </h1>
+        </div>
+
+        {/* Каждая кнопка ведёт в свой контур. Оставленная чужая привела бы
+            на страницу «раздел закрыт» — и это единственное место сводки,
+            где человек нажимает первым делом. */}
+        <div className="row">
+          {сайт && (
+            <Link className="btn" href="/admin/news/new/">
+              Добавить материал
+            </Link>
+          )}
+          {продажи && (
+            <Link className="btn btn--primary" href="/admin/deals/new/">
+              Новая сделка
+            </Link>
+          )}
+        </div>
       </div>
-      <p className="admin-hint">
-        Публикация — всегда отдельное действие. Правка текста не выводит изделие на сайт
-        и не снимает его оттуда: снятое с публикации возвращается дольше, чем публикуется.
-      </p>
+
+      {hints && (
+        <div className="hints">
+          <span className="hints__mark" aria-hidden="true">
+            ?
+          </span>
+          <div className="hints__body">
+            <p className="hints__title">Три правила, из которых следует остальное</p>
+            <p className="hints__text">
+              Публикация — всегда отдельное действие: правка текста не выводит изделие
+              на сайт и не снимает его оттуда. Незаполненное помечается «ожидает уточнения»,
+              а не заполняется правдоподобным. Цены, сроки поставки и клинические заявления
+              наружу не идут.
+            </p>
+            <p className="hints__links">
+              {сайт && <Link href="/admin/products/">Продукция</Link>}
+              {продажи && <Link href="/admin/leads/">Заявки</Link>}
+              {журнал && <Link href="/admin/audit/">Журнал</Link>}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="hints__close"
+            onClick={() => setHints(false)}
+            aria-label="Убрать подсказку"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       <Note kind="error">{error}</Note>
       {loading && !data && <p className="muted">Загружаем…</p>}
 
       {data && (
-        <>
-          <h2 className="admin-card__title">Требует внимания</h2>
+        <div className="board2">
+          <section>
+            <h2 className="admin-card__title">Требует внимания</h2>
 
-          {tasks.length === 0 ? (
-            <div className="queue queue--clear">
-              Разобрано всё: заявки со статусами, документы с файлами, черновиков нет.
+            {tasks.length === 0 ? (
+              <div className="queue queue--clear">
+                Разобрано всё: никто не ждёт ответа, заявки со статусами, документы
+                с файлами, черновиков нет.
+              </div>
+            ) : (
+              <div className="queue">
+                {tasks.map((t) => (
+                  <Link key={t.action + t.href} className="queue__row" href={t.href}>
+                    <span className={`queue__count queue__count--${t.tone}`}>{t.count}</span>
+                    <span className="queue__what">
+                      {t.what}
+                      <span className="queue__why">{t.why}</span>
+                    </span>
+                    <span className="queue__go">{t.action} →</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            <h2 className="admin-card__title">Последние события</h2>
+            {/* Журнал показывает, кто что делал, — включая того, кто смотрит.
+                Для работы контуров он не нужен, и дверь к нему закрыта
+                администратором. Без этой проверки блок просил бы её
+                на каждой сводке и получал отказ. */}
+            {журнал ? (
+              <Recent />
+            ) : (
+              <p className="admin-hint">
+                Журнал доступен администратору: он показывает действия всех
+                сотрудников, а не только ваши.
+              </p>
+            )}
+          </section>
+
+          <section>
+            <h2 className="admin-card__title">Всего в портале</h2>
+
+            {/* Плитки чужого контура не показываются вовсе. Показать их
+                пустыми значило бы сказать «в портале ноль клиентов» тому,
+                кто просто не имеет к ним доступа. */}
+            <div className="tiles">
+              {data.products && (
+                <Tile
+                  href="/admin/products/"
+                  num={data.products.total - data.products.draft}
+                  label={`${plural(data.products.total - data.products.draft, "изделие", "изделия", "изделий")} на сайте${всего(data.products.total)}`}
+                />
+              )}
+              {data.news && (
+                <Tile
+                  href="/admin/news/"
+                  num={data.news.total - data.news.draft}
+                  label={`${plural(data.news.total - data.news.draft, "материал", "материала", "материалов")} в ленте${всего(data.news.total)}`}
+                />
+              )}
+              {data.documents && (
+                <Tile
+                  href="/admin/documents/"
+                  num={data.documents.published}
+                  label={`${plural(data.documents.published, "документ доступен", "документа доступны", "документов доступно")}${всего(data.documents.total)}`}
+                />
+              )}
+              {data.leads && (
+                <Tile
+                  href="/admin/leads/"
+                  num={data.leads.total}
+                  label={`${plural(data.leads.total, "заявка", "заявки", "заявок")} всего`}
+                />
+              )}
+              {data.clients !== undefined && (
+                <Tile
+                  href="/admin/clients/"
+                  num={data.clients}
+                  label={`${plural(data.clients, "клиент", "клиента", "клиентов")} в базе`}
+                />
+              )}
+              {data.deals !== undefined && (
+                <Tile
+                  href="/admin/deals/"
+                  num={data.deals}
+                  label={`${plural(data.deals, "сделка", "сделки", "сделок")} во всех воронках`}
+                />
+              )}
             </div>
-          ) : (
-            <div className="queue">
-              {tasks.map((t) => (
-                <Link key={t.href} className="queue__row" href={t.href}>
-                  <span className="queue__count">{t.count}</span>
-                  <span className="queue__what">
-                    {t.what}
-                    <span className="queue__why">{t.why}</span>
-                  </span>
-                  <span className="queue__go">Открыть →</span>
-                </Link>
-              ))}
-            </div>
-          )}
-
-          <h2 className="admin-card__title" style={{ marginTop: 30 }}>
-            Всего в портале
-          </h2>
-
-          <div className="tiles">
-            <Tile
-              href="/admin/products/"
-              num={data.products.total - data.products.draft}
-              label={`изделий на сайте из ${data.products.total}`}
-            />
-            <Tile
-              href="/admin/news/"
-              num={data.news.total - data.news.draft}
-              label={`материалов в ленте из ${data.news.total}`}
-            />
-            <Tile
-              href="/admin/documents/"
-              num={data.documents.published}
-              label={`документов доступно из ${data.documents.total}`}
-            />
-            <Tile href="/admin/leads/" num={data.leads.total} label="заявок всего" />
-            <Tile href="/admin/clients/" num={data.clients} label="клиентов в базе" />
-            <Tile href="/admin/deals/" num={data.deals} label="сделок во всех воронках" />
-          </div>
-        </>
+          </section>
+        </div>
       )}
     </>
   );
+}
+
+/**
+ * Имя вошедшего для приветствия.
+ *
+ * `session()` отдаёт логин, а здороваться «Доброе утро, i.koltsova» —
+ * это здороваться с учётной записью, а не с человеком. Имя лежит
+ * в справочнике сотрудников; не нашлось — здороваемся тем, что есть.
+ *
+ * Имя берётся целиком. Сначала бралось первое слово — чтобы не выходило
+ * «Доброе утро, Кольцова Ирина Петровна», — и на стенде это дало
+ * «Добрый вечер, Локальный»: в справочнике там служебная запись
+ * «Локальный редактор». Отличить имя от прилагательного нечем, а имя,
+ * обрезанное по догадке, читается как ошибка портала.
+ */
+function Greeting({ login }: { login: string }) {
+  const { data } = useLoad<StaffMember[]>(loadStaff);
+  const человек = data?.find((p) => p.login === login);
+  return <>{человек?.name?.trim() || login}</>;
+}
+
+/** Пять последних записей журнала — человеческими фразами, как и сам журнал. */
+function Recent() {
+  const { data, error } = useLoad<Page<AuditEntry>>(() => audit({}, 0, 5));
+
+  if (error) return <p className="admin-hint">Журнал сейчас недоступен.</p>;
+  if (!data) return <p className="muted">Загружаем…</p>;
+  if (data.items.length === 0) return <p className="admin-hint">Записей пока нет.</p>;
+
+  return (
+    <div className="recent">
+      {data.items.map((row) => (
+        <Link key={row.id} className="recent__row" href="/admin/audit/">
+          <span className="recent__when mono">{when(row.at)}</span>
+          <span className="recent__what">{label(AUDIT_ACTION, row.action)}</span>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Хвост «из N» — только когда есть из чего выбирать.
+ *
+ * «0 материалов в ленте из 0» звучит как поломка счётчика, хотя означает
+ * пустую ленту. Ноль из нуля — не доля, и говорить о ней нечего.
+ */
+function всего(total: number): string {
+  return total > 0 ? ` из ${total}` : "";
+}
+
+/** Время суток по часам, а не по расписанию: смены здесь нет. */
+function приветствие(now: Date): string {
+  const час = now.getHours();
+  if (час < 5) return "Доброй ночи";
+  if (час < 12) return "Доброе утро";
+  if (час < 18) return "Добрый день";
+  return "Добрый вечер";
+}
+
+function дата(now: Date): string {
+  return now.toLocaleDateString("ru-RU", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
 }
 
 function Tile({ href, num, label }: { href: string; num: number; label: string }) {

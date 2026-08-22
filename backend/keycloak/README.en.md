@@ -65,3 +65,59 @@ owner brief lists MFA as mandatory, and it is switched on by realm policy in a
 deployed environment — `Authentication → Required actions → Configure OTP`. This
 does not concern the portal at all: it verifies an issued token and does not know
 how many factors were presented at sign-in.
+
+## Session lifetime
+
+| Setting | Value | What it means |
+| --- | --- | --- |
+| `accessTokenLifespan` | 900 (15 minutes) | how long an access token lives; the admin panel renews it by itself and nobody sees it happen |
+| `ssoSessionIdleTimeout` | 3600 (1 hour) | how long an admin session survives inactivity |
+| `ssoSessionMaxLifespan` | 36000 (10 hours) | the ceiling regardless of activity: a working day |
+
+An hour of idle time is a direct requirement: it used to be half an hour, and
+on the stand the access token lived five minutes against fifteen locally.
+Values that drift apart are what "works on my machine" is made of.
+
+**Editing this file does not change a realm that already exists.**
+`--import-realm` imports the realm on first start and leaves an existing one
+alone afterwards: the `vedal-keycloak` volume outlives container recreation.
+So on a running stand — and on any machine where the stack has been up before —
+the new values will not appear by themselves.
+
+Two ways to apply them:
+
+1. **In the Keycloak console** — Realm settings → Sessions (SSO Session Idle)
+   and Realm settings → Tokens (Access Token Lifespan). Thirty seconds,
+   no restart, nothing is lost. This is the way to do it.
+2. Recreate the realm by importing with overwrite. Do not do this without a
+   reason: overwriting deletes the whole realm and with it every account
+   created in the console — that is, every member of staff.
+
+The file stays the source of truth for a clean install: a stack brought up
+from scratch gets these values straight away.
+
+## Redirect addresses
+
+Keycloak checks `redirect_uri` against the list on the `vedal-admin-ui` client,
+and it compares strings, not machines. `localhost` and `127.0.0.1` are
+**different addresses** even though they are the same computer. An address
+missing from the list produces "We are sorry… Invalid parameter: redirect_uri"
+before the sign-in form is ever shown.
+
+| Realm | Allowed |
+| --- | --- |
+| local | `http://localhost:8080/*`, `http://127.0.0.1:8080/*`, and the same on `:3000` for `next dev` |
+| stand | the same plus `http://51.250.31.97:18080/*` |
+
+A new environment means a new entry in `redirectUris` and in `webOrigins`.
+A missing one surfaces only when somebody tries to sign in, and it looks like
+Keycloak is broken when it is in fact client configuration.
+
+To check without opening a browser:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' \
+  'http://localhost:8180/realms/vedal/protocol/openid-connect/auth?client_id=vedal-admin-ui&response_type=code&scope=openid&state=x&code_challenge=abc&code_challenge_method=S256&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fadmin%2Fcallback%2F'
+```
+
+`302` means the address is accepted, `400` means it is not on the list.

@@ -17,7 +17,7 @@
 }
 
 .crumbs a:hover {
-  color: var(--green);
+  color: var(--green-dark);
 }
 
 .article {
@@ -116,7 +116,7 @@
 }
 
 .back a:hover {
-  color: var(--green);
+  color: var(--green-dark);
 }
 
 @media (max-width: 700px) {

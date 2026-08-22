@@ -378,8 +378,19 @@ services:
       VEDAL_DB_NAME: ${VEDAL_DB_NAME:-vedal}
       VEDAL_DB_USER: ${VEDAL_DB_USER:-vedal}
       VEDAL_DB_PASSWORD: ${VEDAL_DB_PASSWORD:-vedal}
+    # Здоровье — это не «отвечает ли REST», а «работают ли задачи».
+    #
+    # Прежняя проверка спрашивала GET / и была довольна. 19 августа задача
+    # vedal-outbox-0 умерла от короткого пропадания базы, Kafka Connect
+    # упавшие задачи сам не поднимает — и два дня контейнер показывал
+    # healthy, пока события никуда не уезжали, а неактивный слот репликации
+    # копил WAL. Увидеть отказ можно было только спросив статус руками.
+    #
+    # curl обязан пройти (иначе REST мёртв), и в ответе не должно быть
+    # ни одной FAILED — ни у коннектора, ни у задачи: ?expand=status
+    # отдаёт оба состояния одной строкой.
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8083/ >/dev/null || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS 'http://localhost:8083/connectors?expand=status' -o /tmp/connect-status && ! grep -q '\"state\":\"FAILED\"' /tmp/connect-status"]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -493,6 +504,23 @@ services:
       VEDAL_ADMIN_ORIGINS: ${VEDAL_ADMIN_ORIGINS:-http://localhost:8080,http://localhost:3000}
       VEDAL_PORTAL_URL: ${VEDAL_PUBLIC_URL:-http://localhost:8080}
       VEDAL_NOTIFICATIONS_MANAGER: ${VEDAL_NOTIFICATIONS_MANAGER:-}
+
+      # Почта. Пустой адрес сервера — рабочее состояние, а не поломка: письма
+      # пишутся в лог и наружу не уходят, так и живёт машина разработчика.
+      # Портал отличает пустое значение от заданного сам (MailSenderConfig),
+      # поэтому пустые строки здесь безопасны.
+      #
+      # Значения задаются в .env рядом с compose-файлом, а не здесь: пароль
+      # в репозитории убирается только перезаписью истории. Пароль нужен
+      # именно приложения — при включённом втором факторе Яндекс 360 основной
+      # пароль учётной записи по SMTP не принимает.
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:-}
+      # Обратный адрес, если он отличается от логина. Яндекс 360 принимает
+      # письмо только от ящика, под которым выполнен вход, поэтому по умолчанию
+      # пусто и берётся логин.
+      VEDAL_MAIL_FROM: ${VEDAL_MAIL_FROM:-}
     ports:
       - "${VEDAL_PORTAL_PORT:-8081}:8081"
     healthcheck:
@@ -547,6 +575,16 @@ services:
       # ведёт в сам контейнер, а portal:8081 из браузера не резолвится.
       VEDAL_API_INTERNAL_URL: http://portal:8081
       NEXT_PUBLIC_API_URL: ${VEDAL_PUBLIC_URL:-http://localhost:8080}
+
+      # Адрес сайта наружу — для canonical и og:url. Они обязаны быть
+      # абсолютными: относительный адрес мессенджер и поисковик разбирают
+      # каждый по-своему, обычно относительно собственного домена.
+      #
+      # Пусто — сайт берёт NEXT_PUBLIC_API_URL: сегодня сайт и API стоят
+      # за одним шлюзом, и адрес у них общий. Задавать отдельно нужно в день,
+      # когда API переедет на свой поддомен: canonical обязан остаться
+      # на сайте, а не уехать на api.
+      NEXT_PUBLIC_SITE_URL: ${VEDAL_SITE_URL:-}
 
       NEXT_PUBLIC_MEDIA_URL: ${VEDAL_MEDIA_URL:-http://localhost:9000/vedal-media}
 

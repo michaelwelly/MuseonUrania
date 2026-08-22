@@ -12,7 +12,7 @@
   height: 56px;
   padding: 0 26px;
   border-radius: 2px;
-  background: var(--green);
+  background: var(--green-dark);
   color: #fff;
   font-size: 15.5px;
   font-weight: 600;
@@ -20,7 +20,7 @@
 }
 
 .heroBtn:hover {
-  background: var(--green-bright);
+  background: var(--green-ink-hover);
   color: #fff;
 }
 
@@ -58,7 +58,7 @@
 
 .chip:hover {
   border-color: var(--green);
-  color: var(--green);
+  color: var(--green-dark);
 }
 
 .chipActive,
@@ -172,7 +172,7 @@
   font-size: 11.5px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: var(--green);
+  color: var(--green-dark);
 }
 
 .h2 {
@@ -291,7 +291,7 @@
 }
 
 .contactRole a:hover {
-  color: var(--green);
+  color: var(--green-dark);
 }
 
 .demoNote {

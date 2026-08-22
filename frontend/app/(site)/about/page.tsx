@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import Image from "next/image";
 import PageHero from "@/components/PageHero";
 import TreeMark from "@/components/TreeMark";
@@ -13,10 +14,11 @@ import {
 import styles from "./page.module.css";
 import { mediaSrc } from "@/lib/media";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "О компании — VEDAL",
   description: aboutHero.lead,
-};
+  path: "/about/",
+});
 
 export default function AboutPage() {
   return (

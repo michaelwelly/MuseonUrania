@@ -89,7 +89,7 @@ describe("вход через Keycloak", () => {
 describe("действующий токен", () => {
   it("отдаёт сохранённый, пока он не истёк", async () => {
     const { accessToken } = await auth();
-    sessionStorage.setItem(
+    localStorage.setItem(
       "vedal.admin.tokens",
       JSON.stringify({ accessToken: "still-good", expiresAt: Date.now() + 600_000 }),
     );
@@ -100,7 +100,7 @@ describe("действующий токен", () => {
   // Токен, истекающий в полёте запроса, — это 401 на ровном месте.
   it("обновляет заранее, не дожидаясь истечения", async () => {
     const { accessToken } = await auth();
-    sessionStorage.setItem(
+    localStorage.setItem(
       "vedal.admin.tokens",
       JSON.stringify({
         accessToken: "expiring",
@@ -117,7 +117,7 @@ describe("действующий токен", () => {
   // получают отказ по уже использованному токену — все, кроме одного.
   it("обновляет одним запросом, сколько бы вызовов ни пришло разом", async () => {
     const { accessToken } = await auth();
-    sessionStorage.setItem(
+    localStorage.setItem(
       "vedal.admin.tokens",
       JSON.stringify({ accessToken: "old", refreshToken: "refresh-1", expiresAt: Date.now() - 1 }),
     );
@@ -133,7 +133,7 @@ describe("действующий токен", () => {
 
   it("забывает токены, если обновить не удалось", async () => {
     const { accessToken, storedTokens } = await auth();
-    sessionStorage.setItem(
+    localStorage.setItem(
       "vedal.admin.tokens",
       JSON.stringify({ accessToken: "old", refreshToken: "refresh-1", expiresAt: Date.now() - 1 }),
     );
@@ -143,9 +143,147 @@ describe("действующий токен", () => {
     expect(storedTokens()).toBeNull();
   });
 
+  // Отказ отказу рознь.
+  //
+  // Раньше вход стирался при любом неуспешном ответе, и перезапуск Keycloak
+  // или шлюза был неотличим от мёртвого токена. На стенде шлюз перезапускается
+  // при каждой выкатке — человек возвращался на экран пароля по нескольку раз
+  // за час, хотя его сессия была жива.
+  it("не выбрасывает вход из-за сбоя на стороне Keycloak", async () => {
+    const { accessToken, storedTokens } = await auth();
+    localStorage.setItem(
+      "vedal.admin.tokens",
+      JSON.stringify({ accessToken: "old", refreshToken: "refresh-1", expiresAt: Date.now() - 1 }),
+    );
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 503, json: async () => ({}) } as Response);
+    vi.stubGlobal("fetch", fetchMock);
+
+    expect(await accessToken()).toBeNull();
+    expect(storedTokens(), "токены остаются: следующее действие попробует снова").not.toBeNull();
+    expect(fetchMock, "одна повторная попытка").toHaveBeenCalledTimes(2);
+  });
+
+  it("не выбрасывает вход, если сеть не ответила", async () => {
+    const { accessToken, storedTokens } = await auth();
+    localStorage.setItem(
+      "vedal.admin.tokens",
+      JSON.stringify({ accessToken: "old", refreshToken: "refresh-1", expiresAt: Date.now() - 1 }),
+    );
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("сеть недоступна")));
+
+    expect(await accessToken()).toBeNull();
+    expect(storedTokens()).not.toBeNull();
+  });
+
+  it("переживает разовый сбой и обновляет со второй попытки", async () => {
+    const { accessToken } = await auth();
+    localStorage.setItem(
+      "vedal.admin.tokens",
+      JSON.stringify({ accessToken: "old", refreshToken: "refresh-1", expiresAt: Date.now() - 1 }),
+    );
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 502, json: async () => ({}) } as Response)
+      .mockResolvedValueOnce(tokenResponse({ access_token: "fresh" }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    expect(await accessToken()).toBe("fresh");
+  });
+
+  // Единственный ответ, означающий «этот токен больше не действует».
+  it("сбрасывает вход на invalid_grant", async () => {
+    const { accessToken, storedTokens } = await auth();
+    localStorage.setItem(
+      "vedal.admin.tokens",
+      JSON.stringify({ accessToken: "old", refreshToken: "refresh-1", expiresAt: Date.now() - 1 }),
+    );
+    const fetchMock = vi.fn().mockResolvedValue(
+      { ok: false, status: 400, json: async () => ({ error: "invalid_grant" }) } as Response,
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    expect(await accessToken()).toBeNull();
+    expect(storedTokens()).toBeNull();
+    expect(fetchMock, "повторять мёртвый токен незачем").toHaveBeenCalledTimes(1);
+  });
+
+  // Ради чего хранилище менялось: закрытая вкладка не должна стоить пароля.
+  it("переживает закрытие вкладки", async () => {
+    const { storedTokens } = await auth();
+    localStorage.setItem(
+      "vedal.admin.tokens",
+      JSON.stringify({ accessToken: "живой", expiresAt: Date.now() + 600_000 }),
+    );
+
+    // Закрытие вкладки: sessionStorage бы очистился, localStorage — нет.
+    sessionStorage.clear();
+    const { storedTokens: послеЗакрытия } = await auth();
+
+    expect(послеЗакрытия()?.accessToken).toBe("живой");
+    expect(storedTokens()?.accessToken).toBe("живой");
+  });
+
+  // Цена переноса: раньше сессию ограничивало само закрытие вкладки, теперь
+  // нужен явный предел. Ноутбук, закрытый в пятницу, в понедельник встречает
+  // экраном входа.
+  it("не восстанавливает сессию после предела её жизни", async () => {
+    const { storedTokens } = await auth();
+    localStorage.setItem(
+      "vedal.admin.tokens",
+      JSON.stringify({
+        accessToken: "живой",
+        expiresAt: Date.now() + 600_000,
+        endsAt: Date.now() - 1,
+      }),
+    );
+
+    expect(storedTokens(), "предел важнее срока токена доступа").toBeNull();
+    expect(localStorage.getItem("vedal.admin.tokens"), "просроченное не залёживается").toBeNull();
+  });
+
+  it("предел ставится один раз и переживает продления", async () => {
+    const { accessToken, storedTokens } = await auth();
+    const предел = Date.now() + 60_000;
+    localStorage.setItem(
+      "vedal.admin.tokens",
+      JSON.stringify({ accessToken: "old", refreshToken: "refresh-1", expiresAt: Date.now() - 1, endsAt: предел }),
+    );
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(tokenResponse({ access_token: "fresh" })));
+
+    expect(await accessToken()).toBe("fresh");
+    expect(storedTokens()?.endsAt, "продление не отодвигает предел").toBe(предел);
+  });
+
+  // localStorage общий на весь браузер: выход в одной вкладке обязан гасить
+  // остальные, иначе вторая показывает рабочий интерфейс, из которого
+  // ни один запрос уже не проходит.
+  it("сообщает другим вкладкам, что вход пропал", async () => {
+    const { onSessionLost } = await auth();
+    const узнали = vi.fn();
+    const отписаться = onSessionLost(узнали);
+
+    window.dispatchEvent(new StorageEvent("storage", { key: "vedal.admin.tokens", newValue: null }));
+
+    expect(узнали).toHaveBeenCalledTimes(1);
+
+    отписаться();
+    window.dispatchEvent(new StorageEvent("storage", { key: "vedal.admin.tokens", newValue: null }));
+    expect(узнали, "после отписки не дёргаем").toHaveBeenCalledTimes(1);
+  });
+
+  it("не путает выход с записью чужого ключа", async () => {
+    const { onSessionLost } = await auth();
+    const узнали = vi.fn();
+    onSessionLost(узнали);
+
+    window.dispatchEvent(new StorageEvent("storage", { key: "что-то-другое", newValue: null }));
+    window.dispatchEvent(new StorageEvent("storage", { key: "vedal.admin.tokens", newValue: "{}" }));
+
+    expect(узнали).not.toHaveBeenCalled();
+  });
+
   it("без refresh-токена не делает вид, что вход есть", async () => {
     const { accessToken } = await auth();
-    sessionStorage.setItem(
+    localStorage.setItem(
       "vedal.admin.tokens",
       JSON.stringify({ accessToken: "old", expiresAt: Date.now() - 1 }),
     );
@@ -155,10 +293,10 @@ describe("действующий токен", () => {
 
   it("битое значение в хранилище не роняет админку", async () => {
     const { storedTokens } = await auth();
-    sessionStorage.setItem("vedal.admin.tokens", "{это не json");
+    localStorage.setItem("vedal.admin.tokens", "{это не json");
 
     expect(storedTokens()).toBeNull();
-    expect(sessionStorage.getItem("vedal.admin.tokens")).toBeNull();
+    expect(localStorage.getItem("vedal.admin.tokens")).toBeNull();
   });
 });
 
@@ -174,7 +312,7 @@ describe("выход", () => {
   // перехода и в access-логе Keycloak и любого прокси перед ним.
   it("не кладёт refresh-токен в адрес", async () => {
     const { logout } = await auth();
-    sessionStorage.setItem(
+    localStorage.setItem(
       "vedal.admin.tokens",
       JSON.stringify({ accessToken: "a", refreshToken: "secret-refresh", expiresAt: Date.now() + 1 }),
     );
@@ -195,7 +333,7 @@ describe("выход", () => {
 
   it("стирает токены из вкладки, даже если отзыв не ушёл", async () => {
     const { logout, storedTokens } = await auth();
-    sessionStorage.setItem(
+    localStorage.setItem(
       "vedal.admin.tokens",
       JSON.stringify({ accessToken: "a", refreshToken: "r", expiresAt: Date.now() + 1 }),
     );

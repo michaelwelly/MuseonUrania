@@ -34,7 +34,14 @@ public interface LeadAdmin {
 
     @Schema(name = "AdminLead", description = "Заявка целиком, вместе с текстом и согласием.")
     record LeadView(UUID id, String form, String name, String company, String phone, String email,
-                    String productSlug, String message, String source, String status, String owner,
+                    String productSlug,
+
+                    @Schema(description = "Серийный номер изделия из сервисного обращения. "
+                            + "Пусто — не указан. При обезличивании не стирается: это "
+                            + "характеристика аппарата, а не человека.", nullable = true)
+                    String serialNumber,
+
+                    String message, String source, String status, String owner,
 
                     @Schema(description = "Язык страницы, с которой отправлена заявка. "
                             + "Разрез аналитики.", example = "ru", nullable = true)
@@ -73,7 +80,51 @@ public interface LeadAdmin {
                     nullable = true)
             @Size(max = 200) String owner) {}
 
-    PageView<LeadRow> leads(String status, int page, int size);
+    @Schema(name = "AdminLeadFilter", description = """
+            Отбор списка заявок. Все поля необязательны и складываются:
+            заданные сужают выборку, пустые её не трогают.
+            """)
+    record Filter(
+            @Schema(description = "Статус заявки. Пусто — все.", nullable = true)
+            String status,
+
+            @Schema(description = """
+                    Поиск по имени, компании, телефону, почте и серийному номеру изделия.
+                    Совпадение по части строки, регистр не важен. Телефон сравнивается
+                    как записан: номер с пробелами по цифрам подряд не найдётся.
+                    """, nullable = true)
+            String query,
+
+            @Schema(description = """
+                    Логин ответственного. Значение «-» означает «без ответственного» —
+                    это отдельный вопрос менеджера, а не отсутствие фильтра.
+                    """, example = "-", nullable = true)
+            String owner,
+
+            @Schema(description = "Форма, с которой пришла заявка. Пусто — любая.",
+                    nullable = true)
+            String form,
+
+            @Schema(description = "Источник перехода. Пусто — любой.", nullable = true)
+            String source) {
+
+        /** Пустая строка и строка из пробелов — это «фильтра нет», а не «пусто». */
+        static String clean(String value) {
+            return value == null || value.isBlank() ? null : value.trim();
+        }
+
+        // public обязателен: запись объявлена внутри интерфейса, а значит уже
+        // публична, и компактный конструктор не может быть строже её самой.
+        public Filter {
+            status = clean(status);
+            query = clean(query);
+            owner = clean(owner);
+            form = clean(form);
+            source = clean(source);
+        }
+    }
+
+    PageView<LeadRow> leads(Filter filter, int page, int size);
 
     LeadView lead(UUID id);
 

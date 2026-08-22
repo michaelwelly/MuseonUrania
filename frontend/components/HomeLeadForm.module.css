@@ -63,7 +63,7 @@
 
 .input::placeholder,
 .textarea::placeholder {
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--on-dark-3);
 }
 
 .input:focus,
@@ -110,6 +110,14 @@
   color: var(--green-on-dark);
 }
 
+/* Разделитель между подписью согласия и ссылкой на политику — как
+   в LeadForm. Отдельным элементом, а не пробелами в разметке. Форма стоит
+   на тёмном, поэтому приглушённый цвет берётся свой, а не --muted. */
+.consentSep {
+  margin: 0 7px;
+  opacity: 0.6;
+}
+
 .actions {
   display: flex;
   align-items: center;
@@ -123,7 +131,9 @@
   padding: 0 26px;
   border: 0;
   border-radius: 2px;
-  background: var(--green);
+  /* --green-dark, а не --green: белый на нём даёт 5.32, на --green — 3.59.
+     Это главная кнопка воронки, и читаться она обязана. */
+  background: var(--green-dark);
   color: #fff;
   font: inherit;
   font-size: 15px;
@@ -132,7 +142,9 @@
 }
 
 .submit:hover {
-  background: var(--green-bright);
+  /* Наведение затемняет, а не осветляет: на --green-bright белый давал 2.86,
+     то есть наведение делало кнопку хуже, чем она была. */
+  background: var(--green-ink-hover);
 }
 
 .note {

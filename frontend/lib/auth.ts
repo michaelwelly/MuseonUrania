@@ -5,12 +5,30 @@
 // которая от этого появляется, — перехваченный код авторизации бесполезен
 // без verifier'а, который никуда не отправлялся.
 //
-// Где лежат токены. Access и refresh — в sessionStorage: он умирает вместе
-// с вкладкой и не виден другим вкладкам того же браузера. Это не идеал:
-// идеал — httpOnly-кука и обмен токенами на стороне сервера (BFF), тогда
-// скрипт на странице не может добраться до токена вообще. Пока админка
-// статическая и своего сервера у неё нет, BFF ставить некуда; когда
-// понадобится — это отдельная задача, и она сведётся к замене этого файла.
+// Где лежат токены. Access и refresh — в localStorage: вход переживает
+// закрытие вкладки, и вернувшийся через полчаса человек продолжает работу,
+// а не вводит пароль заново.
+//
+// Чем за это платим и чем платёж ограничен. sessionStorage умирал вместе
+// с вкладкой, и это само по себе было ограничителем: чужой человек за тем же
+// компьютером не попадал в чужую сессию. Теперь ограничителей три, и они
+// заданы явно:
+//
+//   * потолок жизни сессии (SESSION_MAX_MS) — запись хранит время, после
+//     которого не восстанавливается ни при каких условиях. Ноутбук, закрытый
+//     в пятницу, в понедельник встречает экраном входа;
+//   * час бездействия — его держит Keycloak (ssoSessionIdleTimeout), и это
+//     настоящая проверка: refresh-токен просто перестаёт приниматься;
+//   * выход в одной вкладке гасит остальные — localStorage общий, и молча
+//     оставленная открытой вторая вкладка не должна пережить выход.
+//
+// От XSS ни то ни другое хранилище не защищает: скрипт на странице читает
+// оба одинаково. Идеал прежний — httpOnly-кука и обмен токенами на стороне
+// сервера (BFF); пока админка статическая, ставить его некуда.
+//
+// PKCE-verifier и адрес возврата остаются в sessionStorage намеренно: они
+// живут один вход и принадлежат вкладке. В общем хранилище параллельный
+// вход во второй вкладке затёр бы verifier первой.
 //
 // Роли и права проверяет портал. Здесь только вход: интерфейс, спрятавший
 // кнопку, ничего не защищает — запрос всё равно можно послать руками.
@@ -27,9 +45,17 @@ const RETURN_KEY = "vedal.admin.return";
 export type Tokens = {
   accessToken: string;
   refreshToken?: string;
-  /** Время истечения в миллисекундах эпохи. */
+  /** Время истечения токена доступа в миллисекундах эпохи. */
   expiresAt: number;
+  /**
+   * Предел жизни всей сессии. Ставится один раз при входе и переживает
+   * продления: иначе бесконечная цепочка обновлений держала бы вход вечно.
+   * Совпадает с ssoSessionMaxLifespan в realm'е — десять часов, рабочий день.
+   */
+  endsAt?: number;
 };
+
+const SESSION_MAX_MS = 10 * 60 * 60 * 1000;
 
 const authorizeUrl = () => `${ISSUER}/protocol/openid-connect/auth`;
 const tokenUrl = () => `${ISSUER}/protocol/openid-connect/token`;
@@ -60,23 +86,61 @@ function base64url(bytes: Uint8Array): string {
 
 export function storedTokens(): Tokens | null {
   if (typeof window === "undefined") return null;
-  const raw = sessionStorage.getItem(STORAGE_KEY);
+  const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return null;
+
+  let tokens: Tokens;
   try {
-    return JSON.parse(raw) as Tokens;
+    tokens = JSON.parse(raw) as Tokens;
   } catch {
     // Битое значение — не повод падать: считаем, что входа нет.
-    sessionStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(STORAGE_KEY);
     return null;
   }
+
+  // Потолок жизни сессии. Проверяется при чтении, а не по таймеру: браузер
+  // мог быть закрыт, и таймеру было бы негде тикать.
+  if (tokens.endsAt && Date.now() >= tokens.endsAt) {
+    forget();
+    return null;
+  }
+  return tokens;
 }
 
 function store(tokens: Tokens) {
-  sessionStorage.setItem(STORAGE_KEY, JSON.stringify(tokens));
+  // Потолок ставится один раз за сессию и переносится через все продления.
+  const endsAt = storedTokens()?.endsAt ?? Date.now() + SESSION_MAX_MS;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...tokens, endsAt }));
 }
 
 export function forget() {
-  sessionStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(STORAGE_KEY);
+}
+
+// ————— согласование вкладок —————
+
+type Listener = () => void;
+const listeners = new Set<Listener>();
+
+/**
+ * Сообщает, что вход пропал в другой вкладке.
+ *
+ * localStorage общий на весь браузер, поэтому выход в одной вкладке обязан
+ * гасить остальные. Без этого вторая вкладка продолжала бы показывать
+ * рабочий интерфейс, из которого ни один запрос уже не проходит.
+ */
+export function onSessionLost(listener: Listener): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (event) => {
+    // newValue === null означает removeItem, то есть выход или сброс.
+    if (event.key === STORAGE_KEY && event.newValue === null) {
+      listeners.forEach((listener) => listener());
+    }
+  });
 }
 
 // ————— вход —————
@@ -200,25 +264,76 @@ export async function accessToken(): Promise<string | null> {
   return (await refreshing)?.accessToken ?? null;
 }
 
-async function refresh(refreshToken: string): Promise<Tokens | null> {
-  const response = await fetch(tokenUrl(), {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      client_id: CLIENT_ID,
-      refresh_token: refreshToken,
-    }),
-  });
+// Сколько ждать между попытками обновления. Сбой на той стороне —
+// перезапуск Keycloak, перезапуск шлюза, обрыв — обычно короче, чем пауза
+// между двумя действиями человека.
+const RETRY_MS = 700;
 
-  if (!response.ok) {
-    forget();
-    return null;
+async function refresh(refreshToken: string): Promise<Tokens | null> {
+  // Две попытки, потому что отказ отказу рознь.
+  //
+  // Раньше вход стирался при любом неуспешном ответе. Отказ «refresh-токен
+  // мёртв» и отказ «Keycloak сейчас перезапускается» выглядели одинаково,
+  // и секундная заминка на той стороне возвращала человека на экран пароля.
+  // На стенде, где шлюз перезапускается при каждой выкатке, это означало
+  // вход заново несколько раз за час.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    let response: Response;
+    try {
+      response = await fetch(tokenUrl(), {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          grant_type: "refresh_token",
+          client_id: CLIENT_ID,
+          refresh_token: refreshToken,
+        }),
+      });
+    } catch {
+      // Сеть не ответила. Токен от этого не перестал действовать —
+      // выбрасывать его нельзя.
+      if (attempt === 0) {
+        await pause(RETRY_MS);
+        continue;
+      }
+      return null;
+    }
+
+    if (response.ok) {
+      const tokens = toTokens(await response.json());
+      store(tokens);
+      return tokens;
+    }
+
+    // invalid_grant — единственный ответ, означающий «этот токен больше
+    // не действует». Держать его дальше незачем, и вход честно сбрасывается.
+    if (await isDeadToken(response)) {
+      forget();
+      return null;
+    }
+
+    // Всё остальное — сбой на той стороне. Токены остаются: следующее
+    // действие человека попробует снова, и обычно этого хватает.
+    if (attempt === 0) await pause(RETRY_MS);
   }
 
-  const tokens = toTokens(await response.json());
-  store(tokens);
-  return tokens;
+  return null;
+}
+
+const pause = (ms: number) => new Promise((done) => setTimeout(done, ms));
+
+/** Отличает мёртвый refresh-токен от сбоя на стороне Keycloak. */
+async function isDeadToken(response: Response): Promise<boolean> {
+  // 5xx — это никогда не про токен.
+  if (response.status >= 500) return false;
+  try {
+    const body = (await response.json()) as { error?: string };
+    return body.error === "invalid_grant" || body.error === "invalid_token";
+  } catch {
+    // Тело не разобралось. На 400 это всё равно отказ по запросу,
+    // а не по связи.
+    return response.status === 400;
+  }
 }
 
 type TokenResponse = {

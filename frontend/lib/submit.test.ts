@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { attribution } from "./submit";
+import { attribution, visitorKey } from "./submit";
 
 // Атрибуция заявки: язык страницы и кампания. Два из четырёх разрезов
 // аналитики CRM считаются по этим полям, и пустые они там, где посетитель
@@ -45,5 +45,52 @@ describe("атрибуция заявки", () => {
     const result = attribution("?utm_source=yandex&utm_medium=cpc&utm_term=ивл", "ru");
     expect(Object.keys(result).sort()).toEqual(["campaign", "language"]);
     expect(result.campaign).toBeUndefined();
+  });
+});
+
+// Ключ разговора — единственное, что закрывает переписку с Ведалиной:
+// кто знает ключ, тот читает чужой разговор.
+describe("ключ разговора", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  it("переиспользует сохранённый ключ, чтобы разговор пережил перезагрузку", () => {
+    localStorage.setItem("vedal.chat.visitor", "0123456789abcdef0123456789abcdef");
+    expect(visitorKey()).toBe("0123456789abcdef0123456789abcdef");
+  });
+
+  // Главная проверка. randomUUID существует только в защищённом контексте,
+  // а стенд ходит по http — значит на стенде работает именно эта ветка,
+  // и раньше она отдавала Math.random().
+  it("без randomUUID берёт случайность у getRandomValues, а не у Math.random", () => {
+    Object.defineProperty(crypto, "randomUUID", { value: undefined, configurable: true });
+    const dice = vi.spyOn(Math, "random");
+    const bytes = vi.spyOn(crypto, "getRandomValues");
+    try {
+      const key = visitorKey();
+
+      expect(key).toMatch(/^[0-9a-f]{32}$/);
+      expect(bytes).toHaveBeenCalled();
+      expect(dice, "Math.random не годится для секрета").not.toHaveBeenCalled();
+    } finally {
+      delete (crypto as { randomUUID?: unknown }).randomUUID;
+    }
+  });
+
+  it("выдаёт ключ, даже когда хранилище запрещено", () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("хранилище недоступно");
+    });
+
+    expect(visitorKey()).toMatch(/^[0-9a-f-]{32,36}$/);
+  });
+
+  it("выдаёт разные ключи разным вкладкам", () => {
+    const first = visitorKey();
+    localStorage.clear();
+
+    expect(visitorKey()).not.toBe(first);
   });
 });

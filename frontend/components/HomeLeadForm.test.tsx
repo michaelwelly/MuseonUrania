@@ -102,3 +102,62 @@ describe("согласие на обработку персональных да
     );
   });
 });
+
+// Что происходит с формой, когда отправка не прошла проверку.
+//
+// Проверяется не наличие красного текста, а то, доберётся ли до него человек,
+// который экран не видит. Замер на живом стенде показал: сообщения появлялись,
+// aria-invalid проставлялся, но фокус оставался на body, ошибки не были
+// связаны с полями, живой области не было вовсе. Для незрячего посетителя
+// нажатие «Отправить» выглядело как «ничего не произошло».
+describe("форма с ошибками доступна не только глазами", () => {
+  beforeEach(() => {
+    mocks.submitLead.mockReset();
+  });
+
+  it("переносит фокус на первое незаполненное поле", async () => {
+    const user = userEvent.setup();
+    await act(async () => {
+      render(<HomeLeadForm />);
+    });
+
+    await user.click(screen.getByRole("button", { name: /отправить/i }));
+
+    expect(mocks.submitLead, "пустая форма не отправляется").not.toHaveBeenCalled();
+    // Первое поле формы, а не первый ключ объекта ошибок: человек должен
+    // попасть на верхнюю ошибку, а не на случайную.
+    expect(document.activeElement).toBe(screen.getByLabelText("Имя"));
+  });
+
+  it("связывает поле с текстом его ошибки", async () => {
+    const user = userEvent.setup();
+    await act(async () => {
+      render(<HomeLeadForm />);
+    });
+
+    await user.click(screen.getByRole("button", { name: /отправить/i }));
+
+    const name = screen.getByLabelText("Имя");
+    expect(name).toHaveAttribute("aria-invalid", "true");
+    expect(name).toHaveAttribute("aria-required", "true");
+
+    const described = name.getAttribute("aria-describedby");
+    expect(described, "ошибка должна быть связана с полем").toBeTruthy();
+    expect(document.getElementById(described!)?.textContent).toBe("Как к вам обращаться");
+  });
+
+  it("снимает связь с ошибкой, когда поле заполнено", async () => {
+    const user = userEvent.setup();
+    await act(async () => {
+      render(<HomeLeadForm />);
+    });
+
+    await user.click(screen.getByRole("button", { name: /отправить/i }));
+    await user.type(screen.getByLabelText("Имя"), "Егор");
+    await user.click(screen.getByRole("button", { name: /отправить/i }));
+
+    const name = screen.getByLabelText("Имя");
+    expect(name).not.toHaveAttribute("aria-describedby");
+    expect(name).toHaveAttribute("aria-invalid", "false");
+  });
+});

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   createDocument,
   documentVocabulary,
@@ -12,7 +12,9 @@ import {
   type DocumentRow,
   type Vocabulary,
 } from "@/lib/admin";
-import { Field, Note, Published, message, useLoad, when } from "../ui";
+import { SearchIcon } from "../icons";
+import { DOC_ACCESS, DOC_SENSITIVITY, label } from "../labels";
+import { Empty, Field, message, Note, useLoad } from "../ui";
 
 // Документы — единственное место админки, где правило доступа видно прямо
 // в интерфейсе: строка знает, почему её нельзя опубликовать, и говорит это
@@ -21,12 +23,51 @@ import { Field, Note, Published, message, useLoad, when } from "../ui";
 
 const MAX_MB = 20;
 
+/**
+ * Размер файла человеку.
+ *
+ * «0.0 МБ» читается как поломка счётчика, а означает файл меньше пятидесяти
+ * килобайт — например, однострочный PDF-заглушку, которую редактор загрузил
+ * по ошибке. В килобайтах это видно сразу.
+ */
+function размер(bytes: number): string {
+  const мб = bytes / 1024 / 1024;
+  // Разряды по-русски: «2,9 МБ», а не «2.9 МБ». Весь остальной портал
+  // набирает числа через toLocaleString, и точка здесь выдаёт чужой
+  // формат посреди русского текста.
+  if (мб >= 0.1) return `${мб.toLocaleString("ru-RU", { maximumFractionDigits: 1 })} МБ`;
+  return `${Math.max(1, Math.round(bytes / 1024))} КБ`;
+}
+
 export default function DocumentsPage() {
   const { data, error, loading, reload, setError } = useLoad<DocumentRow[]>(documents);
   const { data: vocabulary } = useLoad<Vocabulary>(documentVocabulary);
   const [busy, setBusy] = useState<string | null>(null);
   const [editing, setEditing] = useState<DocumentRow | null>(null);
   const [creating, setCreating] = useState(false);
+  const [typed, setTyped] = useState("");
+  const [pick, setPick] = useState<"all" | "live" | "nofile" | "closed">("all");
+
+  const all = useMemo(() => data ?? [], [data]);
+
+  // Отбор по прочитанному списку, а не запросом: документов десять, портал
+  // отдаёт их целиком, и «ничего не найдено» здесь означает «во всём
+  // перечне ничего не найдено» — потому что весь перечень и есть то,
+  // что прочитано.
+  const rows = useMemo(() => {
+    const низ = typed.trim().toLowerCase();
+    return all.filter((d) => {
+      if (pick === "live" && !d.published) return false;
+      if (pick === "nofile" && d.hasFile) return false;
+      if (pick === "closed" && d.sensitivity === "public") return false;
+      if (!низ) return true;
+      return (
+        d.title.toLowerCase().includes(низ) ||
+        d.slug.toLowerCase().includes(низ) ||
+        d.group.toLowerCase().includes(низ)
+      );
+    });
+  }, [all, typed, pick]);
 
   async function act(id: string, action: () => Promise<unknown>) {
     setBusy(id);
@@ -56,9 +97,21 @@ export default function DocumentsPage() {
     <>
       <div className="admin-head">
         <h1>Документы</h1>
-        <button className="btn btn--primary" onClick={() => setCreating(true)}>
-          Завести документ
-        </button>
+        <div className="row">
+          <label className="find">
+            <SearchIcon size={16} />
+            <input
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+              placeholder="Название, адрес, раздел"
+              aria-label="Поиск по документам"
+              autoComplete="off"
+            />
+          </label>
+          <button className="btn btn--primary" onClick={() => setCreating(true)}>
+            Завести документ
+          </button>
+        </div>
       </div>
       <p className="admin-hint">
         Перечень и публикация — разные вещи. Строка в перечне видна на сайте вместе со
@@ -91,84 +144,145 @@ export default function DocumentsPage() {
         />
       )}
 
+      <div className="chips">
+        {(
+          [
+            { id: "all", name: "Все" },
+            { id: "live", name: "На сайте" },
+            { id: "nofile", name: "Без файла" },
+            { id: "closed", name: "Закрытые" },
+          ] as const
+        ).map((f) => {
+          const сколько = all.filter((d) =>
+            f.id === "live"
+              ? d.published
+              : f.id === "nofile"
+                ? !d.hasFile
+                : f.id === "closed"
+                  ? d.sensitivity !== "public"
+                  : true,
+          ).length;
+          return (
+            <span key={f.id} className={`chip${pick === f.id ? " chip--on" : ""}`}>
+              <button
+                type="button"
+                className="chip__pick"
+                aria-pressed={pick === f.id}
+                onClick={() => setPick(f.id)}
+              >
+                {f.name}
+                {data && <span className="chip__count mono">{сколько}</span>}
+              </button>
+            </span>
+          );
+        })}
+      </div>
+
       {loading && !data && <p className="muted">Загружаем…</p>}
 
-      {data && (
+      {data && rows.length === 0 && (
+        <Empty>
+          {all.length === 0
+            ? "Документов пока нет. Здесь заводятся карточки, а файл к ним прикладывается отдельно."
+            : "По этому отбору документов нет."}
+        </Empty>
+      )}
+
+      {rows.length > 0 && (
         <div className="admin-scroll">
-          <table className="admin-table">
+          <table className="admin-table admin-table--pick">
             <thead>
               <tr>
                 <th>Документ</th>
                 <th>Раздел</th>
-                <th>Доступ</th>
+                <th>Чувствительность</th>
                 <th>Файл</th>
-                <th>Состояние</th>
+                <th>Публикация</th>
                 <th />
               </tr>
             </thead>
             <tbody>
-              {data.map((row) => (
-                <tr key={row.id}>
+              {rows.map((row) => (
+                <tr
+                  key={row.id}
+                  // Две приметы, и обе про то, чего нельзя: конфиденциальный
+                  // документ наружу не выходит никогда, документ без файла
+                  // не публикуется, пока файла нет. Красная сильнее жёлтой.
+                  className={
+                    row.sensitivity === "confidential"
+                      ? "row--stop"
+                      : !row.hasFile
+                        ? "row--wait"
+                        : ""
+                  }
+                >
                   <td>
                     <button
-                      className="btn btn--small"
-                      style={{ border: "none", padding: 0, background: "none", color: "var(--green-dark)" }}
+                      type="button"
+                      className="inline-edit"
                       onClick={() => setEditing(row)}
+                      aria-label={`Правка карточки: ${row.title}`}
                     >
-                      {row.title}
+                      <span className="row__name">{row.title}</span>
                     </button>
-                    <div className="mono">{row.slug}</div>
-                    <div className="muted" style={{ fontSize: 12 }}>{row.subject}</div>
+                    <span className="row__under mono">{row.slug}</span>
+                    <span className="row__under">{row.subject}</span>
                   </td>
+
                   <td className="tight">{row.group}</td>
+
                   <td className="tight">
-                    <span className={`badge ${row.sensitivity === "public" ? "" : "badge--warn"}`}>
-                      {row.sensitivity}
+                    <span
+                      className={`badge ${
+                        row.sensitivity === "public" ? "badge--on" : "badge--stop"
+                      }`}
+                    >
+                      {label(DOC_SENSITIVITY, row.sensitivity)}
                     </span>
-                    <div style={{ marginTop: 4 }}>
-                      <span className="badge">{row.access}</span>
-                    </div>
+                    <span className="row__under">{label(DOC_ACCESS, row.access)}</span>
                   </td>
+
                   <td className="tight">
+                    {/* Тип файла не называем.
+
+                        В макете здесь «PDF · 1,2 МБ», и первое время так
+                        и было. Но портал принимает не только PDF —
+                        StorageLimits знает png, jpg, webp и svg, — а тип
+                        загруженного файла в базе не хранится вовсе:
+                        у Document есть file_size и нет content_type.
+                        «PDF» в строке было бы утверждением, которое
+                        неоткуда взять и которое однажды окажется ложью. */}
                     {row.hasFile ? (
-                      <span className="badge badge--on">
-                        {row.fileSize ? `${(row.fileSize / 1024 / 1024).toFixed(1)} МБ` : "есть"}
+                      <span className="mono">
+                        {row.fileSize ? размер(row.fileSize) : "размер неизвестен"}
                       </span>
                     ) : (
-                      <span className="badge badge--off">нет</span>
+                      <span className="nobody">файла нет</span>
                     )}
-                    <div style={{ marginTop: 6 }}>
+                    <label className="file">
+                      <span className="file__word">{row.hasFile ? "заменить" : "загрузить"}</span>
                       <input
+                        aria-label={`Файл документа: ${row.title}`}
                         type="file"
-                        style={{ fontSize: 12, maxWidth: 190 }}
                         disabled={busy === row.id}
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) void upload(row, file);
                         }}
                       />
-                    </div>
+                    </label>
                   </td>
-                  <td>
-                    <Published on={row.published} />
-                    {row.approvedBy && (
-                      <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
-                        согласовал {row.approvedBy}
-                      </div>
-                    )}
-                    <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
-                      {when(row.updatedAt)}
-                    </div>
-                    {row.publishBlockedBy && (
-                      <div className="muted" style={{ fontSize: 12, marginTop: 6, maxWidth: 280 }}>
-                        {row.publishBlockedBy}
-                      </div>
-                    )}
+
+                  <td className="tight">
+                    <Publication row={row} />
                   </td>
+
                   <td className="tight">
                     <button
                       className="btn btn--small"
-                      disabled={busy === row.id || (!row.published && row.publishBlockedBy !== null)}
+                      disabled={
+                        busy === row.id || (!row.published && row.publishBlockedBy !== null)
+                      }
                       title={row.publishBlockedBy ?? undefined}
                       onClick={() =>
                         void act(row.id, () => publishDocument(row.id, !row.published))
@@ -249,7 +363,7 @@ function DocumentCard({
 
   return (
     <div className="admin-card">
-      <h2 style={{ fontSize: 15, marginBottom: 12 }}>
+      <h2 style={{ fontSize: "var(--t-base)", marginBottom: "var(--s3)" }}>
         {existing ? "Правка карточки документа" : "Новый документ"}
       </h2>
       <Note kind="error">{failure}</Note>
@@ -284,14 +398,18 @@ function DocumentCard({
         >
           <select value={form.sensitivity} onChange={(e) => set("sensitivity", e.target.value)}>
             {vocabulary.sensitivities.map((s) => (
-              <option key={s}>{s}</option>
+              <option key={s} value={s}>
+                {label(DOC_SENSITIVITY, s)}
+              </option>
             ))}
           </select>
         </Field>
         <Field label="Бейдж доступа на сайте">
           <select value={form.access} onChange={(e) => set("access", e.target.value)}>
             {vocabulary.access.map((a) => (
-              <option key={a}>{a}</option>
+              <option key={a} value={a}>
+                {label(DOC_ACCESS, a)}
+              </option>
             ))}
           </select>
         </Field>
@@ -328,4 +446,36 @@ function DocumentCard({
       </div>
     </div>
   );
+}
+
+/**
+ * Что с публикацией — одной фразой.
+ *
+ * Раньше здесь стояла метка «опубликовано / черновик», а причина запрета
+ * лежала отдельной строчкой ниже. Читалось это как два разных сообщения,
+ * и связать их приходилось самому. Состояний тут на самом деле четыре,
+ * и каждое — законченный ответ на вопрос «что с ним сейчас».
+ *
+ * Причину запрета сочиняет портал, а не интерфейс: правила лежат
+ * в ограничениях схемы, и переписанные сюда они разъедутся с ними молча.
+ */
+function Publication({ row }: { row: DocumentRow }) {
+  if (row.published) {
+    return (
+      <span className={row.listed ? "pub pub--live" : "pub pub--inside"}>
+        {row.listed ? "на сайте" : "только внутри"}
+      </span>
+    );
+  }
+
+  if (row.publishBlockedBy) {
+    return (
+      <span className="pub pub--no">
+        <span className="pub__word">нельзя</span>
+        <span className="pub__why">{row.publishBlockedBy}</span>
+      </span>
+    );
+  }
+
+  return <span className="pub pub--draft">черновик</span>;
 }

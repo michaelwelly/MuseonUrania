@@ -27,7 +27,8 @@ export default function HomeLeadForm() {
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
+    const formEl = event.currentTarget;
+    const data = new FormData(formEl);
     const get = (k: string) => String(data.get(k) ?? "").trim();
 
     const found: Errors = {};
@@ -38,7 +39,15 @@ export default function HomeLeadForm() {
     if (!data.get("consent")) found.consent = consentCopy.error;
 
     setErrors(found);
-    if (Object.keys(found).length > 0) return;
+    if (Object.keys(found).length > 0) {
+      // То же, что и в LeadForm: без переноса фокуса отправка для незрячего
+      // посетителя выглядит как «ничего не произошло».
+      const order = ["name", "phone", "email", "message", "consent"] as const;
+      const first = order.find((field) => found[field]);
+      const control = first ? formEl.elements.namedItem(first) : null;
+      if (control instanceof HTMLElement) control.focus();
+      return;
+    }
 
     setStatus("sending");
     const result = await submitLead(
@@ -81,8 +90,10 @@ export default function HomeLeadForm() {
             aria-label="Имя"
             autoComplete="name"
             aria-invalid={!!errors.name}
+            aria-required="true"
+            aria-describedby={errors.name ? "home-name-error" : undefined}
           />
-          {errors.name && <span className={styles.error}>{errors.name}</span>}
+          {errors.name && <span id="home-name-error" className={styles.error}>{errors.name}</span>}
         </div>
         <div className={styles.field}>
           <input
@@ -105,8 +116,10 @@ export default function HomeLeadForm() {
             aria-label="Телефон"
             autoComplete="tel"
             aria-invalid={!!errors.phone}
+            aria-required="true"
+            aria-describedby={errors.phone ? "home-phone-error" : undefined}
           />
-          {errors.phone && <span className={styles.error}>{errors.phone}</span>}
+          {errors.phone && <span id="home-phone-error" className={styles.error}>{errors.phone}</span>}
         </div>
         <div className={styles.field}>
           <input
@@ -117,8 +130,10 @@ export default function HomeLeadForm() {
             aria-label="Рабочая почта"
             autoComplete="email"
             aria-invalid={!!errors.email}
+            aria-required="true"
+            aria-describedby={errors.email ? "home-email-error" : undefined}
           />
-          {errors.email && <span className={styles.error}>{errors.email}</span>}
+          {errors.email && <span id="home-email-error" className={styles.error}>{errors.email}</span>}
         </div>
       </div>
 
@@ -128,8 +143,10 @@ export default function HomeLeadForm() {
         placeholder="Задача отделения, модель или вопрос"
         aria-label="Сообщение"
         aria-invalid={!!errors.message}
+        aria-required="true"
+        aria-describedby={errors.message ? "home-message-error" : undefined}
       />
-      {errors.message && <span className={styles.error}>{errors.message}</span>}
+      {errors.message && <span id="home-message-error" className={styles.error}>{errors.message}</span>}
 
       {/* Ловушка для ботов: человек этого поля не видит и не заполняет. */}
       <input
@@ -142,14 +159,24 @@ export default function HomeLeadForm() {
       />
 
       <label className={styles.consent}>
-        <input type="checkbox" name="consent" aria-invalid={!!errors.consent} />
+        <input
+          type="checkbox"
+          name="consent"
+          aria-invalid={!!errors.consent}
+          aria-required="true"
+          aria-describedby={errors.consent ? "home-consent-error" : undefined}
+        />
+        {/* Та же правка, что в LeadForm: звёздочка вплотную к тексту,
+            разделитель с воздухом. Формулировка согласия одна на обе формы,
+            и вид у неё тоже должен быть один. */}
         <span>
-          {consentCopy.label} <span className={styles.required}>*</span>
-          {" · "}
+          {consentCopy.label}
+          <span className={styles.required}>*</span>
+          <span className={styles.consentSep}>·</span>
           <Link href={consentCopy.href}>{consentCopy.linkLabel}</Link>
         </span>
       </label>
-      {errors.consent && <span className={styles.error}>{errors.consent}</span>}
+      {errors.consent && <span id="home-consent-error" className={styles.error}>{errors.consent}</span>}
 
       <div className={styles.actions}>
         <button

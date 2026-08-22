@@ -8,13 +8,18 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.vedal.portal.common.RateLimit;
 import ru.vedal.portal.common.TooManyRequestsException;
+
+import java.time.Duration;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/assistant/v1")
@@ -28,6 +33,29 @@ public class PublicAssistantController {
                                      @Qualifier("assistantRateLimit") RateLimit rateLimit) {
         this.assistant = assistant;
         this.rateLimit = rateLimit;
+    }
+
+    @Operation(summary = "Кнопки быстрых ответов",
+            description = """
+                    Подписи кнопок виджета и то, что делает каждая. Список приходит
+                    отсюда, а не переписан в интерфейс: подпись и заготовка,
+                    разложенные по двум местам, расходятся на первой же правке —
+                    и расходятся молча.
+
+                    Кнопка с `action: ask` отправляется в чат как сообщение
+                    с полем `intent`, и на неё приходит заготовка. Кнопка
+                    с `action: handoff` зовёт специалиста отдельной дверью —
+                    `POST /chat/{visitorKey}/handoff`.
+
+                    Без лимита частоты: ответ не зависит от запроса и кэшируется
+                    на час, как остальные справочники портала.
+                    """)
+    @ApiResponse(responseCode = "200", description = "Кнопки по порядку.")
+    @GetMapping("/prompts")
+    public ResponseEntity<List<ScriptedReplies.Prompt>> prompts() {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(Duration.ofHours(1)).cachePublic())
+                .body(ScriptedReplies.prompts());
     }
 
     @Operation(summary = "Спросить Ведалину",

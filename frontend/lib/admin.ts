@@ -100,6 +100,9 @@ export type ProductRow = {
   docStatus: string;
   published: boolean;
   sortOrder: number;
+  /** Снимок изделия. Пусто — снимка нет; на сайте это пустая рамка. */
+  imageSrc: string | null;
+  /** Названия категорий, а не адреса: список читает человек. */
   categories: string[];
   updatedAt: string;
 };
@@ -258,11 +261,19 @@ export type LeadRow = {
   source: string;
   status: string;
   owner: string | null;
+  /** Сделка, в которую разобрана заявка. Пусто — ещё не разобрана. */
+  dealId: string | null;
   createdAt: string;
 };
 
 export type Lead = LeadRow & {
   message: string;
+  /**
+   * Серийный номер изделия из сервисного обращения. Пусто — не указан.
+   * В строке списка его нет намеренно: он для карточки, а список и так
+   * широкий. Найти по нему заявку можно через общий поиск.
+   */
+  serialNumber: string | null;
   consentVersion: string;
   consentAt: string;
   correlationId: string | null;
@@ -270,9 +281,31 @@ export type Lead = LeadRow & {
   erasedAt: string | null;
 };
 
-export const leads = (status: string, page = 0, size = 50) => {
+/**
+ * Отбор списка заявок. Признаки складываются, а не заменяют друг друга.
+ *
+ * Отбирает портал, а не браузер, и это не безразлично: фильтр в браузере
+ * работает по загруженной странице и со второй страницы молча врёт —
+ * «ничего не найдено» там означает «на этой странице нет».
+ */
+export type LeadFilter = {
+  status?: string;
+  /** Поиск по имени, компании, телефону и почте. */
+  query?: string;
+  /** Логин ответственного. Значение «-» — заявки, которые никто не ведёт. */
+  owner?: string;
+  form?: string;
+  source?: string;
+};
+
+/** Логин, которого не бывает: им портал помечает «без ответственного». */
+export const NOBODY = "-";
+
+export const leads = (filter: LeadFilter = {}, page = 0, size = 50) => {
   const query = new URLSearchParams({ page: String(page), size: String(size) });
-  if (status) query.set("status", status);
+  for (const [key, value] of Object.entries(filter)) {
+    if (value) query.set(key, value);
+  }
   return get<Page<LeadRow>>(`/leads?${query}`);
 };
 export const leadStatuses = () => get<string[]>("/leads/statuses");
@@ -475,7 +508,7 @@ export type Conversion = {
 
 export const pipelines = () => get<Pipeline[]>("/deals/pipelines");
 export const deals = (
-  filter: { pipeline?: string; stage?: string; clientId?: string },
+  filter: { pipeline?: string; stage?: string; clientId?: string; owner?: string },
   page = 0,
   size = 50,
 ) => {
@@ -483,6 +516,9 @@ export const deals = (
   if (filter.pipeline) params.set("pipeline", filter.pipeline);
   if (filter.stage) params.set("stage", filter.stage);
   if (filter.clientId) params.set("clientId", filter.clientId);
+  // «-» — «без ответственного». Отдельный вопрос менеджера, а не пустой
+  // фильтр: те же слова, что у заявок и разговоров.
+  if (filter.owner) params.set("owner", filter.owner);
   return get<Page<DealRow>>(`/deals?${params}`);
 };
 export const deal = (id: string) => get<Deal>(`/deals/${id}`);
@@ -680,8 +716,11 @@ export type ChatThread = { id: string | null; status: ChatStatus; messages: Chat
 export const chatQueue = (page = 0, size = 20) =>
   get<Page<ChatCard>>(`/chats/queue?page=${page}&size=${size}`);
 
-export const chatsAll = (page = 0, size = 20) =>
-  get<Page<ChatCard>>(`/chats?page=${page}&size=${size}`);
+export const chatsAll = (owner = "", page = 0, size = 20) => {
+  const params = new URLSearchParams({ page: String(page), size: String(size) });
+  if (owner) params.set("owner", owner);
+  return get<Page<ChatCard>>(`/chats?${params}`);
+};
 
 export const chatThread = (id: string) => get<ChatThread>(`/chats/${id}`);
 

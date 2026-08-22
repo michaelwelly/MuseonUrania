@@ -6,17 +6,21 @@ import CookieNotice from "@/components/CookieNotice";
 import ImageGuard from "@/components/ImageGuard";
 import LogoPreloader from "@/components/LogoPreloader";
 import Motion from "@/components/Motion";
+import { siteSeo } from "@/content/site";
+import { siteUrl } from "@/lib/seo";
 import { fontVariables } from "../fonts";
 import "../globals.css";
 import "../motion.css";
 
-// seo_title / seo_description в content_model.md помечены как awaiting NN answer.
-// До согласования держим только факты из page_briefs.md, без заявлений о
-// сертификации, ценах и клинических свойствах.
+// Метаданные слоя: только то, что общее для всех страниц. Заголовок
+// и описание здесь запасные — свои есть у каждой страницы, включая главную.
 export const metadata: Metadata = {
-  title: "VEDAL — российское медицинское оборудование",
-  description:
-    "Собственное производство и современные решения для неонатологии, реанимации, анестезиологии и интенсивной терапии.",
+  // База для абсолютных адресов. Без неё canonical и og:url остаются
+  // относительными, а мессенджер и поисковик разбирают такой адрес каждый
+  // по-своему — обычно относительно собственного домена.
+  ...(siteUrl ? { metadataBase: new URL(siteUrl) } : {}),
+  title: siteSeo.title,
+  description: siteSeo.description,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

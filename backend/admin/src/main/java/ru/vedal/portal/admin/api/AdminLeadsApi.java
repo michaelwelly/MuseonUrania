@@ -47,10 +47,18 @@ public class AdminLeadsApi {
     public PageView<LeadAdmin.LeadRow> leads(
             @Parameter(description = "Фильтр по статусу. Пусто — все.")
             @RequestParam(required = false) String status,
+            @Parameter(description = "Поиск по имени, компании, телефону и почте.")
+            @RequestParam(required = false) String query,
+            @Parameter(description = "Логин ответственного; «-» — без ответственного.")
+            @RequestParam(required = false) String owner,
+            @Parameter(description = "Форма, с которой пришла заявка.")
+            @RequestParam(required = false) String form,
+            @Parameter(description = "Источник перехода.")
+            @RequestParam(required = false) String source,
             @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Размер страницы, не больше 200.")
             @RequestParam(defaultValue = "50") int size) {
-        return leads.leads(status, page, size);
+        return leads.leads(new LeadAdmin.Filter(status, query, owner, form, source), page, size);
     }
 
     @Operation(summary = "Статусы заявки")

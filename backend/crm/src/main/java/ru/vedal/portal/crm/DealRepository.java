@@ -15,13 +15,34 @@ public interface DealRepository extends JpaRepository<Deal, UUID> {
 
     Optional<Deal> findByLeadId(UUID leadId);
 
-    Page<Deal> findAllByOrderByCreatedAtDesc(Pageable pageable);
-
-    Page<Deal> findByPipelineOrderByCreatedAtDesc(String pipeline, Pageable pageable);
-
-    Page<Deal> findByPipelineAndStageOrderByCreatedAtDesc(String pipeline, String stage, Pageable pageable);
-
-    Page<Deal> findByClientIdOrderByCreatedAtDesc(UUID clientId, Pageable pageable);
+    // Отбор списка сделок: воронка, стадия, клиент и ответственный — одним
+    // запросом. Раньше здесь было четыре метода и ветвление в DealDesk,
+    // и в ветвлении clientId не сужал выборку вместе с воронкой, а отменял её.
+    // Админка это обходила: при выбранном клиенте посылала воронку пустой —
+    // то есть подпирала дверь снаружи, чтобы получить ожидаемое. Любой другой
+    // вызов получал бы не то, о чём просил. Пятый признак превратил бы четыре
+    // метода в восемь, а вопрос «почему признаки перекрывают друг друга»
+    // так и остался бы.
+    //
+    // Параметр owner со значением «-» означает «без ответственного» — та же
+    // договорённость, что у заявок. Отдельным булевым параметром это выглядело
+    // бы честнее, но два параметра на одно понятие умеют противоречить
+    // друг другу, и обрабатывать несуществующее состояние всё равно придётся.
+    @Query("""
+            select d from Deal d
+            where (:pipeline is null or d.pipeline = :pipeline)
+              and (:stage is null or d.stage = :stage)
+              and (:clientId is null or d.clientId = :clientId)
+              and (:owner is null
+                   or (:owner = '-' and d.owner is null)
+                   or d.owner = :owner)
+            order by d.createdAt desc
+            """)
+    Page<Deal> filter(@Param("pipeline") String pipeline,
+                      @Param("stage") String stage,
+                      @Param("clientId") UUID clientId,
+                      @Param("owner") String owner,
+                      Pageable pageable);
 
     long countByClientId(UUID clientId);
 

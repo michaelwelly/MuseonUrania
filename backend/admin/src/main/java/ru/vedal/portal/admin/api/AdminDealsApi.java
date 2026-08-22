@@ -58,14 +58,17 @@ public class AdminDealsApi {
     public PageView<DealAdmin.DealRow> deals(
             @Parameter(description = "Фильтр по воронке: sales, dealer, service. Пусто — все.")
             @RequestParam(required = false) String pipeline,
-            @Parameter(description = "Фильтр по стадии. Работает вместе с воронкой.")
+            @Parameter(description = "Фильтр по стадии. Стадия из чужой воронки — «409».")
             @RequestParam(required = false) String stage,
-            @Parameter(description = "Все сделки одного клиента. Перекрывает фильтр по воронке.")
+            @Parameter(description = "Все сделки одного клиента. Сужает наравне с воронкой, "
+                    + "а не вместо неё.")
             @RequestParam(required = false) UUID clientId,
+            @Parameter(description = "Логин ответственного; «-» — без ответственного.")
+            @RequestParam(required = false) String owner,
             @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Размер страницы, не больше 200.")
             @RequestParam(defaultValue = "50") int size) {
-        return deals.deals(pipeline, stage, clientId, page, size);
+        return deals.deals(new DealAdmin.Filter(pipeline, stage, clientId, owner), page, size);
     }
 
     @Operation(summary = "Карточка сделки")

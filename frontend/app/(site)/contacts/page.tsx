@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import PageHero from "@/components/PageHero";
 import LeadForm from "@/components/LeadForm";
@@ -17,10 +18,11 @@ import {
 } from "@/content/contacts";
 import styles from "./page.module.css";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Контакты — VEDAL",
   description: contactsHero.lead,
-};
+  path: "/contacts/",
+});
 
 const mainClass = (title: string) =>
   title === "Телефон" ? styles.mainPhone : title === "Почта" ? styles.mainMail : styles.mainAddress;
@@ -87,7 +89,7 @@ export default async function ContactsPage() {
           не мешает по такому телефону позвонить. Вернётся, когда заказчик
           подтвердит список — §9.3 плана, см. content/staff.ts. */}
       <section className={styles.staffPending} data-reveal="0">
-        <p className={styles.eyebrow} style={{ color: "var(--green)" }}>
+        <p className={styles.eyebrow} style={{ color: "var(--green-dark)" }}>
           {staffSection.eyebrow}
         </p>
         <h2 className={styles.h2} data-words="30">

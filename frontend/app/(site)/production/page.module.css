@@ -9,7 +9,7 @@
   font-size: 11.5px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: var(--green);
+  color: var(--green-dark);
 }
 
 /* ---------- hero-сплит ---------- */
@@ -103,7 +103,7 @@
 
 .btnOutline:hover {
   border-color: var(--green);
-  color: var(--green);
+  color: var(--green-dark);
 }
 
 .photo {
@@ -209,7 +209,7 @@
 }
 
 .addressLines a:hover {
-  color: var(--green);
+  color: var(--green-dark);
 }
 
 .addressCta {

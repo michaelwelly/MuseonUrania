@@ -109,7 +109,7 @@
   font-size: 10.5px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #7c8a82;
+  color: var(--muted);
 }
 
 .streetA {
@@ -152,7 +152,7 @@
   width: 26px;
   height: 26px;
   border-radius: 2px;
-  background: var(--green);
+  background: var(--green-dark);
   color: #fff;
   font-size: 16px;
   font-weight: 700;

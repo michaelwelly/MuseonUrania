@@ -9,18 +9,22 @@
   "verifyEmail": false,
   "loginWithEmailAllowed": false,
   "duplicateEmailsAllowed": false,
-  "accessTokenLifespan": 300,
-  "ssoSessionIdleTimeout": 1800,
+  "accessTokenLifespan": 900,
+  "ssoSessionIdleTimeout": 3600,
   "ssoSessionMaxLifespan": 36000,
   "roles": {
     "realm": [
       {
         "name": "portal-admin",
-        "description": "Полный доступ к админскому API портала: каталог, новости, документы, заявки, журнал."
+        "description": "Всё без ограничений: содержимое сайта, закрытый контур продаж, журнал, справочник сотрудников и уничтожение персональных данных."
       },
       {
-        "name": "portal-editor",
-        "description": "То же, что portal-admin. Отдельная роль заведена под будущее разделение прав в CRM."
+        "name": "portal-sales",
+        "description": "Закрытый контур продаж: заявки, клиенты, сделки, КП, разговоры и аналитика. Содержимое сайта не правит."
+      },
+      {
+        "name": "portal-production",
+        "description": "Содержимое сайта: продукция, категории, новости, документы и снимки. Клиентскую базу не видит."
       }
     ]
   },
@@ -37,11 +41,13 @@
       "serviceAccountsEnabled": false,
       "redirectUris": [
         "http://localhost:3000/*",
-        "http://localhost:8080/*"
+        "http://localhost:8080/*",
+        "http://51.250.31.97:18080/*"
       ],
       "webOrigins": [
         "http://localhost:3000",
-        "http://localhost:8080"
+        "http://localhost:8080",
+        "http://51.250.31.97:18080"
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256",

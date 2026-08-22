@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AdminError } from "@/lib/admin";
+import { plural } from "@/lib/plural";
 
 // Мелочи, которые иначе повторялись бы на каждой странице админки.
 
@@ -108,6 +109,30 @@ export function Field({
   );
 }
 
+/*
+ * Состояние рабочего процесса: заявка, КП, стадия сделки.
+ *
+ * Отдельно от Published, потому что это разные оси. Published отвечает
+ * на вопрос «видно ли это на сайте» — там два значения и никакой тревоги.
+ * Здесь — где вещь стоит в работе, и таких значений двенадцать на три
+ * воронки, но состояний у них ровно три: исход достигнут, идёт работа,
+ * отказ.
+ *
+ * Раньше статусы рисовались нейтральной меткой — той же, что воронка,
+ * рубрика новости и форма заявки. Интерфейс не отличал «это ярлык»
+ * от «это состояние», и «проиграна» выглядела как «сервис».
+ *
+ * Сведение живёт здесь, а не в каждой странице: четвёртая воронка добавит
+ * стадии, и разъехаться они должны в одном месте, а не в шести.
+ */
+const ДОСТИГНУТО = new Set(["won", "accepted", "active", "closed"]);
+const ОТКАЗ = new Set(["lost", "rejected", "expired", "declined"]);
+
+export function State({ value, dict }: { value: string; dict: Record<string, string> }) {
+  const tone = ДОСТИГНУТО.has(value) ? "on" : ОТКАЗ.has(value) ? "stop" : "warn";
+  return <span className={`badge badge--${tone}`}>{dict[value] ?? value}</span>;
+}
+
 export function Published({ on }: { on: boolean }) {
   return (
     <span className={`badge ${on ? "badge--on" : "badge--off"}`}>
@@ -148,6 +173,79 @@ export function money(amount: number | null, currency: string | null): string {
   return currency ? `${shown} ${currency}` : shown;
 }
 
+/**
+ * Сколько ждёт — так, как это читает человек.
+ *
+ * Разговор, который ждёт четвёртые сутки, портал честно считает
+ * в минутах. Замер на стенде: в очереди стояло «5796 мин». Число
+ * правильное и совершенно нечитаемое — сравнить «5796» и «1481»
+ * с одного взгляда нельзя, а очередь для того и нужна.
+ *
+ * Порог у каждой ступени свой и не круглый: до часа минуты полезны
+ * («ждёт 7 мин» — это ещё разговор), после суток бесполезны и часы.
+ */
+export function waited(minutes: number): string {
+  if (minutes < 1) return "только что";
+  if (minutes < 60) return `${minutes} мин`;
+
+  const часов = Math.floor(minutes / 60);
+  if (часов < 24) return `${часов} ${plural(часов, "час", "часа", "часов")}`;
+
+  const дней = Math.floor(часов / 24);
+  return `${дней} ${plural(дней, "день", "дня", "дней")}`;
+}
+
 export function Empty({ children }: { children: React.ReactNode }) {
   return <p className="admin-hint">{children}</p>;
+}
+
+/**
+ * Выбор одного из немногих: статус заявки, воронка, валюта, разрез аналитики.
+ *
+ * Сегменты, а не выпадающий список, ровно там, где вариантов от двух до пяти
+ * и все они помещаются в строку. Причина не в красоте: выпадающий список
+ * прячет варианты за щелчком, и человек, который не помнит, что там,
+ * открывает его просто чтобы посмотреть. На пяти статусах заявки это
+ * лишний щелчок в каждом разборе.
+ *
+ * Больше пяти вариантов — обратно в select: сегменты начинают переноситься
+ * и превращаются в облако кнопок, где текущий теряется.
+ *
+ * Кнопки, а не радиокнопки со своей разметкой: группе нужно имя целиком
+ * (`role="radiogroup"` с подписью), а каждой кнопке — состояние, которое
+ * читается вслух. `aria-checked` на кнопке делает и то, и другое.
+ */
+export function Segments({
+  label: name,
+  value,
+  options,
+  dict,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: readonly string[];
+  /** Как называть значения по-человечески. Без словаря — как есть. */
+  dict?: Record<string, string>;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="segments" role="radiogroup" aria-label={name}>
+      {options.map((option) => {
+        const on = option === value;
+        return (
+          <button
+            key={option}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            className={`segments__one${on ? " segments__one--on" : ""}`}
+            onClick={() => onChange(option)}
+          >
+            {dict ? (dict[option] ?? option) : option}
+          </button>
+        );
+      })}
+    </div>
+  );
 }

@@ -138,6 +138,43 @@ paths:
       summary: Написать в чат
       tags:
       - Ассистент
+  /api/assistant/v1/chat/handoff:
+    post:
+      description: |
+        Переводит разговор в состояние `waiting` — он встаёт в очередь
+        рабочего места, и с этого момента Ведалина в нём молчит.
+
+        До этой двери попасть к человеку можно было единственным способом:
+        задать вопрос, на который Ведалина не найдёт ответа. Человека
+        получал тот, кому не повезло, а не тот, кто его попросил.
+
+        Повторный вызов ничего не меняет: разговор уже у человека,
+        второго сообщения и второй записи в журнале не будет.
+
+        Лимит частоты общий с `ask`.
+      operationId: handoff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatCallHuman"
+        required: true
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Thread"
+          description: Лента разговора; статус — `waiting`.
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Превышен лимит частоты.
+      summary: Позвать специалиста
+      tags:
+      - Ассистент
   /api/assistant/v1/chat/{visitorKey}:
     get:
       description: |
@@ -221,6 +258,34 @@ paths:
         "204":
           description: Принято.
       summary: Посетитель набирает текст
+      tags:
+      - Ассистент
+  /api/assistant/v1/prompts:
+    get:
+      description: |
+        Подписи кнопок виджета и то, что делает каждая. Список приходит
+        отсюда, а не переписан в интерфейс: подпись и заготовка,
+        разложенные по двум местам, расходятся на первой же правке —
+        и расходятся молча.
+
+        Кнопка с `action: ask` отправляется в чат как сообщение
+        с полем `intent`, и на неё приходит заготовка. Кнопка
+        с `action: handoff` зовёт специалиста отдельной дверью —
+        `POST /chat/{visitorKey}/handoff`.
+
+        Без лимита частоты: ответ не зависит от запроса и кэшируется
+        на час, как остальные справочники портала.
+      operationId: prompts
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AssistantPrompt"
+          description: Кнопки по порядку.
+      summary: Кнопки быстрых ответов
       tags:
       - Ассистент
   /api/forms/v1/leads:
@@ -474,6 +539,31 @@ components:
           minLength: 0
       required:
       - question
+    AssistantPrompt:
+      type: object
+      description: |
+        Кнопка быстрого ответа в виджете. Список приходит с портала, а не
+        переписан в интерфейс: подпись и заготовка, разложенные по двум
+        местам, расходятся на первой же правке.
+      properties:
+        action:
+          type: string
+          description: |
+            Что делать при нажатии. `ask` — отправить в чат как вопрос
+            с этим намерением, `handoff` — позвать специалиста отдельной
+            дверью.
+          enum:
+          - ask
+          - handoff
+          example: ask
+        intent:
+          type: string
+          description: Что нажали. Именно это виджет присылает обратно.
+          example: quote
+        label:
+          type: string
+          description: Подпись на кнопке.
+          example: Запросить КП
     Category:
       type: object
       description: Категория каталога.
@@ -486,6 +576,38 @@ components:
           type: string
           description: Идентификатор в URL.
           example: неонатология
+    ChatCallHuman:
+      type: object
+      description: Просьба позвать специалиста.
+      properties:
+        campaign:
+          type:
+          - string
+          - "null"
+          description: Метка кампании.
+          maxLength: 128
+          minLength: 0
+        language:
+          type:
+          - string
+          - "null"
+          description: Язык страницы.
+          maxLength: 8
+          minLength: 0
+        page:
+          type:
+          - string
+          - "null"
+          description: "Страница, с которой позвали."
+          maxLength: 512
+          minLength: 0
+        visitorKey:
+          type: string
+          description: Ключ разговора в браузере.
+          maxLength: 64
+          minLength: 0
+      required:
+      - visitorKey
     ChatSay:
       type: object
       description: Сообщение посетителя.
@@ -496,6 +618,18 @@ components:
           - "null"
           description: "Метка кампании, с которой пришёл посетитель."
           maxLength: 128
+          minLength: 0
+        intent:
+          type:
+          - string
+          - "null"
+          description: |
+            Нажатая кнопка быстрого ответа — из `GET /api/assistant/v1/prompts`.
+            Пусто — человек напечатал сам. На известное намерение приходит
+            заготовка, минуя поиск: подпись кнопки в поиске находила изделия
+            по случайным словам.
+          example: quote
+          maxLength: 32
           minLength: 0
         language:
           type:
@@ -697,6 +831,19 @@ components:
           description: "Изделие, из карточки которого отправлена заявка. Необязате\
             льно."
           example: vedal-r1-r2
+        serialNumber:
+          type: string
+          description: |-
+            Серийный номер изделия. Показывается только в сервисной форме: в запросе
+            цены или каталога изделия у человека ещё нет. Необязателен — номер знают
+            не всегда, и обращение без него принимается как обычное.
+
+            Формат не проверяется намеренно: вид серийного номера VEDAL в согласованных
+            материалах не описан, а проверка по придуманной маске отклоняла бы
+            настоящие номера. Ограничена только длина.
+          example: R2-2026-00417
+          maxLength: 100
+          minLength: 0
         trap:
           type: string
           description: "Ловушка для ботов: поле скрыто в разметке и должно приходи\
@@ -1008,8 +1155,8 @@ components:
     keycloak:
       bearerFormat: JWT
       description: |
-        Токен доступа из Keycloak. Роли портала — `portal-admin`
-        и `portal-editor` в `realm_access.roles`; токен без них
+        Токен доступа из Keycloak. Роли портала — `portal-admin`,
+        `portal-sales` и `portal-production` в `realm_access.roles`; токен без них
         проходит проверку подписи и получает `403`.
 
         В режиме `vedal.iam.mode=local` вместо этого работает

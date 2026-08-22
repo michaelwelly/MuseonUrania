@@ -23,6 +23,27 @@
   margin-top: 18px;
 }
 
+/* Первый блок формы. Отступ сверху уже даёт .form, второй здесь был бы
+   двойным. Раньше это гасилось инлайновым style={{marginTop: 0}} — правило
+   в разметке, которого не видно из этого файла. */
+.fieldFirst {
+  margin-top: 0;
+}
+
+/* Ряд контактов, когда над ним стоит селектор темы: без отступа он к нему
+   липнет. Тоже был инлайновым. */
+.rowSpaced {
+  margin-top: 18px;
+}
+
+/* Подсказка под необязательным полем. Тоном ниже ошибки: она объясняет,
+   а не требует. */
+.fieldHint {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
 .label {
   font-size: 13px;
   font-weight: 600;
@@ -30,7 +51,7 @@
 }
 
 .required {
-  color: var(--green);
+  color: var(--green-dark);
 }
 
 .input,
@@ -90,6 +111,14 @@
   accent-color: var(--green);
 }
 
+/* Разделитель между подписью согласия и ссылкой на политику. Отдельным
+   элементом, а не пробелами в разметке: пробелы вокруг звёздочки JSX
+   сливал в один, и «данных * · Политика» читалось как опечатка. */
+.consentSep {
+  margin: 0 7px;
+  color: var(--muted);
+}
+
 .consentNote {
   margin-top: 8px;
   font-size: 12.5px;
@@ -110,7 +139,7 @@
   padding: 0 30px;
   border: 0;
   border-radius: 2px;
-  background: var(--green);
+  background: var(--green-dark);
   color: #fff;
   font: inherit;
   font-size: 16px;
@@ -119,7 +148,7 @@
 }
 
 .submit:hover {
-  background: var(--green-bright);
+  background: var(--green-ink-hover);
 }
 
 .hint {
@@ -141,7 +170,7 @@
 
 .pending a {
   font-weight: 600;
-  color: var(--green);
+  color: var(--green-dark);
 }
 
 /* Ловушка для ботов. Убираем из потока, а не через display:none: часть

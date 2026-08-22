@@ -7,6 +7,7 @@ import ru.vedal.portal.audit.AuditLog;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class AssistantService {
@@ -57,6 +58,31 @@ public class AssistantService {
 
         journal(actor, "answered", grounded.get().sources().size());
         return new AskReply(grounded.get().text(), grounded.get().sources(), null);
+    }
+
+    /**
+     * Заготовка по нажатой кнопке.
+     *
+     * <p>Ограничения здесь не спрашиваются, и это не упущение: заготовка —
+     * наш собственный текст, написанный по тем же правилам, а не вопрос
+     * посетителя. Проверять её сторожем, поставленным на постороннего,
+     * значит проверять себя на то, чего сам не писал.
+     *
+     * <p>Пустой ответ — намерения такого нет; вызывающий отправляет вопрос
+     * обычным путём.
+     */
+    @Transactional
+    public Optional<AskReply> scripted(String intent, String actor) {
+        return ScriptedReplies.answerFor(intent).map(text -> {
+            journal(actor, "scripted", 0);
+            return new AskReply(text, List.of(), null);
+        });
+    }
+
+    /** Что Ведалина пишет, когда позвали человека, — вместе с контактами. */
+    public AskReply callingHuman() {
+        return new AskReply(ScriptedReplies.CALLING_HUMAN, List.of(),
+                handoff(ScriptedReplies.CALLING_HUMAN));
     }
 
     private AskReply.Handoff handoff(String reason) {

@@ -13,7 +13,29 @@ import {
 } from "@/lib/submit";
 import styles from "./LeadForm.module.css";
 
-type Errors = Partial<Record<"name" | "phone" | "email" | "message" | "consent", string>>;
+/**
+ * Поля, у которых на этой форме есть свой ярлык ошибки под инпутом,
+ * в порядке разметки.
+ *
+ * Один список на две задачи: по нему ищется первое поле с ошибкой для
+ * переноса фокуса и по нему же отбираются ошибки, пришедшие с бэкенда.
+ * Раньше это были два независимых литерала, и добавление поля требовало
+ * вспомнить про оба. Забыть легко, а последствие тихое: промах фокуса
+ * замечает только тот, кто ходит по форме с клавиатуры или со
+ * скринридером, — то есть об ошибке никто не сообщит.
+ *
+ * Порядок здесь обязан совпадать с порядком полей в разметке: человек
+ * должен попасть на первую ошибку сверху, а не на случайную.
+ *
+ * Организации и изделия здесь нет намеренно: ярлыка ошибки у них не
+ * нарисовано, и ошибка по ним молча пропала бы. Такие ответы бэкенда
+ * показывает общее сообщение под кнопкой.
+ */
+const FIELDS = ["name", "phone", "email", "serialNumber", "message", "consent"] as const;
+
+type Field = (typeof FIELDS)[number];
+
+type Errors = Partial<Record<Field, string>>;
 
 // Проверка полей до отправки — валидация на границе доверия нужна независимо
 // от того, куда запрос уйдёт потом. Те же правила стоят в LeadSubmission
@@ -26,14 +48,17 @@ export function validate(data: FormData): Errors {
   if (!get("name")) errors.name = "Укажите, к кому обращаться";
   if (get("phone").replace(/\D/g, "").length < 10) errors.phone = "Укажите телефон с кодом";
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(get("email"))) errors.email = "Проверьте адрес почты";
+  // Единственная проверка серийного номера — длина, и та же стоит на бэкенде.
+  // Формат не проверяется: вид номера VEDAL в согласованных материалах
+  // не описан, а маска, придуманная здесь, отклоняла бы настоящие номера.
+  if (get("serialNumber").length > 100) {
+    errors.serialNumber = "Серийный номер не длиннее 100 символов";
+  }
   if (get("message").length < 10) errors.message = "Опишите обращение хотя бы одной фразой";
   if (!data.get("consent")) errors.consent = consentCopy.error;
 
   return errors;
 }
-
-/** Поля бэкенда, у которых на этой форме есть свой ярлык под инпутом. */
-const FIELD_ERRORS = new Set(["name", "phone", "email", "message", "consent"]);
 
 export type Topic = { code: FormType; label: string };
 
@@ -63,6 +88,17 @@ export default function LeadForm({
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "failed">("idle");
   const [notice, setNotice] = useState("");
 
+  // Тема обращения держится в состоянии, а не только в значении селектора:
+  // от неё зависит, показывать ли серийный номер. Неуправляемый select
+  // о смене выбора не сообщает, и поле не появлялось бы вовсе.
+  //
+  // Тем нет — тему задаёт страница, и она не меняется.
+  const [topic, setTopic] = useState<FormType>(topics ? topics[0].code : form);
+
+  // Серийный номер спрашивается только в сервисном обращении: в запросе цены,
+  // каталога или партнёрства изделия у человека ещё нет, и поле там — шум.
+  const asksSerial = topic === "service";
+
   // Ключ живёт столько же, сколько заполняемая форма: повторный клик по
   // «Отправить» не создаст вторую заявку. После успешной отправки берём новый —
   // следующее обращение с той же страницы должно быть отдельной заявкой.
@@ -79,11 +115,24 @@ export default function LeadForm({
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
+    const formEl = event.currentTarget;
+    const data = new FormData(formEl);
 
     const found = validate(data);
     setErrors(found);
-    if (Object.keys(found).length > 0) return;
+    if (Object.keys(found).length > 0) {
+      // Фокус на первое поле с ошибкой. Без этого для незрячего посетителя
+      // нажатие «Отправить» выглядит как «ничего не произошло»: сообщения
+      // появляются рядом с полями, но ни фокус, ни живая область о них
+      // не сообщают, и найти их можно, только заново обойдя всю форму.
+      //
+      // Порядок обхода — порядок полей в форме, а не порядок ключей объекта:
+      // человек должен попасть на первую ошибку сверху, а не на случайную.
+      const first = FIELDS.find((field) => found[field]);
+      const control = first ? formEl.elements.namedItem(first) : null;
+      if (control instanceof HTMLElement) control.focus();
+      return;
+    }
 
     setStatus("sending");
     setNotice("");
@@ -91,12 +140,15 @@ export default function LeadForm({
     const get = (k: string) => String(data.get(k) ?? "").trim();
     const result = await submitLead(
       {
-        form: (get("topic") || form) as FormType,
+        form: topic,
         name: get("name"),
         company: get("company") || undefined,
         phone: get("phone"),
         email: get("email"),
         productSlug: get("product") || undefined,
+        // Поле снято с формы вместе со сменой темы: в FormData его нет,
+        // и на бэкенд уедет undefined, а не номер от прошлого выбора.
+        serialNumber: get("serialNumber") || undefined,
         message: get("message"),
         consent: data.get("consent") !== null,
         language: attributed.current.language,
@@ -118,7 +170,7 @@ export default function LeadForm({
     if (result.fields) {
       const mapped: Errors = {};
       for (const [field, message] of Object.entries(result.fields)) {
-        if (FIELD_ERRORS.has(field)) mapped[field as keyof Errors] = message;
+        if ((FIELDS as readonly string[]).includes(field)) mapped[field as Field] = message;
       }
       setErrors(mapped);
     }
@@ -154,11 +206,17 @@ export default function LeadForm({
   return (
     <form className={styles.form} onSubmit={onSubmit} noValidate>
       {topics && (
-        <div className={`${styles.field} ${styles.fieldWide}`} style={{ marginTop: 0 }}>
+        <div className={`${styles.field} ${styles.fieldWide} ${styles.fieldFirst}`}>
           <label className={styles.label} htmlFor="topic">
             Тема обращения
           </label>
-          <select id="topic" name="topic" className={styles.select} defaultValue={topics[0].code}>
+          <select
+            id="topic"
+            name="topic"
+            className={styles.select}
+            value={topic}
+            onChange={(event) => setTopic(event.target.value as FormType)}
+          >
             {topics.map((t) => (
               <option key={t.code} value={t.code}>
                 {t.label}
@@ -168,7 +226,7 @@ export default function LeadForm({
         </div>
       )}
 
-      <div className={styles.row} style={topics ? { marginTop: 18 } : undefined}>
+      <div className={`${styles.row} ${topics ? styles.rowSpaced : ""}`}>
         <div className={styles.field}>
           <label className={styles.label} htmlFor="name">
             {serviceForm.fields.name} <span className={styles.required}>*</span>
@@ -179,8 +237,10 @@ export default function LeadForm({
             className={`${styles.input} ${errors.name ? styles.invalid : ""}`}
             autoComplete="name"
             aria-invalid={!!errors.name}
+            aria-required="true"
+            aria-describedby={errors.name ? "name-error" : undefined}
           />
-          {errors.name && <span className={styles.error}>{errors.name}</span>}
+          {errors.name && <span id="name-error" className={styles.error}>{errors.name}</span>}
         </div>
 
         <div className={styles.field}>
@@ -206,8 +266,10 @@ export default function LeadForm({
             className={`${styles.input} ${errors.phone ? styles.invalid : ""}`}
             autoComplete="tel"
             aria-invalid={!!errors.phone}
+            aria-required="true"
+            aria-describedby={errors.phone ? "phone-error" : undefined}
           />
-          {errors.phone && <span className={styles.error}>{errors.phone}</span>}
+          {errors.phone && <span id="phone-error" className={styles.error}>{errors.phone}</span>}
         </div>
 
         <div className={styles.field}>
@@ -221,8 +283,10 @@ export default function LeadForm({
             className={`${styles.input} ${errors.email ? styles.invalid : ""}`}
             autoComplete="email"
             aria-invalid={!!errors.email}
+            aria-required="true"
+            aria-describedby={errors.email ? "email-error" : undefined}
           />
-          {errors.email && <span className={styles.error}>{errors.email}</span>}
+          {errors.email && <span id="email-error" className={styles.error}>{errors.email}</span>}
         </div>
       </div>
 
@@ -244,6 +308,34 @@ export default function LeadForm({
         </div>
       )}
 
+      {asksSerial && (
+        <div className={`${styles.field} ${styles.fieldWide}`}>
+          <label className={styles.label} htmlFor="serialNumber">
+            {serviceForm.fields.serialNumber}
+          </label>
+          <input
+            id="serialNumber"
+            name="serialNumber"
+            className={`${styles.input} ${errors.serialNumber ? styles.invalid : ""}`}
+            /* Автозаполнение выключено: номера аппарата в профиле браузера нет,
+               а подставленный им телефон или адрес уедет сервисному инженеру
+               как серийный номер — это хуже пустого поля. */
+            autoComplete="off"
+            aria-invalid={!!errors.serialNumber}
+            aria-describedby={errors.serialNumber ? "serial-error" : "serial-hint"}
+          />
+          {errors.serialNumber ? (
+            <span id="serial-error" className={styles.error}>
+              {errors.serialNumber}
+            </span>
+          ) : (
+            <span id="serial-hint" className={styles.fieldHint}>
+              {serviceForm.serialHint}
+            </span>
+          )}
+        </div>
+      )}
+
       <div className={`${styles.field} ${styles.fieldWide}`}>
         <label className={styles.label} htmlFor="message">
           {messageLabel ?? serviceForm.fields.message} <span className={styles.required}>*</span>
@@ -253,8 +345,10 @@ export default function LeadForm({
           name="message"
           className={`${styles.textarea} ${errors.message ? styles.invalid : ""}`}
           aria-invalid={!!errors.message}
+          aria-required="true"
+          aria-describedby={errors.message ? "message-error" : undefined}
         />
-        {errors.message && <span className={styles.error}>{errors.message}</span>}
+        {errors.message && <span id="message-error" className={styles.error}>{errors.message}</span>}
       </div>
 
       {/* Ловушка для ботов. Скрыта от человека и от скринридера, автозаполнение
@@ -271,14 +365,24 @@ export default function LeadForm({
       {/* §14.6: рядом с согласием стоит ссылка на политику — иначе человек
           подписывается под документом, которого не видел. */}
       <label className={styles.consent}>
-        <input type="checkbox" name="consent" aria-invalid={!!errors.consent} />
+        <input
+          type="checkbox"
+          name="consent"
+          aria-invalid={!!errors.consent}
+          aria-required="true"
+          aria-describedby={errors.consent ? "consent-error" : undefined}
+        />
+        {/* Звёздочка вплотную к тексту, разделитель с воздухом. Раньше между
+            ними стояли два пробела подряд, и строка читалась как «данных * ·
+            Политика» — набор знаков, а не подпись со ссылкой. */}
         <span>
-          {consentCopy.label} <span className={styles.required}>*</span>
-          {" · "}
+          {consentCopy.label}
+          <span className={styles.required}>*</span>
+          <span className={styles.consentSep}>·</span>
           <Link href={consentCopy.href}>{consentCopy.linkLabel}</Link>
         </span>
       </label>
-      {errors.consent && <span className={styles.error}>{errors.consent}</span>}
+      {errors.consent && <span id="consent-error" className={styles.error}>{errors.consent}</span>}
       <p className={styles.consentNote}>{consentCopy.note}</p>
 
       <div className={styles.actions}>

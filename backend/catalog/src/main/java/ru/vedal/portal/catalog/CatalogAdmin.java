@@ -25,6 +25,14 @@ public interface CatalogAdmin {
             + "Показывает и неопубликованное — в этом её отличие от публичного каталога.")
     record ProductRow(UUID id, String slug, String name, String kind, String summary,
                       String docStatus, boolean published, int sortOrder,
+
+                      @Schema(description = "Снимок изделия. Пусто — снимка нет, "
+                              + "и это состояние, а не пропуск в ответе: изделие без "
+                              + "снимка выглядит на сайте пустой рамкой, и редактор "
+                              + "должен видеть такие в списке, не открывая каждое.",
+                              nullable = true)
+                      String imageSrc,
+
                       List<String> categories, Instant updatedAt) {}
 
     @Schema(name = "AdminProduct", description = "Изделие целиком, как его правит редактор.")

@@ -62,7 +62,7 @@ class StaffAssistantApiTest extends PostgresTestBase {
     }
 
     @Test
-    @WithMockUser(username = "editor", roles = "PORTAL_EDITOR")
+    @WithMockUser(username = "editor", roles = "PORTAL_PRODUCTION")
     void staffSeesInternalDocuments() throws Exception {
         seed(INTERNAL_TITLE, "internal");
 
@@ -123,7 +123,7 @@ class StaffAssistantApiTest extends PostgresTestBase {
     // Открытый контур продолжает работать как работал: правка не должна
     // была ничего забрать у посетителя.
     @Test
-    @WithMockUser(username = "editor", roles = "PORTAL_EDITOR")
+    @WithMockUser(username = "editor", roles = "PORTAL_PRODUCTION")
     void staffStillGetsThePublishedCatalog() throws Exception {
         mvc.perform(staffAsk("нужен инкубатор для новорождённых"))
                 .andExpect(status().isOk())
@@ -134,7 +134,7 @@ class StaffAssistantApiTest extends PostgresTestBase {
     // быть тот, кто спросил: иначе по записи не понять, кто именно искал
     // по внутренним материалам.
     @Test
-    @WithMockUser(username = "editor", roles = "PORTAL_EDITOR")
+    @WithMockUser(username = "editor", roles = "PORTAL_PRODUCTION")
     void staffAskIsJournaledUnderTheirName() throws Exception {
         mvc.perform(staffAsk("нужен инкубатор для новорождённых")).andExpect(status().isOk());
 
@@ -146,7 +146,7 @@ class StaffAssistantApiTest extends PostgresTestBase {
     // Ограничения действуют в обоих контурах: логин не даёт права спрашивать
     // про диагнозы.
     @Test
-    @WithMockUser(username = "editor", roles = "PORTAL_EDITOR")
+    @WithMockUser(username = "editor", roles = "PORTAL_PRODUCTION")
     void guardrailsApplyToStaffToo() throws Exception {
         mvc.perform(staffAsk("какой диагноз ставить и чем лечить"))
                 .andExpect(status().isOk())

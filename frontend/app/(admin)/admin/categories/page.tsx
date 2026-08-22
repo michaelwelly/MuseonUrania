@@ -8,7 +8,7 @@ import {
   updateCategory,
   type Category,
 } from "@/lib/admin";
-import { Field, Note, message, useLoad } from "../ui";
+import { Empty, Field, message, Note, useLoad } from "../ui";
 
 export default function CategoriesPage() {
   const { data, error, loading, reload, setError } = useLoad<Category[]>(categories);
@@ -41,7 +41,9 @@ export default function CategoriesPage() {
       <Note kind="error">{error}</Note>
       {loading && !data && <p className="muted">Загружаем…</p>}
 
-      {data && (
+      {data?.length === 0 && <Empty>Категорий пока нет. Они задают порядок разделов в каталоге на сайте.</Empty>}
+
+      {data && data.length > 0 && (
         <div className="admin-scroll">
           <table className="admin-table">
             <thead>
@@ -62,8 +64,8 @@ export default function CategoriesPage() {
         </div>
       )}
 
-      <div className="admin-card" style={{ marginTop: 18 }}>
-        <h2 style={{ fontSize: 15, marginBottom: 12 }}>Новая категория</h2>
+      <div className="admin-card" style={{ marginTop: "var(--s5)" }}>
+        <h2 style={{ fontSize: "var(--t-base)", marginBottom: "var(--s3)" }}>Новая категория</h2>
         <div className="grid2">
           <Field label="Название">
             <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
@@ -113,6 +115,7 @@ function Row({
     <tr>
       <td>
         <input
+          aria-label="Название категории"
           value={edit.name}
           onChange={(e) => setEdit({ ...edit, name: e.target.value })}
           style={cell}
@@ -120,6 +123,7 @@ function Row({
       </td>
       <td>
         <input
+          aria-label="Адрес категории (slug)"
           value={edit.slug}
           onChange={(e) => setEdit({ ...edit, slug: e.target.value })}
           style={cell}
@@ -127,6 +131,7 @@ function Row({
       </td>
       <td className="tight">
         <input
+          aria-label="Порядок категории"
           type="number"
           value={edit.position}
           onChange={(e) => setEdit({ ...edit, position: Number(e.target.value) || 0 })}
@@ -136,8 +141,13 @@ function Row({
       <td className="tight">{row.productCount}</td>
       <td className="tight">
         <div className="row">
+          {/* Имена называют категорию. На экране пять одинаковых «Сохранить»
+              и пять «Удалить»: глазами понятно по строке, при обходе
+              с клавиатуры — нет. У необратимого действия это дороже:
+              «Удалить» без указания чего звучит одинаково пять раз. */}
           <button
             className="btn btn--small"
+            aria-label={`Сохранить категорию: ${edit.name || row.name}`}
             disabled={busy}
             onClick={() =>
               void act(row.id, () =>
@@ -153,6 +163,7 @@ function Row({
           </button>
           <button
             className="btn btn--small btn--danger"
+            aria-label={`Удалить категорию: ${row.name}`}
             disabled={busy || row.productCount > 0}
             title={row.productCount > 0 ? "В категории есть изделия" : undefined}
             onClick={() => void act(row.id, () => deleteCategory(row.id))}
@@ -167,9 +178,9 @@ function Row({
 
 const cell: React.CSSProperties = {
   font: "inherit",
-  fontSize: 14,
-  padding: "6px 9px",
+  fontSize: "var(--t-base)",
+  padding: "var(--s2) var(--s2)",
   border: "1px solid var(--line-3)",
-  borderRadius: 7,
+  borderRadius: "var(--radius-control)",
   width: "100%",
 };

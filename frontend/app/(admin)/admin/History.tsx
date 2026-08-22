@@ -9,7 +9,7 @@ import {
   type NewInteraction,
 } from "@/lib/admin";
 import { DIRECTION, INTERACTION_KIND, label } from "./labels";
-import { Field, Note, message, useLoad, when } from "./ui";
+import { Empty, Field, message, Note, useLoad, when } from "./ui";
 
 // История переписки и звонков. Одна на заявку, клиента и сделку: запись
 // у них одинаковая, отличается только тем, к чему привязана.
@@ -54,7 +54,7 @@ export default function History({ of, id }: { of: HistoryOf; id: string }) {
   return (
     <div className="admin-card">
       <h2 className="admin-card__title">История</h2>
-      <p className="admin-hint" style={{ marginBottom: 14 }}>
+      <p className="admin-hint" style={{ marginBottom: "var(--s4)" }}>
         Только дописывается. Текст записи — персональные данные: в топики и в журнал он
         не уходит, туда идёт идентификатор.
       </p>
@@ -62,7 +62,7 @@ export default function History({ of, id }: { of: HistoryOf; id: string }) {
       <Note kind="error">{error}</Note>
       {loading && !data && <p className="muted">Загружаем…</p>}
 
-      {data?.length === 0 && <p className="admin-hint">Записей пока нет.</p>}
+      {data?.length === 0 && <Empty>Записей пока нет.</Empty>}
 
       {data && data.length > 0 && (
         <ol className="history">

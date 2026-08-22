@@ -35,6 +35,7 @@ public class CatalogEditor implements CatalogAdmin {
         return products.findAllByOrderBySortOrderAscNameAsc().stream()
                 .map(p -> new ProductRow(p.getId(), p.getSlug(), p.getName(), p.getKind(),
                         p.getSummary(), p.getDocStatus(), p.isPublished(), p.getSortOrder(),
+                        p.getImageSrc(),
                         p.getCategories().stream().map(Category::getName).toList(),
                         p.getUpdatedAt()))
                 .toList();

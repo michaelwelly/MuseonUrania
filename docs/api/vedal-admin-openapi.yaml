@@ -313,9 +313,20 @@ paths:
       - "Админка: каталог"
   /api/admin/v1/chats:
     get:
-      description: Последние сверху.
+      description: |
+        Последние сверху. Необязательный отбор по ответственному: логин —
+        разговоры этого сотрудника, «-» — те, кого никто не взял.
+
+        У очереди такого отбора нет намеренно: в ней по определению лежат
+        невзятые разговоры.
       operationId: all
       parameters:
+      - description: Логин ответственного; «-» — без ответственного.
+        in: query
+        name: owner
+        required: false
+        schema:
+          type: string
       - in: query
         name: page
         required: false
@@ -767,19 +778,26 @@ paths:
         required: false
         schema:
           type: string
-      - description: Фильтр по стадии. Работает вместе с воронкой.
+      - description: Фильтр по стадии. Стадия из чужой воронки — «409».
         in: query
         name: stage
         required: false
         schema:
           type: string
-      - description: Все сделки одного клиента. Перекрывает фильтр по воронке.
+      - description: "Все сделки одного клиента. Сужает наравне с воронкой, а не в\
+          место неё."
         in: query
         name: clientId
         required: false
         schema:
           type: string
           format: uuid
+      - description: Логин ответственного; «-» — без ответственного.
+        in: query
+        name: owner
+        required: false
+        schema:
+          type: string
       - in: query
         name: page
         required: false
@@ -1269,6 +1287,30 @@ paths:
       - description: Фильтр по статусу. Пусто — все.
         in: query
         name: status
+        required: false
+        schema:
+          type: string
+      - description: "Поиск по имени, компании, телефону и почте."
+        in: query
+        name: query
+        required: false
+        schema:
+          type: string
+      - description: Логин ответственного; «-» — без ответственного.
+        in: query
+        name: owner
+        required: false
+        schema:
+          type: string
+      - description: "Форма, с которой пришла заявка."
+        in: query
+        name: form
+        required: false
+        schema:
+          type: string
+      - description: Источник перехода.
+        in: query
+        name: source
         required: false
         schema:
           type: string
@@ -2612,6 +2654,13 @@ components:
           type: string
         productSlug:
           type: string
+        serialNumber:
+          type:
+          - string
+          - "null"
+          description: "Серийный номер изделия из сервисного обращения. Пусто — не\
+            \ указан. При обезличивании не стирается: это характеристика аппарата\
+            , а не человека."
         source:
           type: string
         status:
@@ -3085,6 +3134,13 @@ components:
         id:
           type: string
           format: uuid
+        imageSrc:
+          type:
+          - string
+          - "null"
+          description: "Снимок изделия. Пусто — снимка нет, и это состояние, а не\
+            \ пропуск в ответе: изделие без снимка выглядит на сайте пустой рамкой\
+            , и редактор должен видеть такие в списке, не открывая каждое."
         kind:
           type: string
         name:
@@ -3639,8 +3695,8 @@ components:
     keycloak:
       bearerFormat: JWT
       description: |
-        Токен доступа из Keycloak. Роли портала — `portal-admin`
-        и `portal-editor` в `realm_access.roles`; токен без них
+        Токен доступа из Keycloak. Роли портала — `portal-admin`,
+        `portal-sales` и `portal-production` в `realm_access.roles`; токен без них
         проходит проверку подписи и получает `403`.
 
         В режиме `vedal.iam.mode=local` вместо этого работает

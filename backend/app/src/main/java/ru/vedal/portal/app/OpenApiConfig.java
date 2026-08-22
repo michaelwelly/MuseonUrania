@@ -109,8 +109,8 @@ public class OpenApiConfig {
                 .scheme("bearer")
                 .bearerFormat("JWT")
                 .description("""
-                        Токен доступа из Keycloak. Роли портала — `portal-admin`
-                        и `portal-editor` в `realm_access.roles`; токен без них
+                        Токен доступа из Keycloak. Роли портала — `portal-admin`,
+                        `portal-sales` и `portal-production` в `realm_access.roles`; токен без них
                         проходит проверку подписи и получает `403`.
 
                         В режиме `vedal.iam.mode=local` вместо этого работает

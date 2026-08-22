@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import ru.vedal.portal.common.TooManyRequestsException;
 
 import java.io.IOException;
 import java.util.List;
@@ -57,6 +58,31 @@ public class ChatStream {
     // которое никто никогда не закроет.
     private static final long TIMEOUT = 30 * 60 * 1000L;
 
+    // ————— пределы —————
+    //
+    // Дверь потока открыта анониму и, в отличие от остальных публичных,
+    // не стоит под лимитом частоты: лимит считает обращения, а здесь важно
+    // не сколько раз обратились, а сколько соединений держат открытыми.
+    // Каждое живёт полчаса и занимает поток обслуживания. Без предела
+    // цикл из десяти строк складывает приложение, не превысив ни одного
+    // счётчика.
+    //
+    // Четыре на ключ — это вкладки одного человека: сайт открыт в двух-трёх
+    // и виджет в каждой. Пятая означает, что подписки не снимаются,
+    // а не что человеку мало.
+    private static final int PER_VISITOR = 4;
+
+    // Пятьсот на всех: столько посетителей одновременно на сайте, где
+    // за сутки бывает несколько десятков заявок, не бывает. Предел здесь
+    // не про нагрузку, а про то, чтобы отказ пришёл раньше, чем кончатся
+    // потоки обслуживания и вместе с ними весь портал.
+    private static final int TOTAL_VISITORS = 500;
+
+    // Рабочих мест столько же, сколько сотрудников, — с запасом на вкладки.
+    // Этот предел вдобавок ограничивает размножение события «печатает»:
+    // оно рассылается всем рабочим местам сразу.
+    private static final int DESKS = 64;
+
     // Подписки посетителей индексируются ключом браузера, а не разговором,
     // и это не деталь. Виджет открывается раньше первого сообщения, то есть
     // раньше, чем разговор вообще заведён: по идентификатору разговора
@@ -64,11 +90,22 @@ public class ChatStream {
     private final Map<String, List<SseEmitter>> byVisitor = new ConcurrentHashMap<>();
     private final List<SseEmitter> desks = new CopyOnWriteArrayList<>();
 
+
     /** Подписка посетителя. Разговора может ещё не быть — поток просто молчит. */
     public SseEmitter watch(String visitorKey) {
-        var emitter = new SseEmitter(TIMEOUT);
         var subscribers = byVisitor.computeIfAbsent(visitorKey,
                 key -> new CopyOnWriteArrayList<>());
+
+        // Отказ, а не молчаливое закрытие потока: виджет, получив пустой
+        // ответ, переподключается — и упирается в предел снова, уже циклом.
+        // 429 он понимает и ждёт.
+        if (subscribers.size() >= PER_VISITOR || openStreams() >= TOTAL_VISITORS) {
+            if (subscribers.isEmpty()) byVisitor.remove(visitorKey, subscribers);
+            throw new TooManyRequestsException(
+                    "Слишком много открытых окон чата. Закройте лишние вкладки.");
+        }
+
+        var emitter = new SseEmitter(TIMEOUT);
         subscribers.add(emitter);
 
         // Снятие подписки на всех трёх исходах. Без этого список растёт на
@@ -84,8 +121,42 @@ public class ChatStream {
         return emitter;
     }
 
-    /** Подписка рабочего места: любое изменение в любом разговоре. */
+    /**
+     * Сколько соединений посетителей открыто сейчас.
+     *
+     * <p>Считается обходом, а не отдельным счётчиком, и это осознанный
+     * размен. Счётчик рядом со списком — это второе место, где хранится
+     * одно и то же, и расходятся они молча: контейнер объявляет и завершение,
+     * и ошибку у одного соединения, снятие срабатывает дважды, счётчик уезжает
+     * в минус — а предел вместе с ним вверх. Обнаружить это можно только тем,
+     * что предела больше нет.
+     *
+     * <p>Обход стоит прохода по карте, размер которой ограничен этим же
+     * пределом, и случается он на открытие вкладки, а не на сообщение.
+     * Дешевле, чем ошибка, которую нечем поймать.
+     */
+    private int openStreams() {
+        var open = 0;
+        for (var subscribers : byVisitor.values()) {
+            open += subscribers.size();
+        }
+        return open;
+    }
+
+    /**
+     * Подписка рабочего места: любое изменение в любом разговоре.
+     *
+     * <p>Предел тот же по смыслу, но дверь за аутентификацией, и цикл
+     * из десяти строк снаружи её не откроет. Он здесь ради второго:
+     * событие «печатает» рассылается всем рабочим местам сразу, и число
+     * подписок — это множитель у каждого нажатия клавиши посетителем.
+     */
     public SseEmitter watchAll() {
+        if (desks.size() >= DESKS) {
+            throw new TooManyRequestsException(
+                    "Слишком много открытых рабочих мест. Закройте лишние вкладки.");
+        }
+
         var emitter = new SseEmitter(TIMEOUT);
         desks.add(emitter);
         forget(emitter, () -> desks.remove(emitter));
@@ -94,8 +165,26 @@ public class ChatStream {
 
     private void forget(SseEmitter emitter, Runnable remove) {
         emitter.onCompletion(remove);
-        emitter.onTimeout(remove);
         emitter.onError(e -> remove.run());
+
+        // По истечении срока поток надо ещё и ЗАКРЫТЬ, а не только снять
+        // подписку. Не закрыв, мы оставляем асинхронный запрос висеть,
+        // и Spring поднимает AsyncRequestTimeoutException, пытается ответить
+        // на него 503 — а ответ давно отправлен, потому что по потоку уже
+        // шли события. В журнале на каждое истёкшее соединение появляются
+        // два предупреждения:
+        //
+        //   Resolved [AsyncRequestTimeoutException]
+        //   Ignoring exception, response committed already
+        //
+        // Само по себе это не отказ: браузер переподключается, и посетитель
+        // ничего не замечает. Но соединение живёт полчаса, а посетителей
+        // на сайте десятки — журнал заполняется предупреждениями о штатном
+        // событии, и настоящее предупреждение в нём становится незаметным.
+        emitter.onTimeout(() -> {
+            remove.run();
+            emitter.complete();
+        });
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

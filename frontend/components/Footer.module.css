@@ -112,7 +112,7 @@ a.pill:hover {
 
 /* Пилюля без ссылки: аккаунт заказчик не передал. */
 .pillMuted {
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--on-dark-3);
   cursor: default;
 }
 
@@ -194,7 +194,7 @@ a.pill:hover {
 }
 
 .subscribeInput::placeholder {
-  color: rgba(255, 255, 255, 0.42);
+  color: var(--on-dark-3);
 }
 
 .subscribeInput:focus {
@@ -214,20 +214,20 @@ a.pill:hover {
   height: 46px;
   border: 0;
   border-radius: 2px;
-  background: var(--green);
+  background: var(--green-dark);
   color: #fff;
   cursor: pointer;
 }
 
 .subscribeButton:hover {
-  background: var(--green-bright);
+  background: var(--green-ink-hover);
 }
 
 .subscribeNote {
   margin-top: 10px;
   font-size: 12px;
   line-height: 1.5;
-  color: rgba(255, 255, 255, 0.42);
+  color: var(--on-dark-3);
 }
 
 .subscribeResult {
