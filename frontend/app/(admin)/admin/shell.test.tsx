@@ -74,7 +74,7 @@ beforeEach(() => {
   mocks.push.mockReset();
   mocks.session.mockReset().mockResolvedValue({
     actor: "Ирина Кольцова",
-    roles: ["portal-editor"],
+    roles: ["portal-admin"],
   });
   mocks.clients
     .mockReset()
