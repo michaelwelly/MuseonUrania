@@ -4,7 +4,16 @@
 # - keep C3AG/Astor 80/443 untouched;
 # - expose VEDAL by IP on :18080 until vedal-med.ru DNS is available;
 # - use real Yandex Object Storage instead of local MinIO;
-# - keep Keycloak on localhost for now.
+# - publish Keycloak on :18180 so employees can actually sign in.
+#
+# ————— почему Keycloak пришлось открыть —————
+#
+# Здесь было написано «keep Keycloak on localhost for now», и вместе
+# с этим сайту передавался NEXT_PUBLIC_OIDC_ISSUER со значением
+# http://localhost:8180/realms/vedal. Этот адрес живёт В БРАУЗЕРЕ
+# СОТРУДНИКА, то есть указывает на его собственную машину. Войти мог бы
+# только тот, кто открыл браузер на самой ВМ. Вход не был сломан —
+# его не было.
 
 services:
   minio:
@@ -51,6 +60,43 @@ services:
       VEDAL_S3_ACCESS_KEY: ${VEDAL_S3_ACCESS_KEY:?set VEDAL_S3_ACCESS_KEY}
       VEDAL_S3_SECRET_KEY: ${VEDAL_S3_SECRET_KEY:?set VEDAL_S3_SECRET_KEY}
 
+  # ————— вход сотрудников —————
+  #
+  # На машине 80 и 443 держит чужой боевой сайт, домена vedal-med.ru ещё
+  # нет, и до перевода домена вход открывается по адресу с портом,
+  # БЕЗ ШИФРОВАНИЯ. Это решение заказчика, принятое с открытыми глазами,
+  # и цена у него прямая: пароль сотрудника идёт по интернету открытым
+  # текстом, а за этим паролем стоит клиентская база.
+  #
+  # Чем это чинится: TLS. Либо владелец ВМ заводит на своём 443 имена
+  # для портала и для Keycloak, либо переводится домен и поднимается
+  # прод-профиль с Caddy. Оба пути отменяют этот блок целиком.
+  keycloak:
+    ports: !override
+      - "0.0.0.0:${VEDAL_KEYCLOAK_HOST_PORT:-18180}:8080"
+    environment:
+      # Внешний адрес, по которому Keycloak видит браузер сотрудника.
+      # Он же уезжает в NEXT_PUBLIC_OIDC_ISSUER ниже: адрес выдающего
+      # токены обязан совпадать с адресом, по которому за ними приходят,
+      # иначе портал отвергает токен по issuer.
+      KC_HOSTNAME: ${VEDAL_KEYCLOAK_URL:?set VEDAL_KEYCLOAK_URL, например http://51.250.31.97:18180}
+      # Пусто, а не xforwarded из прод-профиля. Заголовки X-Forwarded-*
+      # разрешено слушать только за своим прокси; здесь прокси нет,
+      # и Keycloak смотрит прямо в интернет — доверять этим заголовкам
+      # значит позволить любому клиенту подменить адрес в ссылках входа.
+      KC_PROXY_HEADERS: ""
+    volumes: !override
+      # Свой realm, не прод-овский. Отличие ровно одно и оно вынужденное:
+      # sslRequired: none. Прод-realm со значением all отказался бы отдать
+      # страницу входа по HTTP вообще — не предупредил, а отказал.
+      #
+      # Отдельный файл, а не правка прод-realm'а: послабление обязано
+      # жить там же, где временный обходной путь, и исчезнуть вместе
+      # с ним. Второй фактор, защита от перебора и политика паролей
+      # здесь те же, что в проде.
+      - ./keycloak/stand:/opt/keycloak/data/import:ro
+      - vedal-keycloak:/opt/keycloak/data
+
   api-gateway:
     ports: !override
       - "0.0.0.0:${VEDAL_GATEWAY_HOST_PORT:-18080}:8080"
@@ -59,4 +105,8 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: ${VEDAL_PUBLIC_URL:?set VEDAL_PUBLIC_URL}
       NEXT_PUBLIC_MEDIA_URL: ${VEDAL_MEDIA_URL:?set VEDAL_MEDIA_URL}
-      NEXT_PUBLIC_OIDC_ISSUER: ${VEDAL_KEYCLOAK_URL:-http://localhost:8180}/realms/vedal
+      # Без значения по умолчанию: молчаливый localhost здесь и был причиной
+      # того, что вход не работал ни у кого, кроме сидящего за самой ВМ.
+      # Пусть развёртывание падает на отсутствующей переменной, а не выдаёт
+      # сотруднику страницу, которая никуда не ведёт.
+      NEXT_PUBLIC_OIDC_ISSUER: ${VEDAL_KEYCLOAK_URL:?set VEDAL_KEYCLOAK_URL, например http://51.250.31.97:18180}/realms/vedal
