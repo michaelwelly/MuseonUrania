@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { contourName, contourOf, may, mayOpen, type Contour } from "./roles";
 import { useEffect, useRef, useState } from "react";
 import AnimatedLogo from "@/components/AnimatedLogo";
 import { accessToken, authConfigured, login, logout, onSessionLost } from "@/lib/auth";
@@ -48,15 +49,25 @@ import { WhoHost } from "./who";
 // оболочка одним заходом, а список разделов — просто описание навигации
 // и запросов не делает.
 type Item = { href: string; label: string; count?: keyof Counts };
-type Section = { label: string; href: string; items: readonly Item[] };
+type Section = {
+  label: string;
+  href: string;
+  items: readonly Item[];
+  /** Кому раздел виден. Пусто — любому вошедшему. */
+  contour?: Contour;
+};
 
 // `href` раздела — куда ведёт клик по нему в шапке. У разделов со вкладками
 // это первая вкладка: раздел без своей страницы не должен вести в никуда.
+// Разделы и контуры. Контур решает, увидит ли раздел этот человек:
+// показывать кнопку, которая приведёт к отказу, значит соврать дважды —
+// сначала предложив, потом отказав.
 const NAV: readonly Section[] = [
   { label: "Сводка", href: "/admin/", items: [] },
   {
     label: "Содержимое сайта",
     href: "/admin/products/",
+    contour: "production",
     items: [
       { href: "/admin/products/", label: "Продукция", count: "products" },
       { href: "/admin/categories/", label: "Категории" },
@@ -67,6 +78,7 @@ const NAV: readonly Section[] = [
   {
     label: "Работа с клиентами",
     href: "/admin/chats/",
+    contour: "sales",
     items: [
       // Разговоры первыми: это единственный раздел, где человек ждёт ответа
       // прямо сейчас. Остальное подождёт до конца дня, а он — нет.
@@ -85,13 +97,17 @@ const NAV: readonly Section[] = [
   },
   {
     label: "Команда",
-    href: "/admin/staff/",
+    // Раздел виден всем, а внутри него — по-разному: свой профиль нужен
+    // каждому, справочник сотрудников показывает состав компании
+    // и остаётся административным. Поэтому адрес раздела — профиль:
+    // ведёт туда, куда пущен любой вошедший.
+    href: "/admin/profile/",
     items: [
       { href: "/admin/staff/", label: "Сотрудники" },
       { href: "/admin/profile/", label: "Мой профиль" },
     ],
   },
-  { label: "Журнал", href: "/admin/audit/", items: [] },
+  { label: "Журнал", href: "/admin/audit/", items: [], contour: "admin" },
 ] as const;
 
 type State =
@@ -207,8 +223,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <p>{state.reason}</p>
         <p>
           Вход в Keycloak прошёл — иначе токена не было бы вовсе. Отказал уже портал, и чаще
-          всего потому, что у учётной записи нет роли <code>portal-admin</code> или{" "}
-          <code>portal-editor</code> в realm&apos;е. Роль выдаёт тот, кто держит Keycloak;
+          всего потому, что у учётной записи нет ни одной роли портала:{" "}
+          <code>portal-admin</code>, <code>portal-sales</code> или{" "}
+          <code>portal-production</code> в realm&apos;е. Роль выдаёт тот, кто держит Keycloak;
           повторный вход ничего не изменит, токен будет тот же.
         </p>
         <div className="row">
@@ -286,7 +303,23 @@ function Chrome({ who, children }: { who: Session; children: React.ReactNode }) 
     return () => watch.disconnect();
   }, []);
 
-  const active = section(pathname);
+  // Разделы этого человека. Отбор один на обе разметки — шапку и меню
+  // телефона: два независимых фильтра однажды разойдутся, и разойдутся
+  // молча, оставив на телефоне раздел, которого нет на большом экране.
+  //
+  // Внутри раздела вкладки отбираются тоже: «Команда» видна всем, но
+  // «Сотрудники» в ней — административная страница, а «Мой профиль» нужен
+  // каждому.
+  const мои = NAV.filter((s) => may(who, s.contour ?? "any")).map((s) => ({
+    ...s,
+    items: s.items.filter((item) => mayOpen(who, item.href)),
+  }));
+
+  // Текущий раздел — из ОТОБРАННОГО списка, а не из NAV. Полоса вкладок
+  // рисуется из него же, и взятый из NAV раздел показал бы вкладку,
+  // куда этот человек не пущен: так «Сотрудники» оставались видны
+  // продажам, хотя сам раздел «Команда» им положен.
+  const active = section(pathname, мои);
   // Последняя крошка: вкладка, на которой человек стоит. У раздела без
   // вкладок это он сам — «Админка / Сводка» вместо «Админка».
   const here =
@@ -319,12 +352,12 @@ function Chrome({ who, children }: { who: Session; children: React.ReactNode }) 
               персональными данными, она полезнее, чем в шапке. */}
 
           <nav className="admin-sections" aria-label="Разделы админки">
-            {NAV.map((s) => (
+            {мои.map((s) => (
               <Link
                 key={s.label}
                 href={s.href}
-                className={`admin-section${s === active ? " admin-section--on" : ""}`}
-                aria-current={s === active ? "page" : undefined}
+                className={`admin-section${s.href === active?.href ? " admin-section--on" : ""}`}
+                aria-current={s.href === active?.href ? "page" : undefined}
               >
                 {s.label}
               </Link>
@@ -435,7 +468,7 @@ function Chrome({ who, children }: { who: Session; children: React.ReactNode }) 
             строк один раз. */}
         {menu && (
           <nav className="admin-menu" aria-label="Разделы админки">
-            {NAV.map((s) => (
+            {мои.map((s) => (
               <div key={s.label} className="admin-menu__group">
                 <div className="admin-menu__title">{s.label}</div>
                 {/* Меню закрывается выбором, а не только повторным нажатием
@@ -498,7 +531,23 @@ function Chrome({ who, children }: { who: Session; children: React.ReactNode }) 
           </div>
         )}
 
-        {children}
+        {/* Страница чужого контура. Портал ответит на неё 403, и без этой
+            проверки человек увидел бы экран с полосой ошибки вместо
+            объяснения. Адрес набирают руками и присылают ссылкой —
+            спрятанный в шапке раздел этого не закрывает. */}
+        {mayOpen(who, pathname ?? "") ? (
+          children
+        ) : (
+          <div className="admin-head">
+            <h1>Раздел закрыт</h1>
+            <p className="admin-hint">
+              У вашей учётной записи нет доступа к{" "}
+              {contourName(contourOf(pathname ?? ""))}. Это не ошибка входа: вход
+              выполнен, и остальные разделы работают. Права выдаёт тот, кто держит
+              Keycloak — повторный вход ничего не изменит.
+            </p>
+          </div>
+        )}
       </main>
 
       {/* Тонкая полоса вместо футера сайта: ссылки сайта здесь не нужны,
@@ -569,9 +618,9 @@ function Who({ who }: { who: Session }) {
  * странице, потому что её адрес — префикс всех остальных. Поэтому она стоит
  * первой и сверяется на точное совпадение, а не на префикс.
  */
-function section(pathname: string | null): Section | undefined {
+function section(pathname: string | null, among: readonly Section[] = NAV): Section | undefined {
   if (!pathname) return undefined;
-  return NAV.find(
+  return among.find(
     (s) => within(pathname, s.href) || s.items.some((item) => within(pathname, item.href)),
   );
 }

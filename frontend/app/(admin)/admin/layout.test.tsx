@@ -68,7 +68,7 @@ class Observer {
 
 beforeEach(() => {
   vi.stubGlobal("ResizeObserver", Observer);
-  mocks.session.mockReset().mockResolvedValue({ actor: "editor", roles: ["portal-editor"] });
+  mocks.session.mockReset().mockResolvedValue({ actor: "editor", roles: ["portal-admin"] });
 });
 
 /** Оболочка на заданном адресе — уже после того, как портал принял токен. */
