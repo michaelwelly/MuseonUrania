@@ -79,7 +79,11 @@ class StaffDirectoryTest extends PostgresTestBase {
     }
 
     @Test
-    @WithMockUser(roles = "PORTAL_EDITOR")
+    // Справочник сотрудников показывает состав компании, и роль здесь
+    // административная: ни продажам, ни тем, кто ведёт сайт, он для работы
+    // не нужен. Раньше в тесте стояла роль редактора — тогда все роли
+    // давали одно и то же, и выбор был безразличен.
+    @WithMockUser(roles = "PORTAL_ADMIN")
     void doorReturnsStaffForTheAdminUi() throws Exception {
         account("fedorova", "Анна Фёдорова", true);
 

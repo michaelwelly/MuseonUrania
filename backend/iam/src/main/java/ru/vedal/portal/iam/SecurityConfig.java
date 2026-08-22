@@ -18,12 +18,29 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 public class SecurityConfig {
 
-    // Роли портала. Их две, и обе значат право править содержимое: разделение
-    // на «кто читает» и «кто правит» появится вместе с CRM, где право видеть
-    // сделку и право её менять — разные вещи. Заводить его сейчас значит
-    // выдумать иерархию, которой никто не пользуется.
+    // Роли портала. Их три, и делят они не действия, а контуры.
+    //
+    // Раньше их было две — portal-admin и portal-editor, — и давали они
+    // одно и то же: одно правило hasAnyRole пускало обе ко всему админскому
+    // API. Это было записано честно («разделение появится вместе с CRM»),
+    // но CRM появилась, и вместе с ней клиентская база, суммы сделок
+    // и переписка с посетителями. Раздавать их тому, кто пришёл править
+    // карточку изделия, больше нельзя: бриф собственника прямо относит
+    // клиентскую базу и коммерческие условия к тому, что наружу не выносим,
+    // а «наружу» начинается с лишнего человека внутри.
+    //
+    // Деление по контурам, а не по глаголам (читатель/редактор). Причина
+    // простая: у сотрудника отдела продаж и у того, кто ведёт сайт, разные
+    // ПРЕДМЕТЫ работы, а не разная глубина доступа к одному предмету.
+    // Право «читать, но не править» сделку — иерархия, которой никто
+    // не просил; право «не видеть сделку вовсе» — то, о чём просили.
     static final String ROLE_ADMIN = "PORTAL_ADMIN";
-    static final String ROLE_EDITOR = "PORTAL_EDITOR";
+
+    /** Закрытый контур продаж: заявки, клиенты, сделки, КП, разговоры, аналитика. */
+    static final String ROLE_SALES = "PORTAL_SALES";
+
+    /** Содержимое сайта: продукция, категории, новости, документы, снимки. */
+    static final String ROLE_PRODUCTION = "PORTAL_PRODUCTION";
 
     @Bean
     PasswordEncoder passwordEncoder() {
@@ -39,10 +56,15 @@ public class SecurityConfig {
                 .map(u -> User.withUsername(u.getUsername())
                         .password(u.getPasswordHash())
                         .disabled(!u.isEnabled())
-                        // Та же роль, что раздаёт Keycloak. Иначе запасной
+                        // Те же роли, что раздаёт Keycloak. Иначе запасной
                         // профиль проверяет не то правило, что боевой,
                         // и расхождение вылезает при переключении.
-                        .roles(ROLE_ADMIN)
+                        //
+                        // Учётка запасного режима получает все три: он нужен
+                        // разработке и случаю «провайдера идентичности ещё нет»,
+                        // и разделять контуры там, где пользователь один,
+                        // значит мешать работать без единой выгоды.
+                        .roles(ROLE_ADMIN, ROLE_SALES, ROLE_PRODUCTION)
                         .build())
                 .orElseThrow(() -> new UsernameNotFoundException(username));
     }
@@ -107,6 +129,14 @@ public class SecurityConfig {
 
     // Общая часть двери админского API: она одинакова и с Keycloak,
     // и с локальными учётками, и разъезжаться этим двум режимам нельзя.
+    //
+    // ————— почему правила здесь, а не на методах —————
+    //
+    // @PreAuthorize над каждым методом читается легче в отдельно взятом
+    // контроллере и хуже — целиком: чтобы ответить «кто видит клиентскую
+    // базу», пришлось бы обойти шестнадцать файлов и надеяться, что нигде
+    // не забыли. Здесь ответ помещается на экран, а забытая дверь
+    // проваливается в denyAll, а не в «пускаем всех вошедших».
     static HttpSecurity adminApiBaseline(HttpSecurity http) throws Exception {
         return http
                 .securityMatcher("/api/admin/**")
@@ -115,6 +145,74 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
-                        .anyRequest().hasAnyRole(ROLE_ADMIN, ROLE_EDITOR));
+
+                        // Уничтожение персональных данных — раньше всех
+                        // остальных правил, иначе его накроет правило контура:
+                        // DELETE /leads/{id}/personal-data лежит под /leads/**,
+                        // и продажи получили бы кнопку, отменить нажатие
+                        // которой нельзя ничем.
+                        .requestMatchers("/api/admin/v1/*/*/personal-data")
+                        .hasRole(ROLE_ADMIN)
+
+                        // Кто вошёл и что ему можно. Спрашивает оболочка
+                        // на каждой странице, и роль здесь любая портальная:
+                        // закрыв дверь одной, мы закрыли бы вход тому,
+                        // у кого роль есть, но другая.
+                        //
+                        // Именно портальная, а не «любой вошедший». Сначала
+                        // здесь стояло authenticated(), и это уронило
+                        // AdminAccessTest: он обходит ВСЕ админские маршруты
+                        // и требует 403 от чужой роли. Сторож прав — токен
+                        // соседнего клиента realm'а не должен получать
+                        // от админской двери ничего, даже собственное имя.
+                        .requestMatchers("/api/admin/v1/session")
+                        .hasAnyRole(ROLE_ADMIN, ROLE_SALES, ROLE_PRODUCTION)
+
+                        // Ведалина для сотрудника. Ищет по опубликованному
+                        // плюс внутренние документы — это рабочий инструмент
+                        // обоих контуров, а не привилегия одного.
+                        .requestMatchers("/api/admin/v1/assistant/**")
+                        .hasAnyRole(ROLE_ADMIN, ROLE_SALES, ROLE_PRODUCTION)
+
+                        // ————— закрытый контур продаж —————
+                        //
+                        // Клиентская база, суммы сделок и переписка
+                        // с посетителями. Тот, кто ведёт сайт, здесь
+                        // не бывает вовсе.
+                        .requestMatchers("/api/admin/v1/leads/**", "/api/admin/v1/leads",
+                                "/api/admin/v1/clients/**", "/api/admin/v1/clients",
+                                "/api/admin/v1/deals/**", "/api/admin/v1/deals",
+                                "/api/admin/v1/quotes/**", "/api/admin/v1/quotes",
+                                "/api/admin/v1/chats/**", "/api/admin/v1/chats",
+                                "/api/admin/v1/analytics/**", "/api/admin/v1/analytics")
+                        .hasAnyRole(ROLE_SALES, ROLE_ADMIN)
+
+                        // ————— содержимое сайта —————
+                        //
+                        // То, что уходит наружу: каталог, лента, перечень
+                        // документов и снимки. Персональных данных здесь нет
+                        // ни в одной двери.
+                        .requestMatchers("/api/admin/v1/products/**", "/api/admin/v1/products",
+                                "/api/admin/v1/categories/**", "/api/admin/v1/categories",
+                                "/api/admin/v1/news/**", "/api/admin/v1/news",
+                                "/api/admin/v1/documents/**", "/api/admin/v1/documents",
+                                "/api/admin/v1/media/**", "/api/admin/v1/media")
+                        .hasAnyRole(ROLE_PRODUCTION, ROLE_ADMIN)
+
+                        // ————— только администратор —————
+                        //
+                        // Журнал показывает, кто что делал, — включая тех,
+                        // кто смотрит. Справочник сотрудников показывает
+                        // состав компании. Ни то, ни другое не нужно
+                        // для работы ни одного из контуров.
+                        .requestMatchers("/api/admin/v1/audit/**", "/api/admin/v1/audit",
+                                "/api/admin/v1/staff/**", "/api/admin/v1/staff")
+                        .hasRole(ROLE_ADMIN)
+
+                        // Новая дверь, о которой забыли здесь, закрыта
+                        // для всех, а не открыта для всех вошедших.
+                        // Забытое правило обязано ломать работу заметно,
+                        // а не раздавать доступ молча.
+                        .anyRequest().denyAll());
     }
 }
