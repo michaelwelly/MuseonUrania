@@ -57,6 +57,7 @@ vi.mock("@/lib/admin", () => {
         dealId: null,
         createdAt: "2026-08-20T09:00:00Z",
         message: "Прошу КП на две системы.",
+        serialNumber: null,
         consentVersion: "v1",
         consentAt: "2026-08-20T09:00:00Z",
         correlationId: null,

@@ -268,6 +268,12 @@ export type LeadRow = {
 
 export type Lead = LeadRow & {
   message: string;
+  /**
+   * Серийный номер изделия из сервисного обращения. Пусто — не указан.
+   * В строке списка его нет намеренно: он для карточки, а список и так
+   * широкий. Найти по нему заявку можно через общий поиск.
+   */
+  serialNumber: string | null;
   consentVersion: string;
   consentAt: string;
   correlationId: string | null;
