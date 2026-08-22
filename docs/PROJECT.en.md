@@ -54,6 +54,30 @@ ourselves.
 **Not exposed outside:** the customer base, commercial terms, contracts,
 invoices, margins, tokens, personal data.
 
+**Domains.** The customer named three, and they belong to different things:
+
+| Name | What it is | Who runs it |
+| --- | --- | --- |
+| `vedal-med.ru` | public site and portal | us |
+| `mail.vedal-med.ru` | corporate mail | bought |
+| `cloud.vedal-med.ru` | corporate messenger | bought |
+
+The portal lives on the first one only. The second and third are the open
+office contour from the table above: we neither write nor deploy them, but
+the portal does talk to the mail.
+
+**A lead from the site is delivered to the corporate mail as a letter** —
+the customer said so, and this is a means of delivery, not an "email as well".
+The lead still stays in the portal database and in the admin area: the letter
+notifies whoever works in the mailbox, it is not storage. Putting a lead into
+a letter only would mean losing it together with one deleted message, and
+being left without a funnel, without an owner and without an audit trail.
+
+Technically this already works: `notifications` queues the letter in
+`outbound_mail` and `MailSender` sends it. One thing is missing — the SMTP
+settings: `SPRING_MAIL_HOST`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD`
+in `backend/.env`. The mailbox owner types the password.
+
 **Infrastructure budget** — 50,000–80,000 ₽/month excluding development and
 maintenance (Yandex 360 for 50 employees ≈ 27,450 ₽; VM, Managed PostgreSQL,
 backups, object storage, logs, monitoring, Lockbox/WAF, EDI — the rest).
@@ -233,7 +257,7 @@ perimeter is checked in three places rather than in thirty controllers.
 | --- | --- | --- |
 | `Public API` `/api/public/v1/*` | site build, Vedalina | read-only, published content only, cacheable |
 | `Forms API` `/api/forms/v1/leads` | website forms, Yandex Form, mail parsing | **the single external write**, idempotency by `Idempotency-Key` |
-| `Admin API` `/api/admin/v1/**` | employee | JSON, Keycloak token, roles `portal-admin` and `portal-editor`. The door is single, so restricting it at the proxy takes one rule — **but no such rule is in the [Caddyfile](../backend/proxy/Caddyfile) today**, and it is open to the internet |
+| `Admin API` `/api/admin/v1/**` | employee | JSON, Keycloak token, roles `portal-admin`, `portal-sales` and `portal-production` — by contour, see 12.3. The door is single, so restricting it at the proxy takes one rule — **but no such rule is in the [Caddyfile](../backend/proxy/Caddyfile) today**, and it is open to the internet |
 
 The employee door changed shape rather than being created anew: instead of
 server-rendered Thymeleaf pages it is JSON, with the Next.js admin UI on top.
@@ -922,10 +946,23 @@ no separate port had to be introduced for that.
    inside.** The module is written. The answer is still needed: it closes the
    discrepancy from section 11.
 2. Which data is forbidden to store in Yandex 360?
-3. Who gets access to the CRM at the first stage? — **for now the same roles as
-   the rest of the admin area** (`portal-admin`, `portal-editor`). Separating
-   "who may see a deal" from "who may change it" is deliberately not introduced:
-   until there is an answer, that is a hierarchy nobody uses.
+3. Who gets access to the CRM at the first stage? — **closed on 22 August:
+   access is split by contour.** There are three roles:
+
+   | Role | Open | Not visible |
+   | --- | --- | --- |
+   | `portal-sales` | leads, clients, deals, quotes, conversations, analytics | site content |
+   | `portal-production` | products, categories, news, documents, images | the client base entirely |
+   | `portal-admin` | everything, plus the audit log, the staff directory and erasure of personal data | — |
+
+   Split by contour rather than by verb (reader/editor): a salesperson and
+   the person who runs the site have different **subjects** of work, not
+   different depth of access to one subject. The right to "read but not edit"
+   a deal is a hierarchy nobody asked for; the right to "not see the deal at
+   all" is what was asked for.
+
+   The `portal-editor` role is removed: it duplicated `portal-admin`, and its
+   own description said so.
 4. Is an integration with 1C/Kontur needed right away? — **we assume "not right
    away":** a client carries `inn`, `kpp` and `external_id`, but there is no
    exchange. Adding the columns later means a migration plus a change to every
