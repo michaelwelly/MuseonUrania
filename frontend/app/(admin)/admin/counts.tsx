@@ -10,7 +10,9 @@ import {
   news,
   products,
   quotes,
+  type Session,
 } from "@/lib/admin";
+import { may, type Contour } from "./roles";
 
 // Счётчики на вкладках.
 //
@@ -59,30 +61,52 @@ export function useCounts(): Store {
   return useContext(Ctx);
 }
 
-/** Ключ счётчика и как его добыть. Список рядом с типом, чтобы не разошлись. */
-const ИСТОЧНИКИ: readonly [keyof Counts, () => Promise<number>][] = [
-  ["products", async () => (await products()).length],
-  ["news", async () => (await news()).length],
-  ["documents", async () => (await documents()).length],
-  ["chats", async () => (await chatQueue(0, 1)).total],
-  ["leads", async () => (await leads({}, 0, 1)).total],
-  ["clients", async () => (await clients("", 0, 1)).total],
-  ["deals", async () => (await deals({}, 0, 1)).total],
-  ["quotes", async () => (await quotes("", 0, 1)).total],
+/**
+ * Ключ счётчика, контур и как его добыть. Список рядом с типом, чтобы
+ * не разошлись.
+ *
+ * Контур здесь не ради красоты. Счётчик спрашивают ради числа на вкладке,
+ * а вкладки чужого контура человек и не видит — значит, восемь запросов
+ * превращались бы в четыре ответа и четыре отказа 403 на каждое открытие
+ * оболочки. Отказы никому не мешают (allSettled), но это работа, которая
+ * не может дать результата, и шум в журнале портала, по которому потом
+ * ищут настоящие отказы.
+ */
+const ИСТОЧНИКИ: readonly [keyof Counts, Contour, () => Promise<number>][] = [
+  ["products", "production", async () => (await products()).length],
+  ["news", "production", async () => (await news()).length],
+  ["documents", "production", async () => (await documents()).length],
+  ["chats", "sales", async () => (await chatQueue(0, 1)).total],
+  ["leads", "sales", async () => (await leads({}, 0, 1)).total],
+  ["clients", "sales", async () => (await clients("", 0, 1)).total],
+  ["deals", "sales", async () => (await deals({}, 0, 1)).total],
+  ["quotes", "sales", async () => (await quotes("", 0, 1)).total],
 ];
 
-export function CountsHost({ children }: { children: React.ReactNode }) {
+export function CountsHost({
+  who,
+  children,
+}: {
+  /** Кто вошёл: счётчики спрашивают только двери своего контура. */
+  who: Session;
+  children: React.ReactNode;
+}) {
   const [counts, setCounts] = useState<Counts>({});
   const [attempt, setAttempt] = useState(0);
 
+  // Роли в строку: сравнивать массив в списке зависимостей нельзя,
+  // он новый на каждую отрисовку, и эффект уходил бы в цикл.
+  const роли = (who.roles ?? []).join(",");
+
   useEffect(() => {
     let alive = true;
+    const мои = ИСТОЧНИКИ.filter(([, contour]) => may(who, contour));
 
-    void Promise.allSettled(ИСТОЧНИКИ.map(([, load]) => load())).then((results) => {
+    void Promise.allSettled(мои.map(([, , load]) => load())).then((results) => {
       if (!alive) return;
       const собрано: Counts = {};
       results.forEach((result, i) => {
-        if (result.status === "fulfilled") собрано[ИСТОЧНИКИ[i][0]] = result.value;
+        if (result.status === "fulfilled") собрано[мои[i][0]] = result.value;
       });
       // Заменой, а не слиянием: счётчик, который перестал отвечать, должен
       // исчезнуть, а не остаться на экране прошлым значением.
@@ -92,7 +116,8 @@ export function CountsHost({ children }: { children: React.ReactNode }) {
     return () => {
       alive = false;
     };
-  }, [attempt]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attempt, роли]);
 
   const refresh = useCallback(() => setAttempt((a) => a + 1), []);
 

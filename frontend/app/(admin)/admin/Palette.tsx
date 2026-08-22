@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { clients, deals, news, products } from "@/lib/admin";
 import { slugify } from "@/lib/translit";
 import { SearchIcon } from "./icons";
+import { may } from "./roles";
+import { useWho } from "./who";
 
 // Поиск по всему порталу.
 //
@@ -63,12 +65,23 @@ export function Palette({ onClose }: { onClose: () => void }) {
   const field = useRef<HTMLInputElement>(null);
   const listId = useId();
   const трим = query.trim();
+  const who = useWho();
+  const продажи = may(who, "sales");
+  const сайт = may(who, "production");
 
   // Списки, которые перебираются в браузере. Один раз за открытие окна.
   useEffect(() => {
     let alive = true;
 
-    void Promise.allSettled([products(), news(), deals({}, 0, 100)]).then(
+    // Поиск идёт по тому, что этому человеку положено. Чужие двери
+    // ответили бы отказом, и Promise.allSettled это переживёт — но окно
+    // поиска, которое каждый раз стучится туда, куда не пустят, работает
+    // ради заведомо пустого результата.
+    void Promise.allSettled([
+      сайт ? products() : Promise.reject(new Error("не мой контур")),
+      сайт ? news() : Promise.reject(new Error("не мой контур")),
+      продажи ? deals({}, 0, 100) : Promise.reject(new Error("не мой контур")),
+    ]).then(
       ([каталог, лента, сделки]) => {
         if (!alive) return;
         const rows: Row[] = [];
@@ -113,7 +126,9 @@ export function Palette({ onClose }: { onClose: () => void }) {
     return () => {
       alive = false;
     };
-  }, []);
+    // Контуры входят в зависимости: человек, вошедший другой учётной записью
+    // в той же вкладке, обязан искать по своему набору, а не по прошлому.
+  }, [продажи, сайт]);
 
   // Фокус в поле сразу: окно открыли, чтобы печатать.
   useEffect(() => field.current?.focus(), []);
