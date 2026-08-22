@@ -461,7 +461,7 @@ class AdminCrmApiTest extends PostgresTestBase {
 
     private UUID acceptLead(String key, String company, String language, String campaign) {
         return intake.accept(new LeadIntake.Draft("quote", "Иван Петров", company,
-                "+7 343 555-22-11", "ivan@example.ru", "vedal-r1",
+                "+7 343 555-22-11", "ivan@example.ru", "vedal-r1", null,
                 "Прошу коммерческое предложение на две системы.", "site",
                 language, campaign), key).id();
     }

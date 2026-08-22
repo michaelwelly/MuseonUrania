@@ -42,17 +42,23 @@ class AdminLeadFilterTest extends PostgresTestBase {
     LeadIntake intake;
 
     private UUID петров;
+    private UUID кузнецова;
 
     @BeforeEach
     void seed() {
-        // Три заявки, различающиеся каждым признаком отбора: если фильтр
+        // Четыре заявки, различающиеся каждым признаком отбора: если фильтр
         // перепутает поля, совпадение окажется не тем.
         петров = accept("filter-1", "quote", "Иван Петров", "ГКБ №1",
-                "+7 343 555-22-11", "ivan@example.ru", "site");
+                "+7 343 555-22-11", "ivan@example.ru", "site", null);
         accept("filter-2", "consultation", "Мария Соколова", "Клиника Здоровье",
-                "+7 812 100-20-30", "maria@clinic.ru", "yandex_form");
+                "+7 812 100-20-30", "maria@clinic.ru", "yandex_form", null);
         accept("filter-3", "quote", "Пётр Иванов", null,
-                "+7 495 777-88-99", "petr@mail.ru", "site");
+                "+7 495 777-88-99", "petr@mail.ru", "site", null);
+        // Единственная с серийным номером. Остальные три — без него, и это
+        // часть проверки: поиск по номеру не должен подбирать заявки, у
+        // которых номера нет вовсе.
+        кузнецова = accept("filter-4", "service", "Ольга Кузнецова", "Роддом №2",
+                "+7 343 200-10-10", "olga@rd2.ru", "site", "R2-2026-00417");
     }
 
     @Test
@@ -88,11 +94,38 @@ class AdminLeadFilterTest extends PostgresTestBase {
 
     @Test
     @WithMockUser(username = "manager", roles = "PORTAL_ADMIN")
+    void searchFindsBySerialNumber() throws Exception {
+        // То, ради чего серийный номер стал колонкой, а не строкой в тексте
+        // обращения: заказчик звонит и называет номер аппарата, а не своё имя.
+        list("query=R2-2026-00417")
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.items[0].id").value(кузнецова.toString()));
+
+        // Номер диктуют по телефону и записывают как придётся. Регистр здесь
+        // такая же случайность, как в фамилии.
+        list("query=r2-2026-00417").andExpect(jsonPath("$.total").value(1));
+
+        // По куску номера — так его и ищут, копируя из письма.
+        list("query=00417").andExpect(jsonPath("$.total").value(1));
+    }
+
+    @Test
+    @WithMockUser(username = "manager", roles = "PORTAL_ADMIN")
+    void leadsWithoutSerialNumberStayOutOfTheSearch() throws Exception {
+        // Три заявки из четырёх без номера. В SQL сравнение с null даёт
+        // не «ложь», а «неизвестно»: условие, написанное неаккуратно, либо
+        // вернёт их все, либо выкинет из выдачи и те, что ищут по имени.
+        list("query=R2-9999-00000").andExpect(jsonPath("$.total").value(0));
+        list("query=Иван").andExpect(jsonPath("$.total").value(2));
+    }
+
+    @Test
+    @WithMockUser(username = "manager", roles = "PORTAL_ADMIN")
     void blankSearchIsNoSearchAtAll() throws Exception {
         // Пустое поле поиска — это «показать всё», а не «найти пустоту».
         // Строка из пробелов приезжает с формы чаще, чем кажется: человек
         // стёр запрос, но остался пробел от разделения слов.
-        list("query=").andExpect(jsonPath("$.total").value(3));
+        list("query=").andExpect(jsonPath("$.total").value(4));
 
         // Через .param, а не через «query=%20%20» в адресе: MockMvc собирает
         // адрес через UriComponentsBuilder и кодирует его ещё раз, так что
@@ -100,7 +133,7 @@ class AdminLeadFilterTest extends PostgresTestBase {
         // тестового клиента, а не разбор пробелов на портале.
         mvc.perform(get("/api/admin/v1/leads").param("query", "  "))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total").value(3));
+                .andExpect(jsonPath("$.total").value(4));
     }
 
     @Test
@@ -117,7 +150,7 @@ class AdminLeadFilterTest extends PostgresTestBase {
         // «-» — это вопрос «что никто не ведёт», а не отсутствие фильтра.
         // Именно он отвечает на «чем заняться»: заявка без ответственного
         // не потеряна, но и не взята.
-        list("owner=-").andExpect(jsonPath("$.total").value(2))
+        list("owner=-").andExpect(jsonPath("$.total").value(3))
                 .andExpect(jsonPath("$.items[0].owner").doesNotExist());
 
         list("owner=никто-такой").andExpect(jsonPath("$.total").value(0));
@@ -167,8 +200,9 @@ class AdminLeadFilterTest extends PostgresTestBase {
     }
 
     private UUID accept(String key, String form, String name, String company,
-                        String phone, String email, String source) {
+                        String phone, String email, String source, String serialNumber) {
         return intake.accept(new LeadIntake.Draft(form, name, company, phone, email,
-                "vedal-r1", "Прошу коммерческое предложение.", source, "ru", null), key).id();
+                "vedal-r1", serialNumber, "Прошу коммерческое предложение.", source,
+                "ru", null), key).id();
     }
 }

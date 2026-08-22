@@ -34,7 +34,14 @@ public interface LeadAdmin {
 
     @Schema(name = "AdminLead", description = "Заявка целиком, вместе с текстом и согласием.")
     record LeadView(UUID id, String form, String name, String company, String phone, String email,
-                    String productSlug, String message, String source, String status, String owner,
+                    String productSlug,
+
+                    @Schema(description = "Серийный номер изделия из сервисного обращения. "
+                            + "Пусто — не указан. При обезличивании не стирается: это "
+                            + "характеристика аппарата, а не человека.", nullable = true)
+                    String serialNumber,
+
+                    String message, String source, String status, String owner,
 
                     @Schema(description = "Язык страницы, с которой отправлена заявка. "
                             + "Разрез аналитики.", example = "ru", nullable = true)
@@ -82,9 +89,9 @@ public interface LeadAdmin {
             String status,
 
             @Schema(description = """
-                    Поиск по имени, компании, телефону и почте. Совпадение по части
-                    строки, регистр не важен. Телефон сравнивается как записан:
-                    номер с пробелами по цифрам подряд не найдётся.
+                    Поиск по имени, компании, телефону, почте и серийному номеру изделия.
+                    Совпадение по части строки, регистр не важен. Телефон сравнивается
+                    как записан: номер с пробелами по цифрам подряд не найдётся.
                     """, nullable = true)
             String query,
 

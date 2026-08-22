@@ -24,6 +24,13 @@ public class Lead {
     @Column(name = "product_slug")
     private String productSlug;
 
+    // Серийный номер изделия из сервисного обращения. Пусто — не указан:
+    // номер знают не всегда, и обращение без него — обычное обращение.
+    // Формат не проверяется: вид номера VEDAL в подтверждённых материалах
+    // не описан, а маска, придуманная здесь, отклоняла бы настоящие номера.
+    @Column(name = "serial_number")
+    private String serialNumber;
+
     private String message;
 
     // Версия текста согласия, а не галочка: через год иначе не доказать,
@@ -78,6 +85,8 @@ public class Lead {
     public void setEmail(String email) { this.email = email; }
     public String getProductSlug() { return productSlug; }
     public void setProductSlug(String productSlug) { this.productSlug = productSlug; }
+    public String getSerialNumber() { return serialNumber; }
+    public void setSerialNumber(String serialNumber) { this.serialNumber = serialNumber; }
     public String getMessage() { return message; }
     public void setMessage(String message) { this.message = message; }
     public String getConsentVersion() { return consentVersion; }

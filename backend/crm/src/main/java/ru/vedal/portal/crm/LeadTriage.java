@@ -91,7 +91,8 @@ public class LeadTriage implements LeadAdmin {
 
     private LeadView view(Lead l) {
         return new LeadView(l.getId(), l.getForm(), l.getName(), l.getCompany(), l.getPhone(),
-                l.getEmail(), l.getProductSlug(), l.getMessage(), l.getSource(), l.getStatus(),
+                l.getEmail(), l.getProductSlug(), l.getSerialNumber(),
+                l.getMessage(), l.getSource(), l.getStatus(),
                 l.getOwner(), l.getLanguage(), l.getCampaign(),
                 deals.findByLeadId(l.getId()).map(Deal::getId).orElse(null),
                 l.getConsentVersion(), l.getConsentAt(), l.getCorrelationId(),

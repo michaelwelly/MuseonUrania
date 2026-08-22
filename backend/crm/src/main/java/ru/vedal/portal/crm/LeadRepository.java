@@ -48,6 +48,11 @@ public interface LeadRepository extends JpaRepository<Lead, UUID> {
     // в списке. Номер, записанный с пробелами, по цифрам подряд не найдётся;
     // это станет важно, когда в форме появится маска ввода.
     //
+    // Серийный номер ищется наравне с контактами, и это главное, ради чего
+    // он вообще стал колонкой: заказчик звонит и называет номер аппарата,
+    // а не своё имя. Заявки без номера в поиск не попадают сами собой —
+    // lower(null) даёт null, а null не равен «истине».
+    //
     // `:query` приходит пустой строкой, а не null, и это не небрежность.
     // Внутри lower(concat(...)) нетипизированный null уезжает в PostgreSQL
     // как bytea, и запрос падает на «function lower(bytea) does not exist» —
@@ -66,7 +71,8 @@ public interface LeadRepository extends JpaRepository<Lead, UUID> {
                    or lower(l.name) like lower(concat('%', :query, '%'))
                    or lower(l.company) like lower(concat('%', :query, '%'))
                    or l.phone like concat('%', :query, '%')
-                   or lower(l.email) like lower(concat('%', :query, '%')))
+                   or lower(l.email) like lower(concat('%', :query, '%'))
+                   or lower(l.serialNumber) like lower(concat('%', :query, '%')))
             order by l.createdAt desc
             """)
     Page<Lead> filter(@Param("status") String status,

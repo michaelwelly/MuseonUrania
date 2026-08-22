@@ -10,8 +10,11 @@ public interface LeadIntake {
     // пришёл посетитель. Необязательные: заявка, отправленная в обход
     // кампании, остаётся заявкой, а разрез по кампании честно показывает
     // её в «—».
+    // serialNumber — серийный номер изделия из сервисного обращения. Стоит
+    // рядом с productSlug, потому что это одно и то же: чем именно человек
+    // пользуется. Необязателен — номер знают не всегда.
     record Draft(String form, String name, String company, String phone, String email,
-                 String productSlug, String message, String source,
+                 String productSlug, String serialNumber, String message, String source,
                  String language, String campaign) {}
 
     record Receipt(UUID id, boolean created) {}
