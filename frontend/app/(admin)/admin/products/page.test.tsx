@@ -100,11 +100,19 @@ beforeEach(() => {
   });
 });
 
+const РЕДАКТОР_САЙТА = {
+  actor: "production",
+  roles: ["portal-production"],
+  authentication: "keycloak",
+};
+
 async function экран() {
   const user = userEvent.setup();
   render(
     <ToastHost>
-      <CountsHost>
+      {/* Счётчики спрашивают только двери своего контура, поэтому им нужна
+          сессия. Здесь — та, что ведёт сайт: продукция её предмет. */}
+      <CountsHost who={РЕДАКТОР_САЙТА}>
         <ProductsPage />
       </CountsHost>
     </ToastHost>,

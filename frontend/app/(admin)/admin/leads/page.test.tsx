@@ -57,6 +57,7 @@ vi.mock("@/lib/admin", () => {
         dealId: null,
         createdAt: "2026-08-20T09:00:00Z",
         message: "Прошу КП на две системы.",
+        serialNumber: null,
         consentVersion: "v1",
         consentAt: "2026-08-20T09:00:00Z",
         correlationId: null,
@@ -82,6 +83,12 @@ vi.mock("@/lib/admin", () => {
 import LeadsPage from "./page";
 import { ToastHost } from "../Toast";
 import { CountsHost } from "../counts";
+
+const ПРОДАВЕЦ = {
+  actor: "sales",
+  roles: ["portal-sales"],
+  authentication: "keycloak",
+};
 import { WhoHost } from "../who";
 
 type Row = {
@@ -148,7 +155,9 @@ async function экран() {
   render(
     <ToastHost>
       <WhoHost who={{ actor: "irina", roles: ["portal-admin"], authentication: "keycloak" }}>
-        <CountsHost>
+        {/* Счётчики спрашивают только двери своего контура, поэтому им нужна
+            сессия. Здесь — продажи: заявки их предмет. */}
+        <CountsHost who={ПРОДАВЕЦ}>
           <LeadsPage />
         </CountsHost>
       </WhoHost>

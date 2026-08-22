@@ -166,9 +166,13 @@ export default function HomeLeadForm() {
           aria-required="true"
           aria-describedby={errors.consent ? "home-consent-error" : undefined}
         />
+        {/* Та же правка, что в LeadForm: звёздочка вплотную к тексту,
+            разделитель с воздухом. Формулировка согласия одна на обе формы,
+            и вид у неё тоже должен быть один. */}
         <span>
-          {consentCopy.label} <span className={styles.required}>*</span>
-          {" · "}
+          {consentCopy.label}
+          <span className={styles.required}>*</span>
+          <span className={styles.consentSep}>·</span>
           <Link href={consentCopy.href}>{consentCopy.linkLabel}</Link>
         </span>
       </label>
