@@ -2654,6 +2654,13 @@ components:
           type: string
         productSlug:
           type: string
+        serialNumber:
+          type:
+          - string
+          - "null"
+          description: "Серийный номер изделия из сервисного обращения. Пусто — не\
+            \ указан. При обезличивании не стирается: это характеристика аппарата\
+            , а не человека."
         source:
           type: string
         status:
