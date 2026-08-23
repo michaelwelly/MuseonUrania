@@ -78,28 +78,13 @@ services:
     mem_limit: 1g
     logging: *logging
 
-  minio:
-    environment:
-      MINIO_ROOT_USER: ${VEDAL_S3_ACCESS_KEY:?задайте VEDAL_S3_ACCESS_KEY}
-      MINIO_ROOT_PASSWORD: ${VEDAL_S3_SECRET_KEY:?задайте VEDAL_S3_SECRET_KEY}
-    ports: !override []
-    restart: unless-stopped
-    mem_limit: 384m
-    logging: *logging
-
-  minio-init:
-    environment:
-      MINIO_ROOT_USER: ${VEDAL_S3_ACCESS_KEY:?задайте VEDAL_S3_ACCESS_KEY}
-      MINIO_ROOT_PASSWORD: ${VEDAL_S3_SECRET_KEY:?задайте VEDAL_S3_SECRET_KEY}
-
-  # Ключи без значений по умолчанию — как у minio-init выше и по той же
-  # причине. Заливка фотографий из репозитория при этом остаётся включённой:
-  # снимок, добавленный в git и не доехавший до бакета, отдаёт 404 здесь
-  # ровно так же, как на машине разработчика.
+  # Ключи без значений по умолчанию. Заливка снимков из репозитория здесь
+  # тоже под профилем seed и сама не запускается: она пишет в бакет, из
+  # которого читает живой сайт.
   media-seed:
     environment:
-      MINIO_ROOT_USER: ${VEDAL_S3_ACCESS_KEY:?задайте VEDAL_S3_ACCESS_KEY}
-      MINIO_ROOT_PASSWORD: ${VEDAL_S3_SECRET_KEY:?задайте VEDAL_S3_SECRET_KEY}
+      S3_ACCESS_KEY: ${VEDAL_S3_ACCESS_KEY:?задайте VEDAL_S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${VEDAL_S3_SECRET_KEY:?задайте VEDAL_S3_SECRET_KEY}
 
   keycloak:
     environment:

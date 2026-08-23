@@ -16,15 +16,10 @@
 # его не было.
 
 services:
-  minio:
-    profiles: ["local-minio"]
 
-  minio-init:
-    profiles: ["local-minio"]
-
-  # Заливка фотографий из репозитория работает и здесь — против Yandex Object
-  # Storage вместо MinIO. Выключать её нельзя: она единственное, что связывает
-  # frontend/public/photos с бакетом.
+  # Заливка фотографий из репозитория. Единственное, что связывает
+  # frontend/public/photos с бакетом, — но запускается только по просьбе
+  # (профиль seed): она пишет туда, откуда читает живой сайт.
   #
   # Что было. Сервис стоял в профиле local-minio, то есть на ВМ не запускался
   # вовсе. Файл, добавленный в репозиторий, в бакет не попадал, и каталог
@@ -32,14 +27,10 @@ services:
   # hall-booklet.jpg и service-r2-setup.jpg отдавали 404. Сборку это не роняет
   # и тестами не ловится — 404 за картинкой видно только глазами на стенде.
   #
-  # depends_on переопределён пустым: minio-init здесь в профиле local-minio
-  # и не поднимается, а бакеты в облаке заведены заранее. Без !override сервис
-  # ждал бы контейнер, которого не будет.
   media-seed:
-    depends_on: !override {}
     environment:
-      MINIO_ROOT_USER: ${VEDAL_S3_ACCESS_KEY:?set VEDAL_S3_ACCESS_KEY}
-      MINIO_ROOT_PASSWORD: ${VEDAL_S3_SECRET_KEY:?set VEDAL_S3_SECRET_KEY}
+      S3_ACCESS_KEY: ${VEDAL_S3_ACCESS_KEY:?set VEDAL_S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${VEDAL_S3_SECRET_KEY:?set VEDAL_S3_SECRET_KEY}
       S3_ENDPOINT: ${VEDAL_S3_ENDPOINT:?set VEDAL_S3_ENDPOINT}
       S3_BUCKET_MEDIA: ${VEDAL_S3_BUCKET_MEDIA:-vedal-media}
 
