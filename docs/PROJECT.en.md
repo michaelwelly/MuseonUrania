@@ -148,7 +148,7 @@ MuseonVedalina/
 │  ├─ tools/seed-catalog.mjs   generator for the V2 migration from frontend/content/products.ts
 │  ├─ Dockerfile            the portal's image
 │  └─ compose.yaml          the whole stack: PostgreSQL 16 with wal_level=logical,
-│                           Kafka 3.9 in KRaft, MinIO, Keycloak, Kafka Connect;
+│                           Kafka 3.9 in KRaft, Keycloak, Kafka Connect;
 │                           profile `app` adds the portal, the gateway and the site
 ├─ docs/
 │  ├─ api/                  OpenAPI export for the public API (assembled from the code)
@@ -319,8 +319,64 @@ configuration.
 | --- | --- | --- |
 | `EventPublisher` | log, Kafka or Debezium — via `vedal.events.publisher` | Managed Kafka |
 | `MailSender` | writes to the log | Yandex 360 SMTP |
-| `FileStorage` | local directory or S3 — via `vedal.storage.kind`; MinIO in the stack | Yandex Object Storage |
+| `FileStorage` | local directory or S3 — via `vedal.storage.kind`; the real Object Storage in the stack | Yandex Object Storage |
 | `LlmEngine` | deterministic word search | YandexGPT + pgvector |
+
+### Buckets are created by hand, once
+
+The `minio-init` container used to do this on every stack start. With MinIO
+gone the step moved here, and that is not a loss of automation: a bucket in
+the cloud is not something recreated on a schedule, and its policy is not
+something rewritten past the cloud's own audit log.
+
+Two buckets, and that is a requirement rather than a layout:
+
+```bash
+yc storage bucket create --name vedal-documents
+yc storage bucket create --name vedal-media --public-read
+```
+
+`vedal-documents` stays fully closed: the file is served by a controller that
+checks publication and records the access in the audit log. Direct bucket
+access would hand out a closed document past both the check and the log.
+
+`vedal-media` is open for reading an object and **not** for listing: product
+photos are visible on the site anyway, a listing of everything in the bucket
+is not. If the provider offers no `--public-read`, set the same policy
+explicitly:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": { "AWS": ["*"] },
+      "Action": ["s3:GetObject"],
+      "Resource": ["arn:aws:s3:::vedal-media/*"]
+    }
+  ]
+}
+```
+
+Keys come from a service account: **Service accounts → Create new key →
+Static access key**, with `storage.editor` on both buckets. The keys
+deliberately have no defaults — an empty key would give an application that
+starts and then fails on the first upload, so the editor would meet the
+failure rather than whoever deployed it.
+
+Photos from the repository are uploaded by a separate command, not on their
+own:
+
+```bash
+docker compose --profile seed run --rm media-seed
+```
+
+The profile is not tidiness either. While a local MinIO stood next to it, the
+upload on every stack start wrote into a local bucket. Against the real Object
+Storage the same run writes where the live site reads from — for everyone who
+brings the stack up locally. When working on media, create your own
+`vedal-media-dev` and point `VEDAL_S3_BUCKET_MEDIA` at it.
 
 Privacy is a property of `FileStorage`, not of the calling code, and it is
 anchored to the storage area: `DOCUMENTS` lives in a closed bucket and is served
@@ -557,7 +613,6 @@ docker compose -f backend/compose.yaml --profile app up -d --build
 | `http://localhost:8080` | site, API, admin UI at `/admin/` — all through the gateway |
 | `http://localhost:8080/swagger-ui.html` | the specification, both groups |
 | `http://localhost:8180` | Keycloak, console `admin` / `admin-local` |
-| `http://localhost:9001` | the MinIO console |
 | `http://localhost:8083` | Kafka Connect |
 | `http://localhost:8081` | the portal directly, bypassing the gateway |
 
@@ -822,7 +877,7 @@ Metrica from section 8 — those are about content, not about the wire.
 | 1 | Merge `dev` → `main`, push every layer branch | from outside the project still looks like documents without code |
 | 2 | ~~Consumers read from topics~~ | ✅ Debezium reads the outbox from the write-ahead log, consumers take events from the topics, DLQ on `<topic>.dlq` after three attempts |
 | 3 | ~~Keycloak instead of local accounts~~ | ✅ the portal verifies a realm token and parses `realm_access.roles`; local accounts remain as the `vedal.iam.mode=local` fallback. **Not closed: MFA** — enabled by realm policy in a deployed environment, which does not concern the portal |
-| 4 | ~~Object storage and `FileStorage`~~ | ✅ S3 through the AWS SDK: MinIO locally, Yandex Object Storage in the cloud. Two buckets, privacy anchored to the bucket. **Not closed:** which cloud exactly |
+| 4 | ~~Object storage and `FileStorage`~~ | ✅ S3 through the AWS SDK, one Yandex Object Storage both locally and in the cloud. Two buckets, privacy anchored to the bucket. MinIO removed on 22 August: it was a second store that content leaked into unnoticed |
 | 5 | ~~Grow `crm` to full: clients, deals, quotes, statuses, dealer and service funnels, correspondence history, attachments from approved documents, analytics by product/source/language/campaign~~ | ✅ the module is complete: `client`, `deal` with three pipelines, `quote` with lines, `interaction` (append-only), attachments from approved documents, four analytics dimensions. **Not closed:** CRM roles await the answer to question 12.3, the 1С exchange awaits 12.4 (the `inn`/`kpp`/`external_id` columns are in place already), the quote letter awaits Яндекс 360 SMTP |
 | 6 | `MailSender` → Yandex 360 SMTP | letters still go to the log |
 | 7 | `LlmEngine` → YandexGPT + pgvector, the pipeline text extraction → chunks with metadata → embeddings | **pitfall:** the EnterpriseDB PostgreSQL build for Windows does not ship pgvector. A `pgvector/pgvector:pg16` image is needed, and `compose.yaml` and `PostgresTestBase` must be switched **at the same time**, otherwise the tests diverge from development |
@@ -987,8 +1042,8 @@ no separate port had to be introduced for that.
    MFA. The door is single, so either option is one rule in the `Caddyfile` plus
    a realm policy. **Neither is done today:** there is no rule at the proxy and
    MFA is off in the realm.
-4. Which cloud. The storage runs on S3, and moving between MinIO and Yandex
-   Object Storage changes the address and the keys, not the code.
+4. Which cloud. The storage runs on S3, and moving between S3-compatible
+   stores changes the address and the keys, not the code.
 5. When MFA is switched on in the realm. This does not concern the portal: it
    verifies an issued token and does not know how many factors were presented.
 6. Who runs Keycloak in a deployed environment and how employees are created in it.
