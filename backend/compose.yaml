@@ -101,82 +101,6 @@ services:
     volumes:
       - vedal-kafka:/var/lib/kafka/data
 
-  # Объектное хранилище. В облаке будет Yandex Object Storage, локально —
-  # MinIO: он говорит на том же протоколе S3, поэтому переезд меняет адрес
-  # и ключи, а не код. По той же причине клиент в приложении — AWS SDK,
-  # а не родная библиотека MinIO: с ней переезд означал бы переписать клиент.
-  #
-  # Два бакета, и это не удобство раскладки, а требование:
-  #   vedal-documents — приватный. Файл отдаётся только через контроллер,
-  #     который проверяет статус публикации и пишет обращение в журнал.
-  #     Прямой доступ к бакету означал бы выдачу закрытого документа мимо
-  #     проверки и мимо аудита.
-  #   vedal-media — публичный на чтение. Фото изделий и изображения новостей:
-  #     их и так видно на сайте, а гонять картинки через приложение — значит
-  #     класть на него трафик, который должен идти в CDN.
-  minio:
-    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
-    container_name: vedal-minio
-    command: server /data --console-address ":9001"
-    ports:
-      - "${VEDAL_MINIO_PORT:-9000}:9000"
-      - "${VEDAL_MINIO_CONSOLE_PORT:-9001}:9001"
-    environment:
-      MINIO_ROOT_USER: ${VEDAL_S3_ACCESS_KEY:-vedal}
-      MINIO_ROOT_PASSWORD: ${VEDAL_S3_SECRET_KEY:-vedal-local-secret}
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 5s
-      timeout: 3s
-      retries: 12
-    volumes:
-      - vedal-minio:/data
-
-  # Бакеты заводятся здесь, а не первым обращением приложения: приложение,
-  # умеющее создавать бакеты, умеет создать и лишний — от опечатки в имени.
-  # Контейнер одноразовый, отрабатывает и гаснет.
-  #
-  # Политика медиа задаётся явным JSON, а не готовым `mc anonymous set download`:
-  # тот вместе с чтением объектов открывает и перечисление бакета, то есть
-  # отдаёт всем список ключей — включая снимки, загруженные до анонса. Здесь
-  # разрешено ровно s3:GetObject: файл по известной ссылке отдаётся, каталог
-  # содержимого — нет.
-  minio-init:
-    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
-    container_name: vedal-minio-init
-    depends_on:
-      minio:
-        condition: service_healthy
-    # Ключи приходят окружением, а не подставляются в командную строку:
-    # аргументы процесса видны в `docker inspect` и в списке процессов хоста.
-    environment:
-      MINIO_ROOT_USER: ${VEDAL_S3_ACCESS_KEY:-vedal}
-      MINIO_ROOT_PASSWORD: ${VEDAL_S3_SECRET_KEY:-vedal-local-secret}
-    entrypoint:
-      - /bin/sh
-      - -c
-      - |
-        set -e
-        mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
-        mc mb --ignore-existing local/vedal-documents
-        mc mb --ignore-existing local/vedal-media
-        mc anonymous set none local/vedal-documents
-        cat > /tmp/media-policy.json <<'JSON'
-        {
-          "Version": "2012-10-17",
-          "Statement": [
-            {
-              "Effect": "Allow",
-              "Principal": { "AWS": ["*"] },
-              "Action": ["s3:GetObject"],
-              "Resource": ["arn:aws:s3:::vedal-media/*"]
-            }
-          ]
-        }
-        JSON
-        mc anonymous set-json /tmp/media-policy.json local/vedal-media
-        echo 'бакеты готовы: vedal-documents закрыт, vedal-media отдаёт объекты без перечисления'
-
 
   # Фотографии из репозитория в бакет.
   #
@@ -201,24 +125,34 @@ services:
   # Подменить такой файл можно руками: mc rm, затем перезапуск стека.
   #
   # Контейнер одноразовый, отрабатывает и гаснет.
+  # Заливка снимков из репозитория в бакет — ТОЛЬКО ПО ПРОСЬБЕ:
+  #
+  #   docker compose --profile seed run --rm media-seed
+  #
+  # Профиль появился вместе с уходом MinIO и не для порядка. Пока рядом
+  # стоял свой MinIO, заливка на каждый подъём стека была безобидной:
+  # писала в локальный бакет. Против настоящего Object Storage тот же
+  # запуск пишет в бакет, из которого читает живой сайт, — и делает это
+  # у каждого, кто поднял стек у себя.
   media-seed:
     image: minio/mc:RELEASE.2025-04-16T18-13-26Z
     container_name: vedal-media-seed
-    depends_on:
-      minio-init:
-        condition: service_completed_successfully
+    profiles: ["seed"]
     environment:
-      MINIO_ROOT_USER: ${VEDAL_S3_ACCESS_KEY:-vedal}
-      MINIO_ROOT_PASSWORD: ${VEDAL_S3_SECRET_KEY:-vedal-local-secret}
+      # Имена без MINIO_: это ключи от Object Storage, а mc — просто
+      # клиент S3, который их принимает. Прежние MINIO_ROOT_* остались бы
+      # указателем на хранилище, которого в стеке больше нет.
+      S3_ACCESS_KEY: ${VEDAL_S3_ACCESS_KEY:?задайте VEDAL_S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${VEDAL_S3_SECRET_KEY:?задайте VEDAL_S3_SECRET_KEY}
       # Адрес хранилища параметром, а не строкой в команде. На машине
-      # разработчика это MinIO в соседнем контейнере, на ВМ — Yandex Object
-      # Storage; сервис один и тот же, различается только точка входа.
+      # разработчика и на ВМ это одно и то же хранилище — Yandex Object
+      # Storage; различаются только ключи и, при желании, имя бакета.
       # До параметра адрес был вшит в mc alias, и на ВМ сервис оставалось
       # только выключить — что и было сделано. Выключенный, он перестал
       # доставлять в бакет новые снимки, и каталог показывал изделия без
       # фотографий: четыре файла, добавленные в репозиторий последними,
       # отдавали 404.
-      S3_ENDPOINT: ${VEDAL_S3_ENDPOINT:-http://minio:9000}
+      S3_ENDPOINT: ${VEDAL_S3_ENDPOINT:?задайте VEDAL_S3_ENDPOINT}
       S3_BUCKET_MEDIA: ${VEDAL_S3_BUCKET_MEDIA:-vedal-media}
     volumes:
       # Только чтение: сервис заливает файлы в бакет, а не забирает из него.
@@ -228,7 +162,7 @@ services:
       - -c
       - |
         set -e
-        mc alias set local "$$S3_ENDPOINT" "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" > /dev/null
+        mc alias set local "$S3_ENDPOINT" "$S3_ACCESS_KEY" "$S3_SECRET_KEY" > /dev/null
 
         # Список собирает `mc find`, а не find(1): в образе mc последнего нет
         # вовсе, это не busybox. Каталоги он печатает наравне с файлами,
@@ -446,8 +380,6 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
-      minio-init:
-        condition: service_completed_successfully
       keycloak:
         condition: service_healthy
     environment:
@@ -470,10 +402,21 @@ services:
       VEDAL_EVENTS_PUBLISHER: debezium
       VEDAL_KAFKA: kafka:29092
 
+      # Хранилище — настоящий S3, и локально тоже. MinIO из стека убран:
+      # он говорил на том же протоколе, но был вторым хранилищем, куда
+      # содержимое утекало незаметно. «Локально работает, на стенде нет»
+      # чаще всего означало именно это: файл лежал в MinIO, а искали его
+      # в облаке.
+      #
+      # Значений по умолчанию здесь нет намеренно. Пустой ключ дал бы
+      # приложение, которое поднимается и падает на первой загрузке файла,
+      # — отказ на редакторе вместо отказа на развёртывании.
       VEDAL_STORAGE_KIND: s3
-      VEDAL_S3_ENDPOINT: http://minio:9000
-      VEDAL_S3_ACCESS_KEY: ${VEDAL_S3_ACCESS_KEY:-vedal}
-      VEDAL_S3_SECRET_KEY: ${VEDAL_S3_SECRET_KEY:-vedal-local-secret}
+      VEDAL_S3_ENDPOINT: ${VEDAL_S3_ENDPOINT:?задайте VEDAL_S3_ENDPOINT, например https://storage.yandexcloud.net}
+      VEDAL_S3_ACCESS_KEY: ${VEDAL_S3_ACCESS_KEY:?задайте VEDAL_S3_ACCESS_KEY}
+      VEDAL_S3_SECRET_KEY: ${VEDAL_S3_SECRET_KEY:?задайте VEDAL_S3_SECRET_KEY}
+      VEDAL_S3_BUCKET_DOCUMENTS: ${VEDAL_S3_BUCKET_DOCUMENTS:-vedal-documents}
+      VEDAL_S3_BUCKET_MEDIA: ${VEDAL_S3_BUCKET_MEDIA:-vedal-media}
 
       VEDAL_IAM_MODE: keycloak
       # Издателя сверяем по внешнему адресу — он в токене; ключи забираем
@@ -603,5 +546,4 @@ services:
 volumes:
   vedal-db:
   vedal-kafka:
-  vedal-minio:
   vedal-keycloak:
