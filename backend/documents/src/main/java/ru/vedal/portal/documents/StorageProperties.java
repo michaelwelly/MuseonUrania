@@ -42,9 +42,11 @@ public class StorageProperties {
 
     public static class S3 {
 
-        // Адрес хранилища. Локально MinIO, в облаке
-        // https://storage.yandexcloud.net.
-        private String endpoint = "http://localhost:9000";
+        // Адрес хранилища. Одно и то же и локально, и в облаке:
+        // Yandex Object Storage. MinIO из стека убран — он говорил на том
+        // же протоколе, но был вторым хранилищем, куда содержимое утекало
+        // незаметно.
+        private String endpoint = "https://storage.yandexcloud.net";
 
         // У Yandex Object Storage регион один — ru-central1. SDK требует
         // непустое значение для подписи запроса, даже когда хранилище его
@@ -54,8 +56,13 @@ public class StorageProperties {
         private String accessKey = "";
         private String secretKey = "";
 
-        // MinIO по умолчанию адресует бакет путём, а не поддоменом:
-        // bucket.localhost в разработке не разрешается в адрес.
+        // Бакет адресуется путём (endpoint/bucket/key), а не поддоменом.
+        // Yandex Object Storage понимает оба; путь оставлен потому, что
+        // он работает с любым S3-совместимым хранилищем, включая те,
+        // у кого нет обёртки поддоменом и сертификата под неё.
+        //
+        // Значение вынесено в настройку, а не прибито: провайдер, который
+        // умеет только виртуальный хост, не должен требовать правки кода.
         private boolean pathStyle = true;
 
         // Бакет на область. DOCUMENTS закрыт полностью, MEDIA открыт
