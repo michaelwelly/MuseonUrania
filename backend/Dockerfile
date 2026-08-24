@@ -85,7 +85,7 @@ COPY --from=build --chown=vedal:vedal /build/app/target/portal.jar app.jar
 
 # Каталог для режима vedal.storage.kind=local. В стеке compose хранилище
 # объектное, и этот каталог остаётся пустым — но образ не должен падать
-# только потому, что кто-то запустил его без MinIO.
+# только потому, что кто-то запустил его без объектного хранилища.
 RUN mkdir -p /app/var/documents
 VOLUME ["/app/var/documents"]
 
