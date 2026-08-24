@@ -19,9 +19,16 @@ comment inside the JSON would break the import.
 ## About the password in the repository
 
 The user's password sits in the file in plain text deliberately, by the same
-rule as the PostgreSQL password and the MinIO key in `compose.yaml`: these are
-developer-machine values, they never leave this docker network and never reach
-a deployed environment.
+rule as the PostgreSQL password in `compose.yaml`: these are developer-machine
+values, they never leave this docker network and never reach a deployed
+environment.
+
+The rule rests entirely on the value being local — and object storage keys no
+longer qualify. A MinIO of our own used to stand next to the stack, and its key
+was just such a local triviality. MinIO is gone from the stack, the storage is
+the real one, and the same key now opens the bucket the live site reads from.
+So `VEDAL_S3_ACCESS_KEY` and `VEDAL_S3_SECRET_KEY` are set in `backend/.env`,
+which is not in git, and left empty in `.env.example`.
 
 In `prod`, `staging` and `internal` Keycloak is stood up separately, accounts
 are created there, and this file is not used at all. In those environments the
