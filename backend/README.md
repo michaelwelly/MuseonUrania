@@ -115,7 +115,7 @@ pom их бы столкнул.
 | --- | --- | --- |
 | Kafka: публикация | ✅ готова. `vedal.events.publisher=kafka` — relay публикует сам, `debezium` — читает коннектор. Топики заводит приложение | — |
 | Kafka: потребители | ✅ читают из топиков в режиме `debezium`, повторы отсекаются по `(потребитель, событие)`, необработанное уезжает в `<топик>.dlq` | — |
-| Object Storage | ✅ S3 через AWS SDK: локально MinIO, две области — закрытые документы и открытое медиа | Каким будет облако — открытый вопрос в [infrastructure_architecture.md](../docs/architecture/infrastructure_architecture.md) |
+| Object Storage | ✅ S3 через AWS SDK на Yandex Object Storage, две области — закрытые документы и открытое медиа. Локально по умолчанию каталог на диске, с ключами — то же облако | Ключи: в репозитории их нет, задаются в `backend/.env` |
 | Провайдер идентичности | ✅ Keycloak: портал проверяет токен и разбирает `realm_access.roles`. Локальные учётки — запасной режим `vedal.iam.mode=local` | Кто держит Keycloak в развёрнутой среде |
 | Единая точка входа | ✅ [api-gateway](api-gateway/README.md) на Spring Cloud Gateway | — |
 | pgvector | Не используется | **В установке PostgreSQL для Windows от EnterpriseDB расширения нет** — `pg_available_extensions` его не знает. Понадобится образ `pgvector/pgvector:pg16`, и переводить на него надо одновременно `compose.yaml` и `PostgresTestBase`, иначе тесты разойдутся с разработкой |
@@ -291,7 +291,7 @@ statement-триггеры на него не срабатывают. **Это �
 | --- | --- | --- |
 | `EventPublisher` | `log`, `kafka` или `debezium` по `vedal.events.publisher` | Managed Kafka |
 | `MailSender` | запись в лог | SMTP Яндекс 360 |
-| `FileStorage` | `local` или `s3` по `vedal.storage.kind`; в стеке MinIO, предел 20 МБ | Yandex Object Storage |
+| `FileStorage` | `local` или `s3` по `vedal.storage.kind`; в стеке по умолчанию `local`, с ключами — Yandex Object Storage. Предел 20 МБ | — |
 | `LlmEngine` | детерминированный поиск по словам | YandexGPT + pgvector |
 
 Выбор реализации у всех трёх — свойством, а не составом classpath и не
