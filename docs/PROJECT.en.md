@@ -319,7 +319,7 @@ configuration.
 | --- | --- | --- |
 | `EventPublisher` | log, Kafka or Debezium — via `vedal.events.publisher` | Managed Kafka |
 | `MailSender` | writes to the log | Yandex 360 SMTP |
-| `FileStorage` | local directory or S3 — via `vedal.storage.kind`; the real Object Storage in the stack | Yandex Object Storage |
+| `FileStorage` | local directory or S3 — via `vedal.storage.kind`; a directory in the stack by default, the real Object Storage once keys are set | Yandex Object Storage |
 | `LlmEngine` | deterministic word search | YandexGPT + pgvector |
 
 ### Buckets are created by hand, once
@@ -360,10 +360,41 @@ explicitly:
 ```
 
 Keys come from a service account: **Service accounts → Create new key →
-Static access key**, with `storage.editor` on both buckets. The keys
-deliberately have no defaults — an empty key would give an application that
-starts and then fails on the first upload, so the editor would meet the
-failure rather than whoever deployed it.
+Static access key**, with `storage.editor` on both buckets.
+
+### The stack still comes up without keys
+
+`vedal.storage.kind=local` by default: files land in a directory inside the
+container. The site, the admin panel, the database and the events all work in
+full — keys are only needed by whoever works on media or documents.
+
+It was the other way round at first: once MinIO was gone the keys became
+mandatory, and the stack stopped coming up for anyone without cloud access.
+The requirement was right in substance and wrong in reach — it also forbade
+running everything that has nothing to do with storage.
+
+A directory on disk does not repeat MinIO's mistake. What was dangerous was
+not the second instance as such but its RESEMBLANCE to the cloud: the same S3,
+the same bucket names, the same client — so a file put in the wrong place
+looked like a file put in the right one. A directory resembles nothing, and
+cannot be mistaken for a bucket.
+
+The price is known and worth knowing: a photo uploaded by an editor through
+the admin panel will not appear on the site. The site reads media from the
+bucket address, and the directory is not served outward — by design, see
+`LocalFileStorage`.
+
+Setting `VEDAL_STORAGE_KIND=s3` and leaving the keys empty will not work:
+`S3Config` stops the start and names the missing variables. The check lives in
+the application rather than in `compose.yaml`, and deliberately in one place:
+written in two, it would drift apart sooner or later, and compose would forbid
+starting what the application brings up perfectly well.
+
+In a deployed environment the mode is pinned separately — `VEDAL_STORAGE_KIND:
+s3` in `compose.prod.yaml`. Had production inherited the local default,
+documents would land in a container volume and vanish on the very next deploy,
+and there would be no failure at all: the application writes to a directory
+perfectly well and reports "file saved".
 
 Photos from the repository are uploaded by a separate command, not on their
 own:
@@ -877,7 +908,7 @@ Metrica from section 8 — those are about content, not about the wire.
 | 1 | Merge `dev` → `main`, push every layer branch | from outside the project still looks like documents without code |
 | 2 | ~~Consumers read from topics~~ | ✅ Debezium reads the outbox from the write-ahead log, consumers take events from the topics, DLQ on `<topic>.dlq` after three attempts |
 | 3 | ~~Keycloak instead of local accounts~~ | ✅ the portal verifies a realm token and parses `realm_access.roles`; local accounts remain as the `vedal.iam.mode=local` fallback. **Not closed: MFA** — enabled by realm policy in a deployed environment, which does not concern the portal |
-| 4 | ~~Object storage and `FileStorage`~~ | ✅ S3 through the AWS SDK, one Yandex Object Storage both locally and in the cloud. Two buckets, privacy anchored to the bucket. MinIO removed on 22 August: it was a second store that content leaked into unnoticed |
+| 4 | ~~Object storage and `FileStorage`~~ | ✅ S3 through the AWS SDK, one Yandex Object Storage — there is no second one anywhere. Two buckets, privacy anchored to the bucket. MinIO removed on 22 August: it was a second store that content leaked into unnoticed. Locally a directory on disk by default: it resembles nothing and is never confused with a bucket |
 | 5 | ~~Grow `crm` to full: clients, deals, quotes, statuses, dealer and service funnels, correspondence history, attachments from approved documents, analytics by product/source/language/campaign~~ | ✅ the module is complete: `client`, `deal` with three pipelines, `quote` with lines, `interaction` (append-only), attachments from approved documents, four analytics dimensions. **Not closed:** CRM roles await the answer to question 12.3, the 1С exchange awaits 12.4 (the `inn`/`kpp`/`external_id` columns are in place already), the quote letter awaits Яндекс 360 SMTP |
 | 6 | `MailSender` → Yandex 360 SMTP | letters still go to the log |
 | 7 | `LlmEngine` → YandexGPT + pgvector, the pipeline text extraction → chunks with metadata → embeddings | **pitfall:** the EnterpriseDB PostgreSQL build for Windows does not ship pgvector. A `pgvector/pgvector:pg16` image is needed, and `compose.yaml` and `PostgresTestBase` must be switched **at the same time**, otherwise the tests diverge from development |
