@@ -34,8 +34,9 @@ public class S3Config {
                 .region(Region.of(s3.getRegion()))
                 .credentialsProvider(StaticCredentialsProvider.create(
                         AwsBasicCredentials.create(s3.getAccessKey(), s3.getSecretKey())))
-                // MinIO и Yandex Object Storage адресуют бакет путём.
-                // Поддомен bucket.host в разработке просто не разрешается.
+                // Бакет адресуется путём, а не поддоменом. Почему именно так
+                // и почему это настройка, а не константа — в StorageProperties,
+                // рядом со значением по умолчанию.
                 .serviceConfiguration(S3Configuration.builder()
                         .pathStyleAccessEnabled(s3.isPathStyle())
                         .build())
