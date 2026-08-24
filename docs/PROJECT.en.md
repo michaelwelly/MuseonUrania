@@ -766,6 +766,43 @@ successful backup is older than a day. Personal data is not written to the logs,
 only the `correlation_id` and the lead identifier — otherwise the logging system
 also becomes a store of personal data.
 
+#### The watchdog
+
+A first step is in place: the stack has a
+[watchdog](../backend/watchdog/README.en.md) — a container that checks the
+services, memory and disk once a minute and sends mail on a change of state.
+It appeared after a week the stand spent falling over and coming back: health
+checks on the services existed before it, but only `docker` sees them, only on
+that same machine, and only if somebody asks.
+
+The record turned out to matter more than the alarms. Every check goes to the
+log as one line with memory and disk, and that is exactly the answer to "what
+was happening at 03:40" that was missing when the stand started to fall.
+
+**What the watchdog does not close — two gaps, both worth knowing.**
+
+First: it lives on the machine it watches. If memory runs out, the system kills
+it too; if the machine goes down, the silence is total and indistinguishable
+from the silence of everything being fine. Silence from the watchdog is not
+proof that anything works. Only an observer on the outside can notice the death
+of the machine itself.
+
+Second: **the watchdog does not check the outbox lag** — the very main signal
+named in the paragraph above. The `vedal.outbox.lag.seconds` metric is computed
+(`OutboxRelay.measure`, in `debezium` mode too) and, past five minutes, written
+as a warning to the portal's log. But actuator exposes only `health` outward and
+without details — the door that would show it does not exist. Making one takes
+more than adding an indicator: landing in the overall health, it would fail the
+container's health check, and docker would start restarting the portal because
+leads are piling up. It needs a separate health group, and that is backend work,
+not watchdog work.
+
+Why not Prometheus and Grafana: they pay for themselves on a fleet of machines.
+Here there is one machine, and it is already short on memory — short enough that
+memory is suspect number one in the crashes. Putting another gigabyte of
+observer next to it is curing hunger with another eater. Same reason there is no
+Kubernetes in this project.
+
 The target backup scheme: continuous WAL through `wal-g` into object storage, a
 full backup once a week, an encrypted `pg_dump -Fc` into a bucket of another
 account, bucket versioning, a service account with write-only permissions. A
