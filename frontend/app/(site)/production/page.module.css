@@ -85,16 +85,12 @@
    на белом даёт 3.6:1, а это подпись 15 px. */
 .btnGhost {
   border: 1px solid var(--green);
-  background: var(--glass-tint);
   color: var(--green-dark);
   font-weight: 500;
-  backdrop-filter: blur(14px) saturate(1.35);
-  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .btnGhost:hover {
   border-color: var(--green-dark);
-  background: var(--glass-tint-hover);
   color: var(--green-dark);
 }
 
@@ -102,15 +98,11 @@
   height: 50px;
   padding: 0 22px;
   border: 1px solid var(--line-3);
-  background: var(--glass-tint);
   color: var(--deep-2);
-  backdrop-filter: blur(14px) saturate(1.35);
-  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .btnOutline:hover {
   border-color: var(--green);
-  background: var(--glass-tint-hover);
   color: var(--green-dark);
 }
 

@@ -155,18 +155,13 @@
   font-weight: 600;
 }
 
-/* Жидкое стекло, токены в globals.css. */
 .btnPrimary {
-  background: var(--glass-sheen), var(--glass-green);
+  background: var(--green-dark);
   color: #fff;
-  border: 1px solid var(--glass-edge);
-  backdrop-filter: blur(14px) saturate(1.35);
-  box-shadow: var(--glass-shine), var(--glass-lift);
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .btnPrimary:hover {
-  background: var(--glass-sheen), var(--glass-green-hover);
+  background: var(--green-ink-hover);
   color: #fff;
 }
 
