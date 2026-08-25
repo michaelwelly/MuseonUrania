@@ -103,13 +103,19 @@
   white-space: nowrap;
 }
 
+/* Жидкое стекло. Оттенок, альфа и форма блика заданы токенами
+   в globals.css — там же посчитано, почему они именно такие. */
 .btnPrimary {
-  background: var(--green-dark);
+  background: var(--glass-sheen), var(--glass-green);
   color: #fff;
+  border: 1px solid var(--glass-edge);
+  backdrop-filter: blur(14px) saturate(1.35);
+  box-shadow: var(--glass-shine), var(--glass-lift);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .btnPrimary:hover {
-  background: var(--green-ink-hover);
+  background: var(--glass-sheen), var(--glass-green-hover);
   color: #fff;
 }
 
@@ -119,7 +125,12 @@
    в одном месте, и оставить старое имя значило бы соврать про приём. */
 .btnOutline {
   border: 1px solid var(--green);
-  background: var(--page);
+  /* Заливка едва заметная: надпись здесь зелёная, и подложка темнее
+     0.08 съедает её контраст. Стекло у контурной кнопки — это размытие
+     фона за ней, а не цвет. */
+  background: var(--glass-tint);
+  backdrop-filter: blur(14px) saturate(1.35);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
   /* Рамка — брендовый зелёный, надпись на тон темнее. На белом --green даёт
      контраст 3.6:1, а это подпись 16 px: для неё нужно 4.5:1. --green-dark
      даёт 5.4:1 и на глаз от --green не отличается. */
@@ -129,19 +140,24 @@
 
 .btnOutline:hover {
   border-color: var(--green-dark);
+  background: var(--glass-tint-hover);
   color: var(--green-dark);
 }
 
 .btnDark {
   height: 52px;
   padding: 0 24px;
-  background: var(--deep-2);
+  background: var(--glass-sheen), var(--glass-deep);
   color: #fff;
   font-size: 15px;
+  border: 1px solid var(--glass-edge);
+  backdrop-filter: blur(14px) saturate(1.35);
+  box-shadow: var(--glass-shine), var(--glass-lift-deep);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .btnDark:hover {
-  background: var(--deep);
+  background: var(--glass-sheen), var(--glass-deep-hover);
   color: #fff;
 }
 
