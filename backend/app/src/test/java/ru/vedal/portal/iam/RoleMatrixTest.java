@@ -11,6 +11,9 @@ import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 // Кто куда пущен.
@@ -153,6 +156,36 @@ class RoleMatrixTest extends PostgresTestBase {
         // Оболочка спрашивает это на каждой странице. Закрыв дверь ролью,
         // мы закрыли бы вход тому, у кого роль есть, но другая.
         mvc.perform(get("/api/admin/v1/session")).andExpect(status().isOk());
+    }
+
+    // Имя роли, которое отдаёт /session, — это то, по чему админка решает,
+    // какие разделы показать. Разойдись форма записи, и человек с полными
+    // правами увидит пустую оболочку: портал его пустит, а интерфейс
+    // не предложит ни одной двери.
+    @Test
+    @WithMockUser(username = "boss", roles = "PORTAL_ADMIN")
+    void sessionReportsRolesTheWayTheAdminPanelReadsThem() throws Exception {
+        mvc.perform(get("/api/admin/v1/session"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.roles").value(contains("portal-admin")));
+    }
+
+    @Test
+    @WithMockUser(username = "sales", roles = "PORTAL_SALES")
+    void salesSeesItsOwnRoleAndNothingElse() throws Exception {
+        mvc.perform(get("/api/admin/v1/session"))
+                .andExpect(jsonPath("$.roles").value(contains("portal-sales")));
+    }
+
+    // Приставка Spring и области видимости токена наружу не уходят.
+    // Проверяется отдельно: тест выше зеленел бы и на списке, где рядом
+    // с portal-admin лежат ROLE_PORTAL_ADMIN и десяток SCOPE_*.
+    @Test
+    @WithMockUser(username = "boss", roles = {"PORTAL_ADMIN", "PORTAL_SALES"})
+    void neitherSpringPrefixNorScopesLeakOutward() throws Exception {
+        mvc.perform(get("/api/admin/v1/session"))
+                .andExpect(jsonPath("$.roles").value(
+                        containsInAnyOrder("portal-admin", "portal-sales")));
     }
 
     // ————— уничтожение персональных данных —————
