@@ -42,13 +42,31 @@ public interface StaffDirectory {
             @Schema(description = "Отключённые остаются в списке: на них есть старые "
                     + "сделки, и прятать их значит терять историю. Новое на них "
                     + "записать нельзя.")
-            boolean enabled) {
+            boolean enabled,
+
+            @Schema(description = "Портальные роли в том виде, в каком они записаны "
+                    + "в realm'е. Пусто — человек заведён, но в портал не пущен.",
+                    example = "[\"portal-sales\"]")
+            List<String> roles) {
 
         /** Что показать в списке: имя, а если его нет — логин. */
         public String label() {
             return name == null || name.isBlank() ? login : name;
         }
     }
+
+    /**
+     * Портальные роли — те же строки, что стоят в realm'е.
+     *
+     * Список закрытый и лежит здесь, а не выводится из SecurityConfig:
+     * там роли записаны в форме Spring (PORTAL_ADMIN), а наружу и в Keycloak
+     * они уходят в форме realm'а. Держать перевод в одну сторону в одном
+     * месте, а список в другом — значит однажды их развести.
+     *
+     * Роли realm'а, не входящие сюда, справочник не показывает вовсе:
+     * у Keycloak свои служебные роли, и сотруднику они ничего не говорят.
+     */
+    List<String> PORTAL_ROLES = List.of("portal-admin", "portal-sales", "portal-production");
 
     /** Все, кого знает провайдер идентичности, по алфавиту. */
     List<Person> staff();

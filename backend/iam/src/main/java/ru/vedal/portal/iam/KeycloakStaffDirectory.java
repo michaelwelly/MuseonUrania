@@ -6,7 +6,9 @@ import org.springframework.web.client.RestClient;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -91,14 +93,50 @@ class KeycloakStaffDirectory implements StaffDirectory {
 
         if (users == null) return List.of();
 
+        var roles = rolesByLogin(token);
+
         return users.stream()
-                .map(KeycloakStaffDirectory::person)
+                .map(raw -> person(raw, roles))
                 .filter(p -> !p.login().isBlank())
                 .sorted(Comparator.comparing(Person::label, String.CASE_INSENSITIVE_ORDER))
                 .toList();
     }
 
-    private static Person person(Map<String, Object> raw) {
+    // Кто в какой роли — спрашивается СОСТАВОМ РОЛЕЙ, а не ролями каждого.
+    //
+    // У Keycloak нет двери, отдающей роли сразу для списка людей: есть
+    // «роли вот этого» и «состав вот этой роли». Первый путь — запрос
+    // на каждого сотрудника: сорок человек, сорок обращений, и справочник,
+    // который читают на КАЖДОЙ странице админки, начинает зависеть
+    // от сорока ответов подряд.
+    //
+    // Второй путь — три запроса, по одному на роль, сколько бы людей
+    // ни было. Ролей у портала ровно три, и это не изменится незаметно:
+    // список закрыт в StaffDirectory.PORTAL_ROLES.
+    private Map<String, List<String>> rolesByLogin(String token) {
+        Map<String, List<String>> byLogin = new HashMap<>();
+
+        for (var role : PORTAL_ROLES) {
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> members = http.get()
+                    .uri(base + "/admin/realms/" + realm + "/roles/" + role
+                            + "/users?max=" + LIMIT)
+                    .header("Authorization", "Bearer " + token)
+                    .retrieve()
+                    .body(List.class);
+
+            if (members == null) continue;
+            for (var member : members) {
+                var login = text(member.get("username"));
+                if (login.isBlank()) continue;
+                byLogin.computeIfAbsent(login, k -> new ArrayList<>()).add(role);
+            }
+        }
+
+        return byLogin;
+    }
+
+    private static Person person(Map<String, Object> raw, Map<String, List<String>> roles) {
         var login = text(raw.get("username"));
         var first = text(raw.get("firstName"));
         var last = text(raw.get("lastName"));
@@ -106,7 +144,14 @@ class KeycloakStaffDirectory implements StaffDirectory {
         // enabled отсутствует у учётной записи, заведённой импортом realm'а
         // без явного поля: по смыслу Keycloak это «включена».
         var enabled = !Boolean.FALSE.equals(raw.get("enabled"));
-        return new Person(login, name.isBlank() ? null : name, enabled);
+
+        // Порядок ролей — как в PORTAL_ROLES, а не как ответил Keycloak:
+        // список показывается человеку, и «сегодня продажи первыми, завтра
+        // содержимое» читается как изменение, которого не было.
+        var mine = roles.getOrDefault(login, List.of());
+        var ordered = PORTAL_ROLES.stream().filter(mine::contains).toList();
+
+        return new Person(login, name.isBlank() ? null : name, enabled, ordered);
     }
 
     private static String text(Object value) {

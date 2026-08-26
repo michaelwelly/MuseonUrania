@@ -72,9 +72,12 @@ class StaffDirectoryTest extends PostgresTestBase {
     // списке не выбирается: человек не знает, кого он выбрал.
     @Test
     void labelFallsBackToLoginWhenThereIsNoName() {
-        assertThat(new StaffDirectory.Person("bez.imeni", null, true).label()).isEqualTo("bez.imeni");
-        assertThat(new StaffDirectory.Person("bez.imeni", "  ", true).label()).isEqualTo("bez.imeni");
-        assertThat(new StaffDirectory.Person("fedorova", "Анна Фёдорова", true).label())
+        var никаких = java.util.List.<String>of();
+        assertThat(new StaffDirectory.Person("bez.imeni", null, true, никаких).label())
+                .isEqualTo("bez.imeni");
+        assertThat(new StaffDirectory.Person("bez.imeni", "  ", true, никаких).label())
+                .isEqualTo("bez.imeni");
+        assertThat(new StaffDirectory.Person("fedorova", "Анна Фёдорова", true, никаких).label())
                 .isEqualTo("Анна Фёдорова");
     }
 
@@ -90,6 +93,34 @@ class StaffDirectoryTest extends PostgresTestBase {
         mvc.perform(get("/api/admin/v1/staff"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.login == 'fedorova')].name").value("Анна Фёдорова"));
+    }
+
+    // Роли приезжают вместе с сотрудником.
+    //
+    // Раньше справочник отдавал логин, имя и признак «работает», и вопрос
+    // «кто у нас продажи, а кто ведёт сайт» отвечался только в консоли
+    // Keycloak. Теперь роли видны там же, где состав.
+    //
+    // В запасном режиме у единственной учётной записи все три — ровно те,
+    // что выдаёт ей SecurityConfig. Проверка сверяет со списком порта,
+    // а не с переписанной руками тройкой: разойдись они, тест зеленел бы
+    // на собственной копии правды.
+    @Test
+    @WithMockUser(roles = "PORTAL_ADMIN")
+    void staffCarriesPortalRoles() throws Exception {
+        account("fedorova", "Анна Фёдорова", true);
+
+        var found = staff.staff().stream()
+                .filter(p -> p.login().equals("fedorova"))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(found.roles()).isEqualTo(StaffDirectory.PORTAL_ROLES);
+
+        mvc.perform(get("/api/admin/v1/staff"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.login == 'fedorova')].roles[0]")
+                        .value("portal-admin"));
     }
 
     // Дверь админская, значит закрыта как остальные: без токена ответ 401,
