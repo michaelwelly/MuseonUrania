@@ -50,13 +50,27 @@ export default function ProfilePage() {
   const я = people?.find((p) => p.login === who.actor);
   const имя = я?.name?.trim() || who.actor;
 
-  const { data: заявки } = useLoad<Page<LeadRow>>(
-    () => leads({ owner: who.actor }, 0, 1),
-    who.actor,
+  // Профиль открыт любой роли, а эти две двери — нет: заявки лежат
+  // в контуре продаж, журнал закрыт администратором.
+  //
+  // Что было. Обе дёргались всегда, у кого бы ни открыли страницу.
+  // Продавец получал 403 на журнале и читал текст ошибки прямо на своём
+  // профиле; у роли «содержимое сайта» вдобавок вечно крутилась плитка
+  // заявок — запрос падал, данные не приходили, «…» оставалось навсегда.
+  //
+  // Отказ на двери, которую тебе не открывали, — не поломка, и показывать
+  // его как поломку значит пугать человека тем, что работает правильно.
+  // Не спрашиваем вовсе, а пустоту объясняем словами.
+  const мойКонтурПродаж = may(who, "sales");
+  const мнеВиденЖурнал = may(who, "admin");
+
+  const { data: заявки } = useLoad<Page<LeadRow> | null>(
+    () => (мойКонтурПродаж ? leads({ owner: who.actor }, 0, 1) : Promise.resolve(null)),
+    `${who.actor}#${мойКонтурПродаж}`,
   );
-  const { data: журнал, error } = useLoad<Page<AuditEntry>>(
-    () => audit({ actor: who.actor }, 0, 8),
-    who.actor,
+  const { data: журнал, error } = useLoad<Page<AuditEntry> | null>(
+    () => (мнеВиденЖурнал ? audit({ actor: who.actor }, 0, 8) : Promise.resolve(null)),
+    `${who.actor}#${мнеВиденЖурнал}`,
   );
 
   return (
@@ -140,15 +154,22 @@ export default function ProfilePage() {
         <section>
           <h2 className="admin-card__title">Нагрузка сейчас</h2>
           <div className="tiles">
-            <Link
-              className="tile"
-              href={`/admin/leads/?owner=${encodeURIComponent(who.actor)}`}
-            >
-              <div className="tile__num">{заявки ? заявки.total : "…"}</div>
-              <div className="tile__label">
-                {заявки ? plural(заявки.total, "заявка", "заявки", "заявок") : "заявок"} на вас
-              </div>
-            </Link>
+            {мойКонтурПродаж ? (
+              <Link
+                className="tile"
+                href={`/admin/leads/?owner=${encodeURIComponent(who.actor)}`}
+              >
+                <div className="tile__num">{заявки ? заявки.total : "…"}</div>
+                <div className="tile__label">
+                  {заявки ? plural(заявки.total, "заявка", "заявки", "заявок") : "заявок"} на вас
+                </div>
+              </Link>
+            ) : (
+              <span className="tile tile--none">
+                <div className="tile__num nobody">—</div>
+                <div className="tile__label">заявки ведёт контур продаж — вашей роли он не открыт</div>
+              </span>
+            )}
 
             {/* Сделки и разговоры посчитать нечем: отбора по ответственному
                 у этих дверей нет. Пустая плитка честнее правдоподобной. */}
@@ -163,7 +184,15 @@ export default function ProfilePage() {
           </div>
 
           <h2 className="admin-card__title">Последние действия в журнале</h2>
-          <Note kind="error">{error}</Note>
+
+          {!мнеВиденЖурнал && (
+            <p className="admin-hint">
+              Журнал открыт администратору. Он показывает, кто что делал, — включая тех,
+              кто в него смотрит, — и для работы контура не нужен.
+            </p>
+          )}
+
+          {мнеВиденЖурнал && <Note kind="error">{error}</Note>}
 
           {журнал && журнал.items.length === 0 && (
             <p className="admin-hint">Записей за вами пока нет.</p>
@@ -186,11 +215,13 @@ export default function ProfilePage() {
             </div>
           )}
 
-          <p className="admin-hint">
-            <Link href={`/admin/audit/?actor=${encodeURIComponent(who.actor)}`}>
-              Весь журнал по вам →
-            </Link>
-          </p>
+          {мнеВиденЖурнал && (
+            <p className="admin-hint">
+              <Link href={`/admin/audit/?actor=${encodeURIComponent(who.actor)}`}>
+                Весь журнал по вам →
+              </Link>
+            </p>
+          )}
         </section>
       </div>
     </>
