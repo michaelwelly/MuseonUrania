@@ -2118,6 +2118,46 @@ paths:
       summary: Сотрудники для выбора ответственного
       tags:
       - "Админка: сотрудники"
+  /api/admin/v1/staff/{login}/roles:
+    put:
+      description: |
+        Набор целиком, а не «добавить одну»: что прислали, то и стало.
+        Пустой список снимает все портальные роли — человек остаётся
+        в системе входа, но в портал не пущен.
+
+        Только `portal-admin`. Свои роли изменить нельзя: иначе
+        достаточно один раз дорваться до этой двери, чтобы поднять
+        себя до администратора.
+
+        Роли вне портальных отвергаются, даже если у служебной учётной
+        записи хватает прав их назначить.
+      operationId: assign
+      parameters:
+      - in: path
+        name: login
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Roles"
+        required: true
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminStaffMember"
+          description: OK
+      security:
+      - keycloak: []
+      summary: Выдать сотруднику набор портальных ролей
+      tags:
+      - "Админка: сотрудники"
 components:
   schemas:
     AdminCategory:
@@ -3351,7 +3391,8 @@ components:
           description: "Как портал проверяет вход: `keycloak` или `local`."
         roles:
           type: array
-          description: "Роли, которые портал разобрал в токене."
+          description: "Роли realm'а, которые портал разобрал в токене: `portal-admin`,\
+            \ `portal-sales`, `portal-production`."
           items:
             type: string
     AdminStaffMember:
@@ -3374,6 +3415,14 @@ components:
           description: Как показывать в списке. Пусто у учётной записи без имени и
             фамилии — тогда показывается логин.
           example: Анна Фёдорова
+        roles:
+          type: array
+          description: "Портальные роли в том виде, в каком они записаны в realm'е\
+            . Пусто — человек заведён, но в портал не пущен."
+          example:
+          - portal-sales
+          items:
+            type: string
     AskReply:
       type: object
       description: |
@@ -3642,6 +3691,19 @@ components:
           type: string
           format: uri
           default: about:blank
+    Roles:
+      type: object
+      properties:
+        roles:
+          type: array
+          description: Полный новый набор портальных ролей. Пустой список означает
+            «в портал не пущен».
+          example:
+          - portal-sales
+          items:
+            type: string
+      required:
+      - roles
     Source:
       type: object
       description: "Опубликованный материал, на который опирается ответ."
