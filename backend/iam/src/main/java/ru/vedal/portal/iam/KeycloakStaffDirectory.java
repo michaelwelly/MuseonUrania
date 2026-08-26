@@ -9,7 +9,6 @@ import java.time.Instant;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Objects;
@@ -195,50 +194,41 @@ class KeycloakStaffDirectory implements StaffDirectory {
 
         if (users == null) return List.of();
 
-        var roles = rolesByLogin(token);
-
         return users.stream()
-                .map(raw -> person(raw, roles))
+                .map(raw -> person(raw, portalRolesOf(token, text(raw.get("id")))))
                 .filter(p -> !p.login().isBlank())
                 .sorted(Comparator.comparing(Person::label, String.CASE_INSENSITIVE_ORDER))
                 .toList();
     }
 
-    // Кто в какой роли — спрашивается СОСТАВОМ РОЛЕЙ, а не ролями каждого.
+    // Роли — запросом на каждого человека.
     //
-    // У Keycloak нет двери, отдающей роли сразу для списка людей: есть
-    // «роли вот этого» и «состав вот этой роли». Первый путь — запрос
-    // на каждого сотрудника: сорок человек, сорок обращений, и справочник,
-    // который читают на КАЖДОЙ странице админки, начинает зависеть
-    // от сорока ответов подряд.
+    // Сначала здесь стоял другой способ: спросить СОСТАВ каждой из трёх
+    // ролей и получить всех разом — три запроса вместо сорока. Способ
+    // хорош всем, кроме одного: дверь /roles/{роль}/users требует
+    // view-realm, то есть права читать всю настройку realm'а. Портал его
+    // не просит и просить не должен ради удобства чтения.
     //
-    // Второй путь — три запроса, по одному на роль, сколько бы людей
-    // ни было. Ролей у портала ровно три, и это не изменится незаметно:
-    // список закрыт в StaffDirectory.PORTAL_ROLES.
-    private Map<String, List<String>> rolesByLogin(String token) {
-        Map<String, List<String>> byLogin = new HashMap<>();
+    // Отказ при этом был бы ТИХИМ и не там, где ошибка: 403 прилетает
+    // внутрь read(), а staff() ловит любое исключение и отдаёт прошлый
+    // список — то есть пропали бы не роли, а сотрудники целиком, и
+    // выглядело бы это как «Keycloak недоступен».
+    //
+    // Цена нынешнего способа — обращение на человека. Она меньше, чем
+    // кажется: справочник кэшируется на TTL, и запросы идут раз в две
+    // минуты, а не на каждую страницу. Станет дорого при сотнях учётных
+    // записей — тогда и появится повод обсуждать view-realm.
+    private List<String> portalRolesOf(String token, String userId) {
+        if (userId.isBlank()) return List.of();
 
-        for (var role : PORTAL_ROLES) {
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> members = http.get()
-                    .uri(base + "/admin/realms/" + realm + "/roles/" + role
-                            + "/users?max=" + LIMIT)
-                    .header("Authorization", "Bearer " + token)
-                    .retrieve()
-                    .body(List.class);
+        var mine = realmRoles(token, userId, "").keySet();
 
-            if (members == null) continue;
-            for (var member : members) {
-                var login = text(member.get("username"));
-                if (login.isBlank()) continue;
-                byLogin.computeIfAbsent(login, k -> new ArrayList<>()).add(role);
-            }
-        }
-
-        return byLogin;
+        // Порядок — как в PORTAL_ROLES, а не как ответил Keycloak: список
+        // показывается человеку, и «сегодня продажи первыми, завтра
+        // содержимое» читается как изменение, которого не было.
+        return PORTAL_ROLES.stream().filter(mine::contains).toList();
     }
-
-    private static Person person(Map<String, Object> raw, Map<String, List<String>> roles) {
+    private static Person person(Map<String, Object> raw, List<String> roles) {
         var login = text(raw.get("username"));
         var first = text(raw.get("firstName"));
         var last = text(raw.get("lastName"));
@@ -247,13 +237,7 @@ class KeycloakStaffDirectory implements StaffDirectory {
         // без явного поля: по смыслу Keycloak это «включена».
         var enabled = !Boolean.FALSE.equals(raw.get("enabled"));
 
-        // Порядок ролей — как в PORTAL_ROLES, а не как ответил Keycloak:
-        // список показывается человеку, и «сегодня продажи первыми, завтра
-        // содержимое» читается как изменение, которого не было.
-        var mine = roles.getOrDefault(login, List.of());
-        var ordered = PORTAL_ROLES.stream().filter(mine::contains).toList();
-
-        return new Person(login, name.isBlank() ? null : name, enabled, ordered);
+        return new Person(login, name.isBlank() ? null : name, enabled, roles);
     }
 
     private static String text(Object value) {
