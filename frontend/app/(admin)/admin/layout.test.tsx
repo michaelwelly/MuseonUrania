@@ -45,7 +45,15 @@ vi.mock("@/lib/admin", () => {
   return {
     adminConfigured: true,
     session: mocks.session,
-    AdminError: class AdminError extends Error {},
+    // Со статусом, как настоящий: именно по нему оболочка выбирает,
+    // что советовать. Пустышка extends Error зеленела бы на любой ветке.
+    AdminError: class AdminError extends Error {
+      status: number;
+      constructor(status: number, message: string) {
+        super(message);
+        this.status = status;
+      }
+    },
     products: пусто,
     news: пусто,
     documents: пусто,
@@ -164,5 +172,57 @@ describe("навигация админки", () => {
     await screen.findByText("нет роли portal-editor");
     expect(screen.queryByRole("navigation", { name: "Разделы админки" })).toBeNull();
     expect(screen.queryByText("содержимое")).toBeNull();
+  });
+  // ————— отказ и недозвон — разные беды —————
+  //
+  // Раньше оба случая показывали один экран, и он объяснял любой из них
+  // отсутствием ролей. На 403 это верно; на недозвоне уводит в сторону:
+  // человек идёт проверять роли, которых и так достаточно. Так потерялся
+  // час на разборе, где виноват был адрес, а не Keycloak.
+
+  it("недозвон не сваливают на роли", async () => {
+    const { AdminError } = await import("@/lib/admin");
+    mocks.pathname = "/admin/";
+    mocks.session.mockRejectedValue(new AdminError(0, "Портал не отвечает."));
+
+    render(
+      <AdminLayout>
+        <div>содержимое</div>
+      </AdminLayout>,
+    );
+
+    await screen.findByText(/Запрос не дошёл до портала/);
+    // Про роли на этом экране не говорят вовсе.
+    expect(screen.queryByText(/portal-admin/)).toBeNull();
+  });
+
+  it("на 403 советуют роль, и повторный вход не обещают", async () => {
+    const { AdminError } = await import("@/lib/admin");
+    mocks.pathname = "/admin/";
+    mocks.session.mockRejectedValue(new AdminError(403, "Доступ запрещён"));
+
+    render(
+      <AdminLayout>
+        <div>содержимое</div>
+      </AdminLayout>,
+    );
+
+    await screen.findByText(/нет ни одной роли портала/);
+    expect(screen.getByText(/Повторный вход ничего не изменит/)).toBeTruthy();
+  });
+
+  it("на 401 зовут войти заново, а не искать роли", async () => {
+    const { AdminError } = await import("@/lib/admin");
+    mocks.pathname = "/admin/";
+    mocks.session.mockRejectedValue(new AdminError(401, "Токен не принят"));
+
+    render(
+      <AdminLayout>
+        <div>содержимое</div>
+      </AdminLayout>,
+    );
+
+    await screen.findByText(/Это не про роли/);
+    expect(screen.queryByText(/нет ни одной роли портала/)).toBeNull();
   });
 });

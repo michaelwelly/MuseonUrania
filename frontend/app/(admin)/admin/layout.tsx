@@ -6,7 +6,7 @@ import { contourName, contourOf, may, mayOpen, type Contour } from "./roles";
 import { useEffect, useRef, useState } from "react";
 import AnimatedLogo from "@/components/AnimatedLogo";
 import { accessToken, authConfigured, login, logout, onSessionLost } from "@/lib/auth";
-import { adminConfigured, session, type Session } from "@/lib/admin";
+import { AdminError, adminConfigured, session, type Session } from "@/lib/admin";
 import { message } from "./ui";
 import Entry from "./Entry";
 import { Avatar } from "./Avatar";
@@ -130,7 +130,10 @@ const APART: readonly Item[] = [{ href: "/admin/profile/", label: "Мой про
 type State =
   | { kind: "checking" }
   | { kind: "anonymous" }
-  | { kind: "refused"; reason: string }
+  /** Запрос не дошёл до портала: сеть, адрес, лежащий стек. Статуса нет. */
+  | { kind: "unreachable"; reason: string }
+  /** Портал ответил и отказал. Статус говорит, почему именно. */
+  | { kind: "refused"; status: number; reason: string }
   | { kind: "ready"; who: Session };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -156,9 +159,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         const who = await session();
         if (alive) setState({ kind: "ready", who });
       } catch (e) {
-        // Токен есть, а портал его не принял. Причина в сообщении: не тот
-        // realm, не та аудитория, нет роли.
-        if (alive) setState({ kind: "refused", reason: message(e) });
+        if (!alive) return;
+
+        // «Не дошло» и «отказали» — разные беды, и советы у них
+        // противоположные. Клиент их различает: у сетевого сбоя статуса
+        // нет вовсе, и он приезжает нулём (lib/admin, request).
+        //
+        // Раньше оболочка сваливала оба случая в один экран и объясняла
+        // любой из них отсутствием ролей. На отказе 403 это верно,
+        // а на недозвоне — уводит в сторону: человек идёт в Keycloak
+        // проверять роли, которых там и так достаточно.
+        const status = e instanceof AdminError ? e.status : -1;
+        setState(
+          status === 0
+            ? { kind: "unreachable", reason: message(e) }
+            : { kind: "refused", status, reason: message(e) },
+        );
       }
     })();
 
@@ -232,22 +248,60 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  // Токен есть, а портал его не принял. Это отдельный случай, а не «войдите
-  // ещё раз»: повторный вход выдаст тот же токен и получит тот же отказ.
+  // Запрос не дошёл. Про роли здесь говорить нельзя: портал не отвечал,
+  // и что он думает о токене — неизвестно.
+  if (state.kind === "unreachable") {
+    return (
+      <Entry state="портал не ответил" title="Портал не ответил">
+        <p>{state.reason}</p>
+        <p>
+          Запрос не дошёл до портала — значит дело не в токене и не в ролях: портал
+          не успел о них ничего сказать.
+        </p>
+        <p style={{ fontSize: "var(--t-small)" }}>
+          Чаще всего админку открыли мимо единой точки входа. Она живёт по тому же
+          адресу, что сайт и API — тогда браузер не делает кросс-доменных запросов
+          и разрешения ему не нужны. Открытая напрямую по адресу контейнера сайта,
+          она стучится на другой порт, и браузер молча отменяет запрос ещё
+          до отправки.
+        </p>
+        <div className="row">
+          <button className="btn" onClick={() => location.reload()}>
+            Попробовать снова
+          </button>
+        </div>
+      </Entry>
+    );
+  }
+
+  // Портал ответил и отказал. Совет зависит от того, ЧЕМ он отказал:
+  // повторный вход лечит просроченный или чужой токен и не лечит
+  // отсутствие роли.
   if (state.kind === "refused") {
+    const проРоли = state.status === 403;
     return (
       <Entry state="токен не принят" title="Портал отказал">
         <p>{state.reason}</p>
-        <p>
-          Вход в Keycloak прошёл — иначе токена не было бы вовсе. Отказал уже портал, и чаще
-          всего потому, что у учётной записи нет ни одной роли портала:{" "}
-          <code>portal-admin</code>, <code>portal-sales</code> или{" "}
-          <code>portal-production</code> в realm&apos;е. Роль выдаёт тот, кто держит Keycloak;
-          повторный вход ничего не изменит, токен будет тот же.
-        </p>
+        {проРоли ? (
+          <p>
+            Вход в систему прошёл — иначе токена не было бы вовсе. Отказал уже портал,
+            и на этом коде причина одна: у учётной записи нет ни одной роли портала:{" "}
+            <code>portal-admin</code>, <code>portal-sales</code> или{" "}
+            <code>portal-production</code>. Роль выдаёт администратор портала
+            в разделе «Сотрудники» либо тот, кто держит систему входа. Повторный вход
+            ничего не изменит, токен будет тот же.
+          </p>
+        ) : (
+          <p>
+            Портал ответил {state.status > 0 ? state.status : "отказом"}. Это не про роли:
+            токен либо просрочен, либо выдан не тем realm&apos;ом — так бывает после
+            того, как систему входа поднимали заново. Такой отказ лечится повторным
+            входом.
+          </p>
+        )}
         <div className="row">
           <button className="btn" onClick={() => logout()}>
-            Выйти и войти другой учётной записью
+            Выйти и войти заново
           </button>
         </div>
       </Entry>
