@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import {
+  assignRoles,
   chatsAll,
   deals,
   leads,
@@ -14,15 +16,26 @@ import {
 } from "@/lib/admin";
 import { plural } from "@/lib/plural";
 import { Avatar } from "../Avatar";
+import { may } from "../roles";
 import { Empty, Note, useLoad } from "../ui";
 import { useWho } from "../who";
+import { PORTAL_ROLES } from "../roles";
 
 // Сотрудники.
 //
-// Список приходит из провайдера идентичности (`staff()`), и он только
-// читается: завести человека и выдать роль — работа консоли Keycloak.
-// Кнопки «Добавить сотрудника» здесь нет и не будет; вместо неё сказано,
-// где это делается.
+// Список приходит из провайдера идентичности (`staff()`). Завести человека,
+// отключить его и сменить пароль — по-прежнему консоль Keycloak; кнопки
+// «Добавить сотрудника» здесь нет и не будет.
+//
+// Меняется ровно одно: набор ПОРТАЛЬНЫХ ролей. Раньше и это жило только
+// в консоли, и вопрос «почему Петров не видит заявок» решался походом
+// в другую систему.
+//
+// Редактор показывается только администратору и только на чужой карточке.
+// Своя заперта не интерфейсом, а порталом: он отказывает на любую попытку
+// сменить роли себе — иначе достаточно один раз дорваться до двери, чтобы
+// подняться до администратора. Здесь мы лишь не показываем кнопку,
+// которая привела бы к отказу.
 //
 // ───────────────────────────────────────────────────────────────────────────
 // Чего портал о человеке не знает
@@ -48,7 +61,8 @@ import { useWho } from "../who";
 
 export default function StaffPage() {
   const who = useWho();
-  const { data, error, loading } = useLoad<StaffMember[]>(loadStaff);
+  const { data, error, loading, reload, setError } = useLoad<StaffMember[]>(loadStaff);
+  const правлю = may(who, "admin");
 
   return (
     <>
@@ -57,10 +71,10 @@ export default function StaffPage() {
       </div>
 
       <p className="admin-hint">
-        Список приходит из системы входа компании и только читается. Завести человека,
-        выдать роль и отключить учётную запись — работа консоли Keycloak: портал этого
-        не умеет намеренно, иначе право заводить сотрудников оказалось бы у всех, кто
-        может править каталог.
+        Список приходит из системы входа компании. Завести человека, отключить учётную
+        запись и сменить пароль — работа консоли Keycloak. Здесь меняются только
+        портальные роли: ими решается, что сотрудник видит в админке.
+        {правлю && " Свои роли через портал не меняются — попросите другого администратора."}
       </p>
 
       <Note kind="error">{error}</Note>
@@ -70,7 +84,14 @@ export default function StaffPage() {
       {data && data.length > 0 && (
         <div className="people">
           {data.map((p) => (
-            <Card key={p.login} person={p} me={p.login === who.actor} />
+            <Card
+              key={p.login}
+              person={p}
+              me={p.login === who.actor}
+              правлю={правлю}
+              сохранено={reload}
+              наОшибку={setError}
+            />
           ))}
         </div>
       )}
@@ -78,7 +99,19 @@ export default function StaffPage() {
   );
 }
 
-function Card({ person, me }: { person: StaffMember; me: boolean }) {
+function Card({
+  person,
+  me,
+  правлю,
+  сохранено,
+  наОшибку,
+}: {
+  person: StaffMember;
+  me: boolean;
+  правлю: boolean;
+  сохранено: () => void;
+  наОшибку: (текст: string | null) => void;
+}) {
   const имя = person.name?.trim() || person.login;
 
   // Нагрузка — настоящими числами, по запросу на список. Просится одна
@@ -125,17 +158,21 @@ function Card({ person, me }: { person: StaffMember; me: boolean }) {
           {/* Роли рядом с логином, а не отдельной колонкой: вопрос
               «кто у нас продажи» задают о человеке, а не о таблице.
               Раньше ответ на него жил только в консоли Keycloak. */}
-          <p className="person__roles">
-            {person.roles.length === 0 ? (
-              <span className="nobody">в портал не пущен</span>
-            ) : (
-              person.roles.map((r) => (
-                <span key={r} className="role mono">
-                  {r}
-                </span>
-              ))
-            )}
-          </p>
+          {правлю && !me ? (
+            <Roles person={person} сохранено={сохранено} наОшибку={наОшибку} />
+          ) : (
+            <p className="person__roles">
+              {person.roles.length === 0 ? (
+                <span className="nobody">в портал не пущен</span>
+              ) : (
+                person.roles.map((r) => (
+                  <span key={r} className="role mono">
+                    {r}
+                  </span>
+                ))
+              )}
+            </p>
+          )}
         </div>
 
         <span className={`badge ${person.enabled ? "badge--on" : "badge--off"}`}>
@@ -179,5 +216,103 @@ function Card({ person, me }: { person: StaffMember; me: boolean }) {
         </p>
       )}
     </article>
+  );
+}
+
+/**
+ * Роли одного человека: показ и правка.
+ *
+ * Правка НЕ мгновенная. Роль решает, что человек видит в закрытом контуре,
+ * и случайное попадание по чипу не должно этого менять: набор сначала
+ * складывается в черновике, кнопка появляется только когда он отличается
+ * от сохранённого.
+ *
+ * Отправляется набор целиком — так же, как его принимает дверь. «Добавить
+ * одну» и «снять одну» породили бы третье состояние: добавили, снять
+ * забыли.
+ */
+function Roles({
+  person,
+  сохранено,
+  наОшибку,
+}: {
+  person: StaffMember;
+  сохранено: () => void;
+  наОшибку: (текст: string | null) => void;
+}) {
+  const [черновик, setЧерновик] = useState<string[]>(person.roles);
+  const [шлём, setШлём] = useState(false);
+
+  // Сравнение по составу, а не по порядку: порядок задаёт портал,
+  // и полагаться на него здесь значило бы показать кнопку там,
+  // где ничего не изменилось.
+  const изменилось =
+    черновик.length !== person.roles.length ||
+    черновик.some((r) => !person.roles.includes(r));
+
+  const переключить = (роль: string) =>
+    setЧерновик((было) =>
+      было.includes(роль) ? было.filter((r) => r !== роль) : [...было, роль],
+    );
+
+  const сохранить = async () => {
+    setШлём(true);
+    наОшибку(null);
+    try {
+      await assignRoles(person.login, черновик);
+      сохранено();
+    } catch (e) {
+      // Черновик НЕ сбрасывается: человек видит, что хотел сделать,
+      // и может исправить или отменить. Сброс к сохранённому выглядел бы
+      // так, будто нажатия не было.
+      наОшибку(e instanceof Error ? e.message : "Не удалось выдать роли");
+    } finally {
+      setШлём(false);
+    }
+  };
+
+  return (
+    <div className="person__roles">
+      {PORTAL_ROLES.map((роль) => {
+        const выбрана = черновик.includes(роль);
+        return (
+          <button
+            key={роль}
+            type="button"
+            className={`role role--pick mono${выбрана ? " role--on" : ""}`}
+            aria-pressed={выбрана}
+            disabled={шлём}
+            onClick={() => переключить(роль)}
+          >
+            {роль}
+          </button>
+        );
+      })}
+
+      {черновик.length === 0 && (
+        <span className="nobody">в портал не пущен</span>
+      )}
+
+      {изменилось && (
+        <span className="person__save">
+          <button
+            type="button"
+            className="btn btn--primary btn--small"
+            disabled={шлём}
+            onClick={() => void сохранить()}
+          >
+            {шлём ? "Сохраняем…" : "Сохранить"}
+          </button>
+          <button
+            type="button"
+            className="btn btn--small"
+            disabled={шлём}
+            onClick={() => setЧерновик(person.roles)}
+          >
+            Отменить
+          </button>
+        </span>
+      )}
+    </div>
   );
 }

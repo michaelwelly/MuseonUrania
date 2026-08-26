@@ -665,6 +665,19 @@ export type StaffMember = {
 
 export const staff = () => get<StaffMember[]>("/staff");
 
+/**
+ * Выдать сотруднику РОВНО ЭТОТ набор портальных ролей.
+ *
+ * Набор целиком, а не «добавь одну»: снятие роли — такое же обычное
+ * действие, как выдача. Пустой список означает «в портал не пущен».
+ *
+ * Отвечает обновлённым справочником — тем же, что отдаёт staff().
+ * Так список на экране обновляется из ответа, а не вторым запросом,
+ * который мог бы приехать раньше, чем Keycloak применит изменение.
+ */
+export const assignRoles = (login: string, roles: string[]) =>
+  put<StaffMember[]>(`/staff/${encodeURIComponent(login)}/roles`, { roles });
+
 // ————— журнал —————
 
 export type AuditEntry = {

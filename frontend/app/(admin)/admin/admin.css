@@ -4940,6 +4940,41 @@ a.recent__row:hover {
   white-space: nowrap;
 }
 
+/* Чип, по которому можно нажать. Невыбранная роль намеренно НЕ зелёная:
+   зелёный на этой карточке означает «роль есть», и красить им то, чего
+   у человека нет, — значит спрашивать глазами каждый раз. */
+.role--pick {
+  border-color: var(--line-3);
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: var(--t-micro);
+  cursor: pointer;
+}
+
+.role--pick:hover:not(:disabled) {
+  border-color: var(--state-ok-line);
+}
+
+.role--pick:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.role--pick.role--on {
+  border-color: var(--state-ok-line);
+  background: var(--state-ok-bg);
+  color: var(--state-ok);
+}
+
+/* Кнопки сохранения встают в тот же ряд, что и чипы, но с отбивкой:
+   иначе «Сохранить» читается как ещё одна роль. */
+.person__save {
+  display: inline-flex;
+  gap: var(--s2);
+  margin-left: var(--s2);
+}
+
 .person__load {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
