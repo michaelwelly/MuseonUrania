@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LiveHost } from "./live";
 import { contourName, contourOf, may, mayOpen, type Contour } from "./roles";
 import { useEffect, useRef, useState } from "react";
 import AnimatedLogo from "@/components/AnimatedLogo";
@@ -16,7 +17,7 @@ import { Hotkeys } from "./Hotkeys";
 import { ArrowIcon, ExitIcon, SearchIcon } from "./icons";
 import { useShellKeys } from "./keys";
 import { Palette } from "./Palette";
-import { ToastHost } from "./Toast";
+import { ToastHost, useToast } from "./Toast";
 import { Widget } from "./Widget";
 import { WhoHost } from "./who";
 
@@ -314,11 +315,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // отказов 401 при каждом открытии двери.
   return (
     <ToastHost>
-      <WhoHost who={state.who}>
-        <CountsHost who={state.who}>
-          <Chrome who={state.who}>{children}</Chrome>
-        </CountsHost>
-      </WhoHost>
+      {/* Поток разговоров — один на вкладку и выше всех, кому он нужен:
+          счётчику в шапке, виджету очереди и самому разделу «Разговоры».
+          Внутри ToastHost, потому что о новом обращении сообщает всплывашкой. */}
+      <LiveHost>
+        <WhoHost who={state.who}>
+          <CountsHost who={state.who}>
+            <WaitingToast />
+              <Chrome who={state.who}>{children}</Chrome>
+          </CountsHost>
+        </WhoHost>
+      </LiveHost>
     </ToastHost>
   );
 }
@@ -713,4 +720,44 @@ function within(pathname: string, href: string): boolean {
   const base = href.replace(/\/+$/, "");
   if (base === "/admin") return path === "/admin";
   return path === base || path.startsWith(`${base}/`);
+}
+
+/**
+ * Мини-уведомление о новом обращении.
+ *
+ * Колокол в шапке пуст намеренно: у портала нет понятия уведомления
+ * с адресатом и отметкой о прочтении, и рисовать ленту, которой нет,
+ * значит обещать несуществующее. Но один случай стоит особняком —
+ * разговор: это единственная запись, у которой на том конце человек
+ * ждёт ОТВЕТА ПРЯМО СЕЙЧАС.
+ *
+ * Поэтому сообщаем ровно о нём и ровно тогда, когда очередь выросла.
+ * Не о каждом событии в разговорах: посетитель пишет второе сообщение —
+ * очередь та же, и всплывашка на него была бы шумом.
+ *
+ * Первое значение счётчика не считается ростом: иначе всплывашка
+ * встречала бы человека на каждом открытии админки сообщением о том,
+ * что очередь, в которой три разговора со вчера, «выросла».
+ */
+function WaitingToast() {
+  const { counts } = useCounts();
+  const toast = useToast();
+  const ждут = counts.chats;
+  const было = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (ждут === undefined) return;
+    const прошлое = было.current;
+    было.current = ждут;
+    if (прошлое === null || ждут <= прошлое) return;
+
+    const сколько = ждут - прошлое;
+    toast(
+      сколько === 1
+        ? "Новое обращение — ждёт ответа"
+        : `Новых обращений: ${сколько} — ждут ответа`,
+    );
+  }, [ждут, toast]);
+
+  return null;
 }

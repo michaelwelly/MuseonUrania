@@ -15,7 +15,7 @@ import {
   type ChatThread,
   type Page,
 } from "@/lib/admin";
-import { accessToken } from "@/lib/auth";
+import { useLive } from "../live";
 import { apiUrl } from "@/lib/submit";
 import EraseData from "../EraseData";
 import { CHAT_STATUS, LEAD_LANGUAGE, label } from "../labels";
@@ -132,7 +132,14 @@ function Chats() {
     return () => clearInterval(timer);
   }, []);
 
-  useLiveUpdates(useCallback(() => setBeat((b) => b + 1), []), onTyping, setError);
+  // Поток теперь общий на всю админку (LiveHost в оболочке): раздел
+  // «Разговоры» — один из его слушателей, а не владелец. Свой поток
+  // рядом с общим означал бы два соединения с одной вкладки, а у портала
+  // на них стоят пределы.
+  useLive({
+    changed: () => setBeat((b) => b + 1),
+    typing: onTyping,
+  });
 
   const rows = useMemo(() => data?.items ?? [], [data]);
   const first = useFirstLines(rows);
@@ -534,81 +541,3 @@ function Thread({
   );
 }
 
-/**
- * Живые обновления.
- *
- * EventSource здесь не годится: он не умеет слать заголовок, а админская дверь
- * без токена не пускает. Класть токен в адрес нельзя — адреса оседают в логах
- * прокси и в истории браузера. Поэтому поток читается обычным `fetch`
- * с заголовком, а разбор формата — три строки: событий одного вида, и в них
- * нет ничего, кроме идентификатора разговора.
- */
-function useLiveUpdates(
-  onChange: () => void,
-  onTyping: (conversationId: string) => void,
-  onError: (message: string | null) => void,
-) {
-  useEffect(() => {
-    if (!apiUrl) return;
-    const abort = new AbortController();
-    let alive = true;
-
-    (async () => {
-      try {
-        const token = await accessToken();
-        if (!token || !alive) return;
-
-        const response = await fetch(`${apiUrl}/api/admin/v1/chats/stream`, {
-          headers: { Authorization: `Bearer ${token}` },
-          signal: abort.signal,
-        });
-        if (!response.ok || !response.body) return;
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-
-        // Кусок может прийти разрезанным посередине события, поэтому хвост
-        // без завершающей пустой строки остаётся до следующего чтения.
-        let tail = "";
-
-        while (alive) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          tail += decoder.decode(value, { stream: true });
-          const events = tail.split("\n\n");
-          tail = events.pop() ?? "";
-
-          for (const event of events) {
-            if (!event.includes("data:")) continue;
-
-            if (event.includes("event:typing")) {
-              // Событие несёт разговор и того, кто печатает. Нас интересует
-              // только посетитель: «сотрудник печатает» — это мы сами.
-              const data = event.slice(event.indexOf("data:") + 5).trim();
-              try {
-                const parsed = JSON.parse(data) as { conversationId: string; who: string };
-                if (parsed.who === "visitor") onTyping(parsed.conversationId);
-              } catch {
-                // Событие незнакомого вида — не повод рвать поток.
-              }
-              continue;
-            }
-
-            onChange();
-          }
-        }
-      } catch (e) {
-        // Обрыв при уходе со страницы — не ошибка.
-        if (alive && !(e instanceof DOMException && e.name === "AbortError")) {
-          onError("Живое обновление отключилось, список обновляется по действию.");
-        }
-      }
-    })();
-
-    return () => {
-      alive = false;
-      abort.abort();
-    };
-  }, [onChange, onTyping, onError]);
-}

@@ -218,3 +218,56 @@ describe("переводы строк в ответе", () => {
     expect(пузырь).toContain("white-space: pre-line");
   });
 });
+
+describe("живые обновления", () => {
+  // Виджет слушал stream.onmessage, а портал шлёт event:changed.
+  // onmessage срабатывает ТОЛЬКО на события без имени, поэтому обработчик
+  // не вызывался ни разу: лента читалась при открытии и дальше не менялась.
+  // Снаружи это выглядело так, будто ответ сотрудника и галочка «прочитано»
+  // появляются лишь после перезагрузки страницы.
+  //
+  // Проверяются обе стороны: событие с именем ленту перечитывает, безымянное
+  // — нет. Половина, требующая только первого, зеленела бы и на подписке
+  // сразу на всё подряд, а это вернуло бы прежнюю путаницу другим боком.
+
+  class ПоддельныйПоток {
+    static последний: ПоддельныйПоток | null = null;
+    слушатели = new Map<string, ((e: MessageEvent) => void)[]>();
+    onmessage: ((e: MessageEvent) => void) | null = null;
+    constructor() {
+      ПоддельныйПоток.последний = this;
+    }
+    addEventListener(вид: string, fn: (e: MessageEvent) => void) {
+      this.слушатели.set(вид, [...(this.слушатели.get(вид) ?? []), fn]);
+    }
+    close() {}
+    послать(вид: string, data = '"c1"') {
+      const event = { data } as MessageEvent;
+      if (вид === "message") this.onmessage?.(event);
+      for (const fn of this.слушатели.get(вид) ?? []) fn(event);
+    }
+  }
+
+  beforeEach(() => {
+    mocks.chatStreamUrl.mockReturnValue("http://portal/stream");
+    (globalThis as unknown as { EventSource: unknown }).EventSource = ПоддельныйПоток;
+  });
+
+  it("именованное событие перечитывает ленту", async () => {
+    await открыть();
+    const былоЧтений = mocks.chatThread.mock.calls.length;
+
+    await act(async () => ПоддельныйПоток.последний!.послать("changed"));
+
+    expect(mocks.chatThread.mock.calls.length).toBeGreaterThan(былоЧтений);
+  });
+
+  it("безымянное событие лентой не считается", async () => {
+    await открыть();
+    const былоЧтений = mocks.chatThread.mock.calls.length;
+
+    await act(async () => ПоддельныйПоток.последний!.послать("message"));
+
+    expect(mocks.chatThread.mock.calls.length).toBe(былоЧтений);
+  });
+});
