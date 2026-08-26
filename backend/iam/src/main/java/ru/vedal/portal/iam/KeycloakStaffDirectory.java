@@ -6,9 +6,13 @@ import org.springframework.web.client.RestClient;
 
 import java.time.Duration;
 import java.time.Instant;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.List;
 import java.util.Map;
 
@@ -79,6 +83,104 @@ class KeycloakStaffDirectory implements StaffDirectory {
             readAt = Instant.now();
             return cached;
         }
+    }
+
+    @Override
+    public void assignRoles(String login, List<String> roles) {
+        // Ограничение №2 из StaffDirectory: только портальные роли.
+        //
+        // Проверка стоит здесь, а не только у двери. manage-users,
+        // выданный служебной учётной записи, позволяет назначить ЛЮБУЮ
+        // роль realm'а, включая realm-admin. Порт обещает, что через него
+        // чужой ролью не распорядиться, и обещание должно держаться
+        // независимо от того, кто позовёт его завтра.
+        var чужие = roles.stream().filter(r -> !PORTAL_ROLES.contains(r)).toList();
+        if (!чужие.isEmpty()) {
+            throw new Rejected("Портал распоряжается только своими ролями. "
+                    + "Не его: " + String.join(", ", чужие));
+        }
+
+        var token = serviceToken();
+        var userId = userId(token, login);
+
+        // Что есть сейчас и что вообще можно выдать. Обе двери отдают роль
+        // вместе с её идентификатором, а он и нужен для назначения —
+        // поэтому отдельного права на чтение справочника ролей
+        // (view-realm) портал не просит.
+        var сейчас = realmRoles(token, userId, "");
+        var доступные = realmRoles(token, userId, "/available");
+
+        var было = сейчас.keySet().stream().filter(PORTAL_ROLES::contains).toList();
+        var стало = PORTAL_ROLES.stream().filter(roles::contains).toList();
+
+        var снять = было.stream().filter(r -> !стало.contains(r)).map(сейчас::get).toList();
+        var выдать = стало.stream().filter(r -> !было.contains(r)).map(доступные::get)
+                .filter(Objects::nonNull).toList();
+
+        // Сначала выдать, потом снять. Обратный порядок на мгновение
+        // оставляет человека без единой роли: если запрос между ними
+        // не дойдёт, он окажется заперт снаружи собственной админки.
+        if (!выдать.isEmpty()) {
+            http.post()
+                    .uri(base + "/admin/realms/" + realm + "/users/" + userId
+                            + "/role-mappings/realm")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(выдать)
+                    .retrieve()
+                    .toBodilessEntity();
+        }
+
+        if (!снять.isEmpty()) {
+            http.method(HttpMethod.DELETE)
+                    .uri(base + "/admin/realms/" + realm + "/users/" + userId
+                            + "/role-mappings/realm")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(снять)
+                    .retrieve()
+                    .toBodilessEntity();
+        }
+
+        // Справочник кэшируется на TTL, и без сброса админка ещё две минуты
+        // показывала бы прежние роли — то есть человек нажал бы кнопку
+        // и не увидел результата.
+        readAt = Instant.EPOCH;
+    }
+
+    private String userId(String token, String login) {
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> found = http.get()
+                .uri(base + "/admin/realms/" + realm + "/users?exact=true&username=" + login)
+                .header("Authorization", "Bearer " + token)
+                .retrieve()
+                .body(List.class);
+
+        if (found == null || found.isEmpty()) {
+            throw new Rejected("Такого логина нет в системе входа: " + login);
+        }
+        return text(found.get(0).get("id"));
+    }
+
+    /** Роли realm'а по имени: назначенные (suffix пустой) или доступные. */
+    private Map<String, Map<String, Object>> realmRoles(String token, String userId,
+                                                       String suffix) {
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> raw = http.get()
+                .uri(base + "/admin/realms/" + realm + "/users/" + userId
+                        + "/role-mappings/realm" + suffix)
+                .header("Authorization", "Bearer " + token)
+                .retrieve()
+                .body(List.class);
+
+        if (raw == null) return Map.of();
+
+        Map<String, Map<String, Object>> byName = new HashMap<>();
+        for (var role : raw) {
+            var name = text(role.get("name"));
+            if (!name.isBlank()) byName.put(name, role);
+        }
+        return byName;
     }
 
     private List<Person> read() {

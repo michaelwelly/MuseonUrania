@@ -2,6 +2,7 @@ package ru.vedal.portal.iam;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -11,6 +12,7 @@ import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -186,6 +188,50 @@ class RoleMatrixTest extends PostgresTestBase {
         mvc.perform(get("/api/admin/v1/session"))
                 .andExpect(jsonPath("$.roles").value(
                         containsInAnyOrder("portal-admin", "portal-sales")));
+    }
+
+    // ————— выдача ролей —————
+    //
+    // Дверь лежит под /staff/**, а тот открыт любой портальной роли:
+    // справочник нужен всем для выбора ответственного. Без отдельного
+    // правила ВЫШЕ него продавец выдавал бы роли сам себе.
+    //
+    // Проверяются обе стороны. Тест, требующий только 403 от продавца,
+    // зеленел бы и на двери, закрытой вообще для всех.
+
+    @Test
+    @WithMockUser(username = "sales", roles = "PORTAL_SALES")
+    void salesCannotHandOutRoles() throws Exception {
+        mvc.perform(put("/api/admin/v1/staff/editor/roles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"roles\":[\"portal-admin\"]}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "production", roles = "PORTAL_PRODUCTION")
+    void theSiteEditorCannotHandOutRolesEither() throws Exception {
+        mvc.perform(put("/api/admin/v1/staff/editor/roles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"roles\":[\"portal-admin\"]}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "boss", roles = "PORTAL_ADMIN")
+    void theAdminReachesTheDoor() throws Exception {
+        // Не 403 и не 401: запрос прошёл охрану и разговаривает уже
+        // с доменом. Что именно он ответит, зависит от провайдера входа —
+        // это проверяется отдельно, в StaffDirectoryTest.
+        mvc.perform(put("/api/admin/v1/staff/kto-to/roles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"roles\":[\"portal-sales\"]}"))
+                .andExpect(result -> {
+                    var code = result.getResponse().getStatus();
+                    if (code == 401 || code == 403) {
+                        throw new AssertionError("администратора не пустили к двери: " + code);
+                    }
+                });
     }
 
     // ————— уничтожение персональных данных —————

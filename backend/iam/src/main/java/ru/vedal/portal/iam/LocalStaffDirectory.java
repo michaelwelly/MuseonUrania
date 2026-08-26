@@ -29,4 +29,15 @@ class LocalStaffDirectory implements StaffDirectory {
                 .sorted(Comparator.comparing(Person::label, String.CASE_INSENSITIVE_ORDER))
                 .toList();
     }
+
+    @Override
+    public void assignRoles(String login, List<String> roles) {
+        // Запасной режим — это одна учётная запись с полными правами:
+        // роли у неё не хранятся нигде, их выдаёт SecurityConfig списком.
+        // Менять нечего, и молча делать вид, что получилось, нельзя:
+        // человек решит, что роль снята, а портал продолжит пускать.
+        throw new Rejected("Запасной режим входа ролями не управляет: "
+                + "учётная запись в нём одна и получает все роли сразу. "
+                + "Роли выдаются в Keycloak — включите vedal.iam.mode=keycloak.");
+    }
 }

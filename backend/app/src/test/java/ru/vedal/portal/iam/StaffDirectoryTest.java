@@ -2,6 +2,7 @@ package ru.vedal.portal.iam;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -11,6 +12,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -128,5 +130,61 @@ class StaffDirectoryTest extends PostgresTestBase {
     @Test
     void doorIsClosedWithoutAToken() throws Exception {
         mvc.perform(get("/api/admin/v1/staff")).andExpect(status().isUnauthorized());
+    }
+    // ————— выдача ролей —————
+
+    // Ограничение №3: свои роли не меняются.
+    //
+    // Без него достаточно один раз дорваться до этой двери, чтобы поднять
+    // себя до администратора. Запрет односторонним не сделан намеренно:
+    // разрешив «себе можно только снимать», мы получили бы правило,
+    // которое надо проверять на каждой правке, вместо запрета, который
+    // не надо проверять никогда.
+    @Test
+    @WithMockUser(username = "boss", roles = "PORTAL_ADMIN")
+    void ownRolesCannotBeChangedThroughThePortal() throws Exception {
+        mvc.perform(put("/api/admin/v1/staff/boss/roles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"roles\":[\"portal-admin\",\"portal-sales\"]}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.title").value(
+                        org.hamcrest.Matchers.containsString("Свои роли")));
+    }
+
+    // Ограничение №2: чужие роли realm'а порталу недоступны.
+    //
+    // Проверка не теоретическая. Служебной учётной записи выдан
+    // manage-users, и без этого запрета через дверь назначался бы
+    // realm-admin — то есть портал раздавал бы права на сам Keycloak.
+    @Test
+    @WithMockUser(username = "boss", roles = "PORTAL_ADMIN")
+    void rolesOutsideThePortalAreRefused() throws Exception {
+        mvc.perform(put("/api/admin/v1/staff/fedorova/roles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"roles\":[\"realm-admin\"]}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.title").value(
+                        org.hamcrest.Matchers.containsString("realm-admin")));
+    }
+
+    // Портальную роль дверь принимает и доносит до провайдера.
+    //
+    // В тестах работает запасной режим, а он ролями не управляет: у него
+    // одна учётная запись и все роли сразу. Отказ здесь — правильный ответ,
+    // и он проверяется словами, а не кодом: человек должен прочитать,
+    // ПОЧЕМУ не вышло, а не гадать над «409».
+    //
+    // Эта же проверка сторожит порядок: если бы запрет на свои роли или
+    // проверка списка стояли ПОСЛЕ обращения к провайдеру, сюда приехало
+    // бы другое сообщение.
+    @Test
+    @WithMockUser(username = "boss", roles = "PORTAL_ADMIN")
+    void aPortalRoleReachesTheIdentityProvider() throws Exception {
+        mvc.perform(put("/api/admin/v1/staff/fedorova/roles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"roles\":[\"portal-sales\"]}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.title").value(
+                        org.hamcrest.Matchers.containsString("Запасной режим")));
     }
 }
