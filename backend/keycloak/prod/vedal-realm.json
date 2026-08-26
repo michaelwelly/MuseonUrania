@@ -91,7 +91,19 @@
       "secret": "${VEDAL_OIDC_SVC_CLIENT_SECRET}"
     }
   ],
-  "users": [],
+  "users": [
+    {
+      "username": "service-account-vedal-portal-svc",
+      "enabled": true,
+      "serviceAccountClientId": "vedal-portal-svc",
+      "clientRoles": {
+        "realm-management": [
+          "view-users",
+          "manage-users"
+        ]
+      }
+    }
+  ],
   "passwordPolicy": "length(12) and notUsername(undefined) and notEmail(undefined) and passwordHistory(3) and specialChars(1) and upperCase(1) and digits(1)",
   "bruteForceProtected": true,
   "permanentLockout": false,
