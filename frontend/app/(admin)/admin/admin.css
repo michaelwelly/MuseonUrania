@@ -4916,6 +4916,30 @@ a.recent__row:hover {
   color: var(--muted);
 }
 
+/* Роли сотрудника. Не переиспользуют .chip: тот — фильтр с кнопкой внутри,
+   и отступы у него лежат на .chip__pick. Взяв его сюда, мы получили бы
+   рамку, прижатую к тексту, и связали бы карточку сотрудника с поведением
+   фильтров — так, что правка фильтра ломала бы справочник. */
+.person__roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1);
+  margin: var(--s2) 0 0;
+}
+
+.role {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--s2);
+  min-height: var(--s6);
+  border: 1px solid var(--state-ok-line);
+  border-radius: var(--radius-control);
+  background: var(--state-ok-bg);
+  color: var(--state-ok);
+  font-size: var(--t-micro);
+  white-space: nowrap;
+}
+
 .person__load {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

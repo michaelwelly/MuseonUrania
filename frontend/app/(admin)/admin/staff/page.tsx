@@ -121,6 +121,21 @@ function Card({ person, me }: { person: StaffMember; me: boolean }) {
           </p>
           <p className="person__role nobody">должность ожидает уточнения</p>
           <p className="person__login mono">{person.login}</p>
+
+          {/* Роли рядом с логином, а не отдельной колонкой: вопрос
+              «кто у нас продажи» задают о человеке, а не о таблице.
+              Раньше ответ на него жил только в консоли Keycloak. */}
+          <p className="person__roles">
+            {person.roles.length === 0 ? (
+              <span className="nobody">в портал не пущен</span>
+            ) : (
+              person.roles.map((r) => (
+                <span key={r} className="role mono">
+                  {r}
+                </span>
+              ))
+            )}
+          </p>
         </div>
 
         <span className={`badge ${person.enabled ? "badge--on" : "badge--off"}`}>

@@ -655,6 +655,12 @@ export type StaffMember = {
   name: string | null;
   /** Отключённые остаются в списке: на них висят старые сделки. */
   enabled: boolean;
+  /**
+   * Портальные роли в форме realm'а: portal-admin, portal-sales,
+   * portal-production. Пусто — человек заведён в системе входа,
+   * но в портал не пущен.
+   */
+  roles: string[];
 };
 
 export const staff = () => get<StaffMember[]>("/staff");

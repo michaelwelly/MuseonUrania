@@ -35,9 +35,11 @@ vi.mock("@/lib/admin", () => ({
   audit: mocks.audit,
   staff: () =>
     Promise.resolve([
-      { login: "i.koltsova", name: "Ирина Кольцова", enabled: true },
-      { login: "a.rogov", name: "Антон Рогов", enabled: false },
-      { login: "noname", name: null, enabled: true },
+      // Роли разные намеренно: список, где у всех одно и то же, зеленел бы
+      // и на карточке, которая роли не показывает вовсе.
+      { login: "i.koltsova", name: "Ирина Кольцова", enabled: true, roles: ["portal-admin"] },
+      { login: "a.rogov", name: "Антон Рогов", enabled: false, roles: ["portal-sales"] },
+      { login: "noname", name: null, enabled: true, roles: [] },
     ]),
 }));
 
@@ -161,6 +163,19 @@ describe("карточка сотрудника", () => {
     // где имя есть.
     expect(screen.getAllByText(/^noname$/).length).toBe(2);
   });
+
+  // Роль сотрудника раньше можно было узнать только в консоли Keycloak.
+  //
+  // Проверяются обе стороны: и что роль показана, и что её отсутствие
+  // названо словами. Карточка, рисующая на месте ролей пустоту, прошла бы
+  // проверку «portal-admin на экране есть».
+  it("роли видны на карточке, а их отсутствие названо словами", async () => {
+    await сотрудники();
+
+    expect(screen.getByText("portal-admin")).toBeTruthy();
+    expect(screen.getByText("portal-sales")).toBeTruthy();
+    expect(screen.getByText("в портал не пущен")).toBeTruthy();
+  });
 });
 
 describe("нагрузка", () => {
@@ -230,6 +245,7 @@ describe("нагрузка", () => {
     }
   });
 });
+
 
 describe("профиль", () => {
   it("незаполненное названо словами, а не прочерком", async () => {
