@@ -1,4 +1,5 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Сотрудники и профиль.
@@ -25,6 +26,7 @@ const mocks = vi.hoisted(() => ({
   deals: vi.fn(),
   chatsAll: vi.fn(),
   audit: vi.fn(),
+  assignRoles: vi.fn(),
 }));
 
 vi.mock("@/lib/admin", () => ({
@@ -33,6 +35,7 @@ vi.mock("@/lib/admin", () => ({
   deals: mocks.deals,
   chatsAll: mocks.chatsAll,
   audit: mocks.audit,
+  assignRoles: mocks.assignRoles,
   staff: () =>
     Promise.resolve([
       // Роли разные намеренно: список, где у всех одно и то же, зеленел бы
@@ -73,6 +76,7 @@ beforeEach(() => {
     total: 0,
     pages: 0,
   });
+  mocks.assignRoles.mockReset().mockResolvedValue([]);
   mocks.audit.mockReset().mockResolvedValue({
     items: [
       {
@@ -96,13 +100,25 @@ beforeEach(() => {
 
 const Я = { actor: "i.koltsova", roles: ["portal-admin"], authentication: "keycloak" };
 
-async function сотрудники() {
+async function сотрудники(роли: string[] = ["portal-admin"]) {
   render(
-    <WhoHost who={Я}>
+    <WhoHost who={{ ...Я, roles: роли }}>
       <StaffPage />
     </WhoHost>,
   );
   await screen.findByText(/Ирина Кольцова/);
+}
+
+/** Карточка названного человека — по логину, который в ней стоит. */
+function карточкаПо(логин: string): HTMLElement {
+  return screen.getByText(логин).closest("article") as HTMLElement;
+}
+
+/** Кнопка-чип роли на карточке. Нет кнопки — значит редактора там нет. */
+function чип(логин: string, роль: string): HTMLButtonElement | undefined {
+  return [...карточкаПо(логин).querySelectorAll("button")].find(
+    (b) => b.textContent === роль,
+  ) as HTMLButtonElement | undefined;
 }
 
 async function профиль(роли: string[] = ["portal-admin"]) {
@@ -172,9 +188,62 @@ describe("карточка сотрудника", () => {
   it("роли видны на карточке, а их отсутствие названо словами", async () => {
     await сотрудники();
 
-    expect(screen.getByText("portal-admin")).toBeTruthy();
-    expect(screen.getByText("portal-sales")).toBeTruthy();
+    // Своя карточка — только показ, поэтому роль там ровно одна и текстом.
+    expect(within(карточкаПо("i.koltsova")).getByText("portal-admin")).toBeTruthy();
     expect(screen.getByText("в портал не пущен")).toBeTruthy();
+  });
+
+  // ————— выдача ролей —————
+
+  // Набор уходит ЦЕЛИКОМ, а не «добавь одну»: дверь принимает его так же.
+  // Проверяется именно аргумент, а не факт вызова — запрос с половиной
+  // набора молча снял бы роль, которую никто не трогал.
+  it("администратор выдаёт роль, и набор уходит целиком", async () => {
+    await сотрудники();
+
+    const user = userEvent.setup();
+    await user.click(чип("a.rogov", "portal-production")!);
+    await user.click(screen.getByRole("button", { name: "Сохранить" }));
+
+    await waitFor(() =>
+      expect(mocks.assignRoles).toHaveBeenCalledWith("a.rogov", [
+        "portal-sales",
+        "portal-production",
+      ]),
+    );
+  });
+
+  // Кнопки нет, пока ничего не изменилось: роль решает, что человек видит
+  // в закрытом контуре, и «Сохранить» на нетронутой карточке приглашает
+  // нажать не глядя.
+  it("кнопка появляется только после изменения", async () => {
+    await сотрудники();
+
+    expect(screen.queryByRole("button", { name: "Сохранить" })).toBeNull();
+
+    const user = userEvent.setup();
+    await user.click(чип("a.rogov", "portal-admin")!);
+
+    expect(screen.getByRole("button", { name: "Сохранить" })).toBeTruthy();
+  });
+
+  // Ограничение №3 со стороны интерфейса. Запирает его портал — он
+  // отказывает на любую попытку сменить роли себе, — а здесь мы просто
+  // не показываем кнопку, которая привела бы к отказу.
+  it("свои роли не редактируются", async () => {
+    await сотрудники();
+
+    expect(чип("i.koltsova", "portal-sales")).toBeUndefined();
+  });
+
+  // Ограничение №1 со стороны интерфейса: редактора нет ни у кого, кроме
+  // администратора. Проверка на одном администраторе зеленела бы и на
+  // редакторе, показанном всем подряд.
+  it("продавец редактора не видит вовсе", async () => {
+    await сотрудники(["portal-sales"]);
+
+    expect(чип("a.rogov", "portal-production")).toBeUndefined();
+    expect(within(карточкаПо("a.rogov")).getByText("portal-sales")).toBeTruthy();
   });
 });
 
