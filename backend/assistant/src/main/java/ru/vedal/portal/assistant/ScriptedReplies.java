@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 /**
  * Заготовки Ведалины: что она отвечает на кнопки виджета.
@@ -67,6 +68,12 @@ public final class ScriptedReplies {
 
     // LinkedHashMap: порядок кнопок в виджете — это порядок здесь.
     private static final Map<String, String> ANSWERS = new LinkedHashMap<>();
+
+    private static final Pattern GREETING = Pattern.compile(
+            "(?iU)^(привет|здравствуй(?:те)?|доброе\\s+(?:утро|день|вечер)|доброго\\s+(?:дня|вечера)|hi|hello|ping|тест)(?:[\\s,!.?\\-]+\\p{L}{1,20}){0,2}[\\s,!.?\\-]*$");
+
+    private static final Pattern ACK = Pattern.compile(
+            "(?iU)^(спасибо|благодарю|ок|окей|хорошо|понял(?:а)?|ясно|жду)(?:[\\s,!.?\\-]+\\p{L}{1,20}){0,2}[\\s,!.?\\-]*$");
 
     static {
         ANSWERS.put("equipment",
@@ -130,5 +137,26 @@ public final class ScriptedReplies {
     public static Optional<String> answerFor(String intent) {
         return intent == null ? Optional.empty()
                 : Optional.ofNullable(ANSWERS.get(intent.trim()));
+    }
+
+    /**
+     * Короткие фразы интерфейса — не предметные вопросы. Без этого любое
+     * «привет» попадало в поиск, не находило источников и ставило разговор
+     * в очередь к человеку, после чего Ведалина замолкала уже по правилу чата.
+     */
+    public static Optional<String> smallTalk(String text) {
+        if (text == null) return Optional.empty();
+        var normalized = text.trim();
+        if (normalized.isEmpty() || normalized.length() > 80) return Optional.empty();
+        if (GREETING.matcher(normalized).matches()) {
+            return Optional.of("Здравствуйте. Я Ведалина — ассистент VEDAL. "
+                    + "Могу подсказать по опубликованным материалам: продукции, документам и сервису. "
+                    + "Напишите модель или задачу отделения.");
+        }
+        if (ACK.matcher(normalized).matches()) {
+            return Optional.of("Хорошо, я на связи. Напишите модель, документ или задачу отделения — "
+                    + "подскажу по открытым материалам VEDAL.");
+        }
+        return Optional.empty();
     }
 }

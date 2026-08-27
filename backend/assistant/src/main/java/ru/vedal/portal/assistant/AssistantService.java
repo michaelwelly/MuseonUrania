@@ -50,6 +50,12 @@ public class AssistantService {
             return new AskReply(refusal.get(), List.of(), handoff(refusal.get()));
         }
 
+        var smallTalk = ScriptedReplies.smallTalk(question);
+        if (smallTalk.isPresent()) {
+            journal(actor, "scripted", 0);
+            return new AskReply(smallTalk.get(), List.of(), null);
+        }
+
         var grounded = engine.answer(question, scope);
         if (grounded.isEmpty()) {
             journal(actor, "no-sources", 0);
