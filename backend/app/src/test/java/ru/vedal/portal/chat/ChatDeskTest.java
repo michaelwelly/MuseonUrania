@@ -31,6 +31,16 @@ class ChatDeskTest extends PostgresTestBase {
         assertThat(thread.messages().get(1).author()).isEqualTo(ChatMessage.ASSISTANT);
     }
 
+    @Test
+    void greetingDoesNotPutTheConversationInTheQueue() {
+        var thread = desk.say(visitor(), "привет", FROM_SITE);
+
+        assertThat(thread.status()).isEqualTo(Conversation.OPEN);
+        assertThat(thread.messages()).hasSize(2);
+        assertThat(thread.messages().get(1).author()).isEqualTo(ChatMessage.ASSISTANT);
+        assertThat(thread.messages().get(1).body()).contains("Ведалина");
+    }
+
     // Ответ обязан нести источники: правило проекта — утверждение без ссылки
     // проверить нечем. В базе они лежат снимком, и лента обязана их вернуть,
     // иначе виджет покажет ответ, которому нельзя верить.
