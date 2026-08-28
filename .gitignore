@@ -31,9 +31,26 @@ outputs/*_v1_*
 outputs/*_v2_*
 tmp/
 output/
+work/
 outputs/**/tmp*/
 outputs/**/rendered_*/
 outputs/**/owner_deck_tmp/
+outputs/**/tmp_edit/
+outputs/**/*.inspect.ndjson
+outputs/contracts/
+outputs/email/
+outputs/logo_extract/
+outputs/server/enable_c3ag_https.py
+outputs/server/fix_c3ag_nginx.py
+outputs/server/prepare_c3ag_acme.py
+outputs/server/renew_c3ag_cert.sh
+outputs/vedal_architecture/MW-2026-08-04-1415*
+outputs/vedal_architecture/VEDAL_owner_closed_contour_and_CRM_v1*
+outputs/vedal_architecture/vedal-open-closed-contour*
+outputs/vedal_architecture/vedal-site-crm-contours-normal-package*
+outputs/vedal_architecture/vedal_owner_presentation_structure.md
+outputs/vedal_architecture/v2_update/vedal_portal_architecture_and_stages_v2_source.pptx
+docs/legal/compliance_requirements_ru.md
 
 # IDE
 .idea/
