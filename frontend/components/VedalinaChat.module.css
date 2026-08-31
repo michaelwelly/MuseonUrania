@@ -302,6 +302,125 @@
   }
 }
 
+/* --- разделители ленты --- */
+
+/* День. Разговор возвращаются читать через час и через неделю, и без него
+ * вчерашний ответ выглядит написанным только что. */
+.day {
+  margin: 10px 0 2px;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  opacity: 0.55;
+}
+
+/* Граница нового. Линия по обе стороны от надписи, а не просто текст:
+ * она отделяет, а не подписывает. */
+.fresh {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 2px;
+  color: var(--green-dark);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.fresh::before,
+.fresh::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: color-mix(in srgb, var(--green-dark) 35%, transparent);
+}
+
+/* Сноска на источник внутри текста. Приподнята, как в печатном тексте,
+ * и достаточно велика, чтобы попасть пальцем. */
+.note {
+  display: inline-block;
+  min-width: 15px;
+  margin: 0 1px;
+  padding: 0 3px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--green) 14%, transparent);
+  color: var(--green-dark);
+  font-size: 10px;
+  line-height: 15px;
+  text-align: center;
+  text-decoration: none;
+  vertical-align: super;
+}
+
+.note:hover {
+  background: color-mix(in srgb, var(--green) 26%, transparent);
+}
+
+/* Галочки доставки. Одна — сообщение у портала, две — его увидел человек. */
+.readOnce,
+.readTwice {
+  margin-left: 4px;
+  letter-spacing: -1px;
+}
+
+.readOnce {
+  opacity: 0.55;
+}
+
+.readTwice {
+  color: var(--green-dark);
+}
+
+/* --- оценка ответа --- */
+
+.rate {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.rateButton,
+.rateOn {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--line, #e3e6e3);
+  border-radius: 2px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1;
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+.rateButton:hover {
+  opacity: 1;
+}
+
+/* Нажатая оценка остаётся видимой: человек, вернувшийся к разговору,
+ * должен видеть, что своё мнение он уже высказал. */
+.rateOn {
+  border-color: var(--green-dark);
+  color: var(--green-dark);
+  opacity: 1;
+}
+
+/* Нажавшему «не помог» нужен выход, а не благодарность за отзыв: он остался
+ * без ответа, и это единственное, что его сейчас занимает. */
+.rateHuman {
+  margin-left: 4px;
+  padding: 3px 9px;
+  border: 1px solid var(--green);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--green-dark);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
 /* --- кто на связи --- */
 
 /* Строка присутствия в шапке. Кнопка, а не подпись: по нажатию раскрываются
