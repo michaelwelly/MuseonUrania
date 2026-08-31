@@ -17,6 +17,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   raiseChatLead: vi.fn(),
+  rateAnswer: vi.fn(),
   sayInChat: vi.fn(),
   callHuman: vi.fn(),
   chatPrompts: vi.fn(),
@@ -32,6 +33,7 @@ vi.mock("@/lib/submit", () => ({
   apiConfigured: true,
   sayInChat: mocks.sayInChat,
   raiseChatLead: mocks.raiseChatLead,
+  rateAnswer: mocks.rateAnswer,
   callHuman: mocks.callHuman,
   chatPrompts: mocks.chatPrompts,
   chatThread: mocks.chatThread,
@@ -61,8 +63,14 @@ function лента(
   return { id: "разговор-1", status, messages, answering, leadNumber, support };
 }
 
+let счётчик = 0;
+
 function реплика(author: string, body: string, extra: Record<string, unknown> = {}) {
   return {
+    // Идентификатор нужен оценке: «этот ответ не помог» надо к чему-то
+    // отнести. Свой у каждой реплики — портал их не повторяет.
+    id: `сообщение-${++счётчик}`,
+    helpful: null,
     author,
     actor: null,
     body,
@@ -85,6 +93,7 @@ beforeEach(() => {
   );
   mocks.pingTyping.mockReset();
   mocks.raiseChatLead.mockReset().mockResolvedValue({ number: "З-2026-0042" });
+  mocks.rateAnswer.mockReset().mockResolvedValue(лента([]));
 });
 
 /** Вопрос принят, Ведалина взялась считать — то, что возвращает дверь. */
@@ -249,11 +258,58 @@ describe("лента", () => {
 
     // Отметка значит ровно одно: сообщение открыл живой человек. Ждущему
     // это важнее любой надписи о сроках — надпись обещание, отметка факт.
-    const прочитано = screen.getAllByText(/прочитано/);
-    expect(прочитано).toHaveLength(1);
+    //
+    // Отметок ровно две, и обе на своих сообщениях: у чужих её быть не может
+    // вовсе — «прочитано» показывают тому, кто писал, а не тому, кто читал.
+    expect(screen.getAllByLabelText("Прочитано")).toHaveLength(1);
+    expect(screen.getAllByLabelText("Доставлено")).toHaveLength(1);
 
     const своё = screen.getByText("мой вопрос").closest("div")!;
-    expect(within(своё).getByText(/прочитано/)).toBeTruthy();
+    expect(within(своё).getByLabelText("Прочитано")).toBeTruthy();
+
+    // Ответ сотрудника прочитан посетителем, но отметки на нём нет: она
+    // адресована тому, кто писал, а пишет её видит в своей админке.
+    const чужое = screen.getByText("ответ человека").closest("div")!;
+    expect(within(чужое).queryByLabelText("Прочитано")).toBeNull();
+  });
+
+  // Доставку и прочтение различать обязательно: ждущему важно, дошло ли
+  // сообщение до людей, а не до сервера.
+  it("одна галочка — доставлено, две — прочитано", async () => {
+    mocks.chatThread.mockResolvedValue(
+      лента([
+        реплика("visitor", "дошло", { readAt: "2026-08-21T09:31:00Z" }),
+        реплика("visitor", "ещё не читали"),
+      ]),
+    );
+
+    await открыть();
+    await screen.findByText("дошло");
+
+    expect(within(screen.getByText("дошло").closest("div")!).getByText("✓✓")).toBeTruthy();
+    expect(
+      within(screen.getByText("ещё не читали").closest("div")!).getByText("✓"),
+    ).toBeTruthy();
+  });
+
+  // Разговор возвращаются читать через час и через неделю: без разделителя
+  // вчерашний ответ выглядит написанным только что.
+  it("делится разделителями дней", async () => {
+    const сегодня = new Date();
+    const вчера = new Date(сегодня);
+    вчера.setDate(сегодня.getDate() - 1);
+
+    mocks.chatThread.mockResolvedValue(
+      лента([
+        реплика("visitor", "вчерашний вопрос", { at: вчера.toISOString() }),
+        реплика("assistant", "сегодняшний ответ", { at: сегодня.toISOString() }),
+      ]),
+    );
+
+    await открыть();
+
+    expect(await screen.findByText("Вчера")).toBeTruthy();
+    expect(screen.getByText("Сегодня")).toBeTruthy();
   });
 });
 
@@ -340,6 +396,190 @@ describe("ожидание ответа", () => {
     );
 
     expect(screen.getByLabelText("Ведалина печатает")).toBeTruthy();
+  });
+});
+
+describe("источники в ответе", () => {
+  const ИСТОЧНИКИ = [
+    { title: "VEDAL A-2000 — Инкубатор-трансформер", url: "/products/vedal-a-2000/" },
+    { title: "VEDAL R2 — Система дыхательная", url: "/products/vedal-r2/" },
+  ];
+
+  // Маркеры вида [1] умеет ставить модель, а детерминированный поиск — нет:
+  // он не знает, какая фраза из какого материала. Разбор существует заранее,
+  // чтобы появление модели не потребовало переделки ленты.
+  it("маркер в тексте становится ссылкой на источник", async () => {
+    mocks.chatThread.mockResolvedValue(
+      лента([
+        реплика("assistant", "Инкубатор-трансформер [1] и дыхательная система [2].", {
+          sources: ИСТОЧНИКИ,
+        }),
+      ]),
+    );
+
+    await открыть();
+
+    const первая = await screen.findByRole("link", { name: "1" });
+    expect(первая.getAttribute("href")).toBe("/products/vedal-a-2000/");
+    expect(screen.getByRole("link", { name: "2" }).getAttribute("href")).toBe(
+      "/products/vedal-r2/",
+    );
+  });
+
+  // Ссылка в никуда хуже её отсутствия: по ней нажмут.
+  it("маркер на несуществующий источник остаётся текстом", async () => {
+    mocks.chatThread.mockResolvedValue(
+      лента([
+        реплика("assistant", "Ответ со сноской [7].", { sources: [ИСТОЧНИКИ[0]] }),
+      ]),
+    );
+
+    await открыть();
+
+    await screen.findByText(/Ответ со сноской/);
+    expect(screen.queryByRole("link", { name: "7" })).toBeNull();
+  });
+
+  // Список нумерованный, потому что номера в нём — те же, что в маркерах:
+  // маркированный оставил бы сноски указывающими ни на что.
+  it("источники перечислены под ответом", async () => {
+    mocks.chatThread.mockResolvedValue(
+      лента([реплика("assistant", "Ответ.", { sources: ИСТОЧНИКИ })]),
+    );
+
+    await открыть();
+
+    expect(
+      await screen.findByRole("link", { name: "VEDAL A-2000 — Инкубатор-трансформер" }),
+    ).toBeTruthy();
+  });
+});
+
+describe("новые сообщения", () => {
+  // Граница считается по времени последнего открытия виджета, а не по
+  // отметке «прочитано»: ту портал ставит в момент, когда отдаёт ленту,
+  // — то есть к приходу она уже проставлена.
+  it("отделяют то, что пришло с прошлого раза", async () => {
+    const давно = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const только_что = new Date().toISOString();
+    localStorage.setItem("vedal.chat.seen", String(Date.now() - 30 * 60 * 1000));
+
+    mocks.chatThread.mockResolvedValue(
+      лента([
+        реплика("visitor", "старый вопрос", { at: давно }),
+        реплика("assistant", "старый ответ", { at: давно }),
+        реплика("staff", "свежий ответ", { at: только_что, actor: "Ирина" }),
+      ]),
+    );
+
+    await открыть();
+
+    expect(await screen.findByText("Новые сообщения")).toBeTruthy();
+  });
+
+  // Первый приход — не повод рисовать границу: человек не видел ещё ничего,
+  // и «новые» относительно ничего смысла не имеют.
+  it("не рисуются, когда виджет открыт впервые", async () => {
+    localStorage.removeItem("vedal.chat.seen");
+    mocks.chatThread.mockResolvedValue(
+      лента([реплика("assistant", "ответ", { at: new Date().toISOString() })]),
+    );
+
+    await открыть();
+
+    await screen.findByText("ответ");
+    expect(screen.queryByText("Новые сообщения")).toBeNull();
+  });
+
+  // Свои сообщения границей не считаются: посетитель их видел, когда писал.
+  it("не считают своё сообщение новым", async () => {
+    localStorage.setItem("vedal.chat.seen", String(Date.now() - 30 * 60 * 1000));
+    mocks.chatThread.mockResolvedValue(
+      лента([реплика("visitor", "мой свежий вопрос", { at: new Date().toISOString() })]),
+    );
+
+    await открыть();
+
+    await screen.findByText("мой свежий вопрос");
+    expect(screen.queryByText("Новые сообщения")).toBeNull();
+  });
+});
+
+describe("оценка ответа", () => {
+  const ОТВЕТ = () =>
+    лента([
+      реплика("visitor", "вопрос"),
+      реплика("assistant", "Ответ Ведалины", { id: "ответ-1" }),
+    ]);
+
+  it("уходит на портал вместе с тем, какой ответ оценили", async () => {
+    mocks.chatThread.mockResolvedValue(ОТВЕТ());
+    mocks.rateAnswer.mockResolvedValue(ОТВЕТ());
+
+    const user = await открыть();
+    await screen.findByText("Ответ Ведалины");
+
+    await user.click(screen.getByLabelText("Ответ не помог"));
+
+    // Идентификатор, а не номер в ленте: номер съезжает от каждой новой реплики.
+    await waitFor(() =>
+      expect(mocks.rateAnswer).toHaveBeenCalledWith("ключ-вкладки", "ответ-1", false),
+    );
+  });
+
+  // Оценивают машину. «Специалист не помог» — это не оценка ответа, а жалоба
+  // на человека, и разбирать её кнопкой в чате нельзя.
+  it("не предлагается под ответом сотрудника и под своим сообщением", async () => {
+    mocks.chatThread.mockResolvedValue(
+      лента([
+        реплика("visitor", "мой вопрос"),
+        реплика("staff", "ответ человека", { actor: "Ирина" }),
+      ]),
+    );
+
+    await открыть();
+    await screen.findByText("ответ человека");
+
+    expect(screen.queryByLabelText("Ответ помог")).toBeNull();
+    expect(screen.queryByLabelText("Ответ не помог")).toBeNull();
+  });
+
+  // Состояние приходит с портала лентой: нажатие, нарисованное на месте
+  // и не сохранившееся, — это оценка, которую никто не увидит.
+  it("нажатая оценка видна и после возвращения к разговору", async () => {
+    mocks.chatThread.mockResolvedValue(
+      лента([
+        реплика("visitor", "вопрос"),
+        реплика("assistant", "Ответ Ведалины", { helpful: false }),
+      ]),
+    );
+
+    await открыть();
+    await screen.findByText("Ответ Ведалины");
+
+    expect(screen.getByLabelText("Ответ не помог").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByLabelText("Ответ помог").getAttribute("aria-pressed")).toBe("false");
+  });
+
+  // Нажавшему «не помог» нужен выход, а не благодарность за отзыв: он остался
+  // без ответа, и это единственное, что его сейчас занимает.
+  it("после «не помог» предлагает специалиста", async () => {
+    mocks.chatThread.mockResolvedValue(
+      лента([
+        реплика("visitor", "вопрос"),
+        реплика("assistant", "Ответ Ведалины", { helpful: false }),
+      ]),
+    );
+
+    const user = await открыть();
+    await screen.findByText("Ответ Ведалины");
+
+    // Кнопка ищется внутри пузыря: такая же есть среди чипов внизу окна,
+    // и по всему экрану их две.
+    const ответ = screen.getByText("Ответ Ведалины").closest("div")!;
+    await user.click(within(ответ).getByRole("button", { name: "Позвать специалиста" }));
+
+    await waitFor(() => expect(mocks.callHuman).toHaveBeenCalledWith("ключ-вкладки"));
   });
 });
 

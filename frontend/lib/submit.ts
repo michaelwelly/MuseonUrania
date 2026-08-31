@@ -168,6 +168,18 @@ async function readProblem(response: Response): Promise<Problem> {
 export type ChatAuthor = "visitor" | "assistant" | "staff";
 
 export type ChatLine = {
+  /**
+   * Идентификатор сообщения. Нужен оценке: «этот ответ не помог» надо
+   * к чему-то отнести, а порядковый номер в ленте съезжает от каждой
+   * новой реплики.
+   */
+  id: string;
+  /**
+   * Помог ли ответ, по мнению посетителя. `null` — не оценивал.
+   * Отличать это от «не помог» обязательно: иначе доля плохих ответов
+   * считается по тем, кто промолчал.
+   */
+  helpful: boolean | null;
   author: ChatAuthor;
   /** Имя сотрудника. У Ведалины и у самого посетителя пусто. */
   actor: string | null;
@@ -361,6 +373,37 @@ export async function callHuman(visitor: string): Promise<ChatThread | { error: 
 
   const problem = await readProblem(response);
   return { error: problem.title ?? problem.detail ?? `Чат недоступен (${response.status}).` };
+}
+
+/**
+ * Оценить ответ Ведалины.
+ *
+ * Возвращает ленту с проставленной оценкой — как и остальные двери разговора:
+ * состояние определяет портал, а не виджет, и «нажал, но не сохранилось»
+ * здесь взяться неоткуда.
+ */
+export async function rateAnswer(
+  visitor: string,
+  messageId: string,
+  helpful: boolean,
+): Promise<ChatThread | { error: string }> {
+  if (!apiConfigured) return { error: NOT_CONFIGURED };
+
+  let response: Response;
+  try {
+    response = await fetch(`${apiUrl}/api/assistant/v1/chat/rating`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ visitorKey: visitor, messageId, helpful }),
+    });
+  } catch {
+    return { error: UNREACHABLE };
+  }
+
+  if (response.ok) return (await response.json()) as ChatThread;
+
+  const problem = await readProblem(response);
+  return { error: problem.title ?? problem.detail ?? `Оценка не сохранилась (${response.status}).` };
 }
 
 /** Контакты для обращения, заводимого из разговора. */
