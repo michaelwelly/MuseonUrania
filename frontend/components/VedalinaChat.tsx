@@ -17,6 +17,7 @@ import {
   sayInChat,
   visitorKey,
   type ChatLine,
+  type ChatSupport,
   type Handoff,
   type Prompt,
   type Source,
@@ -226,6 +227,17 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
   // Форма обращения раскрыта. Не отдельный экран: разговор остаётся на месте,
   // и видно, из чего обращение заводится.
   const [ticketForm, setTicketForm] = useState(false);
+  // Отвечают ли сейчас люди. Приходит с лентой и меняется событием потока:
+  // сотрудник, открывший админку, появляется на связи не тогда, когда
+  // посетитель обновит страницу.
+  //
+  // Пока портал не ответил — null: «неизвестно» это не «оффлайн». Надпись
+  // «сейчас никого нет», показанная до первого ответа портала, была бы
+  // догадкой, и первое, что увидел бы посетитель, — сообщение о том,
+  // что писать некому.
+  const [support, setSupport] = useState<ChatSupport | null>(null);
+  // Подсказка о часах работы раскрыта.
+  const [hoursOpen, setHoursOpen] = useState(false);
   const feed = useRef<HTMLDivElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const visitor = useRef<string>("");
@@ -261,7 +273,14 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
 
     const refresh = () =>
       void chatThread(visitor.current).then((thread) => {
-        if (!alive || !thread?.messages.length) return;
+        if (!alive || !thread) return;
+
+        // Про людей портал отвечает всегда — и когда разговора ещё нет.
+        // Виджет открывают до первого сообщения, и надпись в шапке нужна
+        // ему уже тогда.
+        if (thread.support) setSupport(thread.support);
+
+        if (!thread.messages.length) return;
 
         // Точки гасит лента, а не таймер: пришедшая лента и есть ответ
         // на вопрос «дождались ли». Портал сообщает в ней же, думает ли
@@ -316,6 +335,20 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
         // Гаснет по таймеру, и иначе нельзя: события «перестал печатать»
         // не существует — человек волен просто закрыть вкладку.
         fade.current = setTimeout(() => setStaffTyping(false), 5000);
+      } catch {
+        // Событие незнакомого вида — не повод рвать поток.
+      }
+    });
+
+    // Специалист появился на связи или ушёл. Событие редкое — портал шлёт
+    // его на переходах, а не на каждой открытой вкладке админки, — и ленту
+    // по нему перечитывать незачем: о самом разговоре здесь не сказано ничего.
+    stream.addEventListener("presence", (event) => {
+      try {
+        const parsed = JSON.parse((event as MessageEvent).data) as { online: boolean };
+        if (!alive) return;
+        // Часы работы остаются прежними: меняется присутствие, а не расписание.
+        setSupport((was) => (was ? { ...was, online: parsed.online } : was));
       } catch {
         // Событие незнакомого вида — не повод рвать поток.
       }
@@ -550,6 +583,26 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
         <div>
           <div className={styles.name}>{vedalina.name}</div>
           <div className={styles.role}>{vedalina.role}</div>
+
+          {/* Кто на связи — про людей, а не про Ведалину: она отвечает всегда.
+              Надпись говорит о факте (открыто ли рабочее место), а не о часах
+              работы: «мы онлайн» по расписанию врёт в обеденный перерыв ровно
+              тому, кто на неё понадеялся.
+
+              Пока портал не ответил, надписи нет вовсе: «неизвестно» — это
+              не «оффлайн», и встречать посетителя сообщением, что писать
+              некому, было бы догадкой. */}
+          {support && (
+            <button
+              type="button"
+              className={support.online ? styles.presenceOn : styles.presenceOff}
+              aria-expanded={hoursOpen}
+              onClick={() => setHoursOpen((was) => !was)}
+            >
+              <span className={styles.presenceDot} aria-hidden="true" />
+              {support.online ? "Специалист на связи" : "Специалисты офлайн"}
+            </button>
+          )}
         </div>
         {onClose && (
           <div className={styles.headTools}>
@@ -572,6 +625,23 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
           </div>
         )}
       </div>
+
+      {/* Подсказка о часах работы. Раскрывается нажатием, а не всплывает
+          по наведению: `title` браузера на телефоне не показывается вовсе,
+          а именно там посетитель чаще всего и оказывается вечером.
+
+          Держится под шапкой, а не в ленте: это свойство чата, а не реплика
+          в разговоре, и прокруткой оно уезжать не должно. */}
+      {support && hoursOpen && (
+        <p className={styles.hours} aria-live="polite">
+          Специалисты отвечают {support.hours}.{" "}
+          {support.online
+            ? "Сейчас кто-то на связи — ответит в этом окне."
+            : support.openNow
+              ? "Сейчас на связи никого нет. Можно писать здесь — прочитают, когда вернутся, — или оставить обращение: у него будет номер, и ответ придёт на почту."
+              : "Сейчас нерабочее время. Можно писать здесь — прочитают утром, — или оставить обращение: у него будет номер, и ответ придёт на почту."}
+        </p>
+      )}
 
       <div className={styles.feed} aria-live="polite" ref={feed}>
         {shown.map((m, i) => (
@@ -663,8 +733,13 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
         {waiting && (
           <p className={styles.waiting} aria-live="polite">
             <span className={styles.waitingDot} aria-hidden="true" />
-            Ждём специалиста. Он ответит в этом окне — можно писать дальше,
-            он прочитает всё. Не хотите ждать:{" "}
+            {/* Ждать до утра и ждать десять минут — разные вещи, и говорить
+                о них одинаково нельзя: «ответит в этом окне» в полночь человек
+                прочтёт как «сейчас ответят», закроет вкладку и решит, что чат
+                не работает. */}
+            {support && !support.online
+              ? `Ждём специалиста. На связи сейчас никого нет — отвечают ${support.hours}. Написанное здесь прочитают: `
+              : "Ждём специалиста. Он ответит в этом окне — можно писать дальше, он прочитает всё. Не хотите ждать: "}
             <a href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a>
             {" · "}
             <a href={`mailto:${site.email}`}>{site.email}</a>
