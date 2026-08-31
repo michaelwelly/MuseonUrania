@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import ru.vedal.portal.common.RateLimit;
 import ru.vedal.portal.common.TooManyRequestsException;
+
+import java.util.UUID;
 
 // Разговор со стороны посетителя.
 //
@@ -157,6 +160,57 @@ public class PublicChatController {
         }
         return desk.callHuman(request.visitorKey(),
                 new ChatDesk.Context(request.language(), request.campaign(), request.page()));
+    }
+
+    @Schema(name = "ChatRating", description = "Оценка ответа Ведалины.")
+    public record Rating(
+
+            @Schema(description = "Ключ разговора в браузере.")
+            @NotBlank @Size(max = 64) String visitorKey,
+
+            @Schema(description = "Какое сообщение оценивают. Идентификатор берётся "
+                    + "из ленты: порядковый номер съезжает от каждой новой реплики.",
+                    format = "uuid", requiredMode = Schema.RequiredMode.REQUIRED)
+            @NotNull UUID messageId,
+
+            @Schema(description = "Помог ли ответ.", example = "false",
+                    requiredMode = Schema.RequiredMode.REQUIRED)
+            @NotNull Boolean helpful) {}
+
+    @Operation(summary = "Оценить ответ Ведалины",
+            description = """
+                    «Помог» или «не помог» под ответом ассистента.
+
+                    Зачем это порталу: журнал показывает, когда Ведалина молчит,
+                    и не показывает худшего — она ответила уверенно и не по делу.
+                    В журнале такой ответ неотличим от хорошего: источники нашлись,
+                    передачи человеку не было. Отличает его только тот, кто спрашивал.
+
+                    Оценивать можно **только ответы Ведалины и только в своём
+                    разговоре**. Чужое сообщение даёт `404` — тот же ответ, что
+                    и несуществующее: иначе дверь сообщала бы перебором, какие
+                    идентификаторы существуют.
+
+                    Оценку можно поменять: человек передумал — это его право.
+                    В журнал уходит каждое изменение; важно не последнее нажатие,
+                    а то, что ответ вызвал сомнение.
+
+                    Лимит частоты общий с `ask`.
+                    """)
+    @ApiResponse(responseCode = "200", description = "Лента разговора с проставленной оценкой.")
+    @ApiResponse(responseCode = "404", description = "Разговора нет, сообщение чужое "
+            + "или это не ответ Ведалины.",
+            content = @Content(mediaType = "application/problem+json",
+                    schema = @Schema(ref = "#/components/schemas/ProblemDetail")))
+    @ApiResponse(responseCode = "429", description = "Превышен лимит частоты.",
+            content = @Content(mediaType = "application/problem+json",
+                    schema = @Schema(ref = "#/components/schemas/ProblemDetail")))
+    @PostMapping("/rating")
+    public ChatDesk.Thread rate(@Valid @RequestBody Rating request, HttpServletRequest http) {
+        if (!rateLimit.allow(http.getRemoteAddr())) {
+            throw new TooManyRequestsException("Слишком много обращений подряд. Попробуйте позже.");
+        }
+        return desk.rate(request.visitorKey(), request.messageId(), request.helpful());
     }
 
     @Operation(summary = "Прочитать разговор",

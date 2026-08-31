@@ -186,6 +186,55 @@ paths:
       summary: Позвать специалиста
       tags:
       - Ассистент
+  /api/assistant/v1/chat/rating:
+    post:
+      description: |
+        «Помог» или «не помог» под ответом ассистента.
+
+        Зачем это порталу: журнал показывает, когда Ведалина молчит,
+        и не показывает худшего — она ответила уверенно и не по делу.
+        В журнале такой ответ неотличим от хорошего: источники нашлись,
+        передачи человеку не было. Отличает его только тот, кто спрашивал.
+
+        Оценивать можно **только ответы Ведалины и только в своём
+        разговоре**. Чужое сообщение даёт `404` — тот же ответ, что
+        и несуществующее: иначе дверь сообщала бы перебором, какие
+        идентификаторы существуют.
+
+        Оценку можно поменять: человек передумал — это его право.
+        В журнал уходит каждое изменение; важно не последнее нажатие,
+        а то, что ответ вызвал сомнение.
+
+        Лимит частоты общий с `ask`.
+      operationId: rate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatRating"
+        required: true
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Thread"
+          description: Лента разговора с проставленной оценкой.
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: "Разговора нет, сообщение чужое или это не ответ Ведалины."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+          description: Превышен лимит частоты.
+      summary: Оценить ответ Ведалины
+      tags:
+      - Ассистент
   /api/assistant/v1/chat/{visitorKey}:
     get:
       description: |
@@ -761,6 +810,28 @@ components:
       - name
       - phone
       - visitorKey
+    ChatRating:
+      type: object
+      description: Оценка ответа Ведалины.
+      properties:
+        helpful:
+          type: boolean
+          description: Помог ли ответ.
+          example: false
+        messageId:
+          type: string
+          format: uuid
+          description: "Какое сообщение оценивают. Идентификатор берётся из ленты\
+            : порядковый номер съезжает от каждой новой реплики."
+        visitorKey:
+          type: string
+          description: Ключ разговора в браузере.
+          maxLength: 64
+          minLength: 0
+      required:
+      - helpful
+      - messageId
+      - visitorKey
     ChatSay:
       type: object
       description: Сообщение посетителя.
@@ -1028,6 +1099,11 @@ components:
           type: string
         body:
           type: string
+        helpful:
+          type: boolean
+        id:
+          type: string
+          format: uuid
         readAt:
           type: string
           format: date-time
