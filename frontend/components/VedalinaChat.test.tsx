@@ -48,13 +48,17 @@ const КНОПКИ = [
   { intent: "human", label: "Позвать специалиста", action: "handoff" },
 ];
 
+const НА_СВЯЗИ = { online: true, openNow: true, hours: "Пн–Пт 9:00–18:00 (Екатеринбург)" };
+const НИКОГО = { online: false, openNow: false, hours: "Пн–Пт 9:00–18:00 (Екатеринбург)" };
+
 function лента(
   messages: unknown[],
   status = "open",
   answering = false,
   leadNumber: string | null = null,
+  support: unknown = НА_СВЯЗИ,
 ) {
-  return { id: "разговор-1", status, messages, answering, leadNumber };
+  return { id: "разговор-1", status, messages, answering, leadNumber, support };
 }
 
 function реплика(author: string, body: string, extra: Record<string, unknown> = {}) {
@@ -336,6 +340,77 @@ describe("ожидание ответа", () => {
     );
 
     expect(screen.getByLabelText("Ведалина печатает")).toBeTruthy();
+  });
+});
+
+describe("кто на связи", () => {
+  beforeEach(подключитьПоток);
+
+  // Надпись говорит о людях, а не о портале: Ведалина отвечает всегда,
+  // и «онлайн» про неё ничего не значит.
+  it("показывает присутствие специалиста по факту, а не по расписанию", async () => {
+    mocks.chatThread.mockResolvedValue(лента([реплика("visitor", "вопрос")], "open", false, null, НА_СВЯЗИ));
+
+    await открыть();
+
+    expect(await screen.findByRole("button", { name: /Специалист на связи/ })).toBeTruthy();
+  });
+
+  it("говорит «офлайн», когда рабочих мест не открыто", async () => {
+    mocks.chatThread.mockResolvedValue(лента([реплика("visitor", "вопрос")], "open", false, null, НИКОГО));
+
+    await открыть();
+
+    expect(await screen.findByRole("button", { name: /Специалисты офлайн/ })).toBeTruthy();
+  });
+
+  // «Неизвестно» — это не «оффлайн». Встречать посетителя сообщением, что
+  // писать некому, до того как портал ответил, значит гадать.
+  it("молчит, пока портал не ответил", async () => {
+    mocks.chatThread.mockResolvedValue(null);
+
+    await открыть();
+
+    expect(screen.queryByRole("button", { name: /Специалист/ })).toBeNull();
+  });
+
+  // Часы работы — нажатием, а не всплывающей подсказкой: `title` на телефоне
+  // не показывается вовсе, а именно там посетитель и оказывается вечером.
+  it("часы работы раскрываются нажатием на статус", async () => {
+    mocks.chatThread.mockResolvedValue(лента([реплика("visitor", "вопрос")], "open", false, null, НИКОГО));
+
+    const user = await открыть();
+    await user.click(await screen.findByRole("button", { name: /Специалисты офлайн/ }));
+
+    expect(screen.getByText(/Пн–Пт 9:00–18:00/)).toBeTruthy();
+    // И сказано, что делать: обращение переживёт закрытую вкладку.
+    expect(screen.getByText(/оставить обращение/)).toBeTruthy();
+  });
+
+  // Присутствие меняется без перезагрузки страницы: сотрудник, открывший
+  // админку, появляется на связи сразу.
+  it("зажигается по событию потока", async () => {
+    mocks.chatThread.mockResolvedValue(лента([реплика("visitor", "вопрос")], "open", false, null, НИКОГО));
+    await открыть();
+    await screen.findByRole("button", { name: /Специалисты офлайн/ });
+
+    await act(async () =>
+      ПоддельныйПоток.последний!.послать("presence", '{"online":true}'),
+    );
+
+    expect(screen.getByRole("button", { name: /Специалист на связи/ })).toBeTruthy();
+  });
+
+  // Ждать до утра и ждать десять минут — разные вещи. «Ответит в этом окне»
+  // в полночь человек прочтёт как «сейчас ответят».
+  it("в ожидании специалиста говорит, что на связи никого нет", async () => {
+    mocks.chatThread.mockResolvedValue(
+      лента([реплика("assistant", "Зову специалиста.")], "waiting", false, null, НИКОГО),
+    );
+
+    await открыть();
+
+    expect(await screen.findByText(/На связи сейчас никого нет/)).toBeTruthy();
   });
 });
 

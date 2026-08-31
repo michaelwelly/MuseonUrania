@@ -302,6 +302,64 @@
   }
 }
 
+/* --- кто на связи --- */
+
+/* Строка присутствия в шапке. Кнопка, а не подпись: по нажатию раскрываются
+ * часы работы, и на телефоне это единственный способ их показать — `title`
+ * там не всплывает вовсе. */
+.presenceOn,
+.presenceOff {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 2px 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  opacity: 0.8;
+  cursor: pointer;
+}
+
+.presenceOn:hover,
+.presenceOff:hover {
+  opacity: 1;
+}
+
+.presenceDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Зелёная точка означает живого человека, а не работающий портал: цветом
+ * сказано ровно то же, что словом. Серая — «никого нет», и она намеренно
+ * не красная: отсутствие специалиста в девять вечера не авария. */
+.presenceOn .presenceDot {
+  background: #4caf50;
+}
+
+.presenceOff .presenceDot {
+  background: currentColor;
+  opacity: 0.5;
+}
+
+/* Часы работы под шапкой. Не в ленте: это свойство чата, а не реплика,
+ * и уезжать прокруткой оно не должно. */
+.hours {
+  margin: 0;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line, #e3e6e3);
+  background: color-mix(in srgb, var(--green) 5%, transparent);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 /* --- обращение из разговора --- */
 
 /* Кнопка «Создать обращение».
