@@ -84,9 +84,34 @@ function toMessage(line: ChatLine): Message {
   };
 }
 
+/**
+ * Сколько ждём ответа, прежде чем погасить точки.
+ *
+ * Страховка, а не срок. Ответ гасит их сам — событием потока; этот предел
+ * нужен на случай, когда события не будет вовсе: поток оборвался, портал
+ * перезапустился, ответ потерялся. Вечные точки хуже отсутствия точек:
+ * человек ждёт того, чего уже не случится.
+ *
+ * Минута, а не десять секунд: у модели десять секунд — обычный ответ,
+ * и погасшие на восьмой секунде точки означали бы «не дождался» ровно там,
+ * где всё идёт по плану.
+ */
+const THINKING_LIMIT = 60_000;
+
 export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
   const [list, setList] = useState<Message[]>([GREETING]);
+  // Ведалина считает ответ.
+  //
+  // Раньше это был флаг, который виджет ставил себе сам на время запроса
+  // и снимал по его завершении. Работало, пока ответ приходил в теле того же
+  // запроса. Теперь ответ доезжает потоком, а значит ожидание переживает
+  // и перезагрузку страницы, и вторую вкладку — и знает о нём портал,
+  // а не только это окно.
   const [typing, setTyping] = useState(false);
+  // Кусок ещё не дописанного ответа. Показывается как незаконченный и
+  // заменяется лентой, как только ответ записан. Сам по себе он не значит
+  // ничего: в базе его нет.
+  const [answerDraft, setAnswerDraft] = useState("");
   const [draft, setDraft] = useState("");
   // Кнопки приходят с портала: подпись и заготовка, разложенные по двум
   // местам, расходятся на первой же правке — и расходятся молча.
@@ -102,6 +127,8 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
   // не существует, человек волен просто закрыть вкладку.
   const [staffTyping, setStaffTyping] = useState(false);
   const fade = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Предел ожидания ответа Ведалины: страховка от вечных точек.
+  const patience = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Когда последний раз сообщали, что посетитель печатает.
   const pinged = useRef(0);
 
@@ -129,7 +156,17 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
     const refresh = () =>
       void chatThread(visitor.current).then((thread) => {
         if (!alive || !thread?.messages.length) return;
-        setTyping(false);
+
+        // Точки гасит лента, а не таймер: пришедшая лента и есть ответ
+        // на вопрос «дождались ли». Портал сообщает в ней же, думает ли
+        // Ведалина прямо сейчас, — и это переживает перезагрузку страницы.
+        thinking(thread.answering);
+
+        // Черновик своё отработал: дальше на экране настоящая лента.
+        // Оставить его рядом с записанным ответом значит показать текст
+        // дважды.
+        setAnswerDraft("");
+
         setWaiting(thread.status === "waiting");
         setList([GREETING, ...thread.messages.map(toMessage)]);
       });
@@ -152,17 +189,41 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
     // по имени.
     stream.addEventListener("changed", refresh);
 
-    // Сотрудник печатает. Отдельный вид события, потому что перечитывать
-    // ленту здесь незачем: в базе этого факта нет и не будет.
+    // Кто-то печатает. Отдельный вид события, потому что перечитывать ленту
+    // здесь незачем: в базе этого факта нет и не будет.
     stream.addEventListener("typing", (event) => {
       try {
         const parsed = JSON.parse((event as MessageEvent).data) as { who: string };
-        if (parsed.who !== "staff" || !alive) return;
+        if (!alive) return;
+
+        // Ведалина взялась за ответ. Приходит из портала, а не ставится
+        // виджетом по факту отправки: вопрос мог быть задан в другой вкладке.
+        if (parsed.who === "assistant") {
+          thinking(true);
+          return;
+        }
+
+        if (parsed.who !== "staff") return;
         setStaffTyping(true);
         if (fade.current) clearTimeout(fade.current);
+        // Гаснет по таймеру, и иначе нельзя: события «перестал печатать»
+        // не существует — человек волен просто закрыть вкладку.
         fade.current = setTimeout(() => setStaffTyping(false), 5000);
       } catch {
         // Событие незнакомого вида — не повод рвать поток.
+      }
+    });
+
+    // Кусок ответа, который ещё пишется. Единственное событие с текстом:
+    // оно уходит только на этот ключ и повторится лентой через секунду.
+    stream.addEventListener("draft", (event) => {
+      try {
+        const parsed = JSON.parse((event as MessageEvent).data) as { chunk: string };
+        if (!alive || !parsed.chunk) return;
+        thinking(true);
+        setAnswerDraft((was) => was + parsed.chunk);
+      } catch {
+        // Битый кусок — не повод рвать поток и не повод показывать мусор.
       }
     });
 
@@ -170,8 +231,27 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
       alive = false;
       stream.close();
       if (fade.current) clearTimeout(fade.current);
+      if (patience.current) clearTimeout(patience.current);
     };
   }, []);
+
+  /**
+   * Зажечь или погасить точки Ведалины.
+   *
+   * Зажигая, заводим предел ожидания. Без него точки остаются навсегда,
+   * если ответ не доедет вовсе: поток оборвался, портал перезапустился.
+   * Человек в этом случае ждёт того, чего уже не будет, — и уходит,
+   * решив, что чат сломан.
+   */
+  function thinking(on: boolean) {
+    setTyping(on);
+    if (patience.current) clearTimeout(patience.current);
+    if (!on) return;
+    patience.current = setTimeout(() => {
+      setTyping(false);
+      setAnswerDraft("");
+    }, THINKING_LIMIT);
+  }
 
   function ask(text: string, intent?: string) {
     const question = text.trim();
@@ -180,22 +260,21 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
     if (timer.current) clearTimeout(timer.current);
     setList((prev) => [...prev, { from: "me", text: question }]);
     setDraft("");
-    setTyping(true);
+    thinking(true);
 
     // Без адреса API отвечаем локально: так чат работает в режиме вёрстки,
     // когда серверная часть не поднята.
     if (!apiConfigured) {
       timer.current = setTimeout(() => {
         setList((prev) => [...prev, { from: "bot", text: answerFor(question) }]);
-        setTyping(false);
+        thinking(false);
       }, vedalina.replyDelay);
       return;
     }
 
     void sayInChat(visitor.current, question, intent).then((thread) => {
-      setTyping(false);
-
       if ("error" in thread) {
+        thinking(false);
         // Портал молчит — отдаём живые контакты, а не оставляем тупик.
         setList((prev) => [
           ...prev,
@@ -212,10 +291,34 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
       // позапрошлый вопрос» здесь взяться неоткуда.
       setList([GREETING, ...thread.messages.map(toMessage)]);
 
+      // Точки НЕ гасим по возврату запроса — в нём ответа больше нет.
+      //
+      // Дверь принимает вопрос и отвечает сразу, а ответ доезжает потоком:
+      // модель считает секундами, и ждать её внутри запроса значит держать
+      // окно неподвижным, а поток обслуживания — занятым. Гасит точки лента,
+      // пришедшая по событию, или предел ожидания.
+      //
+      // Исключение — нажатая кнопка: её текст известен заранее и приходит
+      // сразу, и тогда портал не берётся считать ничего.
+      thinking(thread.answering || lastIsVisitors(thread.messages));
+
       // Ответа могло не быть вовсе — тогда разговор ждёт человека.
       // Придумывать ответ запрещено правилами ассистента.
       setWaiting(thread.status === "waiting");
     });
+  }
+
+  /**
+   * Последнее слово за посетителем — значит ответа ещё нет.
+   *
+   * Признак `answering` приходит из портала и точен, но между приёмом вопроса
+   * и тем мигом, когда портал взялся считать, проходит мгновение: слушатель
+   * запускается после записи. Попади ответ двери ровно в эту щель — точки
+   * не зажглись бы вовсе, и окно на секунду выглядело бы так, будто вопрос
+   * пропал.
+   */
+  function lastIsVisitors(messages: ChatLine[]): boolean {
+    return messages.length > 0 && messages[messages.length - 1].author === "visitor";
   }
 
   /**
@@ -240,9 +343,9 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
       return;
     }
 
-    setTyping(true);
+    thinking(true);
     void callHuman(visitor.current).then((thread) => {
-      setTyping(false);
+      thinking(false);
       if ("error" in thread) {
         // Портал молчит — отдаём живые контакты, а не оставляем тупик.
         setList((prev) => [
@@ -281,7 +384,7 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
   useEffect(() => {
     const box = feed.current;
     if (box) box.scrollTop = box.scrollHeight;
-  }, [shown, typing, staffTyping, waiting]);
+  }, [shown, typing, answerDraft, staffTyping, waiting]);
 
   return (
     <section className={styles.chat} aria-label={`Чат с ассистентом ${vedalina.name}`}>
@@ -376,7 +479,25 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
           </div>
         ))}
 
-        {typing && (
+        {/* Ответ, который ещё пишется. Показывается вместо точек, как только
+            приехал первый кусок: текст, появляющийся на глазах, — это ответ
+            на вопрос «работает ли вообще», которого точки не дают.
+
+            Курсор в конце обязателен. Без него незаконченный ответ выглядит
+            как законченный, и посетитель уходит читать дальше на середине
+            фразы. */}
+        {answerDraft && (
+          <p
+            className={`${styles.msg} ${styles.bot} ${styles.answerDraft}`}
+            aria-live="polite"
+            aria-busy="true"
+          >
+            {answerDraft}
+            <span className={styles.caret} aria-hidden="true" />
+          </p>
+        )}
+
+        {typing && !answerDraft && (
           <p className={`${styles.msg} ${styles.bot} ${styles.typing}`} aria-label="Ведалина печатает">
             <span />
             <span />
