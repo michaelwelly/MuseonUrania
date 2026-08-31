@@ -8,6 +8,7 @@ import ru.vedal.portal.audit.AuditLog;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 @Service
 public class AssistantService {
@@ -42,6 +43,25 @@ public class AssistantService {
      */
     @Transactional
     public AskReply ask(String question, LlmEngine.Scope scope, String actor) {
+        return ask(question, scope, actor, chunk -> { });
+    }
+
+    /**
+     * То же, но с выдачей ответа по мере готовности.
+     *
+     * <p>Куски идут только из движка. Отказ ограничений и «нет источников» —
+     * наши собственные тексты, известные целиком в момент, когда они
+     * понадобились: печатать их по буквам значило бы изображать раздумье
+     * над решением, которое уже принято.
+     *
+     * @param onChunk куда отдавать текст по мере появления. Склейка кусков
+     *                равна {@link AskReply#answer()} — на этом держится
+     *                правило «показанный черновик совпадает с записанным
+     *                ответом».
+     */
+    @Transactional
+    public AskReply ask(String question, LlmEngine.Scope scope, String actor,
+                        Consumer<String> onChunk) {
         // Сначала ограничения, потом движок: вопрос про диагноз или цену
         // до поиска не доходит вообще.
         var refusal = guardrails.refuse(question);
@@ -50,7 +70,7 @@ public class AssistantService {
             return new AskReply(refusal.get(), List.of(), handoff(refusal.get()));
         }
 
-        var grounded = engine.answer(question, scope);
+        var grounded = engine.answer(question, scope, onChunk);
         if (grounded.isEmpty()) {
             journal(actor, "no-sources", 0);
             return new AskReply(NOT_FOUND, List.of(), handoff(NOT_FOUND));

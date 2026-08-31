@@ -76,6 +76,34 @@ The log records what happened and the conversation id, nothing else.
 Message text can still become personal data, so a conversation is anonymised by
 the same mechanism as a lead: the `erased_at` and `erasure_basis` columns.
 
+## The question is accepted, the answer arrives later
+
+`POST /chat` records the question and replies immediately — with a thread that
+does not yet contain Vedalina's answer. The answer is computed separately
+(`Answering`) and arrives over the stream.
+
+The engine used to be called inside that same request, and it went unnoticed:
+deterministic search answers in milliseconds. A model answers in seconds, and
+the same code then causes three problems at once. The visitor stares at a
+motionless window — the dots were drawn by the widget itself and went out on
+every reload. Caddy and the gateway sit between the widget and the portal with
+timeouts of their own: an answer that misses the deadline is lost to the visitor
+while staying recorded in the database. And every hanging request holds a worker
+thread — a dozen visitors hold all of them.
+
+There is one exception: a pressed quick-reply button. Its text is known in
+advance, and delaying it would mean acting out deliberation over a decision
+made before the click.
+
+Deliberation is state, not a message: the `answering` field in the thread and a
+`typing` event with `who = assistant`. It lives in the thread because an event
+is sent once and misses whoever subscribed later: a widget reopened in the
+middle of the wait must show the dots again.
+
+An answer that fails — engine unavailable, queue full — is not silence but a
+handoff to a human, recorded with reason `failed`. Silence here means a visitor
+waiting for an answer nobody is preparing.
+
 ## The whole thread, not an increment
 
 `say` and `threadFor` return the entire conversation rather than the new

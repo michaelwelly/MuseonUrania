@@ -2,10 +2,7 @@ package ru.vedal.portal.chat;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import ru.vedal.portal.PostgresTestBase;
 import ru.vedal.portal.audit.AuditEntryRepository;
-
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -19,20 +16,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 //
 // Ни тесты, ни сборка этого не видели: кнопка нажималась, запрос уходил,
 // ответ приходил. Неправильным был смысл, а не механика.
-class ChatHandoffTest extends PostgresTestBase {
-
-    @Autowired
-    ChatDesk desk;
+class ChatHandoffTest extends ChatTestBase {
 
     @Autowired
     AuditEntryRepository audit;
-
-    private static final ChatDesk.Context FROM_SITE =
-            new ChatDesk.Context("ru", null, "/products/");
-
-    private static String visitor() {
-        return UUID.randomUUID().toString();
-    }
 
     @Test
     void askingForAHumanPutsTheConversationInTheQueue() {
@@ -124,9 +111,10 @@ class ChatHandoffTest extends PostgresTestBase {
     void anUnknownIntentIsJustAQuestion() {
         // Виджет мог остаться от прошлой версии в открытой вкладке. Незнакомое
         // намерение — не повод отказать: вопрос идёт обычным путём.
-        var thread = desk.say(visitor(), "Что такое VEDAL A-2000?", "чего-такого-нет", FROM_SITE);
+        var key = visitor();
+        sayAndAnswer(key, "Что такое VEDAL A-2000?", "чего-такого-нет");
 
-        var answer = thread.messages().getLast();
+        var answer = desk.threadFor(key).messages().getLast();
         assertThat(answer.author()).isEqualTo(ChatMessage.ASSISTANT);
         assertThat(answer.sources()).isNotEmpty();
     }
@@ -137,8 +125,9 @@ class ChatHandoffTest extends PostgresTestBase {
         // в интерфейсе и меняется вместе с ним. Набранное руками «Запросить КП»
         // — обычный вопрос, и отвечает на него поиск (или передача человеку,
         // если ничего не нашлось). Заготовка сюда не подставляется.
-        var thread = desk.say(visitor(), "Запросить КП", FROM_SITE);
-        var answer = thread.messages().getLast();
+        var key = visitor();
+        sayAndAnswer(key, "Запросить КП");
+        var answer = desk.threadFor(key).messages().getLast();
 
         assertThat(answer.author()).isEqualTo(ChatMessage.ASSISTANT);
         assertThat(answer.body()).doesNotContain("Коммерческое предложение готовит специалист");

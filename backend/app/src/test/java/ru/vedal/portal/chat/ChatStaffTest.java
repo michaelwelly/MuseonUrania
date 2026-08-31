@@ -1,8 +1,6 @@
 package ru.vedal.portal.chat;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import ru.vedal.portal.PostgresTestBase;
 
 import java.util.UUID;
 
@@ -10,21 +8,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 // Сторона сотрудника: очередь, ответ, закрытие.
-class ChatStaffTest extends PostgresTestBase {
-
-    @Autowired
-    ChatDesk desk;
-
-    private static final ChatDesk.Context FROM_SITE =
-            new ChatDesk.Context("ru", null, "/products/");
-
-    private static String visitor() {
-        return UUID.randomUUID().toString();
-    }
+class ChatStaffTest extends ChatTestBase {
 
     /** Вопрос про цену отклоняется ограничениями — разговор встаёт в очередь. */
     private UUID waitingConversation() {
-        return desk.say(visitor(), "Сколько стоит инкубатор?", FROM_SITE).id();
+        return sayAndAnswer(visitor(), "Сколько стоит инкубатор?").id();
     }
 
     @Test
@@ -32,7 +20,7 @@ class ChatStaffTest extends PostgresTestBase {
         var waiting = waitingConversation();
         // Разговор, на который ассистент ответил сам, работы человеку не создаёт
         // и в очереди ему не место.
-        desk.say(visitor(), "Что такое VEDAL A-2000?", FROM_SITE);
+        sayAndAnswer(visitor(), "Что такое VEDAL A-2000?");
 
         var queue = desk.queue(0, 50);
 
@@ -65,12 +53,15 @@ class ChatStaffTest extends PostgresTestBase {
     @Test
     void assistantDoesNotAnswerOverAStaffMember() {
         var key = visitor();
-        var id = desk.say(key, "Сколько стоит инкубатор?", FROM_SITE).id();
+        var id = sayAndAnswer(key, "Сколько стоит инкубатор?").id();
         desk.reply(id, "anna", "Здравствуйте, уточняю у инженера.");
 
-        var thread = desk.say(key, "Хорошо, жду", FROM_SITE);
+        // Ответ считается и здесь — и отбрасывается: правило сильнее того,
+        // что текст уже готов.
+        sayAndAnswer(key, "Хорошо, жду");
 
-        assertThat(thread.messages().getLast().author()).isEqualTo(ChatMessage.VISITOR);
+        assertThat(desk.threadFor(key).messages().getLast().author())
+                .isEqualTo(ChatMessage.VISITOR);
     }
 
     @Test
