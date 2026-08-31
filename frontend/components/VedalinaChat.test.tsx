@@ -22,7 +22,9 @@ const mocks = vi.hoisted(() => ({
   chatThread: vi.fn(),
   pingTyping: vi.fn(),
   visitorKey: vi.fn(() => "ключ-вкладки"),
-  chatStreamUrl: vi.fn(() => null),
+  // Тип объявлен явно: без него подделка выводится как «всегда null»,
+  // и тесты потока не могут подставить адрес.
+  chatStreamUrl: vi.fn((): string | null => null),
 }));
 
 vi.mock("@/lib/submit", () => ({
@@ -44,8 +46,8 @@ const КНОПКИ = [
   { intent: "human", label: "Позвать специалиста", action: "handoff" },
 ];
 
-function лента(messages: unknown[], status = "open") {
-  return { id: "разговор-1", status, messages };
+function лента(messages: unknown[], status = "open", answering = false) {
+  return { id: "разговор-1", status, messages, answering };
 }
 
 function реплика(author: string, body: string, extra: Record<string, unknown> = {}) {
@@ -63,15 +65,54 @@ function реплика(author: string, body: string, extra: Record<string, unkn
 beforeEach(() => {
   mocks.chatPrompts.mockReset().mockResolvedValue(КНОПКИ);
   mocks.chatThread.mockReset().mockResolvedValue(null);
-  mocks.sayInChat.mockReset().mockResolvedValue(lentaПосле("Ответ Ведалины"));
+  // Дверь принимает вопрос и отвечает СРАЗУ, ещё без ответа Ведалины:
+  // ответ доезжает потоком. Подделка обязана вести себя так же, иначе тесты
+  // проверяют пайплайн, которого больше нет.
+  mocks.sayInChat.mockReset().mockResolvedValue(принято("вопрос"));
   mocks.callHuman.mockReset().mockResolvedValue(
     лента([реплика("assistant", "Зову специалиста VEDAL. Разговор встал в очередь.")], "waiting"),
   );
   mocks.pingTyping.mockReset();
 });
 
+/** Вопрос принят, Ведалина взялась считать — то, что возвращает дверь. */
+function принято(вопрос: string) {
+  return лента([реплика("visitor", вопрос)], "open", true);
+}
+
+/** Разговор с готовым ответом — то, что приходит лентой следом. */
 function lentaПосле(ответ: string) {
   return лента([реплика("visitor", "вопрос"), реплика("assistant", ответ)]);
+}
+
+/**
+ * Поддельный поток событий.
+ *
+ * На уровне файла, а не внутри одного describe: потоком приходит теперь
+ * не только «в разговоре новое», но и раздумье Ведалины с кусками ответа,
+ * и проверяют это разные блоки.
+ */
+class ПоддельныйПоток {
+  static последний: ПоддельныйПоток | null = null;
+  слушатели = new Map<string, ((e: MessageEvent) => void)[]>();
+  onmessage: ((e: MessageEvent) => void) | null = null;
+  constructor() {
+    ПоддельныйПоток.последний = this;
+  }
+  addEventListener(вид: string, fn: (e: MessageEvent) => void) {
+    this.слушатели.set(вид, [...(this.слушатели.get(вид) ?? []), fn]);
+  }
+  close() {}
+  послать(вид: string, data = '"c1"') {
+    const event = { data } as MessageEvent;
+    if (вид === "message") this.onmessage?.(event);
+    for (const fn of this.слушатели.get(вид) ?? []) fn(event);
+  }
+}
+
+function подключитьПоток() {
+  mocks.chatStreamUrl.mockReturnValue("http://portal/stream");
+  (globalThis as unknown as { EventSource: unknown }).EventSource = ПоддельныйПоток;
 }
 
 async function открыть() {
@@ -204,6 +245,92 @@ describe("лента", () => {
   });
 });
 
+describe("ожидание ответа", () => {
+  // Ответ приезжает потоком — без него проверять здесь нечего.
+  beforeEach(подключитьПоток);
+
+  // Главное в новом устройстве разговора. Дверь отвечает сразу и БЕЗ ответа
+  // Ведалины — он доезжает потоком, потому что модель считает секундами.
+  // Погасив точки по возврату запроса, виджет показал бы пустое окно ровно
+  // там, где ответ готовится: вопрос задан, ничего не происходит.
+  it("не гаснет оттого, что дверь ответила: ответа в её ответе больше нет", async () => {
+    const user = await открыть();
+    await screen.findByRole("button", { name: "Запросить КП" });
+
+    await user.click(screen.getByRole("button", { name: "Запросить КП" }));
+
+    await waitFor(() => expect(mocks.sayInChat).toHaveBeenCalled());
+    expect(screen.getByLabelText("Ведалина печатает")).toBeTruthy();
+  });
+
+  // Точки принадлежат порталу, а не окну. Виджет, открытый заново посреди
+  // ожидания, обязан снова их показать: своё состояние он потерял, а вопрос
+  // никуда не делся и ответ на него готовится.
+  it("восстанавливается из ленты после перезагрузки страницы", async () => {
+    mocks.chatThread.mockResolvedValue(принято("а что с доставкой?"));
+
+    await открыть();
+
+    expect(await screen.findByLabelText("Ведалина печатает")).toBeTruthy();
+  });
+
+  // Ответ пришёл — раздумье кончилось. Точки рядом с готовым ответом
+  // означали бы, что портал пишет что-то ещё.
+  it("гаснет, когда лента принесла ответ", async () => {
+    mocks.chatThread.mockResolvedValue(принято("вопрос"));
+    await открыть();
+    await screen.findByLabelText("Ведалина печатает");
+
+    mocks.chatThread.mockResolvedValue(lentaПосле("Ответ Ведалины"));
+    await act(async () => ПоддельныйПоток.последний!.послать("changed"));
+
+    expect(screen.queryByLabelText("Ведалина печатает")).toBeNull();
+    expect(screen.getByText("Ответ Ведалины")).toBeTruthy();
+  });
+
+  // Текст, появляющийся на глазах, отвечает на вопрос «работает ли вообще»,
+  // которого точки не дают.
+  it("показывает недописанный ответ по кускам и убирает его, когда придёт лента", async () => {
+    mocks.chatThread.mockResolvedValue(принято("вопрос"));
+    await открыть();
+
+    await act(async () =>
+      ПоддельныйПоток.последний!.послать("draft", '{"chunk":"Инкубатор "}'),
+    );
+    await act(async () =>
+      ПоддельныйПоток.последний!.послать("draft", '{"chunk":"VEDAL A-2000"}'),
+    );
+
+    // Куски склеиваются в порядке прихода: показанный черновик обязан
+    // совпасть с тем, что придёт лентой.
+    expect(screen.getByText("Инкубатор VEDAL A-2000")).toBeTruthy();
+    // И точек при этом нет: текст на экране говорит больше, чем они.
+    expect(screen.queryByLabelText("Ведалина печатает")).toBeNull();
+
+    mocks.chatThread.mockResolvedValue(lentaПосле("Инкубатор VEDAL A-2000 — трансформер"));
+    await act(async () => ПоддельныйПоток.последний!.послать("changed"));
+
+    // Черновик обязан уйти: рядом с записанным ответом он показал бы
+    // один и тот же текст дважды.
+    expect(screen.queryByText("Инкубатор VEDAL A-2000")).toBeNull();
+    expect(screen.getByText("Инкубатор VEDAL A-2000 — трансформер")).toBeTruthy();
+  });
+
+  // Портал сообщает о раздумье и событием — оно нужно тем окнам, где вопрос
+  // задавали не в этой вкладке.
+  it("зажигается по событию потока, а не только по своему нажатию", async () => {
+    mocks.chatThread.mockResolvedValue(лента([реплика("visitor", "вопрос")]));
+    await открыть();
+    expect(screen.queryByLabelText("Ведалина печатает")).toBeNull();
+
+    await act(async () =>
+      ПоддельныйПоток.последний!.послать("typing", '{"who":"assistant"}'),
+    );
+
+    expect(screen.getByLabelText("Ведалина печатает")).toBeTruthy();
+  });
+});
+
 // Перевод строки — правило CSS, и в jsdom стили модуля не подключаются:
 // вычисленное значение здесь всегда одно и то же независимо от файла.
 // Поэтому сторож читает сам файл, как это делают сторожа админки.
@@ -230,28 +357,7 @@ describe("живые обновления", () => {
   // — нет. Половина, требующая только первого, зеленела бы и на подписке
   // сразу на всё подряд, а это вернуло бы прежнюю путаницу другим боком.
 
-  class ПоддельныйПоток {
-    static последний: ПоддельныйПоток | null = null;
-    слушатели = new Map<string, ((e: MessageEvent) => void)[]>();
-    onmessage: ((e: MessageEvent) => void) | null = null;
-    constructor() {
-      ПоддельныйПоток.последний = this;
-    }
-    addEventListener(вид: string, fn: (e: MessageEvent) => void) {
-      this.слушатели.set(вид, [...(this.слушатели.get(вид) ?? []), fn]);
-    }
-    close() {}
-    послать(вид: string, data = '"c1"') {
-      const event = { data } as MessageEvent;
-      if (вид === "message") this.onmessage?.(event);
-      for (const fn of this.слушатели.get(вид) ?? []) fn(event);
-    }
-  }
-
-  beforeEach(() => {
-    mocks.chatStreamUrl.mockReturnValue("http://portal/stream");
-    (globalThis as unknown as { EventSource: unknown }).EventSource = ПоддельныйПоток;
-  });
+  beforeEach(подключитьПоток);
 
   it("именованное событие перечитывает ленту", async () => {
     await открыть();
