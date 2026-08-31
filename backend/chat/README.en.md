@@ -167,6 +167,34 @@ No "go to your request" link is shown to the visitor: they have no personal
 account, the link would have nowhere to lead, and inventing one would mean
 promising a page that does not exist.
 
+## Did the answer help
+
+Vedalina's answers carry "helped" and "did not help" buttons. They exist not
+for politeness: the audit log shows when the assistant stayed silent and hides
+the worse case — it answered confidently and beside the point. In the log such
+an answer is indistinguishable from a good one: sources were found, no handoff
+happened. Only the person who asked can tell them apart.
+
+The rating sits on the message, not on the conversation: a six-turn conversation
+rated by a single button answers "did you like it", while the question that
+matters is "which answer was bad".
+
+Only Vedalina's answers can be rated, and only inside your own conversation.
+Someone else's message returns the same "not found" as a non-existent one:
+otherwise the difference in responses would itself reveal, by brute force, which
+identifiers exist. "The specialist did not help" is not collected by a button —
+that is a complaint about a person, and it cannot be handled this way.
+
+`NULL` means not rated, and that is the majority: the button is pressed by a
+few. Telling that apart from "did not help" is mandatory, otherwise the share of
+bad answers is computed over those who stayed silent. Every press reaches the
+audit log — what matters is not the final opinion but that the answer raised
+doubt; the question and answer texts never go there.
+
+Whoever presses "did not help" is offered a human: they are still without an
+answer, and that is the only thing on their mind. Thanking them for feedback at
+that moment is mockery.
+
 ## The whole thread, not an increment
 
 `say` and `threadFor` return the entire conversation rather than the new

@@ -294,6 +294,52 @@ public class ChatDesk {
                 .ifPresent(c -> stream.typing(c.getId(), visitorKey, ChatMessage.VISITOR));
     }
 
+    /**
+     * Посетитель оценил ответ Ведалины.
+     *
+     * <p><b>Зачем это порталу.</b> Журнал показывает, когда ассистент молчит,
+     * и не показывает худшего: он ответил уверенно и не по делу. Такой ответ
+     * в журнале неотличим от хорошего — источники нашлись, передачи не было.
+     * Отличает его только человек, который спрашивал.
+     *
+     * <p><b>Почему оценивать можно лишь свой разговор.</b> Ключ вкладки —
+     * единственное, что закрывает переписку; без проверки принадлежности
+     * оценка стала бы дверью, через которую по перебору идентификаторов
+     * можно узнать, существует ли чужое сообщение. Отсюда и отказ «не найдено»
+     * на чужое: он не сообщает, есть ли оно вообще.
+     *
+     * <p>Оценку можно поменять: человек передумал — это его право, а первая
+     * реакция не ценнее второй. В журнал уходит каждое изменение: важно
+     * не последнее нажатие, а то, что ответ вызвал сомнение.
+     */
+    @Transactional
+    public Thread rate(String visitorKey, UUID messageId, boolean helpful) {
+        var conversation = conversations
+                .findByVisitorKeyAndStatusNot(visitorKey, Conversation.CLOSED)
+                .orElseThrow(() -> new NotFoundException("Разговор не найден"));
+
+        var message = messages.findById(messageId)
+                .filter(m -> conversation.getId().equals(m.getConversationId()))
+                .orElseThrow(() -> new NotFoundException("Сообщение не найдено"));
+
+        // Оценивают ответ машины. Реплику сотрудника — нет: «специалист
+        // не помог» это не оценка ответа, а жалоба на человека, и разбирать
+        // её кнопкой в чате нельзя. Своё сообщение оценивать тем более незачем.
+        if (!ChatMessage.ASSISTANT.equals(message.getAuthor())) {
+            throw new NotFoundException("Оценивать можно только ответы Ведалины");
+        }
+
+        message.setHelpful(helpful);
+
+        // Текста ни вопроса, ни ответа в журнале нет — только факт и то,
+        // какое сообщение. Сам ответ лежит в разговоре и читается оттуда;
+        // журнал же неизменяем, и персональным данным в нём не место.
+        audit.record("public", "chat.rated", "chat_message", messageId.toString(),
+                Map.of("helpful", String.valueOf(helpful)));
+
+        return thread(conversation);
+    }
+
     // ————— разговор, доросший до заявки —————
 
     /**
@@ -563,7 +609,8 @@ public class ChatDesk {
     private Thread thread(Conversation conversation) {
         var list = messages.findByConversationIdOrderByAtAsc(conversation.getId()).stream()
                 .map(m -> new Line(m.getAuthor(), m.getActor(), m.getBody(),
-                        deserialize(m.getSources()), m.getAt(), m.getReadAt()))
+                        deserialize(m.getSources()), m.getAt(), m.getReadAt(),
+                        m.getId(), m.getHelpful()))
                 .toList();
         return new Thread(conversation.getId(), conversation.getStatus(), list,
                 stream.answering(conversation.getId()), conversation.getLeadNumber(), support());
@@ -685,5 +732,20 @@ public class ChatDesk {
                        List<LlmEngine.Source> sources, Instant at,
 
                        /** Когда прочитано противоположной стороной. null — ещё нет. */
-                       Instant readAt) {}
+                       Instant readAt,
+
+                       /**
+                        * Идентификатор сообщения. Понадобился ради оценки:
+                        * «этот ответ не помог» надо к чему-то отнести,
+                        * а порядковый номер в ленте съезжает от каждой
+                        * новой реплики.
+                        */
+                       UUID id,
+
+                       /**
+                        * Помог ли ответ, по мнению посетителя. null — не
+                        * оценивал; отличать это от «не помог» обязательно,
+                        * иначе доля плохих ответов считается по молчавшим.
+                        */
+                       Boolean helpful) {}
 }
