@@ -66,9 +66,9 @@ class SchemaTest extends PostgresTestBase {
 
         var lead = UUID.randomUUID();
         jdbc.sql("""
-                        insert into lead (id, form, name, phone, email, message,
+                        insert into lead (id, number, form, name, phone, email, message,
                                           consent_version, consent_at, source, status)
-                        values (?, 'quote', 'Проба', '+70000000000', 'p@example.ru', 'текст',
+                        values (?, 'З-схема-1', 'quote', 'Проба', '+70000000000', 'p@example.ru', 'текст',
                                 'v1', now(), 'site', 'new')
                         """)
                 .param(lead).update();

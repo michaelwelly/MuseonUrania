@@ -29,6 +29,28 @@ belong to the closed contour.
 Every step writes to [audit](../audit/README.en.md); every change to a deal or
 a quote emits an outbox event in the same `COMMIT`.
 
+## The lead number
+
+A lead carries a number meant for people — `З-2026-0042`. The `lead_number_seq`
+sequence issues it, `LeadService` composes the string, and it is stored ready:
+the number is what a person sees, and three screens composing it their own way
+would produce three versions of one number.
+
+It became necessary exactly where the identifier is useless. The lead
+confirmation email said "Номер обращения: 550e8400-e29b-41d4-a716-446655440000":
+whoever called with that email in hand could not read the number aloud, and the
+manager could not find the lead from what they heard. The second reason is the
+lead raised from a conversation with Vedalina: the number is the one thing the
+visitor takes away.
+
+The year in the prefix does not reset the numbering — the sequence runs through.
+A reset would mean numbers start repeating every January, and "З-2025-0007" and
+"З-2026-0007" sound identical in precisely the conversation where the number is
+spoken.
+
+Anonymisation leaves the number alone: it says which lead this is by count, not
+who filed it.
+
 ## Three pipelines
 
 From [functional_requirements](../../docs/strategy/functional_requirements.md).

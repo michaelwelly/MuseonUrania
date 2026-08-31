@@ -2688,6 +2688,12 @@ components:
           type: string
         name:
           type: string
+        number:
+          type: string
+          description: "Номер заявки для людей: его называют по телефону и пишут в\
+            \ письме. При обезличивании не стирается — он говорит, какая это заявк\
+            а по счёту, а не кто её подал."
+          example: З-2026-0042
         owner:
           type: string
         phone:
@@ -3738,6 +3744,8 @@ components:
         id:
           type: string
           format: uuid
+        leadNumber:
+          type: string
         messages:
           type: array
           items:

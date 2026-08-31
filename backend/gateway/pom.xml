@@ -20,5 +20,13 @@
 			<groupId>ru.vedal</groupId>
 			<artifactId>portal-crm</artifactId>
 		</dependency>
+		<!-- Заявка заводится и из разговора. Сшивает их эта дверь, а не сами
+		     модули: `chat` и `crm` друг о друге не знают намеренно — заявка
+		     приходит и без разговора (форма, письмо), а разговор не обязан
+		     дорасти до заявки. Тем же способом их сшивает админская дверь. -->
+		<dependency>
+			<groupId>ru.vedal</groupId>
+			<artifactId>portal-chat</artifactId>
+		</dependency>
 	</dependencies>
 </project>

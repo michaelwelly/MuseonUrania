@@ -51,6 +51,10 @@ class FormsApiTest extends PostgresTestBase {
                         .content(VALID))
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.id").exists())
+                // Номер — то, что человек назовёт по телефону и найдёт в письме.
+                // Идентификатор для этого не годится, и раньше в письме стоял
+                // именно он.
+                .andExpect(jsonPath("$.number").value(org.hamcrest.Matchers.startsWith("З-")))
                 .andExpect(jsonPath("$.message").value("Спасибо. Специалист VEDAL свяжется с вами."));
 
         assertThat(leads.findAll()).hasSize(1);

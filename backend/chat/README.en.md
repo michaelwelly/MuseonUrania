@@ -104,6 +104,37 @@ An answer that fails — engine unavailable, queue full — is not silence but a
 handoff to a human, recorded with reason `failed`. Silence here means a visitor
 waiting for an answer nobody is preparing.
 
+## A conversation that grew into a lead
+
+A visitor can raise a lead straight from the chat: the button opens a form with
+name, phone, email and consent; the portal records the lead and answers with a
+number — the same one the confirmation email carries.
+
+**Contacts are asked here, not before the first message.** Up to this point the
+visitor is anonymous and has nothing to consent to; an "introduce yourself" form
+in front of the first question would turn away most of the people who wanted to
+ask something quickly — and the person who asked is the future lead.
+
+**The text of the request is not asked for**: the conversation becomes it. Making
+someone retell in a form what they just wrote into the chat means asking twice.
+The transcript goes into the lead body as its last four thousand characters —
+the beginning is trimmed, not the tail: the manager does not need the greeting.
+
+**The door lives in `gateway`, not here.** A lead is a write from outside, and it
+is accepted where the perimeter stands: field validation, the bot trap, the rate
+limit. No fourth door is created. That is also where `chat` and `crm` are sewn
+together while knowing nothing about each other: transcript text leaves this
+module, and knowledge of the lead never enters it — the number is kept as a
+snapshot in `conversation.lead_number`.
+
+**A lead does not end the conversation.** The status does not change and the
+conversation does not join the queue: a lead is the result of a conversation,
+not its end, and the person is free to keep asking in the same window.
+
+No "go to your request" link is shown to the visitor: they have no personal
+account, the link would have nowhere to lead, and inventing one would mean
+promising a page that does not exist.
+
 ## The whole thread, not an increment
 
 `say` and `threadFor` return the entire conversation rather than the new

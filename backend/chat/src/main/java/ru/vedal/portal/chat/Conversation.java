@@ -49,6 +49,12 @@ public class Conversation {
     @Column(name = "lead_id")
     private UUID leadId;
 
+    // Номер заявки, заведённой из разговора. Снимок, а не связь: `chat` и `crm`
+    // друг о друге не знают, и достать номер по идентификатору отсюда нечем.
+    // Показывается посетителю в ленте — это единственное, что он унёс с собой.
+    @Column(name = "lead_number")
+    private String leadNumber;
+
     @Column(name = "erased_at")
     private Instant erasedAt;
 
@@ -83,6 +89,8 @@ public class Conversation {
     public void setOwner(String owner) { this.owner = owner; }
     public UUID getLeadId() { return leadId; }
     public void setLeadId(UUID leadId) { this.leadId = leadId; }
+    public String getLeadNumber() { return leadNumber; }
+    public void setLeadNumber(String leadNumber) { this.leadNumber = leadNumber; }
     public Instant getErasedAt() { return erasedAt; }
     public void setErasedAt(Instant erasedAt) { this.erasedAt = erasedAt; }
     public String getErasureBasis() { return erasureBasis; }

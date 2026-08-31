@@ -16,6 +16,7 @@ import tools.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 // Сторона посетителя: он пишет, ему отвечают.
@@ -40,6 +41,11 @@ import java.util.UUID;
 public class ChatDesk {
 
     private static final int MAX_PAGE_SIZE = 200;
+
+    // Сколько переписки уходит в тело заявки. Четыре тысячи знаков — это
+    // примерно тридцать реплик: разговор длиннее в заявке всё равно не читают,
+    // а полная переписка остаётся в разговоре, на который заявка ссылается.
+    private static final int MAX_TRANSCRIPT = 4000;
 
     private final ConversationRepository conversations;
     private final ChatMessageRepository messages;
@@ -283,6 +289,84 @@ public class ChatDesk {
                 .ifPresent(c -> stream.typing(c.getId(), visitorKey, ChatMessage.VISITOR));
     }
 
+    // ————— разговор, доросший до заявки —————
+
+    /**
+     * Разговор и его переписка одним куском — для заявки, которую из него заводят.
+     *
+     * <p><b>Почему здесь, а не в приёме заявок.</b> `chat` и `crm` друг о друге
+     * не знают намеренно: заявка приходит и без разговора (форма, письмо),
+     * а разговор не обязан дорасти до заявки. Сшивает их тот, кто зависит
+     * от обоих, — админская дверь и дверь приёма. Отсюда наружу уходит текст,
+     * а не знание о заявке.
+     *
+     * <p>Переписка нужна в теле заявки целиком. Менеджер, открывший заявку
+     * «перезвоните», без неё видит одну эту строку — а вопрос, ради которого
+     * человек пришёл, остался в разговоре, до которого ещё надо догадаться
+     * дойти.
+     */
+    @Transactional(readOnly = true)
+    public Optional<Transcript> transcriptFor(String visitorKey) {
+        return conversations.findByVisitorKeyAndStatusNot(visitorKey, Conversation.CLOSED)
+                .map(c -> new Transcript(c.getId(), transcript(c.getId())));
+    }
+
+    /**
+     * Переписка разговора текстом.
+     *
+     * <p>С конца, а не с начала: обрезанный хвост — это последние сообщения,
+     * ради которых заявку и завели, а обрезанное начало — приветствие.
+     */
+    private String transcript(UUID conversationId) {
+        var lines = messages.findByConversationIdOrderByAtAsc(conversationId).stream()
+                .map(m -> switch (m.getAuthor()) {
+                    case ChatMessage.VISITOR -> "Посетитель: " + m.getBody();
+                    case ChatMessage.STAFF -> (m.getActor() == null ? "Сотрудник" : m.getActor())
+                            + ": " + m.getBody();
+                    default -> "Ведалина: " + m.getBody();
+                })
+                .toList();
+
+        var text = String.join("\n\n", lines);
+        return text.length() <= MAX_TRANSCRIPT
+                ? text
+                : "…\n\n" + text.substring(text.length() - MAX_TRANSCRIPT);
+    }
+
+    /** Разговор вместе с его перепиской. */
+    public record Transcript(UUID conversationId, String text) {}
+
+    /**
+     * Разговор стал заявкой.
+     *
+     * <p>Номер говорится вслух и пишется в ленту: это единственное, что
+     * посетитель унесёт с собой. Личного кабинета у него нет, ссылке
+     * «перейти к обращению» вести некуда — и придумывать её нельзя.
+     *
+     * <p>Разговор при этом не закрывается и не уходит в очередь: заявка —
+     * не конец разговора, а его результат. Человек, оставивший контакты,
+     * волен спросить дальше, и отвечать ему будут здесь же.
+     */
+    @Transactional
+    public Thread leadRaised(UUID conversationId, UUID leadId, String number) {
+        var conversation = find(conversationId);
+
+        // Повторное нажатие: заявка та же (ключ повтора — разговор), и второе
+        // сообщение о ней в ленте выглядело бы как второе обращение.
+        if (conversation.getLeadId() != null) return thread(conversation);
+
+        conversation.setLeadId(leadId);
+        conversation.setLeadNumber(number);
+        append(conversation, ChatMessage.ASSISTANT, null,
+                "Обращение принято, номер " + number + ". Подтверждение отправлено на почту. "
+                        + "Специалист ответит здесь же, в этом окне.", null);
+
+        audit.record("public", "chat.lead", "conversation", conversationId.toString(),
+                Map.of("lead", leadId.toString()));
+
+        return thread(conversation);
+    }
+
     // ————— сторона сотрудника —————
 
     /**
@@ -477,7 +561,7 @@ public class ChatDesk {
                         deserialize(m.getSources()), m.getAt(), m.getReadAt()))
                 .toList();
         return new Thread(conversation.getId(), conversation.getStatus(), list,
-                stream.answering(conversation.getId()));
+                stream.answering(conversation.getId()), conversation.getLeadNumber());
     }
 
     private String serialize(Object sources) {
@@ -519,10 +603,20 @@ public class ChatDesk {
                          * так, будто вопрос не дошёл, а он дошёл и на него
                          * отвечают.
                          */
-                        boolean answering) {
+                        boolean answering,
+
+                        /**
+                         * Номер заявки, заведённой из этого разговора. Пусто —
+                         * разговор до заявки не дорос.
+                         *
+                         * <p>Номер, а не признак «заявка есть»: посетителю нужен
+                         * именно он — по нему он позвонит, найдёт письмо
+                         * и вернётся к разговору через неделю.
+                         */
+                        String leadNumber) {
 
         static Thread empty() {
-            return new Thread(null, Conversation.OPEN, List.of(), false);
+            return new Thread(null, Conversation.OPEN, List.of(), false, null);
         }
     }
 

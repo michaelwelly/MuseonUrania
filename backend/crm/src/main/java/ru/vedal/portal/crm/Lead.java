@@ -15,6 +15,11 @@ public class Lead {
     @Id
     private UUID id;
 
+    // Номер, который называют вслух: «З-2026-0042». Внутри системы хватает
+    // идентификатора, снаружи — нет: по телефону UUID не продиктуешь,
+    // а обращение, заведённое из чата, посетитель запоминает именно номером.
+    private String number;
+
     private String form;
     private String name;
     private String company;
@@ -73,6 +78,8 @@ public class Lead {
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
+    public String getNumber() { return number; }
+    public void setNumber(String number) { this.number = number; }
     public String getForm() { return form; }
     public void setForm(String form) { this.form = form; }
     public String getName() { return name; }
