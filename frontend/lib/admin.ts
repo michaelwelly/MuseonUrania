@@ -252,6 +252,11 @@ export type Page<T> = { items: T[]; page: number; size: number; total: number; p
 
 export type LeadRow = {
   id: string;
+  /**
+   * Номер заявки для людей: «З-2026-0042». Его называет клиент по телефону
+   * и по нему же ищет менеджер — идентификатор для этого не годится.
+   */
+  number: string;
   form: string;
   name: string;
   company: string | null;

@@ -5,6 +5,7 @@ import Image from "next/image";
 import LivePattern from "./LivePattern";
 import { vedalina, quickReplies, answerFor } from "@/content/vedalina";
 import { site } from "@/content/site";
+import { consent as consentCopy } from "@/content/legal";
 import {
   apiConfigured,
   callHuman,
@@ -12,6 +13,7 @@ import {
   chatStreamUrl,
   chatThread,
   pingTyping,
+  raiseChatLead,
   sayInChat,
   visitorKey,
   type ChatLine,
@@ -98,6 +100,104 @@ function toMessage(line: ChatLine): Message {
  */
 const THINKING_LIMIT = 60_000;
 
+/**
+ * Обращение из разговора: контакты и согласие.
+ *
+ * <p>Спрашивается здесь, а не перед первым сообщением, и это разница между
+ * «спросил и ушёл» и «спросил, не дождался, оставил контакты». Посетитель
+ * анонимен ровно до этого места: ключ вкладки о человеке не сообщает ничего,
+ * и согласие ему давать не на что.
+ *
+ * <p>Текст обращения не спрашивается: им становится переписка, которая уже
+ * состоялась. Просить пересказать в форме то, что человек только что написал
+ * в чат, — значит спросить дважды.
+ */
+function TicketForm({
+  onSend,
+  onCancel,
+}: {
+  onSend: (lead: {
+    name: string;
+    company: string;
+    phone: string;
+    email: string;
+    consent: boolean;
+  }) => Promise<string | null>;
+  onCancel: () => void;
+}) {
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  return (
+    <form
+      className={styles.ticket}
+      onSubmit={async (e) => {
+        e.preventDefault();
+        const data = new FormData(e.currentTarget);
+        setSending(true);
+        setError(
+          await onSend({
+            name: String(data.get("name") ?? "").trim(),
+            company: String(data.get("company") ?? "").trim(),
+            phone: String(data.get("phone") ?? "").trim(),
+            email: String(data.get("email") ?? "").trim(),
+            consent: Boolean(data.get("consent")),
+          }),
+        );
+        setSending(false);
+      }}
+    >
+      <p className={styles.ticketTitle}>Обращение специалисту</p>
+      {/* Что произойдёт — сказано до того, как человек заполнит поля.
+          «Оставьте контакты» без объяснения выглядит как сбор базы. */}
+      <p className={styles.ticketNote}>
+        Переписка приложится к обращению — пересказывать вопрос не нужно.
+        Номер придёт на почту.
+      </p>
+
+      <input className={styles.ticketField} name="name" placeholder="Имя" required />
+      <input
+        className={styles.ticketField}
+        name="company"
+        placeholder="Организация (необязательно)"
+      />
+      <input
+        className={styles.ticketField}
+        name="phone"
+        type="tel"
+        placeholder="Телефон"
+        required
+      />
+      <input
+        className={styles.ticketField}
+        name="email"
+        type="email"
+        placeholder="Почта"
+        required
+      />
+
+      <label className={styles.ticketConsent}>
+        <input type="checkbox" name="consent" required />
+        <span>
+          {consentCopy.label} —{" "}
+          <a href={consentCopy.href}>{consentCopy.linkLabel}</a>
+        </span>
+      </label>
+
+      {error && <p className={styles.ticketError}>{error}</p>}
+
+      <div className={styles.ticketButtons}>
+        <button type="submit" className={styles.ticketSend} disabled={sending}>
+          {sending ? "Отправляем…" : "Отправить обращение"}
+        </button>
+        <button type="button" className={styles.ticketCancel} onClick={onCancel}>
+          Отмена
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
   const [list, setList] = useState<Message[]>([GREETING]);
   // Ведалина считает ответ.
@@ -120,6 +220,12 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
   // дописывалось после ответа и пропадало на первом же обновлении ленты
   // из потока — то есть исчезало ровно тогда, когда посетитель ждал.
   const [waiting, setWaiting] = useState(false);
+  // Номер обращения, заведённого из этого разговора. Приходит с лентой:
+  // человек, вернувшийся через неделю, обязан найти его там же, где оставил.
+  const [leadNumber, setLeadNumber] = useState<string | null>(null);
+  // Форма обращения раскрыта. Не отдельный экран: разговор остаётся на месте,
+  // и видно, из чего обращение заводится.
+  const [ticketForm, setTicketForm] = useState(false);
   const feed = useRef<HTMLDivElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const visitor = useRef<string>("");
@@ -168,6 +274,7 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
         setAnswerDraft("");
 
         setWaiting(thread.status === "waiting");
+        setLeadNumber(thread.leadNumber ?? null);
         setList([GREETING, ...thread.messages.map(toMessage)]);
       });
 
@@ -306,6 +413,41 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
       // Придумывать ответ запрещено правилами ассистента.
       setWaiting(thread.status === "waiting");
     });
+  }
+
+  /**
+   * Отправить обращение.
+   *
+   * @return текст ошибки для показа в форме или `null`, если приняли.
+   *         Ошибка возвращается, а не рисуется здесь: показать её обязана
+   *         форма, рядом с кнопкой, которую нажали.
+   */
+  async function sendTicket(lead: {
+    name: string;
+    company: string;
+    phone: string;
+    email: string;
+    consent: boolean;
+  }): Promise<string | null> {
+    if (!apiConfigured) return "Портал недоступен: обращение не отправлено.";
+
+    const result = await raiseChatLead(visitor.current, lead);
+    if ("error" in result) {
+      // Разбор по полям приходит от портала; в узком окне чата показываем
+      // первую ошибку, а не список: список из пяти строк вытеснит переписку.
+      const first = result.fields ? Object.values(result.fields)[0] : null;
+      return first ?? result.error;
+    }
+
+    setLeadNumber(result.number);
+    setTicketForm(false);
+    // Сообщение о номере портал уже дописал в ленту — она приедет событием.
+    // Перечитываем сами на случай, если поток оборвался: номер обязан
+    // оказаться на экране, он единственное, что человек унесёт с собой.
+    void chatThread(visitor.current).then((thread) => {
+      if (thread?.messages.length) setList([GREETING, ...thread.messages.map(toMessage)]);
+    });
+    return null;
   }
 
   /**
@@ -527,6 +669,40 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
             {" · "}
             <a href={`mailto:${site.email}`}>{site.email}</a>
           </p>
+        )}
+
+        {/* Обращение заведено. Плашка держится в ленте, а не проговаривается
+            один раз сообщением: номер — единственное, что человек унесёт
+            с собой, и искать его прокруткой через неделю он не станет.
+
+            Ссылки «перейти к обращению» здесь нет намеренно: личного кабинета
+            у посетителя нет, вести ей некуда, а придумать её значит обещать
+            страницу, которой не существует. */}
+        {leadNumber && (
+          <p className={styles.ticketBadge} aria-live="polite">
+            Обращение <b>{leadNumber}</b> · подтверждение отправлено на почту
+          </p>
+        )}
+
+        {/* Форма обращения раскрывается прямо в ленте: разговор остаётся
+            на месте, и видно, из чего обращение заводится. */}
+        {ticketForm && !leadNumber && (
+          <TicketForm onSend={sendTicket} onCancel={() => setTicketForm(false)} />
+        )}
+
+        {/* Позвать человека можно и не дожидаясь, пока Ведалина не найдёт
+            ответа. Кнопка стоит и в ожидании: ждущий специалиста — первый,
+            кому обращение и нужно, а разговор он мог начать в нерабочее
+            время. */}
+        {!ticketForm && !leadNumber && apiConfigured && (
+          <button
+            type="button"
+            className={styles.ticketOpen}
+            onClick={() => setTicketForm(true)}
+            data-analytics="vedalina_ticket_open"
+          >
+            Создать обращение
+          </button>
         )}
 
         {/* Кнопки молчат, когда в разговоре человек: заготовка поверх

@@ -192,6 +192,13 @@ export type ChatThread = {
    * выглядит так, будто вопрос не дошёл, а он дошёл и на него отвечают.
    */
   answering: boolean;
+  /**
+   * Номер заявки, заведённой из этого разговора. `null` — не дорос.
+   *
+   * Номер, а не признак «заявка есть»: посетителю нужен именно он — по нему
+   * он позвонит, найдёт письмо и вернётся к разговору через неделю.
+   */
+  leadNumber: string | null;
 };
 
 const VISITOR_KEY = "vedal.chat.visitor";
@@ -332,6 +339,69 @@ export async function callHuman(visitor: string): Promise<ChatThread | { error: 
 
   const problem = await readProblem(response);
   return { error: problem.title ?? problem.detail ?? `Чат недоступен (${response.status}).` };
+}
+
+/** Контакты для обращения, заводимого из разговора. */
+export type ChatLead = {
+  name: string;
+  company?: string;
+  phone: string;
+  email: string;
+  consent: boolean;
+};
+
+/** Что портал ответил на обращение: номер или разбор по полям. */
+export type ChatLeadResult =
+  | { number: string }
+  | { error: string; fields?: Record<string, string> };
+
+/**
+ * Завести обращение из разговора.
+ *
+ * Дверь стоит в формах, а не в чате, и это не случайность: заявка — запись
+ * снаружи, и принимает её то место, где стоит периметр — проверка полей,
+ * ловушка для ботов, лимит частоты. Четвёртой двери у портала не заводится.
+ *
+ * Повторное нажатие ничего не задваивает: ключом повтора служит сам разговор,
+ * и вторая отправка вернёт тот же номер.
+ */
+export async function raiseChatLead(
+  visitor: string,
+  lead: ChatLead,
+): Promise<ChatLeadResult> {
+  if (!apiConfigured) return { error: NOT_CONFIGURED };
+
+  let response: Response;
+  try {
+    response = await fetch(`${apiUrl}/api/forms/v1/leads/from-chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        visitorKey: visitor,
+        name: lead.name,
+        company: lead.company || null,
+        phone: lead.phone,
+        email: lead.email,
+        consent: lead.consent,
+        language: document.documentElement.lang || null,
+        campaign: new URLSearchParams(location.search).get("utm_campaign"),
+        // Ловушка для ботов: поле обязано уходить пустым.
+        trap: "",
+      }),
+    });
+  } catch {
+    return { error: UNREACHABLE };
+  }
+
+  if (response.ok) return (await response.json()) as { number: string };
+
+  // Разбор по полям приходит в расширении `fields` — форма показывает ошибку
+  // рядом с полем, а не одной строкой сверху.
+  const problem = await readProblem(response);
+  return {
+    error: problem.title ?? problem.detail ?? `Обращение не отправлено (${response.status}).`,
+    fields: problem.fields,
+  };
 }
 
 export async function chatThread(visitor: string): Promise<ChatThread | null> {

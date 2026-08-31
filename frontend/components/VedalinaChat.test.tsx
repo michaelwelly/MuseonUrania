@@ -16,6 +16,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // Поэтому проверяется не то, что нарисовано, а КУДА уходит нажатие.
 
 const mocks = vi.hoisted(() => ({
+  raiseChatLead: vi.fn(),
   sayInChat: vi.fn(),
   callHuman: vi.fn(),
   chatPrompts: vi.fn(),
@@ -30,6 +31,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/lib/submit", () => ({
   apiConfigured: true,
   sayInChat: mocks.sayInChat,
+  raiseChatLead: mocks.raiseChatLead,
   callHuman: mocks.callHuman,
   chatPrompts: mocks.chatPrompts,
   chatThread: mocks.chatThread,
@@ -46,8 +48,13 @@ const КНОПКИ = [
   { intent: "human", label: "Позвать специалиста", action: "handoff" },
 ];
 
-function лента(messages: unknown[], status = "open", answering = false) {
-  return { id: "разговор-1", status, messages, answering };
+function лента(
+  messages: unknown[],
+  status = "open",
+  answering = false,
+  leadNumber: string | null = null,
+) {
+  return { id: "разговор-1", status, messages, answering, leadNumber };
 }
 
 function реплика(author: string, body: string, extra: Record<string, unknown> = {}) {
@@ -73,6 +80,7 @@ beforeEach(() => {
     лента([реплика("assistant", "Зову специалиста VEDAL. Разговор встал в очередь.")], "waiting"),
   );
   mocks.pingTyping.mockReset();
+  mocks.raiseChatLead.mockReset().mockResolvedValue({ number: "З-2026-0042" });
 });
 
 /** Вопрос принят, Ведалина взялась считать — то, что возвращает дверь. */
@@ -328,6 +336,86 @@ describe("ожидание ответа", () => {
     );
 
     expect(screen.getByLabelText("Ведалина печатает")).toBeTruthy();
+  });
+});
+
+describe("обращение из разговора", () => {
+  async function заполнить(user: ReturnType<typeof userEvent.setup>) {
+    await user.type(screen.getByPlaceholderText("Имя"), "Ирина Петрова");
+    await user.type(screen.getByPlaceholderText("Телефон"), "+7 343 300-00-00");
+    await user.type(screen.getByPlaceholderText("Почта"), "i.petrova@example.ru");
+    await user.click(screen.getByRole("checkbox"));
+  }
+
+  it("контакты и согласие спрашиваются здесь, а не перед первым вопросом", async () => {
+    const user = await открыть();
+
+    // До нажатия посетитель анонимен, и это намеренно: форма «представьтесь»
+    // перед первым вопросом отсекает большую часть тех, кто хотел спросить
+    // быстро.
+    expect(screen.queryByPlaceholderText("Имя")).toBeNull();
+
+    await user.click(await screen.findByRole("button", { name: "Создать обращение" }));
+
+    expect(screen.getByPlaceholderText("Имя")).toBeTruthy();
+    expect(screen.getByPlaceholderText("Телефон")).toBeTruthy();
+    expect(screen.getByPlaceholderText("Почта")).toBeTruthy();
+    // Согласие — галочка со ссылкой на политику, тот же текст, что в формах
+    // сайта: бэкенд хранит версию текста, под которым человек подписался,
+    // и две редакции превратили бы это в загадку.
+    expect(screen.getByRole("checkbox")).toBeTruthy();
+  });
+
+  it("отправляет контакты и показывает номер обращения", async () => {
+    const user = await открыть();
+    await user.click(await screen.findByRole("button", { name: "Создать обращение" }));
+
+    await заполнить(user);
+    await user.click(screen.getByRole("button", { name: "Отправить обращение" }));
+
+    await waitFor(() =>
+      expect(mocks.raiseChatLead).toHaveBeenCalledWith("ключ-вкладки", {
+        name: "Ирина Петрова",
+        company: "",
+        phone: "+7 343 300-00-00",
+        email: "i.petrova@example.ru",
+        consent: true,
+      }),
+    );
+
+    // Номер — единственное, что человек унесёт с собой.
+    expect(await screen.findByText(/З-2026-0042/)).toBeTruthy();
+  });
+
+  it("номер восстанавливается из ленты, а не живёт одним экраном", async () => {
+    // Человек, вернувшийся через неделю, обязан найти номер там же, где
+    // оставил: искать его прокруткой по переписке он не станет.
+    mocks.chatThread.mockResolvedValue(
+      лента([реплика("visitor", "вопрос")], "open", false, "З-2026-0007"),
+    );
+
+    await открыть();
+
+    expect(await screen.findByText(/З-2026-0007/)).toBeTruthy();
+    // И второй раз заводить обращение уже не предлагается.
+    expect(screen.queryByRole("button", { name: "Создать обращение" })).toBeNull();
+  });
+
+  it("ошибку портала показывает в форме, а не молчит", async () => {
+    mocks.raiseChatLead.mockResolvedValue({
+      error: "Обращение не отправлено",
+      fields: { phone: "Укажите телефон с кодом" },
+    });
+
+    const user = await открыть();
+    await user.click(await screen.findByRole("button", { name: "Создать обращение" }));
+    await заполнить(user);
+    await user.click(screen.getByRole("button", { name: "Отправить обращение" }));
+
+    // Разбор по полям приходит от портала — в узком окне показываем первую
+    // ошибку, а не список: список из пяти строк вытеснит переписку.
+    expect(await screen.findByText("Укажите телефон с кодом")).toBeTruthy();
+    expect(screen.queryByText(/З-2026-0042/)).toBeNull();
   });
 });
 
