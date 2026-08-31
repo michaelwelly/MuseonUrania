@@ -32,6 +32,9 @@ class AdminChatApiTest extends PostgresTestBase {
     @Autowired
     ChatDesk desk;
 
+    @Autowired
+    ru.vedal.portal.chat.Answering answering;
+
     @Test
     @WithMockUser(username = "manager", roles = "PORTAL_ADMIN")
     void listsAnswerInTheShapeTheAdminExpects() throws Exception {
@@ -57,8 +60,15 @@ class AdminChatApiTest extends PostgresTestBase {
     @Test
     @WithMockUser(username = "manager", roles = "PORTAL_ADMIN")
     void queueHoldsOnlyThoseWaitingForAHuman() throws Exception {
-        desk.say(UUID.randomUUID().toString(), "Сколько стоит инкубатор?",
-                new ChatDesk.Context("ru", null, "/products/"));
+        var key = UUID.randomUUID().toString();
+        var question = "Сколько стоит инкубатор?";
+        var accepted = desk.say(key, question, new ChatDesk.Context("ru", null, "/products/"));
+
+        // В очередь разговор ставит ответ, а не приём вопроса: пока Ведалина
+        // не досчитала, неизвестно, найдётся ли ответ. Второй шаг здесь руками
+        // потому, что тест идёт в транзакции, которая откатывается, — а запуск
+        // ответа ждёт COMMIT.
+        answering.answer(new ChatDesk.Asked(accepted.id(), key, question));
 
         mvc.perform(get("/api/admin/v1/chats/queue"))
                 .andExpect(status().isOk())

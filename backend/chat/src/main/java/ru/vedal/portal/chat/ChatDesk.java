@@ -4,6 +4,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.vedal.portal.assistant.AskReply;
 import ru.vedal.portal.assistant.AssistantService;
 import ru.vedal.portal.assistant.LlmEngine;
 import ru.vedal.portal.audit.AuditLog;
@@ -107,14 +108,73 @@ public class ChatDesk {
         // Кнопка — известный вопрос с известным ответом. В поиск он не идёт:
         // именно там «Запросить КП» превращалось в список изделий, у которых
         // в описании нашлось похожее слово.
+        //
+        // Отвечается сразу, а не отдельным шагом: текст известен заранее,
+        // и откладывать его значит показывать раздумье над решением, которое
+        // принято до нажатия кнопки.
         var canned = assistant.scripted(intent, "public");
         if (canned.isPresent()) {
             append(conversation, ChatMessage.ASSISTANT, null, canned.get().answer(), null);
             return thread(conversation);
         }
 
-        // Чат на сайте — открытый контур: посетитель, не сотрудник.
-        var reply = assistant.ask(text, LlmEngine.Scope.PUBLIC, "public");
+        // ————— свободный вопрос отвечается отдельно —————
+        //
+        // Раньше движок вызывался прямо здесь, и ответ уходил в теле того же
+        // запроса. С детерминированным поиском это незаметно: он считает за
+        // миллисекунды. С моделью тот же код означает запрос, висящий десять
+        // секунд, — и три беды разом.
+        //
+        // Первая: посетитель всё это время смотрит в неподвижное окно. Точки
+        // «печатает» рисовал сам виджет и гасил их на любой перезагрузке —
+        // то есть надпись пропадала ровно тогда, когда человек начинал
+        // сомневаться, дошёл ли вопрос.
+        //
+        // Вторая: между виджетом и порталом стоят Caddy и шлюз, и у них свои
+        // сроки ожидания. Ответ, не поспевший к сроку, теряется для посетителя
+        // и остаётся записанным в базе — то есть виджет показывает ошибку
+        // на вопрос, ответ на который есть.
+        //
+        // Третья: HTTP-запрос занимает поток обслуживания. Десять секунд
+        // на вопрос — и десяток посетителей занимает их все.
+        //
+        // Поэтому дверь возвращает ленту сразу, с одним лишь вопросом
+        // посетителя, а ответ доезжает рассылкой. Кто его считает —
+        // {@link Answering}.
+        bus.publishEvent(new Asked(conversation.getId(), visitorKey, text));
+        return thread(conversation);
+    }
+
+    /**
+     * Вопрос принят, ответа ещё нет.
+     *
+     * <p>Событие внутрипроцессное и уходит после COMMIT: считающий ответ
+     * работает в другом потоке и своей транзакцией, а разговора, записанного
+     * незакоммиченной транзакцией, он там не увидит.
+     *
+     * <p>Текст вопроса едет в событии, а не вычитывается из ленты по разговору.
+     * «Последнее сообщение посетителя» — не то же самое, что «вопрос, ради
+     * которого это событие»: посетитель волен написать второй раз, пока
+     * считается ответ на первый.
+     */
+    public record Asked(UUID conversationId, String visitorKey, String question) {}
+
+    /**
+     * Ведалина ответила.
+     *
+     * <p>Отдельная дверь, а не продолжение {@link #say}: вызывается из другого
+     * потока, когда транзакция приёма давно закрыта.
+     */
+    @Transactional
+    public void answered(UUID conversationId, AskReply reply) {
+        var conversation = find(conversationId);
+
+        // Пока считался ответ, разговор мог уйти к человеку: посетитель нажал
+        // «позвать специалиста», сотрудник взял разговор из очереди. Правило
+        // «человек в разговоре — Ведалина молчит» сильнее того, что ответ
+        // уже готов: готовый ответ здесь ничем не отличается от ответа,
+        // написанного поверх реплики сотрудника.
+        if (conversation.handedToHuman()) return;
 
         if (reply.handoff() != null) {
             // Ответа нет — это штатный исход, а не ошибка: правило «нет
@@ -129,8 +189,30 @@ public class ChatDesk {
             append(conversation, ChatMessage.ASSISTANT, null, reply.answer(),
                     serialize(reply.sources()));
         }
+    }
 
-        return thread(conversation);
+    /**
+     * Ответ не сложился: движок недоступен, очередь переполнена, что угодно.
+     *
+     * <p>Молчание здесь недопустимо. Посетитель задал вопрос и видит точки;
+     * не написав ничего, мы оставляем его ждать ответа, которого никто
+     * не готовит, — и он уйдёт, решив, что чат сломан. Разговор встаёт
+     * в очередь к человеку: это ровно тот случай, для которого очередь есть.
+     *
+     * <p>Причина в журнале отличается от «нет источников» и от «попросил сам».
+     * Свалив их в одно, разбор качества ответов посчитал бы отказ движка
+     * за вопрос не по теме.
+     */
+    @Transactional
+    public void answerFailed(UUID conversationId) {
+        var conversation = find(conversationId);
+        if (conversation.handedToHuman()) return;
+
+        append(conversation, ChatMessage.ASSISTANT, null,
+                assistant.callingHuman().answer(), null);
+        conversation.setStatus(Conversation.WAITING);
+        audit.record("public", "chat.handoff", "conversation",
+                conversationId.toString(), Map.of("reason", "failed"));
     }
 
     /**
@@ -394,7 +476,8 @@ public class ChatDesk {
                 .map(m -> new Line(m.getAuthor(), m.getActor(), m.getBody(),
                         deserialize(m.getSources()), m.getAt(), m.getReadAt()))
                 .toList();
-        return new Thread(conversation.getId(), conversation.getStatus(), list);
+        return new Thread(conversation.getId(), conversation.getStatus(), list,
+                stream.answering(conversation.getId()));
     }
 
     private String serialize(Object sources) {
@@ -424,9 +507,22 @@ public class ChatDesk {
         }
     }
 
-    public record Thread(UUID id, String status, List<Line> messages) {
+    public record Thread(UUID id, String status, List<Line> messages,
+
+                        /**
+                         * Ведалина думает над ответом прямо сейчас.
+                         *
+                         * <p>В ленте, а не только в событии рассылки, потому что
+                         * событие уходит один раз — и мимо того, кто подписался
+                         * позже. Виджет, открытый заново посреди ожидания,
+                         * обязан снова показать точки: без них окно выглядит
+                         * так, будто вопрос не дошёл, а он дошёл и на него
+                         * отвечают.
+                         */
+                        boolean answering) {
+
         static Thread empty() {
-            return new Thread(null, Conversation.OPEN, List.of());
+            return new Thread(null, Conversation.OPEN, List.of(), false);
         }
     }
 

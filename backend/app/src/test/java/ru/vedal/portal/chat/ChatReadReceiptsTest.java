@@ -1,10 +1,6 @@
 package ru.vedal.portal.chat;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import ru.vedal.portal.PostgresTestBase;
-
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -13,17 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 // Ставится чтением ленты, а не отдельной кнопкой: кнопки «прочитано» не бывает,
 // а отдельный запрос от клиента можно не отправить — на обрыве связи, на
 // закрытии вкладки, просто потому что его забыли позвать.
-class ChatReadReceiptsTest extends PostgresTestBase {
-
-    @Autowired
-    ChatDesk desk;
-
-    private static final ChatDesk.Context FROM_SITE =
-            new ChatDesk.Context("ru", null, "/products/");
-
-    private static String visitor() {
-        return UUID.randomUUID().toString();
-    }
+class ChatReadReceiptsTest extends ChatTestBase {
 
     private static ChatDesk.Line lastOf(ChatDesk.Thread thread, String author) {
         return thread.messages().reversed().stream()
@@ -35,7 +21,7 @@ class ChatReadReceiptsTest extends PostgresTestBase {
     @Test
     void visitorMessageStaysUnreadUntilStaffOpensTheThread() {
         var key = visitor();
-        var id = desk.say(key, "Сколько стоит инкубатор?", FROM_SITE).id();
+        var id = sayAndAnswer(key, "Сколько стоит инкубатор?").id();
 
         assertThat(lastOf(desk.threadFor(key), ChatMessage.VISITOR).readAt())
                 .as("Никто ещё не открывал разговор — отметки быть не должно")
@@ -49,7 +35,7 @@ class ChatReadReceiptsTest extends PostgresTestBase {
     @Test
     void staffReplyStaysUnreadUntilTheVisitorLooks() {
         var key = visitor();
-        var id = desk.say(key, "Сколько стоит инкубатор?", FROM_SITE).id();
+        var id = sayAndAnswer(key, "Сколько стоит инкубатор?").id();
         desk.reply(id, "anna", "Здравствуйте, уточняю у инженера.");
 
         assertThat(lastOf(desk.threadOf(id), ChatMessage.STAFF).readAt())
@@ -66,7 +52,7 @@ class ChatReadReceiptsTest extends PostgresTestBase {
     @Test
     void staffOpeningTheThreadDoesNotMarkTheAssistantsOwnAnswer() {
         var key = visitor();
-        var id = desk.say(key, "Что такое VEDAL A-2000?", FROM_SITE).id();
+        var id = sayAndAnswer(key, "Что такое VEDAL A-2000?").id();
 
         desk.threadOf(id);
 
@@ -77,7 +63,7 @@ class ChatReadReceiptsTest extends PostgresTestBase {
     @Test
     void visitorReadingMarksTheAssistantsAnswer() {
         var key = visitor();
-        desk.say(key, "Что такое VEDAL A-2000?", FROM_SITE);
+        sayAndAnswer(key, "Что такое VEDAL A-2000?");
 
         desk.threadFor(key);
 
@@ -90,7 +76,7 @@ class ChatReadReceiptsTest extends PostgresTestBase {
     @Test
     void readTimeIsRecordedOnceAndDoesNotDrift() {
         var key = visitor();
-        var id = desk.say(key, "Сколько стоит инкубатор?", FROM_SITE).id();
+        var id = sayAndAnswer(key, "Сколько стоит инкубатор?").id();
 
         desk.threadOf(id);
         var first = lastOf(desk.threadOf(id), ChatMessage.VISITOR).readAt();
