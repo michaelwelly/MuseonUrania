@@ -172,10 +172,59 @@ public class ChatStream {
         }
 
         var emitter = new SseEmitter(TIMEOUT);
+        var first = desks.isEmpty();
         desks.add(emitter);
-        forget(emitter, () -> desks.remove(emitter));
+        forget(emitter, () -> {
+            desks.remove(emitter);
+            // Ушёл последний — на связи больше никого.
+            if (desks.isEmpty()) announcePresence(false);
+        });
+
+        // Пришёл первый — появился первый живой человек. Сообщается только
+        // на переходах: рассылать это на каждое открытие вкладки значит
+        // будить всех посетителей сайта каждый раз, когда сотрудник
+        // переходит между разделами админки.
+        if (first) announcePresence(true);
         return emitter;
     }
+
+    /**
+     * Есть ли сейчас на связи живой сотрудник.
+     *
+     * <p>Факт, а не расписание: открытое рабочее место означает, что кто-то
+     * смотрит в экран прямо сейчас. Надпись «мы онлайн», выставленная
+     * по часам работы, — обещание, и в обеденный перерыв или в отпуске
+     * она врёт ровно тому, кто на неё понадеялся.
+     *
+     * <p>Обратное неверно: закрытая вкладка не означает, что сотрудник ушёл
+     * домой. Поэтому «никого нет» показывается вместе с часами работы,
+     * а не вместо них.
+     */
+    public boolean staffOnline() {
+        return !desks.isEmpty();
+    }
+
+    /**
+     * Сообщить посетителям, что живой человек появился или пропал.
+     *
+     * <p>Всем сразу — событие редкое: на переходах, а не на каждой вкладке.
+     * Виджет по нему меняет надпись в шапке, ленту не перечитывает: о самом
+     * разговоре здесь не сказано ничего.
+     */
+    private void announcePresence(boolean online) {
+        for (var subscribers : byVisitor.values()) {
+            for (var emitter : subscribers) {
+                try {
+                    emitter.send(SseEmitter.event().name("presence").data(new Presence(online)));
+                } catch (IOException | IllegalStateException e) {
+                    emitter.completeWithError(e);
+                }
+            }
+        }
+    }
+
+    /** Есть ли на связи живой сотрудник. В базе не хранится: состояние минуты. */
+    public record Presence(boolean online) {}
 
     private void forget(SseEmitter emitter, Runnable remove) {
         emitter.onCompletion(remove);

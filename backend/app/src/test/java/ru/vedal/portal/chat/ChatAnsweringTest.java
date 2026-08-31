@@ -69,7 +69,7 @@ class ChatAnsweringTest extends ChatTestBase {
                 .as("Не сложившийся ответ — повод позвать человека, а не промолчать")
                 .isEqualTo(Conversation.WAITING);
         assertThat(thread.messages().getLast().author()).isEqualTo(ChatMessage.ASSISTANT);
-        assertThat(thread.messages().getLast().body()).contains("специалиста");
+        assertThat(thread.messages().getLast().body()).containsIgnoringCase("специалист");
     }
 
     // Разговора нет — раздумья тоже нет. Пустая лента не должна показывать

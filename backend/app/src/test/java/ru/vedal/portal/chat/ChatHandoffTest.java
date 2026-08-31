@@ -33,7 +33,10 @@ class ChatHandoffTest extends ChatTestBase {
         // выглядит как несработавшая кнопка.
         assertThat(thread.messages()).hasSize(1);
         assertThat(thread.messages().getFirst().author()).isEqualTo(ChatMessage.ASSISTANT);
-        assertThat(thread.messages().getFirst().body()).contains("специалиста");
+        // Слово, общее обоим ответам: на связи есть человек или нет — сказать
+        // о специалисте надо в любом случае. Что именно говорится в каждом
+        // из двух случаев, проверяет SupportPresenceTest.
+        assertThat(thread.messages().getFirst().body()).containsIgnoringCase("специалист");
     }
 
     @Test

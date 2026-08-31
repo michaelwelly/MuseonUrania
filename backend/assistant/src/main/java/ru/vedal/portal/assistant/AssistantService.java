@@ -105,6 +105,18 @@ public class AssistantService {
                 handoff(ScriptedReplies.CALLING_HUMAN));
     }
 
+    /**
+     * То же, но на связи сейчас никого нет.
+     *
+     * @param hours часы работы поддержки одной строкой. Приходят снаружи:
+     *              расписание — свойство разговора, а не ассистента, и второе
+     *              место с теми же цифрами разошлось бы с первым.
+     */
+    public AskReply callingHumanAfterHours(String hours) {
+        var text = ScriptedReplies.callingHumanAfterHours(hours);
+        return new AskReply(text, List.of(), handoff(text));
+    }
+
     private AskReply.Handoff handoff(String reason) {
         return new AskReply.Handoff(reason, phone, email, FORMS);
     }
