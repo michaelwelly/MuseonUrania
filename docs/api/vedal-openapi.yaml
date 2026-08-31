@@ -1300,6 +1300,15 @@ components:
         timeout:
           type: integer
           format: int64
+    Support:
+      type: object
+      properties:
+        hours:
+          type: string
+        online:
+          type: boolean
+        openNow:
+          type: boolean
     Thread:
       type: object
       properties:
@@ -1316,6 +1325,8 @@ components:
             $ref: "#/components/schemas/Line"
         status:
           type: string
+        support:
+          $ref: "#/components/schemas/Support"
   securitySchemes:
     keycloak:
       bearerFormat: JWT

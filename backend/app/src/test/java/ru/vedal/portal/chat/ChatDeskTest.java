@@ -114,7 +114,7 @@ class ChatDeskTest extends ChatTestBase {
                 .as("Ответ, поспевший после человека, в ленту не попадает")
                 .extracting(ChatDesk.Line::author)
                 .containsExactly(ChatMessage.VISITOR, ChatMessage.ASSISTANT);
-        assertThat(thread.messages().getLast().body()).contains("специалиста");
+        assertThat(thread.messages().getLast().body()).containsIgnoringCase("специалист");
     }
 
     // Один открытый разговор на ключ: второй означал бы, что посетитель пишет

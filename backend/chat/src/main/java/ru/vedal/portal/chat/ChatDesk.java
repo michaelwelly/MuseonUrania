@@ -54,10 +54,11 @@ public class ChatDesk {
     private final ObjectMapper json;
     private final ApplicationEventPublisher bus;
     private final ChatStream stream;
+    private final SupportHours hours;
 
     public ChatDesk(ConversationRepository conversations, ChatMessageRepository messages,
                     AssistantService assistant, AuditLog audit, ObjectMapper json,
-                    ApplicationEventPublisher bus, ChatStream stream) {
+                    ApplicationEventPublisher bus, ChatStream stream, SupportHours hours) {
         this.conversations = conversations;
         this.messages = messages;
         this.assistant = assistant;
@@ -65,6 +66,7 @@ public class ChatDesk {
         this.json = json;
         this.bus = bus;
         this.stream = stream;
+        this.hours = hours;
     }
 
     /**
@@ -215,7 +217,7 @@ public class ChatDesk {
         if (conversation.handedToHuman()) return;
 
         append(conversation, ChatMessage.ASSISTANT, null,
-                assistant.callingHuman().answer(), null);
+                callingHuman().answer(), null);
         conversation.setStatus(Conversation.WAITING);
         audit.record("public", "chat.handoff", "conversation",
                 conversationId.toString(), Map.of("reason", "failed"));
@@ -240,7 +242,7 @@ public class ChatDesk {
         if (conversation.handedToHuman()) return thread(conversation);
 
         append(conversation, ChatMessage.ASSISTANT, null,
-                assistant.callingHuman().answer(), null);
+                callingHuman().answer(), null);
         conversation.setStatus(Conversation.WAITING);
 
         // Причина отличается от той, что пишется при отсутствии источников:
@@ -269,7 +271,10 @@ public class ChatDesk {
                     markRead(conversation, ChatMessage.VISITOR);
                     return thread(conversation);
                 })
-                .orElseGet(Thread::empty);
+                // Разговора нет — лента пуста, но про людей сказать есть что:
+                // виджет открывают до первого сообщения, и надпись в шапке
+                // нужна ему уже тогда.
+                .orElseGet(() -> Thread.empty(support()));
     }
 
     /**
@@ -561,7 +566,31 @@ public class ChatDesk {
                         deserialize(m.getSources()), m.getAt(), m.getReadAt()))
                 .toList();
         return new Thread(conversation.getId(), conversation.getStatus(), list,
-                stream.answering(conversation.getId()), conversation.getLeadNumber());
+                stream.answering(conversation.getId()), conversation.getLeadNumber(), support());
+    }
+
+    /**
+     * Что Ведалина говорит, зовя человека.
+     *
+     * <p>Разное в зависимости от того, есть ли кто-то на связи. Разговор,
+     * поставленный в очередь в полночь, ждёт до утра, и «ответ придёт в это
+     * же окно» человек прочтёт как «сейчас ответят»: он закроет вкладку
+     * через десять минут и решит, что чат не работает.
+     *
+     * <p>Смотрим на факт присутствия, а не только на расписание: сотрудник
+     * бывает на связи и в неурочный час, а в рабочее время может отойти.
+     * Часы называются тогда, когда на связи никого, — чтобы «сейчас никого
+     * нет» не читалось как «здесь никого не бывает».
+     */
+    private AskReply callingHuman() {
+        return stream.staffOnline()
+                ? assistant.callingHuman()
+                : assistant.callingHumanAfterHours(hours.description());
+    }
+
+    /** Отвечают ли сейчас люди — факт присутствия плюс часы работы. */
+    private Support support() {
+        return new Support(stream.staffOnline(), hours.openNow(), hours.description());
     }
 
     private String serialize(Object sources) {
@@ -613,12 +642,37 @@ public class ChatDesk {
                          * именно он — по нему он позвонит, найдёт письмо
                          * и вернётся к разговору через неделю.
                          */
-                        String leadNumber) {
+                        String leadNumber,
 
-        static Thread empty() {
-            return new Thread(null, Conversation.OPEN, List.of(), false, null);
+                        /**
+                         * Отвечают ли сейчас люди — и когда отвечают вообще.
+                         *
+                         * <p>В ленте, а не отдельной дверью: виджет и так
+                         * читает ленту при каждом открытии, а лишняя дверь
+                         * означала бы второй запрос ради двух полей.
+                         */
+                        Support support) {
+
+        static Thread empty(Support support) {
+            return new Thread(null, Conversation.OPEN, List.of(), false, null, support);
         }
     }
+
+    /**
+     * Что сказать посетителю про живых людей.
+     *
+     * <p>Два признака, а не один, и это не избыточность. «Никого нет
+     * в 23:00» и «никого нет в 11:00 вторника» — разные новости: в первом
+     * случае человеку надо назвать часы и предложить обращение, во втором
+     * специалист вот-вот подключится, и ждать имеет смысл.
+     *
+     * @param online    кто-то из специалистов на связи прямо сейчас. Факт:
+     *                  открытое рабочее место означает, что человек смотрит
+     *                  в экран. Расписание такого не обещает.
+     * @param openNow   рабочее ли сейчас время по расписанию поддержки.
+     * @param hours     часы работы одной строкой — что показать, когда никого нет.
+     */
+    public record Support(boolean online, boolean openNow, String hours) {}
 
     /**
      * Строка ленты.

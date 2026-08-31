@@ -104,6 +104,38 @@ An answer that fails — engine unavailable, queue full — is not silence but a
 handoff to a human, recorded with reason `failed`. Silence here means a visitor
 waiting for an answer nobody is preparing.
 
+## Who is around, and when they answer
+
+The widget shows whether a live specialist is there right now. This is **a fact,
+not a schedule**: `ChatStream.staffOnline()` says yes when at least one desk is
+open — that is, someone is looking at the admin screen at this moment. A "we are
+online" sign driven by working hours lies during the lunch break to exactly the
+person who relied on it.
+
+The converse does not hold: a closed tab does not mean the employee went home.
+So "nobody is here" is shown together with the working hours — otherwise it
+reads as "nobody is ever here". The hours live in the `vedal.support.*` settings
+and were carried over from the site: "Пн–Пт 9:00–18:00", Yekaterinburg time.
+The schedule changes less often than once per release, and a table with an
+editor in the admin panel would demand a screen, permissions, an audit trail and
+a decision about holidays — work that pays off when the schedule becomes complex.
+
+Holidays and shifted working days are deliberately absent: a calendar of working
+days has to come from somewhere and be maintained, and an error in it means "we
+are open" on a day when nobody answers. A holiday looks like an ordinary day
+with nobody around — and the visitor sees that as a fact, not as a promise.
+
+Presence arrives by two routes: the `support` field in the thread (the widget is
+opened before the first message, and the sign is needed already then) and the
+`presence` stream event on 0↔1 desk transitions. Broadcasting it for every open
+admin tab would wake every visitor on the site each time an employee switches
+between sections.
+
+When calling a human while nobody is around, Vedalina says something different:
+a conversation queued at midnight waits until morning, and "the answer will
+arrive in this window" reads as "they will answer now" — the person closes the
+tab ten minutes later and concludes the chat does not work.
+
 ## A conversation that grew into a lead
 
 A visitor can raise a lead straight from the chat: the button opens a form with
