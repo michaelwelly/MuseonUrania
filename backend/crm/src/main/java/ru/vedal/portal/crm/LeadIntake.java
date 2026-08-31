@@ -17,7 +17,12 @@ public interface LeadIntake {
                  String productSlug, String serialNumber, String message, String source,
                  String language, String campaign) {}
 
-    record Receipt(UUID id, boolean created) {}
+    // Номер здесь потому, что расписка — это то, что показывают человеку,
+    // а человеку показывают номер: идентификатор он не продиктует по телефону
+    // и не запомнит. Повторная отправка возвращает номер уже принятой заявки,
+    // а не новый: второй номер на одну заявку — это два обращения в глазах
+    // того, кто их называет.
+    record Receipt(UUID id, String number, boolean created) {}
 
     Receipt accept(Draft draft, String idempotencyKey);
 }

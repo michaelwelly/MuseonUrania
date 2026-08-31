@@ -52,6 +52,10 @@ class OpenApiDocsTest extends PostgresTestBase {
                 "/api/public/v1/documents",
                 "/api/public/v1/documents/{slug}/file",
                 "/api/forms/v1/leads",
+                // Обращение из разговора живёт здесь, а не в чате: заявка —
+                // запись снаружи, и принимает её то место, где стоит периметр.
+                // Здесь же сшиваются chat и crm, которые друг о друге не знают.
+                "/api/forms/v1/leads/from-chat",
                 "/api/assistant/v1/ask",
                 // Кнопки виджета приходят с портала, а не переписаны в интерфейс:
                 // подпись и заготовка, разложенные по двум местам, расходятся

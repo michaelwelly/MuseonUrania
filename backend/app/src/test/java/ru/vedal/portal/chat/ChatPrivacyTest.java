@@ -108,6 +108,8 @@ class ChatPrivacyTest extends PostgresTestBase {
     private ru.vedal.portal.crm.Lead newLead() {
         var lead = new ru.vedal.portal.crm.Lead();
         lead.setId(UUID.randomUUID());
+        // Номер обязателен: заявка без него — заявка, которую нельзя назвать вслух.
+        lead.setNumber("З-тест-" + lead.getId().toString().substring(0, 8));
         lead.setForm("quote");
         lead.setName("Иванов Иван");
         lead.setPhone("+7 900 000-00-00");
