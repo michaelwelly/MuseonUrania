@@ -7,7 +7,7 @@ import { plural } from "@/lib/plural";
 import { useCounts } from "./counts";
 import { useLive } from "./live";
 import { CloseIcon, CrossIcon } from "./icons";
-import { waited as словами } from "./ui";
+import { waited as словами, where } from "./ui";
 
 // Виджет разговоров.
 //
@@ -176,7 +176,7 @@ function Queue({ ждут, onClose }: { ждут: number; onClose: () => void })
               />
               <span className="widget__row-body">
                 <span className="widget__first">{c.first ?? "обращение читается…"}</span>
-                <span className="widget__where mono">{c.page ?? "страница неизвестна"}</span>
+                <span className="widget__where mono">{where(c.page)}</span>
               </span>
               <span className={`widget__waited mono${поздно ? " widget__waited--late" : ""}`}>
                 {словами(мин)}
