@@ -11,6 +11,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 // Ранняя реализация порта: поиск по словам, без модели. Ходит только через
 // интерфейсы модулей, а они отдают ровно то, что положено области: посетителю —
@@ -78,10 +79,37 @@ public class DeterministicSearch implements LlmEngine {
 
     @Override
     public Optional<Grounded> answer(String question, Scope scope) {
-        var tokens = tokens(question);
-        if (tokens.isEmpty()) return Optional.empty();
+        var found = find(question, scope);
+        if (found.isEmpty()) return Optional.empty();
 
-        record Hit(Source source, int score) {}
+        var sources = found.stream().map(Passage::source).toList();
+        return Optional.of(new Grounded(compose(sources), sources));
+    }
+
+    /**
+     * Что нашлось по вопросу: источник плюс его собственный текст.
+     *
+     * <p><b>Зачем отдельно от {@link #answer}.</b> Поиск и ответ — разные
+     * работы, и с приходом модели это стало видно. Модель формулирует ответ,
+     * но искать материалы должна не она: у неё нет доступа ни к каталогу,
+     * ни к правам на документы, и «вспомнить» изделие она может любое,
+     * включая несуществующее. Находит по-прежнему этот класс, а модель
+     * получает найденное как единственный источник знания.
+     *
+     * <p>Поэтому же здесь возвращается ТЕКСТ материала, а не только заголовок
+     * со ссылкой: заголовками модель не ответит на вопрос «для чего это
+     * изделие» — она либо промолчит, либо додумает.
+     *
+     * <p>Пустой список означает «подходящего не нашлось», и это штатный
+     * исход: правило проекта — нет опубликованных материалов, нет ответа.
+     * Модель в этом случае не спрашивается вовсе; придумывать ей нечего,
+     * а просить её сказать «не знаю» — лишний вызов за деньги.
+     */
+    public List<Passage> find(String question, Scope scope) {
+        var tokens = tokens(question);
+        if (tokens.isEmpty()) return List.of();
+
+        record Hit(Passage passage, int score) {}
         var hits = new ArrayList<Hit>();
 
         for (var p : catalog.publishedProducts()) {
@@ -89,15 +117,22 @@ public class DeterministicSearch implements LlmEngine {
                     named(p.name(), p.kind()),
                     text(p.summary(), String.join(" ", p.categories())));
             if (score >= MIN_SCORE) {
-                hits.add(new Hit(new Source(p.name() + " — " + p.kind(),
-                        "/products/" + p.slug() + "/", "product"), score));
+                hits.add(new Hit(new Passage(
+                        new Source(p.name() + " — " + p.kind(),
+                                "/products/" + p.slug() + "/", "product"),
+                        // Назначение и категории — всё, что об изделии сказано
+                        // опубликованного. Характеристик здесь нет намеренно:
+                        // их в карточке нет, а придумать их модель не должна.
+                        join(p.summary(), "Разделы: " + String.join(", ", p.categories()))),
+                        score));
             }
         }
 
         for (var n : content.publishedNews()) {
             var score = score(tokens, named(n.title()), text(n.excerpt(), n.tag()));
             if (score >= MIN_SCORE) {
-                hits.add(new Hit(new Source(n.title(), "/news/", "news"), score));
+                hits.add(new Hit(new Passage(
+                        new Source(n.title(), "/news/", "news"), join(n.excerpt())), score));
             }
         }
 
@@ -108,20 +143,40 @@ public class DeterministicSearch implements LlmEngine {
         for (var d : visible) {
             var score = score(tokens, named(d.title(), d.subject()), text(d.group()));
             if (score >= MIN_SCORE) {
-                hits.add(new Hit(new Source(label(d), d.published() ? d.fileUrl() : "/documents/",
-                        "document"), score));
+                hits.add(new Hit(new Passage(
+                        new Source(label(d), d.published() ? d.fileUrl() : "/documents/", "document"),
+                        // Статус доступа идёт в текст, а не только в подпись:
+                        // модель обязана видеть, что документ «уточняется»,
+                        // иначе перескажет его как подтверждённый.
+                        join("Раздел: " + d.group(), "Относится к: " + d.subject(),
+                                "pending".equals(d.access())
+                                        ? "Статус: наличие уточняется"
+                                        : "Статус: опубликован")),
+                        score));
             }
         }
 
-        if (hits.isEmpty()) return Optional.empty();
-
-        var sources = hits.stream()
+        return hits.stream()
                 .sorted(Comparator.comparingInt(Hit::score).reversed())
                 .limit(MAX_SOURCES)
-                .map(Hit::source)
+                .map(Hit::passage)
                 .toList();
+    }
 
-        return Optional.of(new Grounded(compose(sources), sources));
+    /**
+     * Найденный материал: ссылка на него и то, что о нём написано.
+     *
+     * @param source куда вести читателя — это и есть ссылка в ответе;
+     * @param text   опубликованный текст материала. Ровно он и попадает
+     *               в контекст модели: всё, чего здесь нет, для неё
+     *               не существует.
+     */
+    public record Passage(Source source, String text) {}
+
+    private static String join(String... parts) {
+        return Arrays.stream(parts)
+                .filter(part -> part != null && !part.isBlank())
+                .collect(Collectors.joining(". "));
     }
 
     // Текст только перечисляет найденное и ведёт по ссылкам. Никаких выводов
