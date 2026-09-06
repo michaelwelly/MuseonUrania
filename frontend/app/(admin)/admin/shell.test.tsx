@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -169,9 +169,7 @@ describe("клавиши оболочки", () => {
     expect(screen.getByRole("dialog", { name: "Поиск по всему порталу" })).toBeTruthy();
 
     // Дождаться закрытия обязательно, а не желательно: пока окно открыто,
-    // одиночные буквы намеренно молчат. Без ожидания тест иногда успевал
-    // нажать N раньше, чем оболочка узнала, что окна больше нет, —
-    // и падал через раз, обвиняя раскладку.
+    // одиночные буквы намеренно молчат.
     fireEvent.keyDown(document, { key: "Escape", code: "Escape" });
     await waitFor(() =>
       expect(screen.queryByRole("dialog", { name: "Поиск по всему порталу" })).toBeNull(),
@@ -184,6 +182,39 @@ describe("клавиши оболочки", () => {
     fireEvent.keyDown(document, { key: "п", code: "KeyG" });
     fireEvent.keyDown(document, { key: "в", code: "KeyD" });
     await waitFor(() => expect(mocks.push).toHaveBeenCalledWith("/admin/deals/"));
+  });
+
+  // Оболочка отрисовывается сама по себе: счётчики вкладок приезжают позже
+  // человека, приходят события разговоров, гаснет полоса-сообщение. Чужая
+  // отрисовка не имеет права отменять начатый аккорд — а отменяла, и это
+  // роняло соседний тест примерно через раз. Виновной считали раскладку,
+  // хотя ломалось ровно здесь: D, оставшаяся без G, заводит материал.
+  //
+  // На человеке это выглядит так же и молча: G, затем D — и вместо списка
+  // сделок открывается форма нового материала.
+  it("аккорд переживает чужую отрисовку между буквами", async () => {
+    let ответить: (страница: unknown) => void = () => {};
+    mocks.clients.mockReturnValue(
+      new Promise((r) => {
+        ответить = r;
+      }),
+    );
+
+    await shell();
+
+    fireEvent.keyDown(document, { key: "п", code: "KeyG" });
+
+    // Счётчик отвечает ровно между двумя буквами аккорда.
+    await act(async () => {
+      ответить({ items: [], page: 0, size: 1, total: 112, pages: 1 });
+      await Promise.resolve();
+    });
+
+    fireEvent.keyDown(document, { key: "в", code: "KeyD" });
+
+    // Списком вызовов, а не `toHaveBeenCalledWith`: лишний переход
+    // на "/admin/news/new" — это и есть поломка, и он должен быть виден.
+    expect(mocks.push.mock.calls).toEqual([["/admin/deals/"]]);
   });
 
   it("G сама по себе никуда не ведёт", async () => {
