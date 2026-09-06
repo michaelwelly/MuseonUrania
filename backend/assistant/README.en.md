@@ -53,14 +53,48 @@ them.
 No suitable sources means no answer: it hands off to a human with contacts and a
 list of forms. Inventing an answer is forbidden.
 
-## The port and what comes next
+## Who answers: the search or the model
 
-`LlmEngine` is currently a deterministic word search, without a model. The full
-implementation is YandexGPT + pgvector and the pipeline from the spec (text
-extraction → chunks with metadata → embeddings). The domains do not look behind
-the port, so changing the implementation does not touch them. The scripted
-replies will stay as the fast path for buttons: «Запросить КП» has a known
-answer and does not need a model call.
+Two implementations stand behind the `LlmEngine` port, selected by the
+`vedal.assistant.engine` setting:
+
+| Value | Who answers |
+| --- | --- |
+| `search` (default) | `DeterministicSearch` — a list of what was found, with links |
+| `yandexgpt` | `YandexGptEngine` — a model on top of that same search |
+
+**The model does not replace the search, it sits on top of it.** The portal
+finds the materials: it has the catalogue, the news and the documents with
+permissions applied, while the model has nothing except what we show it. If
+nothing was found, the model is not asked at all: the rule "no published
+sources, no answer" outweighs the urge to say something, and paying a model
+to reply "I do not know" is paying for a refusal.
+
+**Links are never asked of the model.** The sources under an answer are exactly
+the materials the search found, in the same order. Let the model name them
+itself and one day it will name a plausible page that does not exist. It only
+places the markers `[1]`, `[2]` in the text; where a marker leads is decided by
+the portal, and the widget turns it into a link.
+
+**A silent model does not stop the conversation.** A cloud refusal, a timeout,
+an empty reply — the list of found materials is returned instead, the very one
+that existed before the model. The materials were found after all; making the
+visitor wait for a human because of someone else's downtime is pointless.
+
+**No key lives in the repository.** `VEDAL_YANDEX_API_KEY` and
+`VEDAL_YANDEX_FOLDER` come from the environment, and with `engine=yandexgpt`
+the portal will not start without them — deliberately: otherwise it would
+quietly answer with a list of links, and the substitution would only be
+noticeable by the answers becoming drier.
+
+What comes next: pgvector and the pipeline from the spec (text extraction →
+chunks with metadata → embeddings). That changes the **search**, not the
+generation: `YandexGptEngine` receives materials through
+`DeterministicSearch.find`, so it can be swapped for a vector search without
+touching the prompt or the conversation.
+
+The scripted replies stay as the fast path for buttons: «Запросить КП» has a
+known answer and does not need a model call.
 
 What the search counts as a match: the brand (`vedal`, `ведал`) does not —
 it stands in every product name, so it finds everything. A match in the name
