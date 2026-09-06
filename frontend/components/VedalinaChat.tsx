@@ -729,9 +729,9 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
           <Image
             className={styles.avatar}
             src={vedalina.avatar}
-            alt={`Знак ассистента ${vedalina.name}`}
-            width={36}
-            height={36}
+            alt={`Портрет ассистента ${vedalina.name}`}
+            width={44}
+            height={44}
           />
           <span className={styles.status} aria-hidden="true" />
         </div>
