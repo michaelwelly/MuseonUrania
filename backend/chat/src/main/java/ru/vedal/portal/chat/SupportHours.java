@@ -44,6 +44,20 @@ import java.util.stream.Collectors;
 @Component
 public class SupportHours {
 
+    /**
+     * Часы словами. Живут в коде, а не в `application.properties`, и это
+     * не вкусовщина: файлы `.properties` читаются как ISO-8859-1 — так велит
+     * спецификация Java Properties, и Spring её соблюдает. Кириллица оттуда
+     * приезжает «Ð¿Ð½âÐ¿Ñ», причём молча: приложение поднимается, тесты
+     * зелёные, а в шапке чата у посетителя кракозябры. Поймано глазами
+     * на поднятом стеке, а не сборкой.
+     *
+     * <p>Переопределить всё равно можно — но переменной окружения
+     * (`VEDAL_SUPPORT_DESCRIPTION`), а не строкой в properties: окружение
+     * читается в UTF-8 и кириллицу не портит.
+     */
+    private static final String DEFAULT_DESCRIPTION = "Пн–Пт 9:00–18:00 (Екатеринбург)";
+
     private final Set<DayOfWeek> days;
     private final LocalTime opens;
     private final LocalTime closes;
@@ -55,7 +69,7 @@ public class SupportHours {
             @Value("${vedal.support.opens:09:00}") String opens,
             @Value("${vedal.support.closes:18:00}") String closes,
             @Value("${vedal.support.zone:Asia/Yekaterinburg}") String zone,
-            @Value("${vedal.support.description:Пн–Пт 9:00–18:00 (Екатеринбург)}") String description) {
+            @Value("${VEDAL_SUPPORT_DESCRIPTION:}") String description) {
 
         this.days = Arrays.stream(days.split(","))
                 .map(String::trim)
@@ -65,7 +79,9 @@ public class SupportHours {
         this.opens = LocalTime.parse(opens);
         this.closes = LocalTime.parse(closes);
         this.zone = ZoneId.of(zone);
-        this.description = description;
+        this.description = description == null || description.isBlank()
+                ? DEFAULT_DESCRIPTION
+                : description;
     }
 
     /**
