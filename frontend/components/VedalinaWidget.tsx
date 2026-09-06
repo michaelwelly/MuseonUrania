@@ -56,10 +56,10 @@ export default function VedalinaWidget() {
       data-analytics="vedalina_open"
     >
       {/* Размер задан пропами, а не fill: fill выставляет картинке
-          position: absolute и inset: 0, и отступ обёртки на неё не действует —
-          дерево упиралось бы в край круга и теряло линию земли. */}
+          position: absolute и inset: 0, и обёртка перестаёт управлять
+          её размером. Растягивает портрет по кругу CSS — object-fit. */}
       <span className={styles.launcherAvatar}>
-        <Image src={vedalina.avatar} alt="" width={38} height={38} />
+        <Image src={vedalina.avatar} alt="" width={48} height={48} />
         <span className={styles.launcherDot} aria-hidden="true" />
       </span>
       <span className={styles.launcherLabel}>Задать вопрос</span>
