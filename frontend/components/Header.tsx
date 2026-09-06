@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import AnimatedLogo from "@/components/AnimatedLogo";
@@ -23,6 +23,34 @@ export default function Header() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const telHref = `tel:${site.phone.replace(/\s/g, "")}`;
+  const bar = useRef<HTMLElement>(null);
+
+  // Шапка сама сообщает свою высоту в `--header-h`.
+  //
+  // Числом в CSS это уже стояло — и было неверным. Шапка не одна полоса:
+  // над навигацией идёт строка с телефоном, на узком экране всё
+  // перестраивается, а при открытом мобильном меню высота меняется вовсе.
+  // Записанные руками 78px давали 135 на живом экране, и окно чата,
+  // считавшее от них свою высоту, залезало под шапку — заметно это было
+  // только глазами.
+  //
+  // Наблюдатель, а не разовый замер: высота меняется от ширины окна,
+  // от открытого меню и от шрифта, который догрузился позже.
+  useEffect(() => {
+    const node = bar.current;
+    if (!node) return;
+
+    const tell = () =>
+      document.documentElement.style.setProperty(
+        "--header-h",
+        `${Math.round(node.getBoundingClientRect().height)}px`,
+      );
+
+    tell();
+    const watch = new ResizeObserver(tell);
+    watch.observe(node);
+    return () => watch.disconnect();
+  }, []);
 
   // «/about» и «/about/» — один и тот же пункт: маршруты со слешем на конце.
   const isActive = (href: string) => {
@@ -32,7 +60,7 @@ export default function Header() {
   };
 
   return (
-    <header className={styles.header}>
+    <header className={styles.header} ref={bar}>
       <div className={styles.bar}>
         <Link href="/" className={styles.brand} aria-label={`${site.brand}, на главную`}>
           {/* 60 — размер из пакета передачи логотипа. Шапка 78px высотой,
