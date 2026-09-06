@@ -195,6 +195,20 @@ export function waited(minutes: number): string {
   return `${дней} ${plural(дней, "день", "дня", "дней")}`;
 }
 
+/**
+ * Откуда написали — так, как это читает человек.
+ *
+ * Путь показывается как есть: `/products/vedal-r1/` говорит менеджеру
+ * больше, чем любой пересказ. Исключение одно — корень. Одинокий слэш
+ * в карточке разговора выглядел опечаткой, а не адресом: строка «/» под
+ * вопросом посетителя читается как обрывок, и глаз спотыкается о неё
+ * каждый раз.
+ */
+export function where(page: string | null): string {
+  if (!page) return "страница неизвестна";
+  return page === "/" ? "главная" : page;
+}
+
 export function Empty({ children }: { children: React.ReactNode }) {
   return <p className="admin-hint">{children}</p>;
 }

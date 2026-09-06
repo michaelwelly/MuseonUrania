@@ -106,7 +106,11 @@ export function Triage({
       >
         <div className="sheet-right__head">
           <div className="sheet-right__eyebrow mono">
-            Заявка {id.slice(0, 8)}
+            {/* Номер, а не идентификатор: «З-2026-0013» стоит в списке,
+                в письме и в трубке у клиента, а «f14fc239» не значит ничего
+                и совпадать ему не с чем. Обрывок идентификатора остаётся
+                только на те полсекунды, пока заявка едет. */}
+            Заявка {data?.number ?? id.slice(0, 8)}
             {data && <> · {when(data.createdAt)}</>}
             {queue && queue.list.length > 1 && (
               <>
