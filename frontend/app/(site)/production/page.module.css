@@ -22,7 +22,9 @@
   grid-template-columns: 1.15fr 0.85fr;
   background: var(--page);
   border-bottom: 1px solid var(--line);
-  --pattern-seam: 30%;
+  /* Ширина фотографии: колонка .85 из 2. Лента паттерна отступает
+     от неё влево сама — здесь именно ширина снимка, а не «минус заход». */
+  --pattern-seam: 42.5%;
 }
 
 .heroCopy {
