@@ -54,19 +54,25 @@ public class YandexGptHttp implements YandexGpt {
     private final HttpClient http;
     private final ObjectMapper json;
     private final String apiKey;
-    private final String folderId;
-    private final String model;
+    /**
+     * Адрес модели целиком: {@code gpt://<каталог>/yandexgpt-lite/latest}.
+     *
+     * <p>Одной строкой, а не парой «каталог + имя»: в таком виде его выдаёт
+     * консоль облака, в таком виде он лежит в окружении стенда, и собирать
+     * его из кусков значит завести второй способ ошибиться. Каталог внутри
+     * адреса — он же определяет, чей счёт оплачивает запрос.
+     */
+    private final String modelUri;
     private final double temperature;
     private final int maxTokens;
     private final Duration timeout;
 
-    public YandexGptHttp(URI url, ObjectMapper json, String apiKey, String folderId, String model,
+    public YandexGptHttp(URI url, ObjectMapper json, String apiKey, String modelUri,
                          double temperature, int maxTokens, Duration timeout) {
         this.url = url;
         this.json = json;
         this.apiKey = apiKey;
-        this.folderId = folderId;
-        this.model = model;
+        this.modelUri = modelUri;
         this.temperature = temperature;
         this.maxTokens = maxTokens;
         this.timeout = timeout;
@@ -161,9 +167,7 @@ public class YandexGptHttp implements YandexGpt {
         }
 
         return json.writeValueAsString(Map.of(
-                // gpt://<каталог>/<модель> — адрес модели в облаке; каталог
-                // определяет, чей счёт оплачивает запрос.
-                "modelUri", "gpt://" + folderId + "/" + model,
+                "modelUri", modelUri,
                 "completionOptions", Map.of(
                         "stream", true,
                         // Ответ по материалам, а не сочинение: низкая

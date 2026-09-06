@@ -66,8 +66,8 @@ class YandexGptHttpTest {
     private YandexGpt client() {
         var here = URI.create("http://127.0.0.1:" + server.getAddress().getPort()
                 + "/foundationModels/v1/completion");
-        return new YandexGptHttp(here, json, "test-api-key-ascii", "каталог-1",
-                "yandexgpt-lite/latest", 0.2, 600, Duration.ofSeconds(5));
+        return new YandexGptHttp(here, json, "test-api-key-ascii",
+                "gpt://каталог-1/yandexgpt-lite/latest", 0.2, 600, Duration.ofSeconds(5));
     }
 
     /** Строка потока: ответ целиком на текущий момент, как его отдаёт облако. */
