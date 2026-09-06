@@ -33,6 +33,8 @@
 // Роли и права проверяет портал. Здесь только вход: интерфейс, спрятавший
 // кнопку, ничего не защищает — запрос всё равно можно послать руками.
 
+import { sha256 } from "./sha256";
+
 const ISSUER = (process.env.NEXT_PUBLIC_OIDC_ISSUER ?? "").replace(/\/+$/, "");
 const CLIENT_ID = process.env.NEXT_PUBLIC_OIDC_CLIENT_ID ?? "vedal-admin-ui";
 
@@ -71,9 +73,22 @@ function randomVerifier(): string {
   return base64url(bytes);
 }
 
+/**
+ * Отпечаток verifier'а для Keycloak — всегда S256, никогда plain.
+ *
+ * <p>Встроенный `crypto.subtle` живёт только в защищённом контексте: https
+ * или `localhost`. Стенд открыт по http на адресе-числе, и там его нет —
+ * не «отказывает», а отсутствует, роняя вход на `undefined.digest` ещё до
+ * первого запроса. Поэтому у хеша есть запасной путь ({@link sha256}),
+ * и метод остаётся S256 при любом раскладе: с `plain` verifier уехал бы
+ * в адресной строке, а это ровно то, от чего PKCE и защищает.
+ */
 async function challenge(verifier: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
-  return base64url(new Uint8Array(digest));
+  const bytes = new TextEncoder().encode(verifier);
+  const digest = crypto.subtle
+    ? new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))
+    : sha256(bytes);
+  return base64url(digest);
 }
 
 function base64url(bytes: Uint8Array): string {
