@@ -78,4 +78,22 @@ class SupportHoursTest {
     void theHoursAreShownAsWritten() {
         assertThat(рабочиеДни().description()).isEqualTo("Пн–Пт 9:00–18:00 (Екатеринбург)");
     }
+
+    // Пустое значение — это «не переопределяли», а не «часов нет».
+    //
+    // Так и приходит по умолчанию: часы словами живут в коде, а не
+    // в application.properties. Файлы .properties читаются как ISO-8859-1,
+    // и кириллица оттуда приезжала в чат как «Ð¿Ð½âÐ¿Ñ» — молча:
+    // приложение поднималось, тесты были зелёными, кракозябры видел только
+    // посетитель.
+    @Test
+    void withoutAnOverrideTheHoursAreStillReadable() {
+        var byDefault = new SupportHours("MONDAY,FRIDAY", "09:00", "18:00",
+                "Asia/Yekaterinburg", "");
+
+        assertThat(byDefault.description())
+                .as("Пустая настройка не должна оставлять посетителя без часов")
+                .isNotBlank()
+                .containsPattern("[А-Яа-я]");
+    }
 }
