@@ -25,7 +25,7 @@ public enum MailTemplate {
                     Номер обращения: %s
 
                     Письмо отправлено автоматически, отвечать на него не нужно.
-                    """.formatted(context.leadId());
+                    """.formatted(context.number());
         }
     },
 
@@ -51,11 +51,22 @@ public enum MailTemplate {
                     Контакты клиента — в портале: %s/admin/leads/
                     """.formatted(context.form(),
                     context.productSlug() == null ? "не указано" : context.productSlug(),
-                    context.leadId(), context.portalUrl());
+                    context.number(), context.portalUrl());
         }
     };
 
-    record Context(UUID leadId, String form, String productSlug, String portalUrl) {}
+    /**
+     * Чем письмо называет заявку.
+     *
+     * <p>Номер, а не идентификатор, и это была настоящая ошибка: в письме
+     * стояло «Номер обращения: 550e8400-e29b-41d4-a716-446655440000». Человек,
+     * позвонивший с этим письмом в руках, не мог прочесть номер вслух,
+     * а менеджер — найти по услышанному заявку.
+     *
+     * <p>Идентификатор здесь остаётся: по нему письмо связывается с заявкой
+     * внутри портала, и в журнале это он.
+     */
+    record Context(UUID leadId, String number, String form, String productSlug, String portalUrl) {}
 
     abstract String subject();
 

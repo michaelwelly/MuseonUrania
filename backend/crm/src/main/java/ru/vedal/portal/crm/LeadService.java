@@ -10,6 +10,8 @@ import ru.vedal.portal.common.DomainEvents;
 import ru.vedal.portal.common.KafkaTopics;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -36,12 +38,13 @@ public class LeadService implements LeadIntake, LeadContacts {
         if (idempotencyKey != null) {
             var existing = leads.findByIdempotencyKey(idempotencyKey);
             if (existing.isPresent()) {
-                return new Receipt(existing.get().getId(), false);
+                return new Receipt(existing.get().getId(), existing.get().getNumber(), false);
             }
         }
 
         var lead = new Lead();
         lead.setId(UUID.randomUUID());
+        lead.setNumber(nextNumber());
         lead.setForm(draft.form());
         lead.setName(draft.name());
         lead.setCompany(blankToNull(draft.company()));
@@ -72,7 +75,7 @@ public class LeadService implements LeadIntake, LeadContacts {
             // вставку — одна. Отдаём ту заявку, которая уже есть.
             var winner = idempotencyKey == null ? null : leads.findByIdempotencyKey(idempotencyKey).orElse(null);
             if (winner == null) throw e;
-            return new Receipt(winner.getId(), false);
+            return new Receipt(winner.getId(), winner.getNumber(), false);
         }
 
         // Событие и строка заявки коммитятся одним COMMIT: между INSERT и
@@ -84,14 +87,31 @@ public class LeadService implements LeadIntake, LeadContacts {
         audit.record("public", "lead.accept", "lead", lead.getId().toString(),
                 Map.of("form", lead.getForm(), "source", lead.getSource()));
 
-        return new Receipt(lead.getId(), true);
+        return new Receipt(lead.getId(), lead.getNumber(), true);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<Contact> contact(UUID leadId) {
         return leads.findById(leadId)
-                .map(l -> new Contact(l.getId(), l.getEmail(), l.getForm(), l.getProductSlug()));
+                .map(l -> new Contact(l.getId(), l.getNumber(), l.getEmail(),
+                        l.getForm(), l.getProductSlug()));
+    }
+
+    /**
+     * Номер, который называют вслух: «З-2026-0042».
+     *
+     * <p>Собирается здесь, а не в базе: номер — это то, что видит человек,
+     * и три экрана, собирающие его по-своему, дадут три вида одного номера.
+     *
+     * <p>Год не сбрасывает нумерацию — последовательность сквозная. Сброс
+     * означал бы, что в январе номера начинают повторяться: «З-2025-0007»
+     * и «З-2026-0007» звучат одинаково ровно в том разговоре, где номер
+     * и произносят.
+     */
+    private String nextNumber() {
+        return "З-" + LocalDate.now(ZoneOffset.UTC).getYear() + "-"
+                + String.format("%04d", leads.nextNumber());
     }
 
     private static String blankToNull(String value) {

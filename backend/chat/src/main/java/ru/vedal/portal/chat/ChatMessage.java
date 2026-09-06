@@ -56,6 +56,12 @@ public class ChatMessage {
     @Column(name = "read_at")
     private Instant readAt;
 
+    // Помог ли ответ, по мнению посетителя. NULL — не оценивал, и это
+    // большинство: кнопку нажимают единицы. Отличать «не оценили» от
+    // «оценили плохо» обязательно — иначе доля плохих ответов считается
+    // по тем, кто промолчал.
+    private Boolean helpful;
+
     private Instant at = Instant.now();
 
     public UUID getId() { return id; }
@@ -72,6 +78,8 @@ public class ChatMessage {
     public void setSources(String sources) { this.sources = sources; }
     public Instant getReadAt() { return readAt; }
     public void setReadAt(Instant readAt) { this.readAt = readAt; }
+    public Boolean getHelpful() { return helpful; }
+    public void setHelpful(Boolean helpful) { this.helpful = helpful; }
     public Instant getAt() { return at; }
     public void setAt(Instant at) { this.at = at; }
 }

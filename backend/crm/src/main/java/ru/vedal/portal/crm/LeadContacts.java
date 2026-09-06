@@ -9,7 +9,10 @@ import java.util.UUID;
 // в открытом контуре.
 public interface LeadContacts {
 
-    record Contact(UUID id, String email, String form, String productSlug) {}
+    // Номер здесь потому, что он попадает в письмо: и клиенту, и менеджеру
+    // сообщают, какое обращение принято, а идентификатор для человека
+    // не значит ничего.
+    record Contact(UUID id, String number, String email, String form, String productSlug) {}
 
     Optional<Contact> contact(UUID leadId);
 }

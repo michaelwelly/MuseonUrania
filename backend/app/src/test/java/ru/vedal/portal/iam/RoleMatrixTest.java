@@ -2,6 +2,7 @@ package ru.vedal.portal.iam;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -11,6 +12,10 @@ import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 // Кто куда пущен.
@@ -153,6 +158,80 @@ class RoleMatrixTest extends PostgresTestBase {
         // Оболочка спрашивает это на каждой странице. Закрыв дверь ролью,
         // мы закрыли бы вход тому, у кого роль есть, но другая.
         mvc.perform(get("/api/admin/v1/session")).andExpect(status().isOk());
+    }
+
+    // Имя роли, которое отдаёт /session, — это то, по чему админка решает,
+    // какие разделы показать. Разойдись форма записи, и человек с полными
+    // правами увидит пустую оболочку: портал его пустит, а интерфейс
+    // не предложит ни одной двери.
+    @Test
+    @WithMockUser(username = "boss", roles = "PORTAL_ADMIN")
+    void sessionReportsRolesTheWayTheAdminPanelReadsThem() throws Exception {
+        mvc.perform(get("/api/admin/v1/session"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.roles").value(contains("portal-admin")));
+    }
+
+    @Test
+    @WithMockUser(username = "sales", roles = "PORTAL_SALES")
+    void salesSeesItsOwnRoleAndNothingElse() throws Exception {
+        mvc.perform(get("/api/admin/v1/session"))
+                .andExpect(jsonPath("$.roles").value(contains("portal-sales")));
+    }
+
+    // Приставка Spring и области видимости токена наружу не уходят.
+    // Проверяется отдельно: тест выше зеленел бы и на списке, где рядом
+    // с portal-admin лежат ROLE_PORTAL_ADMIN и десяток SCOPE_*.
+    @Test
+    @WithMockUser(username = "boss", roles = {"PORTAL_ADMIN", "PORTAL_SALES"})
+    void neitherSpringPrefixNorScopesLeakOutward() throws Exception {
+        mvc.perform(get("/api/admin/v1/session"))
+                .andExpect(jsonPath("$.roles").value(
+                        containsInAnyOrder("portal-admin", "portal-sales")));
+    }
+
+    // ————— выдача ролей —————
+    //
+    // Дверь лежит под /staff/**, а тот открыт любой портальной роли:
+    // справочник нужен всем для выбора ответственного. Без отдельного
+    // правила ВЫШЕ него продавец выдавал бы роли сам себе.
+    //
+    // Проверяются обе стороны. Тест, требующий только 403 от продавца,
+    // зеленел бы и на двери, закрытой вообще для всех.
+
+    @Test
+    @WithMockUser(username = "sales", roles = "PORTAL_SALES")
+    void salesCannotHandOutRoles() throws Exception {
+        mvc.perform(put("/api/admin/v1/staff/editor/roles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"roles\":[\"portal-admin\"]}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "production", roles = "PORTAL_PRODUCTION")
+    void theSiteEditorCannotHandOutRolesEither() throws Exception {
+        mvc.perform(put("/api/admin/v1/staff/editor/roles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"roles\":[\"portal-admin\"]}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "boss", roles = "PORTAL_ADMIN")
+    void theAdminReachesTheDoor() throws Exception {
+        // Не 403 и не 401: запрос прошёл охрану и разговаривает уже
+        // с доменом. Что именно он ответит, зависит от провайдера входа —
+        // это проверяется отдельно, в StaffDirectoryTest.
+        mvc.perform(put("/api/admin/v1/staff/kto-to/roles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"roles\":[\"portal-sales\"]}"))
+                .andExpect(result -> {
+                    var code = result.getResponse().getStatus();
+                    if (code == 401 || code == 403) {
+                        throw new AssertionError("администратора не пустили к двери: " + code);
+                    }
+                });
     }
 
     // ————— уничтожение персональных данных —————

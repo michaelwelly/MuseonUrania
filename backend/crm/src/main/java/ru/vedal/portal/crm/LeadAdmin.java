@@ -23,7 +23,13 @@ public interface LeadAdmin {
             инструмент менеджера, а не публичная выдача. Дверь закрыта
             аутентификацией, и каждое изменение попадает в журнал.
             """)
-    record LeadRow(UUID id, String form, String name, String company, String phone, String email,
+    record LeadRow(UUID id,
+
+                   @Schema(description = "Номер заявки для людей: его называют по телефону.",
+                           example = "З-2026-0042")
+                   String number,
+
+                   String form, String name, String company, String phone, String email,
                    String productSlug, String source, String status, String owner,
 
                    @Schema(description = "Сделка, в которую разобрана заявка. Пусто — заявка "
@@ -33,7 +39,15 @@ public interface LeadAdmin {
                    Instant createdAt) {}
 
     @Schema(name = "AdminLead", description = "Заявка целиком, вместе с текстом и согласием.")
-    record LeadView(UUID id, String form, String name, String company, String phone, String email,
+    record LeadView(UUID id,
+
+                    @Schema(description = "Номер заявки для людей: его называют по телефону "
+                            + "и пишут в письме. При обезличивании не стирается — он говорит, "
+                            + "какая это заявка по счёту, а не кто её подал.",
+                            example = "З-2026-0042")
+                    String number,
+
+                    String form, String name, String company, String phone, String email,
                     String productSlug,
 
                     @Schema(description = "Серийный номер изделия из сервисного обращения. "

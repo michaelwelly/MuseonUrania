@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { chatQueue, chatThread, type ChatCard } from "@/lib/admin";
 import { plural } from "@/lib/plural";
 import { useCounts } from "./counts";
+import { useLive } from "./live";
 import { CloseIcon, CrossIcon } from "./icons";
 import { waited as словами } from "./ui";
 
@@ -75,6 +76,10 @@ export function Widget() {
 
 function Queue({ ждут, onClose }: { ждут: number; onClose: () => void }) {
   const [rows, setRows] = useState<Карточка[] | null>(null);
+  // Открытая панель перечитывается на событие: без этого она показывала
+  // очередь на момент открытия, и разговор, пришедший минуту назад,
+  // в ней не появлялся — при том что счётчик на кнопке рядом уже вырос.
+  const [заход, setЗаход] = useState(0);
   // Время заводится при открытии и тикает раз в минуту: «ждёт 4 мин» иначе
   // застывает на том значении, что было при первом взгляде.
   const [now, setNow] = useState(() => Date.now());
@@ -83,6 +88,8 @@ function Queue({ ждут, onClose }: { ждут: number; onClose: () => void })
     const timer = setInterval(() => setNow(Date.now()), 60_000);
     return () => clearInterval(timer);
   }, []);
+
+  useLive({ changed: () => setЗаход((n) => n + 1) });
 
   useEffect(() => {
     let alive = true;
@@ -113,7 +120,9 @@ function Queue({ ждут, onClose }: { ждут: number; onClose: () => void })
     return () => {
       alive = false;
     };
-  }, []);
+    // Перечитываем и при событии в разговорах: панель открыта, а очередь
+    // за это время изменилась.
+  }, [заход]);
 
   const дольше_всех = longest(rows, now);
 

@@ -4,6 +4,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.vedal.portal.assistant.AskReply;
 import ru.vedal.portal.assistant.AssistantService;
 import ru.vedal.portal.assistant.LlmEngine;
 import ru.vedal.portal.audit.AuditLog;
@@ -15,6 +16,7 @@ import tools.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 // Сторона посетителя: он пишет, ему отвечают.
@@ -40,6 +42,11 @@ public class ChatDesk {
 
     private static final int MAX_PAGE_SIZE = 200;
 
+    // Сколько переписки уходит в тело заявки. Четыре тысячи знаков — это
+    // примерно тридцать реплик: разговор длиннее в заявке всё равно не читают,
+    // а полная переписка остаётся в разговоре, на который заявка ссылается.
+    private static final int MAX_TRANSCRIPT = 4000;
+
     private final ConversationRepository conversations;
     private final ChatMessageRepository messages;
     private final AssistantService assistant;
@@ -47,10 +54,11 @@ public class ChatDesk {
     private final ObjectMapper json;
     private final ApplicationEventPublisher bus;
     private final ChatStream stream;
+    private final SupportHours hours;
 
     public ChatDesk(ConversationRepository conversations, ChatMessageRepository messages,
                     AssistantService assistant, AuditLog audit, ObjectMapper json,
-                    ApplicationEventPublisher bus, ChatStream stream) {
+                    ApplicationEventPublisher bus, ChatStream stream, SupportHours hours) {
         this.conversations = conversations;
         this.messages = messages;
         this.assistant = assistant;
@@ -58,6 +66,7 @@ public class ChatDesk {
         this.json = json;
         this.bus = bus;
         this.stream = stream;
+        this.hours = hours;
     }
 
     /**
@@ -107,14 +116,73 @@ public class ChatDesk {
         // Кнопка — известный вопрос с известным ответом. В поиск он не идёт:
         // именно там «Запросить КП» превращалось в список изделий, у которых
         // в описании нашлось похожее слово.
+        //
+        // Отвечается сразу, а не отдельным шагом: текст известен заранее,
+        // и откладывать его значит показывать раздумье над решением, которое
+        // принято до нажатия кнопки.
         var canned = assistant.scripted(intent, "public");
         if (canned.isPresent()) {
             append(conversation, ChatMessage.ASSISTANT, null, canned.get().answer(), null);
             return thread(conversation);
         }
 
-        // Чат на сайте — открытый контур: посетитель, не сотрудник.
-        var reply = assistant.ask(text, LlmEngine.Scope.PUBLIC, "public");
+        // ————— свободный вопрос отвечается отдельно —————
+        //
+        // Раньше движок вызывался прямо здесь, и ответ уходил в теле того же
+        // запроса. С детерминированным поиском это незаметно: он считает за
+        // миллисекунды. С моделью тот же код означает запрос, висящий десять
+        // секунд, — и три беды разом.
+        //
+        // Первая: посетитель всё это время смотрит в неподвижное окно. Точки
+        // «печатает» рисовал сам виджет и гасил их на любой перезагрузке —
+        // то есть надпись пропадала ровно тогда, когда человек начинал
+        // сомневаться, дошёл ли вопрос.
+        //
+        // Вторая: между виджетом и порталом стоят Caddy и шлюз, и у них свои
+        // сроки ожидания. Ответ, не поспевший к сроку, теряется для посетителя
+        // и остаётся записанным в базе — то есть виджет показывает ошибку
+        // на вопрос, ответ на который есть.
+        //
+        // Третья: HTTP-запрос занимает поток обслуживания. Десять секунд
+        // на вопрос — и десяток посетителей занимает их все.
+        //
+        // Поэтому дверь возвращает ленту сразу, с одним лишь вопросом
+        // посетителя, а ответ доезжает рассылкой. Кто его считает —
+        // {@link Answering}.
+        bus.publishEvent(new Asked(conversation.getId(), visitorKey, text));
+        return thread(conversation);
+    }
+
+    /**
+     * Вопрос принят, ответа ещё нет.
+     *
+     * <p>Событие внутрипроцессное и уходит после COMMIT: считающий ответ
+     * работает в другом потоке и своей транзакцией, а разговора, записанного
+     * незакоммиченной транзакцией, он там не увидит.
+     *
+     * <p>Текст вопроса едет в событии, а не вычитывается из ленты по разговору.
+     * «Последнее сообщение посетителя» — не то же самое, что «вопрос, ради
+     * которого это событие»: посетитель волен написать второй раз, пока
+     * считается ответ на первый.
+     */
+    public record Asked(UUID conversationId, String visitorKey, String question) {}
+
+    /**
+     * Ведалина ответила.
+     *
+     * <p>Отдельная дверь, а не продолжение {@link #say}: вызывается из другого
+     * потока, когда транзакция приёма давно закрыта.
+     */
+    @Transactional
+    public void answered(UUID conversationId, AskReply reply) {
+        var conversation = find(conversationId);
+
+        // Пока считался ответ, разговор мог уйти к человеку: посетитель нажал
+        // «позвать специалиста», сотрудник взял разговор из очереди. Правило
+        // «человек в разговоре — Ведалина молчит» сильнее того, что ответ
+        // уже готов: готовый ответ здесь ничем не отличается от ответа,
+        // написанного поверх реплики сотрудника.
+        if (conversation.handedToHuman()) return;
 
         if (reply.handoff() != null) {
             // Ответа нет — это штатный исход, а не ошибка: правило «нет
@@ -129,8 +197,30 @@ public class ChatDesk {
             append(conversation, ChatMessage.ASSISTANT, null, reply.answer(),
                     serialize(reply.sources()));
         }
+    }
 
-        return thread(conversation);
+    /**
+     * Ответ не сложился: движок недоступен, очередь переполнена, что угодно.
+     *
+     * <p>Молчание здесь недопустимо. Посетитель задал вопрос и видит точки;
+     * не написав ничего, мы оставляем его ждать ответа, которого никто
+     * не готовит, — и он уйдёт, решив, что чат сломан. Разговор встаёт
+     * в очередь к человеку: это ровно тот случай, для которого очередь есть.
+     *
+     * <p>Причина в журнале отличается от «нет источников» и от «попросил сам».
+     * Свалив их в одно, разбор качества ответов посчитал бы отказ движка
+     * за вопрос не по теме.
+     */
+    @Transactional
+    public void answerFailed(UUID conversationId) {
+        var conversation = find(conversationId);
+        if (conversation.handedToHuman()) return;
+
+        append(conversation, ChatMessage.ASSISTANT, null,
+                callingHuman().answer(), null);
+        conversation.setStatus(Conversation.WAITING);
+        audit.record("public", "chat.handoff", "conversation",
+                conversationId.toString(), Map.of("reason", "failed"));
     }
 
     /**
@@ -152,7 +242,7 @@ public class ChatDesk {
         if (conversation.handedToHuman()) return thread(conversation);
 
         append(conversation, ChatMessage.ASSISTANT, null,
-                assistant.callingHuman().answer(), null);
+                callingHuman().answer(), null);
         conversation.setStatus(Conversation.WAITING);
 
         // Причина отличается от той, что пишется при отсутствии источников:
@@ -181,7 +271,10 @@ public class ChatDesk {
                     markRead(conversation, ChatMessage.VISITOR);
                     return thread(conversation);
                 })
-                .orElseGet(Thread::empty);
+                // Разговора нет — лента пуста, но про людей сказать есть что:
+                // виджет открывают до первого сообщения, и надпись в шапке
+                // нужна ему уже тогда.
+                .orElseGet(() -> Thread.empty(support()));
     }
 
     /**
@@ -199,6 +292,130 @@ public class ChatDesk {
         // и редкий — виджет шлёт это раз в несколько секунд, а не на букву.
         conversations.findByVisitorKeyAndStatusNot(visitorKey, Conversation.CLOSED)
                 .ifPresent(c -> stream.typing(c.getId(), visitorKey, ChatMessage.VISITOR));
+    }
+
+    /**
+     * Посетитель оценил ответ Ведалины.
+     *
+     * <p><b>Зачем это порталу.</b> Журнал показывает, когда ассистент молчит,
+     * и не показывает худшего: он ответил уверенно и не по делу. Такой ответ
+     * в журнале неотличим от хорошего — источники нашлись, передачи не было.
+     * Отличает его только человек, который спрашивал.
+     *
+     * <p><b>Почему оценивать можно лишь свой разговор.</b> Ключ вкладки —
+     * единственное, что закрывает переписку; без проверки принадлежности
+     * оценка стала бы дверью, через которую по перебору идентификаторов
+     * можно узнать, существует ли чужое сообщение. Отсюда и отказ «не найдено»
+     * на чужое: он не сообщает, есть ли оно вообще.
+     *
+     * <p>Оценку можно поменять: человек передумал — это его право, а первая
+     * реакция не ценнее второй. В журнал уходит каждое изменение: важно
+     * не последнее нажатие, а то, что ответ вызвал сомнение.
+     */
+    @Transactional
+    public Thread rate(String visitorKey, UUID messageId, boolean helpful) {
+        var conversation = conversations
+                .findByVisitorKeyAndStatusNot(visitorKey, Conversation.CLOSED)
+                .orElseThrow(() -> new NotFoundException("Разговор не найден"));
+
+        var message = messages.findById(messageId)
+                .filter(m -> conversation.getId().equals(m.getConversationId()))
+                .orElseThrow(() -> new NotFoundException("Сообщение не найдено"));
+
+        // Оценивают ответ машины. Реплику сотрудника — нет: «специалист
+        // не помог» это не оценка ответа, а жалоба на человека, и разбирать
+        // её кнопкой в чате нельзя. Своё сообщение оценивать тем более незачем.
+        if (!ChatMessage.ASSISTANT.equals(message.getAuthor())) {
+            throw new NotFoundException("Оценивать можно только ответы Ведалины");
+        }
+
+        message.setHelpful(helpful);
+
+        // Текста ни вопроса, ни ответа в журнале нет — только факт и то,
+        // какое сообщение. Сам ответ лежит в разговоре и читается оттуда;
+        // журнал же неизменяем, и персональным данным в нём не место.
+        audit.record("public", "chat.rated", "chat_message", messageId.toString(),
+                Map.of("helpful", String.valueOf(helpful)));
+
+        return thread(conversation);
+    }
+
+    // ————— разговор, доросший до заявки —————
+
+    /**
+     * Разговор и его переписка одним куском — для заявки, которую из него заводят.
+     *
+     * <p><b>Почему здесь, а не в приёме заявок.</b> `chat` и `crm` друг о друге
+     * не знают намеренно: заявка приходит и без разговора (форма, письмо),
+     * а разговор не обязан дорасти до заявки. Сшивает их тот, кто зависит
+     * от обоих, — админская дверь и дверь приёма. Отсюда наружу уходит текст,
+     * а не знание о заявке.
+     *
+     * <p>Переписка нужна в теле заявки целиком. Менеджер, открывший заявку
+     * «перезвоните», без неё видит одну эту строку — а вопрос, ради которого
+     * человек пришёл, остался в разговоре, до которого ещё надо догадаться
+     * дойти.
+     */
+    @Transactional(readOnly = true)
+    public Optional<Transcript> transcriptFor(String visitorKey) {
+        return conversations.findByVisitorKeyAndStatusNot(visitorKey, Conversation.CLOSED)
+                .map(c -> new Transcript(c.getId(), transcript(c.getId())));
+    }
+
+    /**
+     * Переписка разговора текстом.
+     *
+     * <p>С конца, а не с начала: обрезанный хвост — это последние сообщения,
+     * ради которых заявку и завели, а обрезанное начало — приветствие.
+     */
+    private String transcript(UUID conversationId) {
+        var lines = messages.findByConversationIdOrderByAtAsc(conversationId).stream()
+                .map(m -> switch (m.getAuthor()) {
+                    case ChatMessage.VISITOR -> "Посетитель: " + m.getBody();
+                    case ChatMessage.STAFF -> (m.getActor() == null ? "Сотрудник" : m.getActor())
+                            + ": " + m.getBody();
+                    default -> "Ведалина: " + m.getBody();
+                })
+                .toList();
+
+        var text = String.join("\n\n", lines);
+        return text.length() <= MAX_TRANSCRIPT
+                ? text
+                : "…\n\n" + text.substring(text.length() - MAX_TRANSCRIPT);
+    }
+
+    /** Разговор вместе с его перепиской. */
+    public record Transcript(UUID conversationId, String text) {}
+
+    /**
+     * Разговор стал заявкой.
+     *
+     * <p>Номер говорится вслух и пишется в ленту: это единственное, что
+     * посетитель унесёт с собой. Личного кабинета у него нет, ссылке
+     * «перейти к обращению» вести некуда — и придумывать её нельзя.
+     *
+     * <p>Разговор при этом не закрывается и не уходит в очередь: заявка —
+     * не конец разговора, а его результат. Человек, оставивший контакты,
+     * волен спросить дальше, и отвечать ему будут здесь же.
+     */
+    @Transactional
+    public Thread leadRaised(UUID conversationId, UUID leadId, String number) {
+        var conversation = find(conversationId);
+
+        // Повторное нажатие: заявка та же (ключ повтора — разговор), и второе
+        // сообщение о ней в ленте выглядело бы как второе обращение.
+        if (conversation.getLeadId() != null) return thread(conversation);
+
+        conversation.setLeadId(leadId);
+        conversation.setLeadNumber(number);
+        append(conversation, ChatMessage.ASSISTANT, null,
+                "Обращение принято, номер " + number + ". Подтверждение отправлено на почту. "
+                        + "Специалист ответит здесь же, в этом окне.", null);
+
+        audit.record("public", "chat.lead", "conversation", conversationId.toString(),
+                Map.of("lead", leadId.toString()));
+
+        return thread(conversation);
     }
 
     // ————— сторона сотрудника —————
@@ -392,9 +609,35 @@ public class ChatDesk {
     private Thread thread(Conversation conversation) {
         var list = messages.findByConversationIdOrderByAtAsc(conversation.getId()).stream()
                 .map(m -> new Line(m.getAuthor(), m.getActor(), m.getBody(),
-                        deserialize(m.getSources()), m.getAt(), m.getReadAt()))
+                        deserialize(m.getSources()), m.getAt(), m.getReadAt(),
+                        m.getId(), m.getHelpful()))
                 .toList();
-        return new Thread(conversation.getId(), conversation.getStatus(), list);
+        return new Thread(conversation.getId(), conversation.getStatus(), list,
+                stream.answering(conversation.getId()), conversation.getLeadNumber(), support());
+    }
+
+    /**
+     * Что Ведалина говорит, зовя человека.
+     *
+     * <p>Разное в зависимости от того, есть ли кто-то на связи. Разговор,
+     * поставленный в очередь в полночь, ждёт до утра, и «ответ придёт в это
+     * же окно» человек прочтёт как «сейчас ответят»: он закроет вкладку
+     * через десять минут и решит, что чат не работает.
+     *
+     * <p>Смотрим на факт присутствия, а не только на расписание: сотрудник
+     * бывает на связи и в неурочный час, а в рабочее время может отойти.
+     * Часы называются тогда, когда на связи никого, — чтобы «сейчас никого
+     * нет» не читалось как «здесь никого не бывает».
+     */
+    private AskReply callingHuman() {
+        return stream.staffOnline()
+                ? assistant.callingHuman()
+                : assistant.callingHumanAfterHours(hours.description());
+    }
+
+    /** Отвечают ли сейчас люди — факт присутствия плюс часы работы. */
+    private Support support() {
+        return new Support(stream.staffOnline(), hours.openNow(), hours.description());
     }
 
     private String serialize(Object sources) {
@@ -424,11 +667,59 @@ public class ChatDesk {
         }
     }
 
-    public record Thread(UUID id, String status, List<Line> messages) {
-        static Thread empty() {
-            return new Thread(null, Conversation.OPEN, List.of());
+    public record Thread(UUID id, String status, List<Line> messages,
+
+                        /**
+                         * Ведалина думает над ответом прямо сейчас.
+                         *
+                         * <p>В ленте, а не только в событии рассылки, потому что
+                         * событие уходит один раз — и мимо того, кто подписался
+                         * позже. Виджет, открытый заново посреди ожидания,
+                         * обязан снова показать точки: без них окно выглядит
+                         * так, будто вопрос не дошёл, а он дошёл и на него
+                         * отвечают.
+                         */
+                        boolean answering,
+
+                        /**
+                         * Номер заявки, заведённой из этого разговора. Пусто —
+                         * разговор до заявки не дорос.
+                         *
+                         * <p>Номер, а не признак «заявка есть»: посетителю нужен
+                         * именно он — по нему он позвонит, найдёт письмо
+                         * и вернётся к разговору через неделю.
+                         */
+                        String leadNumber,
+
+                        /**
+                         * Отвечают ли сейчас люди — и когда отвечают вообще.
+                         *
+                         * <p>В ленте, а не отдельной дверью: виджет и так
+                         * читает ленту при каждом открытии, а лишняя дверь
+                         * означала бы второй запрос ради двух полей.
+                         */
+                        Support support) {
+
+        static Thread empty(Support support) {
+            return new Thread(null, Conversation.OPEN, List.of(), false, null, support);
         }
     }
+
+    /**
+     * Что сказать посетителю про живых людей.
+     *
+     * <p>Два признака, а не один, и это не избыточность. «Никого нет
+     * в 23:00» и «никого нет в 11:00 вторника» — разные новости: в первом
+     * случае человеку надо назвать часы и предложить обращение, во втором
+     * специалист вот-вот подключится, и ждать имеет смысл.
+     *
+     * @param online    кто-то из специалистов на связи прямо сейчас. Факт:
+     *                  открытое рабочее место означает, что человек смотрит
+     *                  в экран. Расписание такого не обещает.
+     * @param openNow   рабочее ли сейчас время по расписанию поддержки.
+     * @param hours     часы работы одной строкой — что показать, когда никого нет.
+     */
+    public record Support(boolean online, boolean openNow, String hours) {}
 
     /**
      * Строка ленты.
@@ -441,5 +732,20 @@ public class ChatDesk {
                        List<LlmEngine.Source> sources, Instant at,
 
                        /** Когда прочитано противоположной стороной. null — ещё нет. */
-                       Instant readAt) {}
+                       Instant readAt,
+
+                       /**
+                        * Идентификатор сообщения. Понадобился ради оценки:
+                        * «этот ответ не помог» надо к чему-то отнести,
+                        * а порядковый номер в ленте съезжает от каждой
+                        * новой реплики.
+                        */
+                       UUID id,
+
+                       /**
+                        * Помог ли ответ, по мнению посетителя. null — не
+                        * оценивал; отличать это от «не помог» обязательно,
+                        * иначе доля плохих ответов считается по молчавшим.
+                        */
+                       Boolean helpful) {}
 }

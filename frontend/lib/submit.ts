@@ -168,6 +168,18 @@ async function readProblem(response: Response): Promise<Problem> {
 export type ChatAuthor = "visitor" | "assistant" | "staff";
 
 export type ChatLine = {
+  /**
+   * Идентификатор сообщения. Нужен оценке: «этот ответ не помог» надо
+   * к чему-то отнести, а порядковый номер в ленте съезжает от каждой
+   * новой реплики.
+   */
+  id: string;
+  /**
+   * Помог ли ответ, по мнению посетителя. `null` — не оценивал.
+   * Отличать это от «не помог» обязательно: иначе доля плохих ответов
+   * считается по тем, кто промолчал.
+   */
+  helpful: boolean | null;
   author: ChatAuthor;
   /** Имя сотрудника. У Ведалины и у самого посетителя пусто. */
   actor: string | null;
@@ -183,6 +195,44 @@ export type ChatThread = {
   id: string | null;
   status: "open" | "waiting" | "attended" | "closed";
   messages: ChatLine[];
+  /**
+   * Ведалина считает ответ прямо сейчас.
+   *
+   * Приходит в ленте, а не только событием потока, и это важно: событие
+   * уходит один раз и мимо того, кто подписался позже. Виджет, открытый
+   * заново посреди ожидания, обязан снова показать точки — иначе окно
+   * выглядит так, будто вопрос не дошёл, а он дошёл и на него отвечают.
+   */
+  answering: boolean;
+  /**
+   * Номер заявки, заведённой из этого разговора. `null` — не дорос.
+   *
+   * Номер, а не признак «заявка есть»: посетителю нужен именно он — по нему
+   * он позвонит, найдёт письмо и вернётся к разговору через неделю.
+   */
+  leadNumber: string | null;
+  /** Отвечают ли сейчас люди — и когда отвечают вообще. */
+  support: ChatSupport;
+};
+
+/**
+ * Что портал говорит про живых специалистов.
+ *
+ * Два признака, а не один: «никого нет в 23:00» и «никого нет в 11:00
+ * вторника» — разные новости. В первом случае человеку надо назвать часы
+ * и предложить обращение, во втором специалист вот-вот подключится.
+ */
+export type ChatSupport = {
+  /**
+   * Кто-то из специалистов на связи прямо сейчас. Факт: у портала открыто
+   * рабочее место, то есть человек смотрит в экран. Расписание такого
+   * не обещает.
+   */
+  online: boolean;
+  /** Рабочее ли сейчас время по расписанию поддержки. */
+  openNow: boolean;
+  /** Часы работы одной строкой — что показать, когда никого нет. */
+  hours: string;
 };
 
 const VISITOR_KEY = "vedal.chat.visitor";
@@ -323,6 +373,100 @@ export async function callHuman(visitor: string): Promise<ChatThread | { error: 
 
   const problem = await readProblem(response);
   return { error: problem.title ?? problem.detail ?? `Чат недоступен (${response.status}).` };
+}
+
+/**
+ * Оценить ответ Ведалины.
+ *
+ * Возвращает ленту с проставленной оценкой — как и остальные двери разговора:
+ * состояние определяет портал, а не виджет, и «нажал, но не сохранилось»
+ * здесь взяться неоткуда.
+ */
+export async function rateAnswer(
+  visitor: string,
+  messageId: string,
+  helpful: boolean,
+): Promise<ChatThread | { error: string }> {
+  if (!apiConfigured) return { error: NOT_CONFIGURED };
+
+  let response: Response;
+  try {
+    response = await fetch(`${apiUrl}/api/assistant/v1/chat/rating`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ visitorKey: visitor, messageId, helpful }),
+    });
+  } catch {
+    return { error: UNREACHABLE };
+  }
+
+  if (response.ok) return (await response.json()) as ChatThread;
+
+  const problem = await readProblem(response);
+  return { error: problem.title ?? problem.detail ?? `Оценка не сохранилась (${response.status}).` };
+}
+
+/** Контакты для обращения, заводимого из разговора. */
+export type ChatLead = {
+  name: string;
+  company?: string;
+  phone: string;
+  email: string;
+  consent: boolean;
+};
+
+/** Что портал ответил на обращение: номер или разбор по полям. */
+export type ChatLeadResult =
+  | { number: string }
+  | { error: string; fields?: Record<string, string> };
+
+/**
+ * Завести обращение из разговора.
+ *
+ * Дверь стоит в формах, а не в чате, и это не случайность: заявка — запись
+ * снаружи, и принимает её то место, где стоит периметр — проверка полей,
+ * ловушка для ботов, лимит частоты. Четвёртой двери у портала не заводится.
+ *
+ * Повторное нажатие ничего не задваивает: ключом повтора служит сам разговор,
+ * и вторая отправка вернёт тот же номер.
+ */
+export async function raiseChatLead(
+  visitor: string,
+  lead: ChatLead,
+): Promise<ChatLeadResult> {
+  if (!apiConfigured) return { error: NOT_CONFIGURED };
+
+  let response: Response;
+  try {
+    response = await fetch(`${apiUrl}/api/forms/v1/leads/from-chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        visitorKey: visitor,
+        name: lead.name,
+        company: lead.company || null,
+        phone: lead.phone,
+        email: lead.email,
+        consent: lead.consent,
+        language: document.documentElement.lang || null,
+        campaign: new URLSearchParams(location.search).get("utm_campaign"),
+        // Ловушка для ботов: поле обязано уходить пустым.
+        trap: "",
+      }),
+    });
+  } catch {
+    return { error: UNREACHABLE };
+  }
+
+  if (response.ok) return (await response.json()) as { number: string };
+
+  // Разбор по полям приходит в расширении `fields` — форма показывает ошибку
+  // рядом с полем, а не одной строкой сверху.
+  const problem = await readProblem(response);
+  return {
+    error: problem.title ?? problem.detail ?? `Обращение не отправлено (${response.status}).`,
+    fields: problem.fields,
+  };
 }
 
 export async function chatThread(visitor: string): Promise<ChatThread | null> {

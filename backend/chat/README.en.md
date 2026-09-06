@@ -76,6 +76,125 @@ The log records what happened and the conversation id, nothing else.
 Message text can still become personal data, so a conversation is anonymised by
 the same mechanism as a lead: the `erased_at` and `erasure_basis` columns.
 
+## The question is accepted, the answer arrives later
+
+`POST /chat` records the question and replies immediately — with a thread that
+does not yet contain Vedalina's answer. The answer is computed separately
+(`Answering`) and arrives over the stream.
+
+The engine used to be called inside that same request, and it went unnoticed:
+deterministic search answers in milliseconds. A model answers in seconds, and
+the same code then causes three problems at once. The visitor stares at a
+motionless window — the dots were drawn by the widget itself and went out on
+every reload. Caddy and the gateway sit between the widget and the portal with
+timeouts of their own: an answer that misses the deadline is lost to the visitor
+while staying recorded in the database. And every hanging request holds a worker
+thread — a dozen visitors hold all of them.
+
+There is one exception: a pressed quick-reply button. Its text is known in
+advance, and delaying it would mean acting out deliberation over a decision
+made before the click.
+
+Deliberation is state, not a message: the `answering` field in the thread and a
+`typing` event with `who = assistant`. It lives in the thread because an event
+is sent once and misses whoever subscribed later: a widget reopened in the
+middle of the wait must show the dots again.
+
+An answer that fails — engine unavailable, queue full — is not silence but a
+handoff to a human, recorded with reason `failed`. Silence here means a visitor
+waiting for an answer nobody is preparing.
+
+## Who is around, and when they answer
+
+The widget shows whether a live specialist is there right now. This is **a fact,
+not a schedule**: `ChatStream.staffOnline()` says yes when at least one desk is
+open — that is, someone is looking at the admin screen at this moment. A "we are
+online" sign driven by working hours lies during the lunch break to exactly the
+person who relied on it.
+
+The converse does not hold: a closed tab does not mean the employee went home.
+So "nobody is here" is shown together with the working hours — otherwise it
+reads as "nobody is ever here". The hours live in the `vedal.support.*` settings
+and were carried over from the site: "Пн–Пт 9:00–18:00", Yekaterinburg time.
+The schedule changes less often than once per release, and a table with an
+editor in the admin panel would demand a screen, permissions, an audit trail and
+a decision about holidays — work that pays off when the schedule becomes complex.
+
+Holidays and shifted working days are deliberately absent: a calendar of working
+days has to come from somewhere and be maintained, and an error in it means "we
+are open" on a day when nobody answers. A holiday looks like an ordinary day
+with nobody around — and the visitor sees that as a fact, not as a promise.
+
+Presence arrives by two routes: the `support` field in the thread (the widget is
+opened before the first message, and the sign is needed already then) and the
+`presence` stream event on 0↔1 desk transitions. Broadcasting it for every open
+admin tab would wake every visitor on the site each time an employee switches
+between sections.
+
+When calling a human while nobody is around, Vedalina says something different:
+a conversation queued at midnight waits until morning, and "the answer will
+arrive in this window" reads as "they will answer now" — the person closes the
+tab ten minutes later and concludes the chat does not work.
+
+## A conversation that grew into a lead
+
+A visitor can raise a lead straight from the chat: the button opens a form with
+name, phone, email and consent; the portal records the lead and answers with a
+number — the same one the confirmation email carries.
+
+**Contacts are asked here, not before the first message.** Up to this point the
+visitor is anonymous and has nothing to consent to; an "introduce yourself" form
+in front of the first question would turn away most of the people who wanted to
+ask something quickly — and the person who asked is the future lead.
+
+**The text of the request is not asked for**: the conversation becomes it. Making
+someone retell in a form what they just wrote into the chat means asking twice.
+The transcript goes into the lead body as its last four thousand characters —
+the beginning is trimmed, not the tail: the manager does not need the greeting.
+
+**The door lives in `gateway`, not here.** A lead is a write from outside, and it
+is accepted where the perimeter stands: field validation, the bot trap, the rate
+limit. No fourth door is created. That is also where `chat` and `crm` are sewn
+together while knowing nothing about each other: transcript text leaves this
+module, and knowledge of the lead never enters it — the number is kept as a
+snapshot in `conversation.lead_number`.
+
+**A lead does not end the conversation.** The status does not change and the
+conversation does not join the queue: a lead is the result of a conversation,
+not its end, and the person is free to keep asking in the same window.
+
+No "go to your request" link is shown to the visitor: they have no personal
+account, the link would have nowhere to lead, and inventing one would mean
+promising a page that does not exist.
+
+## Did the answer help
+
+Vedalina's answers carry "helped" and "did not help" buttons. They exist not
+for politeness: the audit log shows when the assistant stayed silent and hides
+the worse case — it answered confidently and beside the point. In the log such
+an answer is indistinguishable from a good one: sources were found, no handoff
+happened. Only the person who asked can tell them apart.
+
+The rating sits on the message, not on the conversation: a six-turn conversation
+rated by a single button answers "did you like it", while the question that
+matters is "which answer was bad".
+
+Only Vedalina's answers can be rated, and only inside your own conversation.
+Someone else's message returns the same "not found" as a non-existent one:
+otherwise the difference in responses would itself reveal, by brute force, which
+identifiers exist. "The specialist did not help" is not collected by a button —
+that is a complaint about a person, and it cannot be handled this way.
+
+`NULL` means not rated, and that is the majority: the button is pressed by a
+few. Telling that apart from "did not help" is mandatory, otherwise the share of
+bad answers is computed over those who stayed silent. Every press reaches the
+audit log — what matters is not the final opinion but that the answer raised
+doubt; the question and answer texts never go there.
+
+Whoever presses "did not help" is offered a human: they are still without an
+answer, and that is the only thing on their mind. Thanking them for feedback at
+that moment is mockery.
+
 ## The whole thread, not an increment
 
 `say` and `threadFor` return the entire conversation rather than the new

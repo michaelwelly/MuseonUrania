@@ -103,14 +103,19 @@ class RuntimeRolePrivilegesTest extends PostgresTestBase {
     void applicationWorkKeepsWorking() throws SQLException {
         var id = UUID.randomUUID();
 
+        // Номер заявки выдаёт последовательность, и права на неё нужны те же,
+        // что на таблицу. Тест со вписанным руками номером этого не поймал бы:
+        // приём заявки упал бы впервые на проде — там, где номер берут из базы.
+        runAsRuntime("select nextval('lead_number_seq')");
+
         // Заявка: единственная запись снаружи.
         runAsRuntime("""
-                insert into lead (id, form, name, phone, email, message,
+                insert into lead (id, number, form, name, phone, email, message,
                                   consent_version, consent_at, source, status, created_at)
-                values ('%s', 'quote', 'Проверка прав', '+7 343 000-00-00',
+                values ('%s', 'З-права-%s', 'quote', 'Проверка прав', '+7 343 000-00-00',
                         'prava@example.ru', 'Проверка прав рантайм-роли.',
                         'v1', now(), 'site', 'new', now())
-                """.formatted(id));
+                """.formatted(id, id.toString().substring(0, 8)));
 
         // Журнал: только дописывание, и оно обязано работать.
         runAsRuntime("""

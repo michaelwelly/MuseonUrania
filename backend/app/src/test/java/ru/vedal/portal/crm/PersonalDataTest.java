@@ -31,6 +31,9 @@ class PersonalDataTest extends PostgresTestBase {
     private Lead lead() {
         var lead = new Lead();
         lead.setId(UUID.randomUUID());
+        // Номер уникален в базе, а в одном тесте заявок бывает две:
+        // фиксированная строка сделала бы падение по дублю.
+        lead.setNumber("З-тест-" + lead.getId().toString().substring(0, 8));
         lead.setForm("quote");
         lead.setName("Иванов Иван");
         lead.setCompany("ООО «Больница»");

@@ -117,7 +117,7 @@ Deferred inside existing modules as well:
 | --- | --- | --- |
 | Kafka: publishing | ✅ ready. `vedal.events.publisher=kafka` — the relay publishes itself, `debezium` — a connector reads the log. The application creates the topics | — |
 | Kafka: consumers | ✅ read from the topics in `debezium` mode, repeats cut off by `(consumer, event)`, unprocessed messages go to `<topic>.dlq` | — |
-| Object Storage | ✅ S3 through the AWS SDK: MinIO locally, two areas — closed documents and open media | Which cloud it will be is an open question in [infrastructure_architecture.en.md](../docs/architecture/infrastructure_architecture.en.md) |
+| Object Storage | ✅ S3 through the AWS SDK on Yandex Object Storage, two areas — closed documents and open media. Locally a directory on disk by default, the same cloud once keys are set | Keys: not in the repository, set in `backend/.env` |
 | Identity provider | ✅ Keycloak: the portal verifies the token and parses `realm_access.roles`. Local accounts are the `vedal.iam.mode=local` fallback | Who runs Keycloak in a deployed environment |
 | Single entry point | ✅ [api-gateway](api-gateway/README.en.md) on Spring Cloud Gateway | — |
 | pgvector | not used | **The EnterpriseDB PostgreSQL build for Windows does not ship the extension** — `pg_available_extensions` does not know it. A `pgvector/pgvector:pg16` image will be needed, and `compose.yaml` and `PostgresTestBase` must be switched at the same time, otherwise the tests diverge from development |
@@ -303,7 +303,7 @@ port.
 | --- | --- | --- |
 | `EventPublisher` | `log`, `kafka` or `debezium` via `vedal.events.publisher` | Managed Kafka |
 | `MailSender` | writes to the log | Yandex 360 SMTP |
-| `FileStorage` | `local` or `s3` via `vedal.storage.kind`; MinIO in the stack, 20 MB limit | Yandex Object Storage |
+| `FileStorage` | `local` or `s3` via `vedal.storage.kind`; `local` in the stack by default, Yandex Object Storage once keys are set. 20 MB limit | — |
 | `LlmEngine` | deterministic word search | YandexGPT + pgvector |
 
 All three pick their implementation by a property, not by the classpath and not

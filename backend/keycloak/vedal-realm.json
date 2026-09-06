@@ -154,7 +154,8 @@
       "serviceAccountClientId": "vedal-portal-svc",
       "clientRoles": {
         "realm-management": [
-          "view-users"
+          "view-users",
+          "manage-users"
         ]
       }
     }

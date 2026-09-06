@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import LivePattern from "./LivePattern";
 import { vedalina, quickReplies, answerFor } from "@/content/vedalina";
 import { site } from "@/content/site";
+import { consent as consentCopy } from "@/content/legal";
 import {
   apiConfigured,
   callHuman,
@@ -12,9 +13,12 @@ import {
   chatStreamUrl,
   chatThread,
   pingTyping,
+  raiseChatLead,
+  rateAnswer,
   sayInChat,
   visitorKey,
   type ChatLine,
+  type ChatSupport,
   type Handoff,
   type Prompt,
   type Source,
@@ -39,6 +43,14 @@ type Message = {
   /** Имя сотрудника: посетитель должен видеть, что отвечает человек. */
   who?: string;
   text: string;
+  /**
+   * Идентификатор сообщения на портале. Пусто у приветствия и у реплик,
+   * дописанных виджетом при недоступном портале: их на портале нет,
+   * и оценить их не к чему.
+   */
+  id?: string;
+  /** Оценка ответа: помог или нет. `null` — не оценивали. */
+  helpful?: boolean | null;
   sources?: Source[];
   /** Заполнен, когда подходящих опубликованных источников нет. */
   handoff?: Handoff;
@@ -66,11 +78,12 @@ const GREETING: Message = { from: "bot", text: vedalina.greeting };
 /** Строка серверной ленты — в сообщение виджета. */
 function toMessage(line: ChatLine): Message {
   if (line.author === "visitor") {
-    return { from: "me", text: line.body, at: line.at, readAt: line.readAt };
+    return { from: "me", id: line.id, text: line.body, at: line.at, readAt: line.readAt };
   }
   if (line.author === "staff") {
     return {
       from: "staff",
+      id: line.id,
       who: line.actor ?? "Специалист VEDAL",
       text: line.body,
       at: line.at,
@@ -78,15 +91,250 @@ function toMessage(line: ChatLine): Message {
   }
   return {
     from: "bot",
+    id: line.id,
     text: line.body,
     at: line.at,
+    helpful: line.helpful,
     sources: line.sources?.length ? line.sources : undefined,
   };
 }
 
+/** Когда виджет последний раз был открыт на глазах у человека. */
+const SEEN_KEY = "vedal.chat.seen";
+
+function lastSeen(): number {
+  try {
+    return Number(localStorage.getItem(SEEN_KEY)) || 0;
+  } catch {
+    // Приватный режим, запрет сторонних данных: без отметки просто
+    // не будет разделителя «новые» — окно от этого не ломается.
+    return 0;
+  }
+}
+
+function rememberSeen(at: number) {
+  try {
+    localStorage.setItem(SEEN_KEY, String(at));
+  } catch {
+    // См. выше: невозможность запомнить — не повод рушить виджет.
+  }
+}
+
+/**
+ * Первое сообщение, которого человек ещё не видел.
+ *
+ * <p>Считается по времени последнего открытия виджета, а не по отметке
+ * «прочитано». Отметку портал ставит в тот момент, когда отдаёт ленту:
+ * к приходу она уже проставлена, и непрочитанного в ленте не бывает
+ * по устройству.
+ *
+ * <p>Свои сообщения границей не считаются: посетитель их видел, когда писал.
+ */
+function isFirstUnseen(list: Message[], at: number, seenAt: number): boolean {
+  if (!seenAt) return false;
+
+  const message = list[at];
+  if (message.from === "me" || !message.at) return false;
+  if (new Date(message.at).getTime() <= seenAt) return false;
+
+  // Граница одна — перед первым новым. Иначе надпись повторяется перед
+  // каждым сообщением подряд.
+  return !list
+    .slice(0, at)
+    .some((m) => m.from !== "me" && m.at && new Date(m.at).getTime() > seenAt);
+}
+
+/** День сообщения: по нему лента делится разделителями дат. */
+function day(iso?: string): string | null {
+  if (!iso) return null;
+  const at = new Date(iso);
+  return Number.isNaN(at.valueOf()) ? null : at.toDateString();
+}
+
+/**
+ * Подпись разделителя даты.
+ *
+ * «Сегодня» и «вчера» — словами: дата в разговоре нужна, чтобы понять,
+ * насколько он свежий, а «31 августа» требует от читателя вспомнить,
+ * какое сегодня число.
+ */
+function dayLabel(iso: string): string {
+  const at = new Date(iso);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  if (at.toDateString() === today.toDateString()) return "Сегодня";
+  if (at.toDateString() === yesterday.toDateString()) return "Вчера";
+
+  return at.toLocaleDateString("ru-RU", {
+    day: "numeric",
+    month: "long",
+    // Год — только у прошлогодних: в свежем разговоре он лишний шум.
+    year: at.getFullYear() === today.getFullYear() ? undefined : "numeric",
+  });
+}
+
+/**
+ * Разбор ссылок на источники внутри текста.
+ *
+ * Ответ может нести маркеры вида `[1]` — так на утверждение вешается
+ * источник. Детерминированный поиск их не ставит: он не знает, какая фраза
+ * из какого материала, и расставить номера наугад значило бы выдумать
+ * привязку — ровно то, ради чего источники и заведены. Разбор существует
+ * заранее, чтобы модель, которая ставить их умеет, не потребовала переделки
+ * ленты: появятся маркеры — станут ссылками сразу.
+ *
+ * Маркер на несуществующий источник остаётся текстом. Ссылка в никуда хуже
+ * её отсутствия: по ней нажмут.
+ */
+function withMarkers(text: string, sources?: Source[]): (string | { note: number })[] {
+  if (!sources?.length) return [text];
+
+  const parts: (string | { note: number })[] = [];
+  let rest = text;
+
+  for (;;) {
+    const found = rest.match(/\[(\d{1,2})\]/);
+    if (!found || found.index === undefined) break;
+
+    const number = Number(found[1]);
+    parts.push(rest.slice(0, found.index));
+    // Номер вне списка источников — не ссылка, а обычный текст.
+    parts.push(number >= 1 && number <= sources.length ? { note: number } : found[0]);
+    rest = rest.slice(found.index + found[0].length);
+  }
+
+  parts.push(rest);
+  return parts.filter((part) => part !== "");
+}
+
+/**
+ * Сколько ждём ответа, прежде чем погасить точки.
+ *
+ * Страховка, а не срок. Ответ гасит их сам — событием потока; этот предел
+ * нужен на случай, когда события не будет вовсе: поток оборвался, портал
+ * перезапустился, ответ потерялся. Вечные точки хуже отсутствия точек:
+ * человек ждёт того, чего уже не случится.
+ *
+ * Минута, а не десять секунд: у модели десять секунд — обычный ответ,
+ * и погасшие на восьмой секунде точки означали бы «не дождался» ровно там,
+ * где всё идёт по плану.
+ */
+const THINKING_LIMIT = 60_000;
+
+/**
+ * Обращение из разговора: контакты и согласие.
+ *
+ * <p>Спрашивается здесь, а не перед первым сообщением, и это разница между
+ * «спросил и ушёл» и «спросил, не дождался, оставил контакты». Посетитель
+ * анонимен ровно до этого места: ключ вкладки о человеке не сообщает ничего,
+ * и согласие ему давать не на что.
+ *
+ * <p>Текст обращения не спрашивается: им становится переписка, которая уже
+ * состоялась. Просить пересказать в форме то, что человек только что написал
+ * в чат, — значит спросить дважды.
+ */
+function TicketForm({
+  onSend,
+  onCancel,
+}: {
+  onSend: (lead: {
+    name: string;
+    company: string;
+    phone: string;
+    email: string;
+    consent: boolean;
+  }) => Promise<string | null>;
+  onCancel: () => void;
+}) {
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  return (
+    <form
+      className={styles.ticket}
+      onSubmit={async (e) => {
+        e.preventDefault();
+        const data = new FormData(e.currentTarget);
+        setSending(true);
+        setError(
+          await onSend({
+            name: String(data.get("name") ?? "").trim(),
+            company: String(data.get("company") ?? "").trim(),
+            phone: String(data.get("phone") ?? "").trim(),
+            email: String(data.get("email") ?? "").trim(),
+            consent: Boolean(data.get("consent")),
+          }),
+        );
+        setSending(false);
+      }}
+    >
+      <p className={styles.ticketTitle}>Обращение специалисту</p>
+      {/* Что произойдёт — сказано до того, как человек заполнит поля.
+          «Оставьте контакты» без объяснения выглядит как сбор базы. */}
+      <p className={styles.ticketNote}>
+        Переписка приложится к обращению — пересказывать вопрос не нужно.
+        Номер придёт на почту.
+      </p>
+
+      <input className={styles.ticketField} name="name" placeholder="Имя" required />
+      <input
+        className={styles.ticketField}
+        name="company"
+        placeholder="Организация (необязательно)"
+      />
+      <input
+        className={styles.ticketField}
+        name="phone"
+        type="tel"
+        placeholder="Телефон"
+        required
+      />
+      <input
+        className={styles.ticketField}
+        name="email"
+        type="email"
+        placeholder="Почта"
+        required
+      />
+
+      <label className={styles.ticketConsent}>
+        <input type="checkbox" name="consent" required />
+        <span>
+          {consentCopy.label} —{" "}
+          <a href={consentCopy.href}>{consentCopy.linkLabel}</a>
+        </span>
+      </label>
+
+      {error && <p className={styles.ticketError}>{error}</p>}
+
+      <div className={styles.ticketButtons}>
+        <button type="submit" className={styles.ticketSend} disabled={sending}>
+          {sending ? "Отправляем…" : "Отправить обращение"}
+        </button>
+        <button type="button" className={styles.ticketCancel} onClick={onCancel}>
+          Отмена
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
   const [list, setList] = useState<Message[]>([GREETING]);
+  // Ведалина считает ответ.
+  //
+  // Раньше это был флаг, который виджет ставил себе сам на время запроса
+  // и снимал по его завершении. Работало, пока ответ приходил в теле того же
+  // запроса. Теперь ответ доезжает потоком, а значит ожидание переживает
+  // и перезагрузку страницы, и вторую вкладку — и знает о нём портал,
+  // а не только это окно.
   const [typing, setTyping] = useState(false);
+  // Кусок ещё не дописанного ответа. Показывается как незаконченный и
+  // заменяется лентой, как только ответ записан. Сам по себе он не значит
+  // ничего: в базе его нет.
+  const [answerDraft, setAnswerDraft] = useState("");
   const [draft, setDraft] = useState("");
   // Кнопки приходят с портала: подпись и заготовка, разложенные по двум
   // местам, расходятся на первой же правке — и расходятся молча.
@@ -95,6 +343,27 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
   // дописывалось после ответа и пропадало на первом же обновлении ленты
   // из потока — то есть исчезало ровно тогда, когда посетитель ждал.
   const [waiting, setWaiting] = useState(false);
+  // Номер обращения, заведённого из этого разговора. Приходит с лентой:
+  // человек, вернувшийся через неделю, обязан найти его там же, где оставил.
+  const [leadNumber, setLeadNumber] = useState<string | null>(null);
+  // Форма обращения раскрыта. Не отдельный экран: разговор остаётся на месте,
+  // и видно, из чего обращение заводится.
+  const [ticketForm, setTicketForm] = useState(false);
+  // Отвечают ли сейчас люди. Приходит с лентой и меняется событием потока:
+  // сотрудник, открывший админку, появляется на связи не тогда, когда
+  // посетитель обновит страницу.
+  //
+  // Пока портал не ответил — null: «неизвестно» это не «оффлайн». Надпись
+  // «сейчас никого нет», показанная до первого ответа портала, была бы
+  // догадкой, и первое, что увидел бы посетитель, — сообщение о том,
+  // что писать некому.
+  const [support, setSupport] = useState<ChatSupport | null>(null);
+  // Подсказка о часах работы раскрыта.
+  const [hoursOpen, setHoursOpen] = useState(false);
+  // Когда виджет последний раз был открыт на глазах у человека. Снимается
+  // один раз при открытии: обновляйся оно на каждое сообщение — граница
+  // «новые» исчезала бы ровно в тот момент, когда она нужна.
+  const [seenAt] = useState(() => (typeof window === "undefined" ? 0 : lastSeen()));
   const feed = useRef<HTMLDivElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const visitor = useRef<string>("");
@@ -102,6 +371,8 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
   // не существует, человек волен просто закрыть вкладку.
   const [staffTyping, setStaffTyping] = useState(false);
   const fade = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Предел ожидания ответа Ведалины: страховка от вечных точек.
+  const patience = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Когда последний раз сообщали, что посетитель печатает.
   const pinged = useRef(0);
 
@@ -109,6 +380,21 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
   // иначе быстрые клики по чипам наложат несколько ответов друг на друга.
   useEffect(() => () => {
     if (timer.current) clearTimeout(timer.current);
+  }, []);
+
+  // Отметка «виджет был открыт» ставится при закрытии окна, а не при
+  // открытии: поставленная сразу, она стёрла бы границу «новые» в тот же
+  // миг, когда человек её увидел.
+  //
+  // Сюда же попадает уход со страницы: вкладку закрывают чаще, чем
+  // сворачивают чат, и без этого граница осталась бы от позапрошлого раза.
+  useEffect(() => {
+    const remember = () => rememberSeen(Date.now());
+    document.addEventListener("visibilitychange", remember);
+    return () => {
+      document.removeEventListener("visibilitychange", remember);
+      remember();
+    };
   }, []);
 
   // Разговор продолжается между страницами и перезагрузками: ключ вкладки
@@ -128,9 +414,27 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
 
     const refresh = () =>
       void chatThread(visitor.current).then((thread) => {
-        if (!alive || !thread?.messages.length) return;
-        setTyping(false);
+        if (!alive || !thread) return;
+
+        // Про людей портал отвечает всегда — и когда разговора ещё нет.
+        // Виджет открывают до первого сообщения, и надпись в шапке нужна
+        // ему уже тогда.
+        if (thread.support) setSupport(thread.support);
+
+        if (!thread.messages.length) return;
+
+        // Точки гасит лента, а не таймер: пришедшая лента и есть ответ
+        // на вопрос «дождались ли». Портал сообщает в ней же, думает ли
+        // Ведалина прямо сейчас, — и это переживает перезагрузку страницы.
+        thinking(thread.answering);
+
+        // Черновик своё отработал: дальше на экране настоящая лента.
+        // Оставить его рядом с записанным ответом значит показать текст
+        // дважды.
+        setAnswerDraft("");
+
         setWaiting(thread.status === "waiting");
+        setLeadNumber(thread.leadNumber ?? null);
         setList([GREETING, ...thread.messages.map(toMessage)]);
       });
 
@@ -139,19 +443,68 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
     const url = chatStreamUrl(visitor.current);
     if (!url) return;
     const stream = new EventSource(url);
-    stream.onmessage = refresh;
 
-    // Сотрудник печатает. Отдельный вид события, потому что перечитывать
-    // ленту здесь незачем: в базе этого факта нет и не будет.
+    // Слушать надо ИМЕНОВАННОЕ событие, а не onmessage.
+    //
+    // onmessage срабатывает только на события без поля event, а портал шлёт
+    // `event:changed`. Обработчик не вызывался ни разу: лента читалась один
+    // раз при открытии и дальше не менялась. Снаружи это выглядело так,
+    // будто ответ сотрудника и галочка «прочитано» появляются только после
+    // перезагрузки страницы — что и происходило.
+    //
+    // Соседний обработчик typing работал именно потому, что подписан
+    // по имени.
+    stream.addEventListener("changed", refresh);
+
+    // Кто-то печатает. Отдельный вид события, потому что перечитывать ленту
+    // здесь незачем: в базе этого факта нет и не будет.
     stream.addEventListener("typing", (event) => {
       try {
         const parsed = JSON.parse((event as MessageEvent).data) as { who: string };
-        if (parsed.who !== "staff" || !alive) return;
+        if (!alive) return;
+
+        // Ведалина взялась за ответ. Приходит из портала, а не ставится
+        // виджетом по факту отправки: вопрос мог быть задан в другой вкладке.
+        if (parsed.who === "assistant") {
+          thinking(true);
+          return;
+        }
+
+        if (parsed.who !== "staff") return;
         setStaffTyping(true);
         if (fade.current) clearTimeout(fade.current);
+        // Гаснет по таймеру, и иначе нельзя: события «перестал печатать»
+        // не существует — человек волен просто закрыть вкладку.
         fade.current = setTimeout(() => setStaffTyping(false), 5000);
       } catch {
         // Событие незнакомого вида — не повод рвать поток.
+      }
+    });
+
+    // Специалист появился на связи или ушёл. Событие редкое — портал шлёт
+    // его на переходах, а не на каждой открытой вкладке админки, — и ленту
+    // по нему перечитывать незачем: о самом разговоре здесь не сказано ничего.
+    stream.addEventListener("presence", (event) => {
+      try {
+        const parsed = JSON.parse((event as MessageEvent).data) as { online: boolean };
+        if (!alive) return;
+        // Часы работы остаются прежними: меняется присутствие, а не расписание.
+        setSupport((was) => (was ? { ...was, online: parsed.online } : was));
+      } catch {
+        // Событие незнакомого вида — не повод рвать поток.
+      }
+    });
+
+    // Кусок ответа, который ещё пишется. Единственное событие с текстом:
+    // оно уходит только на этот ключ и повторится лентой через секунду.
+    stream.addEventListener("draft", (event) => {
+      try {
+        const parsed = JSON.parse((event as MessageEvent).data) as { chunk: string };
+        if (!alive || !parsed.chunk) return;
+        thinking(true);
+        setAnswerDraft((was) => was + parsed.chunk);
+      } catch {
+        // Битый кусок — не повод рвать поток и не повод показывать мусор.
       }
     });
 
@@ -159,8 +512,27 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
       alive = false;
       stream.close();
       if (fade.current) clearTimeout(fade.current);
+      if (patience.current) clearTimeout(patience.current);
     };
   }, []);
+
+  /**
+   * Зажечь или погасить точки Ведалины.
+   *
+   * Зажигая, заводим предел ожидания. Без него точки остаются навсегда,
+   * если ответ не доедет вовсе: поток оборвался, портал перезапустился.
+   * Человек в этом случае ждёт того, чего уже не будет, — и уходит,
+   * решив, что чат сломан.
+   */
+  function thinking(on: boolean) {
+    setTyping(on);
+    if (patience.current) clearTimeout(patience.current);
+    if (!on) return;
+    patience.current = setTimeout(() => {
+      setTyping(false);
+      setAnswerDraft("");
+    }, THINKING_LIMIT);
+  }
 
   function ask(text: string, intent?: string) {
     const question = text.trim();
@@ -169,22 +541,21 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
     if (timer.current) clearTimeout(timer.current);
     setList((prev) => [...prev, { from: "me", text: question }]);
     setDraft("");
-    setTyping(true);
+    thinking(true);
 
     // Без адреса API отвечаем локально: так чат работает в режиме вёрстки,
     // когда серверная часть не поднята.
     if (!apiConfigured) {
       timer.current = setTimeout(() => {
         setList((prev) => [...prev, { from: "bot", text: answerFor(question) }]);
-        setTyping(false);
+        thinking(false);
       }, vedalina.replyDelay);
       return;
     }
 
     void sayInChat(visitor.current, question, intent).then((thread) => {
-      setTyping(false);
-
       if ("error" in thread) {
+        thinking(false);
         // Портал молчит — отдаём живые контакты, а не оставляем тупик.
         setList((prev) => [
           ...prev,
@@ -201,10 +572,83 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
       // позапрошлый вопрос» здесь взяться неоткуда.
       setList([GREETING, ...thread.messages.map(toMessage)]);
 
+      // Точки НЕ гасим по возврату запроса — в нём ответа больше нет.
+      //
+      // Дверь принимает вопрос и отвечает сразу, а ответ доезжает потоком:
+      // модель считает секундами, и ждать её внутри запроса значит держать
+      // окно неподвижным, а поток обслуживания — занятым. Гасит точки лента,
+      // пришедшая по событию, или предел ожидания.
+      //
+      // Исключение — нажатая кнопка: её текст известен заранее и приходит
+      // сразу, и тогда портал не берётся считать ничего.
+      thinking(thread.answering || lastIsVisitors(thread.messages));
+
       // Ответа могло не быть вовсе — тогда разговор ждёт человека.
       // Придумывать ответ запрещено правилами ассистента.
       setWaiting(thread.status === "waiting");
     });
+  }
+
+  /**
+   * Оценить ответ Ведалины.
+   *
+   * Состояние приходит с портала лентой, а не ставится здесь: нажатие,
+   * нарисованное на месте и не сохранившееся, — это оценка, которую никто
+   * не увидит, при том что человек уверен, что сказал своё.
+   */
+  function rate(messageId: string, helpful: boolean) {
+    void rateAnswer(visitor.current, messageId, helpful).then((thread) => {
+      if ("error" in thread) return;
+      setList([GREETING, ...thread.messages.map(toMessage)]);
+    });
+  }
+
+  /**
+   * Отправить обращение.
+   *
+   * @return текст ошибки для показа в форме или `null`, если приняли.
+   *         Ошибка возвращается, а не рисуется здесь: показать её обязана
+   *         форма, рядом с кнопкой, которую нажали.
+   */
+  async function sendTicket(lead: {
+    name: string;
+    company: string;
+    phone: string;
+    email: string;
+    consent: boolean;
+  }): Promise<string | null> {
+    if (!apiConfigured) return "Портал недоступен: обращение не отправлено.";
+
+    const result = await raiseChatLead(visitor.current, lead);
+    if ("error" in result) {
+      // Разбор по полям приходит от портала; в узком окне чата показываем
+      // первую ошибку, а не список: список из пяти строк вытеснит переписку.
+      const first = result.fields ? Object.values(result.fields)[0] : null;
+      return first ?? result.error;
+    }
+
+    setLeadNumber(result.number);
+    setTicketForm(false);
+    // Сообщение о номере портал уже дописал в ленту — она приедет событием.
+    // Перечитываем сами на случай, если поток оборвался: номер обязан
+    // оказаться на экране, он единственное, что человек унесёт с собой.
+    void chatThread(visitor.current).then((thread) => {
+      if (thread?.messages.length) setList([GREETING, ...thread.messages.map(toMessage)]);
+    });
+    return null;
+  }
+
+  /**
+   * Последнее слово за посетителем — значит ответа ещё нет.
+   *
+   * Признак `answering` приходит из портала и точен, но между приёмом вопроса
+   * и тем мигом, когда портал взялся считать, проходит мгновение: слушатель
+   * запускается после записи. Попади ответ двери ровно в эту щель — точки
+   * не зажглись бы вовсе, и окно на секунду выглядело бы так, будто вопрос
+   * пропал.
+   */
+  function lastIsVisitors(messages: ChatLine[]): boolean {
+    return messages.length > 0 && messages[messages.length - 1].author === "visitor";
   }
 
   /**
@@ -229,9 +673,9 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
       return;
     }
 
-    setTyping(true);
+    thinking(true);
     void callHuman(visitor.current).then((thread) => {
-      setTyping(false);
+      thinking(false);
       if ("error" in thread) {
         // Портал молчит — отдаём живые контакты, а не оставляем тупик.
         setList((prev) => [
@@ -270,7 +714,7 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
   useEffect(() => {
     const box = feed.current;
     if (box) box.scrollTop = box.scrollHeight;
-  }, [shown, typing, staffTyping, waiting]);
+  }, [shown, typing, answerDraft, staffTyping, waiting]);
 
   return (
     <section className={styles.chat} aria-label={`Чат с ассистентом ${vedalina.name}`}>
@@ -280,20 +724,49 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
         <LivePattern variant={2} tone="dark" />
 
         {/* Размер пропами, а не fill — см. VedalinaWidget: fill выставляет
-            картинке inset: 0, и отступ обёртки на неё не действует. */}
-        <div className={styles.avatarWrap}>
-          <Image
-            className={styles.avatar}
-            src={vedalina.avatar}
-            alt={`Знак ассистента ${vedalina.name}`}
-            width={36}
-            height={36}
-          />
+            картинке inset: 0, и обёртка перестаёт управлять её размером.
+
+            Просим вдвое больше, чем занимает круг: кадр немного увеличен
+            маской, и картинка ровно по размеру круга при этом мылит.
+            Отображаемый размер держит CSS.
+
+            Точка «на связи» — снаружи круга: он обрезает содержимое ради
+            кадра, и точка на краю превращалась в бледный серп. */}
+        <div className={styles.avatarSlot}>
+          <div className={styles.avatarWrap}>
+            <Image
+              className={styles.avatar}
+              src={vedalina.avatar}
+              alt={`Портрет ассистента ${vedalina.name}`}
+              width={88}
+              height={88}
+            />
+          </div>
           <span className={styles.status} aria-hidden="true" />
         </div>
         <div>
           <div className={styles.name}>{vedalina.name}</div>
           <div className={styles.role}>{vedalina.role}</div>
+
+          {/* Кто на связи — про людей, а не про Ведалину: она отвечает всегда.
+              Надпись говорит о факте (открыто ли рабочее место), а не о часах
+              работы: «мы онлайн» по расписанию врёт в обеденный перерыв ровно
+              тому, кто на неё понадеялся.
+
+              Пока портал не ответил, надписи нет вовсе: «неизвестно» — это
+              не «оффлайн», и встречать посетителя сообщением, что писать
+              некому, было бы догадкой. */}
+          {support && (
+            <button
+              type="button"
+              className={support.online ? styles.presenceOn : styles.presenceOff}
+              aria-expanded={hoursOpen}
+              onClick={() => setHoursOpen((was) => !was)}
+            >
+              <span className={styles.presenceDot} aria-hidden="true" />
+              {support.online ? "Специалист на связи" : "Специалисты офлайн"}
+            </button>
+          )}
         </div>
         {onClose && (
           <div className={styles.headTools}>
@@ -317,55 +790,172 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
         )}
       </div>
 
+      {/* Подсказка о часах работы. Раскрывается нажатием, а не всплывает
+          по наведению: `title` браузера на телефоне не показывается вовсе,
+          а именно там посетитель чаще всего и оказывается вечером.
+
+          Держится под шапкой, а не в ленте: это свойство чата, а не реплика
+          в разговоре, и прокруткой оно уезжать не должно. */}
+      {support && hoursOpen && (
+        <p className={styles.hours} aria-live="polite">
+          Специалисты отвечают {support.hours}.{" "}
+          {support.online
+            ? "Сейчас кто-то на связи — ответит в этом окне."
+            : support.openNow
+              ? "Сейчас на связи никого нет. Можно писать здесь — прочитают, когда вернутся, — или оставить обращение: у него будет номер, и ответ придёт на почту."
+              : "Сейчас нерабочее время. Можно писать здесь — прочитают утром, — или оставить обращение: у него будет номер, и ответ придёт на почту."}
+        </p>
+      )}
+
       <div className={styles.feed} aria-live="polite" ref={feed}>
         {shown.map((m, i) => (
-          <div
-            key={`${m.from}-${i}-${m.text.slice(0, 12)}`}
-            className={`${styles.turn} ${m.from === "me" ? styles.turnMe : styles.turnBot}`}
-          >
-            {/* Подпись только у сотрудника. Посетитель должен видеть, что
-                отвечает человек, а не машина: у Ведалины подпись есть в шапке
-                окна, у самого посетителя она бессмысленна. */}
-            {m.from === "staff" && <span className={styles.who}>{m.who}</span>}
+          <Fragment key={`${m.from}-${i}-${m.text.slice(0, 12)}`}>
+            {/* Разделитель дня. Разговор возвращаются читать через час
+                и через неделю, и без него вчерашний ответ выглядит как
+                написанный только что. */}
+            {m.at && day(m.at) !== day(shown[i - 1]?.at) && (
+              <p className={styles.day}>{dayLabel(m.at)}</p>
+            )}
 
-            <p className={`${styles.msg} ${styles[m.from]}`}>{m.text}</p>
+            {/* Граница нового. Считается по времени, когда виджет последний
+                раз был открыт на глазах у человека, а не по отметке
+                «прочитано»: ту портал ставит в момент, когда отдаёт ленту,
+                — то есть к приходу она уже проставлена, и непрочитанного
+                в ней не бывает по устройству. */}
+            {m.at && isFirstUnseen(shown, i, seenAt) && (
+              <p className={styles.fresh}>Новые сообщения</p>
+            )}
 
-            {/* Время и отметка прочтения. Отметка стоит только у своих
-                сообщений и значит ровно одно: их увидел живой человек.
-                Ждущему это важнее любой надписи о сроках — надпись
-                обещание, отметка факт. */}
-            {(m.at || m.readAt) && (
-              <span className={styles.meta}>
-                {clock(m.at)}
-                {m.from === "me" && m.readAt && (
-                  <span className={styles.read}> · прочитано</span>
+            <div
+              className={`${styles.turn} ${m.from === "me" ? styles.turnMe : styles.turnBot}`}
+            >
+              {/* Подпись только у сотрудника. Посетитель должен видеть, что
+                  отвечает человек, а не машина: у Ведалины подпись есть в шапке
+                  окна, у самого посетителя она бессмысленна. */}
+              {m.from === "staff" && <span className={styles.who}>{m.who}</span>}
+
+              <p className={`${styles.msg} ${styles[m.from]}`}>
+                {withMarkers(m.text, m.sources).map((part, at) =>
+                  typeof part === "string" ? (
+                    part
+                  ) : (
+                    // Маркер источника внутри текста — ссылка на материал,
+                    // а не значок. Нажимают именно на него.
+                    <a
+                      key={at}
+                      className={styles.note}
+                      href={m.sources![part.note - 1].url}
+                      title={m.sources![part.note - 1].title}
+                    >
+                      {part.note}
+                    </a>
+                  ),
                 )}
-              </span>
-            )}
-
-            {/* Ответ обязан нести ссылки на источники: правило из спеки
-                ассистента. Без них утверждение проверить нечем. */}
-            {m.sources && (
-              <ul className={styles.sources}>
-                {m.sources.map((s) => (
-                  <li key={s.url}>
-                    <a href={s.url}>{s.title}</a>
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            {m.handoff && (
-              <p className={styles.handoff}>
-                <a href={`tel:${m.handoff.phone.replace(/\s/g, "")}`}>{m.handoff.phone}</a>
-                {" · "}
-                <a href={`mailto:${m.handoff.email}`}>{m.handoff.email}</a>
               </p>
-            )}
-          </div>
+
+              {/* Время и отметка доставки. Галочки, а не слово: слово
+                  «прочитано» занимает строку, а отметка стоит рядом со
+                  временем и читается одним взглядом.
+
+                  Одна галочка — сообщение у портала, две — его увидел живой
+                  человек. Различать обязательно: ждущему важно, дошло ли оно
+                  до людей, а не до сервера. */}
+              {(m.at || m.readAt) && (
+                <span className={styles.meta}>
+                  {clock(m.at)}
+                  {m.from === "me" && (
+                    <span
+                      className={m.readAt ? styles.readTwice : styles.readOnce}
+                      title={m.readAt ? "Прочитано" : "Доставлено"}
+                      aria-label={m.readAt ? "Прочитано" : "Доставлено"}
+                    >
+                      {m.readAt ? "✓✓" : "✓"}
+                    </span>
+                  )}
+                </span>
+              )}
+
+              {/* Ответ обязан нести ссылки на источники: правило из спеки
+                  ассистента. Без них утверждение проверить нечем.
+
+                  Нумерованный, а не маркированный: номера — те же, что
+                  в маркерах внутри текста, и список без них оставил бы
+                  маркеры ни на что не указывающими. */}
+              {m.sources && (
+                <ol className={styles.sources}>
+                  {m.sources.map((s) => (
+                    <li key={s.url}>
+                      <a href={s.url}>{s.title}</a>
+                    </li>
+                  ))}
+                </ol>
+              )}
+
+              {/* Помог ли ответ. Спрашивается только у Ведалины: «специалист
+                  не помог» — это не оценка ответа, а жалоба на человека,
+                  и разбирать её кнопкой в чате нельзя. */}
+              {m.from === "bot" && m.id && apiConfigured && (
+                <span className={styles.rate}>
+                  <button
+                    type="button"
+                    className={m.helpful === true ? styles.rateOn : styles.rateButton}
+                    aria-pressed={m.helpful === true}
+                    aria-label="Ответ помог"
+                    onClick={() => rate(m.id!, true)}
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    className={m.helpful === false ? styles.rateOn : styles.rateButton}
+                    aria-pressed={m.helpful === false}
+                    aria-label="Ответ не помог"
+                    onClick={() => rate(m.id!, false)}
+                  >
+                    ↓
+                  </button>
+
+                  {/* Нажавшему «не помог» надо дать выход, а не поблагодарить
+                      за отзыв: он остался без ответа, и это единственное,
+                      что его сейчас занимает. */}
+                  {m.helpful === false && !waiting && (
+                    <button type="button" className={styles.rateHuman} onClick={human}>
+                      Позвать специалиста
+                    </button>
+                  )}
+                </span>
+              )}
+
+              {m.handoff && (
+                <p className={styles.handoff}>
+                  <a href={`tel:${m.handoff.phone.replace(/\s/g, "")}`}>{m.handoff.phone}</a>
+                  {" · "}
+                  <a href={`mailto:${m.handoff.email}`}>{m.handoff.email}</a>
+                </p>
+              )}
+            </div>
+          </Fragment>
         ))}
 
-        {typing && (
+        {/* Ответ, который ещё пишется. Показывается вместо точек, как только
+            приехал первый кусок: текст, появляющийся на глазах, — это ответ
+            на вопрос «работает ли вообще», которого точки не дают.
+
+            Курсор в конце обязателен. Без него незаконченный ответ выглядит
+            как законченный, и посетитель уходит читать дальше на середине
+            фразы. */}
+        {answerDraft && (
+          <p
+            className={`${styles.msg} ${styles.bot} ${styles.answerDraft}`}
+            aria-live="polite"
+            aria-busy="true"
+          >
+            {answerDraft}
+            <span className={styles.caret} aria-hidden="true" />
+          </p>
+        )}
+
+        {typing && !answerDraft && (
           <p className={`${styles.msg} ${styles.bot} ${styles.typing}`} aria-label="Ведалина печатает">
             <span />
             <span />
@@ -389,12 +979,51 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
         {waiting && (
           <p className={styles.waiting} aria-live="polite">
             <span className={styles.waitingDot} aria-hidden="true" />
-            Ждём специалиста. Он ответит в этом окне — можно писать дальше,
-            он прочитает всё. Не хотите ждать:{" "}
+            {/* Ждать до утра и ждать десять минут — разные вещи, и говорить
+                о них одинаково нельзя: «ответит в этом окне» в полночь человек
+                прочтёт как «сейчас ответят», закроет вкладку и решит, что чат
+                не работает. */}
+            {support && !support.online
+              ? `Ждём специалиста. На связи сейчас никого нет — отвечают ${support.hours}. Написанное здесь прочитают: `
+              : "Ждём специалиста. Он ответит в этом окне — можно писать дальше, он прочитает всё. Не хотите ждать: "}
             <a href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a>
             {" · "}
             <a href={`mailto:${site.email}`}>{site.email}</a>
           </p>
+        )}
+
+        {/* Обращение заведено. Плашка держится в ленте, а не проговаривается
+            один раз сообщением: номер — единственное, что человек унесёт
+            с собой, и искать его прокруткой через неделю он не станет.
+
+            Ссылки «перейти к обращению» здесь нет намеренно: личного кабинета
+            у посетителя нет, вести ей некуда, а придумать её значит обещать
+            страницу, которой не существует. */}
+        {leadNumber && (
+          <p className={styles.ticketBadge} aria-live="polite">
+            Обращение <b>{leadNumber}</b> · подтверждение отправлено на почту
+          </p>
+        )}
+
+        {/* Форма обращения раскрывается прямо в ленте: разговор остаётся
+            на месте, и видно, из чего обращение заводится. */}
+        {ticketForm && !leadNumber && (
+          <TicketForm onSend={sendTicket} onCancel={() => setTicketForm(false)} />
+        )}
+
+        {/* Позвать человека можно и не дожидаясь, пока Ведалина не найдёт
+            ответа. Кнопка стоит и в ожидании: ждущий специалиста — первый,
+            кому обращение и нужно, а разговор он мог начать в нерабочее
+            время. */}
+        {!ticketForm && !leadNumber && apiConfigured && (
+          <button
+            type="button"
+            className={styles.ticketOpen}
+            onClick={() => setTicketForm(true)}
+            data-analytics="vedalina_ticket_open"
+          >
+            Создать обращение
+          </button>
         )}
 
         {/* Кнопки молчат, когда в разговоре человек: заготовка поверх

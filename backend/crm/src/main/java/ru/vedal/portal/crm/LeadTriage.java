@@ -84,13 +84,13 @@ public class LeadTriage implements LeadAdmin {
     }
 
     private static LeadRow row(Lead l, UUID dealId) {
-        return new LeadRow(l.getId(), l.getForm(), l.getName(), l.getCompany(), l.getPhone(),
+        return new LeadRow(l.getId(), l.getNumber(), l.getForm(), l.getName(), l.getCompany(), l.getPhone(),
                 l.getEmail(), l.getProductSlug(), l.getSource(), l.getStatus(), l.getOwner(),
                 dealId, l.getCreatedAt());
     }
 
     private LeadView view(Lead l) {
-        return new LeadView(l.getId(), l.getForm(), l.getName(), l.getCompany(), l.getPhone(),
+        return new LeadView(l.getId(), l.getNumber(), l.getForm(), l.getName(), l.getCompany(), l.getPhone(),
                 l.getEmail(), l.getProductSlug(), l.getSerialNumber(),
                 l.getMessage(), l.getSource(), l.getStatus(),
                 l.getOwner(), l.getLanguage(), l.getCampaign(),

@@ -101,82 +101,6 @@ services:
     volumes:
       - vedal-kafka:/var/lib/kafka/data
 
-  # Объектное хранилище. В облаке будет Yandex Object Storage, локально —
-  # MinIO: он говорит на том же протоколе S3, поэтому переезд меняет адрес
-  # и ключи, а не код. По той же причине клиент в приложении — AWS SDK,
-  # а не родная библиотека MinIO: с ней переезд означал бы переписать клиент.
-  #
-  # Два бакета, и это не удобство раскладки, а требование:
-  #   vedal-documents — приватный. Файл отдаётся только через контроллер,
-  #     который проверяет статус публикации и пишет обращение в журнал.
-  #     Прямой доступ к бакету означал бы выдачу закрытого документа мимо
-  #     проверки и мимо аудита.
-  #   vedal-media — публичный на чтение. Фото изделий и изображения новостей:
-  #     их и так видно на сайте, а гонять картинки через приложение — значит
-  #     класть на него трафик, который должен идти в CDN.
-  minio:
-    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
-    container_name: vedal-minio
-    command: server /data --console-address ":9001"
-    ports:
-      - "${VEDAL_MINIO_PORT:-9000}:9000"
-      - "${VEDAL_MINIO_CONSOLE_PORT:-9001}:9001"
-    environment:
-      MINIO_ROOT_USER: ${VEDAL_S3_ACCESS_KEY:-vedal}
-      MINIO_ROOT_PASSWORD: ${VEDAL_S3_SECRET_KEY:-vedal-local-secret}
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 5s
-      timeout: 3s
-      retries: 12
-    volumes:
-      - vedal-minio:/data
-
-  # Бакеты заводятся здесь, а не первым обращением приложения: приложение,
-  # умеющее создавать бакеты, умеет создать и лишний — от опечатки в имени.
-  # Контейнер одноразовый, отрабатывает и гаснет.
-  #
-  # Политика медиа задаётся явным JSON, а не готовым `mc anonymous set download`:
-  # тот вместе с чтением объектов открывает и перечисление бакета, то есть
-  # отдаёт всем список ключей — включая снимки, загруженные до анонса. Здесь
-  # разрешено ровно s3:GetObject: файл по известной ссылке отдаётся, каталог
-  # содержимого — нет.
-  minio-init:
-    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
-    container_name: vedal-minio-init
-    depends_on:
-      minio:
-        condition: service_healthy
-    # Ключи приходят окружением, а не подставляются в командную строку:
-    # аргументы процесса видны в `docker inspect` и в списке процессов хоста.
-    environment:
-      MINIO_ROOT_USER: ${VEDAL_S3_ACCESS_KEY:-vedal}
-      MINIO_ROOT_PASSWORD: ${VEDAL_S3_SECRET_KEY:-vedal-local-secret}
-    entrypoint:
-      - /bin/sh
-      - -c
-      - |
-        set -e
-        mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
-        mc mb --ignore-existing local/vedal-documents
-        mc mb --ignore-existing local/vedal-media
-        mc anonymous set none local/vedal-documents
-        cat > /tmp/media-policy.json <<'JSON'
-        {
-          "Version": "2012-10-17",
-          "Statement": [
-            {
-              "Effect": "Allow",
-              "Principal": { "AWS": ["*"] },
-              "Action": ["s3:GetObject"],
-              "Resource": ["arn:aws:s3:::vedal-media/*"]
-            }
-          ]
-        }
-        JSON
-        mc anonymous set-json /tmp/media-policy.json local/vedal-media
-        echo 'бакеты готовы: vedal-documents закрыт, vedal-media отдаёт объекты без перечисления'
-
 
   # Фотографии из репозитория в бакет.
   #
@@ -201,24 +125,34 @@ services:
   # Подменить такой файл можно руками: mc rm, затем перезапуск стека.
   #
   # Контейнер одноразовый, отрабатывает и гаснет.
+  # Заливка снимков из репозитория в бакет — ТОЛЬКО ПО ПРОСЬБЕ:
+  #
+  #   docker compose --profile seed run --rm media-seed
+  #
+  # Профиль появился вместе с уходом MinIO и не для порядка. Пока рядом
+  # стоял свой MinIO, заливка на каждый подъём стека была безобидной:
+  # писала в локальный бакет. Против настоящего Object Storage тот же
+  # запуск пишет в бакет, из которого читает живой сайт, — и делает это
+  # у каждого, кто поднял стек у себя.
   media-seed:
     image: minio/mc:RELEASE.2025-04-16T18-13-26Z
     container_name: vedal-media-seed
-    depends_on:
-      minio-init:
-        condition: service_completed_successfully
+    profiles: ["seed"]
     environment:
-      MINIO_ROOT_USER: ${VEDAL_S3_ACCESS_KEY:-vedal}
-      MINIO_ROOT_PASSWORD: ${VEDAL_S3_SECRET_KEY:-vedal-local-secret}
+      # Имена без MINIO_: это ключи от Object Storage, а mc — просто
+      # клиент S3, который их принимает. Прежние MINIO_ROOT_* остались бы
+      # указателем на хранилище, которого в стеке больше нет.
+      S3_ACCESS_KEY: ${VEDAL_S3_ACCESS_KEY:-}
+      S3_SECRET_KEY: ${VEDAL_S3_SECRET_KEY:-}
       # Адрес хранилища параметром, а не строкой в команде. На машине
-      # разработчика это MinIO в соседнем контейнере, на ВМ — Yandex Object
-      # Storage; сервис один и тот же, различается только точка входа.
+      # разработчика и на ВМ это одно и то же хранилище — Yandex Object
+      # Storage; различаются только ключи и, при желании, имя бакета.
       # До параметра адрес был вшит в mc alias, и на ВМ сервис оставалось
       # только выключить — что и было сделано. Выключенный, он перестал
       # доставлять в бакет новые снимки, и каталог показывал изделия без
       # фотографий: четыре файла, добавленные в репозиторий последними,
       # отдавали 404.
-      S3_ENDPOINT: ${VEDAL_S3_ENDPOINT:-http://minio:9000}
+      S3_ENDPOINT: ${VEDAL_S3_ENDPOINT:-https://storage.yandexcloud.net}
       S3_BUCKET_MEDIA: ${VEDAL_S3_BUCKET_MEDIA:-vedal-media}
     volumes:
       # Только чтение: сервис заливает файлы в бакет, а не забирает из него.
@@ -228,7 +162,32 @@ services:
       - -c
       - |
         set -e
-        mc alias set local "$$S3_ENDPOINT" "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" > /dev/null
+
+        # Ключи проверяются здесь, а не пометкой «обязательна» в подстановке
+        # выше — той, что с вопросительным знаком. Compose разбирает ВЕСЬ
+        # файл разом, и профили на это не влияют:
+        # обязательная переменная у сервиса из профиля seed останавливала
+        # `docker compose up` целиком — у того, кто про заливку снимков
+        # и не спрашивал. Сообщение при этом называло медиа, а человек
+        # поднимал базу.
+        if [ -z "$$S3_ACCESS_KEY" ] || [ -z "$$S3_SECRET_KEY" ]; then
+          echo "Нужны ключи от хранилища: задайте VEDAL_S3_ACCESS_KEY"
+          echo "и VEDAL_S3_SECRET_KEY в backend/.env. Где их взять —"
+          echo "backend/.env.example, раздел про объектное хранилище."
+          exit 1
+        fi
+
+        # Доллар удвоен, и это не стиль. Compose подставляет $$VAR в теле
+        # файла САМ, при разборе, из окружения того, кто набрал команду.
+        # Переменных S3_* там нет — они заданы контейнеру ниже, — поэтому
+        # одинарный доллар превращал строку в
+        #
+        #   mc alias set local "" "" ""
+        #
+        # то есть заливка не работала вовсе. Остальные строки ниже давно
+        # пишут доллар удвоенным; эта отстала, когда адрес хранилища
+        # переехал из вшитой строки в параметр.
+        mc alias set local "$$S3_ENDPOINT" "$$S3_ACCESS_KEY" "$$S3_SECRET_KEY" > /dev/null
 
         # Список собирает `mc find`, а не find(1): в образе mc последнего нет
         # вовсе, это не busybox. Каталоги он печатает наравне с файлами,
@@ -446,8 +405,6 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
-      minio-init:
-        condition: service_completed_successfully
       keycloak:
         condition: service_healthy
     environment:
@@ -470,10 +427,44 @@ services:
       VEDAL_EVENTS_PUBLISHER: debezium
       VEDAL_KAFKA: kafka:29092
 
-      VEDAL_STORAGE_KIND: s3
-      VEDAL_S3_ENDPOINT: http://minio:9000
-      VEDAL_S3_ACCESS_KEY: ${VEDAL_S3_ACCESS_KEY:-vedal}
-      VEDAL_S3_SECRET_KEY: ${VEDAL_S3_SECRET_KEY:-vedal-local-secret}
+      # Хранилище. По умолчанию local — каталог в томе контейнера.
+      #
+      # Так стек поднимается у любого, у кого нет ключей от облака: сайт,
+      # админка, база и события работают целиком, а загруженный файл ложится
+      # на диск. Требовать ключи здесь значило бы, что человек без доступа
+      # в облако не может запустить ВООБЩЕ ничего — включая то, к хранилищу
+      # отношения не имеющее.
+      #
+      # Своего хранилища рядом больше нет. MinIO из стека убран: он говорил
+      # на том же протоколе и выглядел как облако, но был ВТОРЫМ хранилищем —
+      # файл ложился в него, а искали его потом в бакете. «Локально работает,
+      # на стенде нет» чаще всего означало именно это. Каталог на диске такой
+      # путаницы не создаёт: он ни на что не похож.
+      #
+      # Плата за режим local честная, и знать её надо: снимок, загруженный
+      # редактором через админку, на сайте не появится. Сайт берёт медиа
+      # по адресу бакета, а каталог наружу не раздаётся — так задумано,
+      # см. LocalFileStorage. Работаете с медиа или документами — задайте
+      # в backend/.env
+      #
+      #   VEDAL_STORAGE_KIND=s3
+      #   VEDAL_S3_ACCESS_KEY=...
+      #   VEDAL_S3_SECRET_KEY=...
+      #
+      # и заведите СВОЙ бакет в VEDAL_S3_BUCKET_MEDIA: значение по умолчанию
+      # ведёт в тот, из которого читает живой сайт.
+      #
+      # Пустые ключи здесь допустимы, но при kind=s3 — нет, и проверяет это
+      # приложение, а не compose: S3Config останавливает старт и называет
+      # недостающие переменные. Требование, записанное в двух местах, рано
+      # или поздно разойдётся, и compose запретил бы запуск того, что
+      # приложение прекрасно поднимает.
+      VEDAL_STORAGE_KIND: ${VEDAL_STORAGE_KIND:-local}
+      VEDAL_S3_ENDPOINT: ${VEDAL_S3_ENDPOINT:-https://storage.yandexcloud.net}
+      VEDAL_S3_ACCESS_KEY: ${VEDAL_S3_ACCESS_KEY:-}
+      VEDAL_S3_SECRET_KEY: ${VEDAL_S3_SECRET_KEY:-}
+      VEDAL_S3_BUCKET_DOCUMENTS: ${VEDAL_S3_BUCKET_DOCUMENTS:-vedal-documents}
+      VEDAL_S3_BUCKET_MEDIA: ${VEDAL_S3_BUCKET_MEDIA:-vedal-media}
 
       VEDAL_IAM_MODE: keycloak
       # Издателя сверяем по внешнему адресу — он в токене; ключи забираем
@@ -586,7 +577,23 @@ services:
       # на сайте, а не уехать на api.
       NEXT_PUBLIC_SITE_URL: ${VEDAL_SITE_URL:-}
 
-      NEXT_PUBLIC_MEDIA_URL: ${VEDAL_MEDIA_URL:-http://localhost:9000/vedal-media}
+      # Откуда сайт берёт снимки изделий.
+      #
+      # Пусто — и это рабочий режим, а не заглушка: Next отдаёт файлы
+      # из frontend/public/photos, которые лежат в репозитории. Стек
+      # поднимается и показывает каталог с фотографиями без облака,
+      # без ключей и без сети.
+      #
+      # Раньше здесь стоял http://localhost:9000/vedal-media — адрес MinIO,
+      # которого в стеке больше нет. Такое значение не роняет стек, а тихо
+      # отдаёт битые картинки: 404 за снимком не валит ни страницу,
+      # ни сборку, и увидеть это можно только глазами.
+      #
+      # Задавать стоит тому, кто работает именно с хранилищем. Тогда
+      # заведите себе отдельный бакет и укажите его в VEDAL_S3_BUCKET_MEDIA:
+      # значение по умолчанию ведёт в тот же бакет, из которого читает
+      # живой сайт.
+      NEXT_PUBLIC_MEDIA_URL: ${VEDAL_MEDIA_URL:-}
 
       # Админка ходит за токеном сама, публичным клиентом с PKCE.
       NEXT_PUBLIC_OIDC_ISSUER: ${VEDAL_KEYCLOAK_URL:-http://localhost:8180}/realms/vedal
@@ -600,8 +607,74 @@ services:
       retries: 40
       start_period: 60s
 
+
+  # Сторож: раз в минуту меряет и раз в аварию говорит.
+  #
+  # Появился после того, как стенд неделю падал и поднимался, а узнавали
+  # об этом, открыв его глазами. Проверки здоровья у сервисов были и до
+  # него — но их видит только docker, и только на той же машине, и только
+  # если кто-то спросит. Никто не спрашивал.
+  #
+  # Профиль watch: локально сторож не нужен и по умолчанию не запускается.
+  # В развёрнутой среде compose.prod.yaml переводит его в профиль app,
+  # то есть включает всегда. Развёрнутая среда без наблюдения — это
+  # и есть та ситуация, ради которой он написан.
+  #
+  # Чего он не умеет, написано в самом скрипте и повторено в README:
+  # он живёт на наблюдаемой машине и о её смерти сообщить не может.
+  watchdog:
+    profiles: ["watch"]
+    image: curlimages/curl:8.11.1
+    container_name: vedal-watchdog
+    environment:
+      # Список целей. Каждая — имя|адрес|запрещённая подстрока.
+      #
+      # Адреса внутренние, по именам сервисов: сторож проверяет, что служба
+      # работает, а не что до неё доходит снаружи. Проверка снаружи ловила бы
+      # заодно DNS, TLS и прокси — полезно, но это другой вопрос, и ответ
+      # «что-то сломалось» на него хуже, чем «сломалось вот это».
+      #
+      # У connect третье поле не для красоты. Упавший коннектор Debezium
+      # не делает Kafka Connect больным: служба отвечает 200 и сообщает
+      # о поломке в теле. Молча остановившийся коннектор — это переставший
+      # вычищаться журнал предзаписи PostgreSQL, то есть медленно
+      # заполняющийся диск.
+      TARGETS: >-
+        portal|http://portal:8081/actuator/health
+        gateway|http://api-gateway:8080/actuator/health
+        site|http://site:3000/
+        keycloak|http://keycloak:9000/health/ready
+        connect|http://connect:8083/connectors?expand=status|"state":"FAILED"
+
+      CHECK_EVERY: ${VEDAL_WATCH_EVERY:-60}
+      FAILS_TO_ALARM: ${VEDAL_WATCH_FAILS:-3}
+      REMIND_HOURS: ${VEDAL_WATCH_REMIND_HOURS:-6}
+      MEM_FREE_MIN: ${VEDAL_WATCH_MEM_MIN:-10}
+      DISK_FREE_MIN: ${VEDAL_WATCH_DISK_MIN:-10}
+
+      # Почта. Ящик тот же, через который портал отправляет заявки,
+      # и переменные те же — SPRING_MAIL_*. Своих имён у сторожа нет
+      # намеренно: два имени одного ящика однажды разойдутся, и выяснится
+      # это в день, когда тревога не доедет.
+      #
+      # Пусто — сторож пишет только в свой журнал и предупреждает об этом
+      # на старте и раз в час. Рабочее состояние на машине разработчика
+      # и НЕ рабочее в развёрнутой среде: там некому читать журнал.
+      SMTP_HOST: ${SPRING_MAIL_HOST:-}
+      SMTP_USER: ${SPRING_MAIL_USERNAME:-}
+      SMTP_PASSWORD: ${SPRING_MAIL_PASSWORD:-}
+      MAIL_FROM: ${SPRING_MAIL_USERNAME:-}
+
+      # А вот получатель у тревог свой: заявки читают продажи, тревоги
+      # читает тот, кто чинит.
+      MAIL_TO: ${VEDAL_WATCH_MAIL_TO:-}
+    volumes:
+      - ./watchdog/watch.sh:/watch.sh:ro
+    # Образ curl запускает curl. Нам нужна оболочка.
+    entrypoint: ["/bin/sh", "/watch.sh"]
+    restart: unless-stopped
+
 volumes:
   vedal-db:
   vedal-kafka:
-  vedal-minio:
   vedal-keycloak:

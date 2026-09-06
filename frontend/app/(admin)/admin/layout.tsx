@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LiveHost } from "./live";
 import { contourName, contourOf, may, mayOpen, type Contour } from "./roles";
 import { useEffect, useRef, useState } from "react";
 import AnimatedLogo from "@/components/AnimatedLogo";
 import { accessToken, authConfigured, login, logout, onSessionLost } from "@/lib/auth";
-import { adminConfigured, session, type Session } from "@/lib/admin";
+import { AdminError, adminConfigured, session, type Session } from "@/lib/admin";
 import { message } from "./ui";
 import Entry from "./Entry";
 import { Avatar } from "./Avatar";
@@ -16,7 +17,7 @@ import { Hotkeys } from "./Hotkeys";
 import { ArrowIcon, ExitIcon, SearchIcon } from "./icons";
 import { useShellKeys } from "./keys";
 import { Palette } from "./Palette";
-import { ToastHost } from "./Toast";
+import { ToastHost, useToast } from "./Toast";
 import { Widget } from "./Widget";
 import { WhoHost } from "./who";
 
@@ -96,24 +97,44 @@ const NAV: readonly Section[] = [
     ],
   },
   {
-    label: "Команда",
-    // Раздел виден всем, а внутри него — по-разному: свой профиль нужен
-    // каждому, справочник сотрудников показывает состав компании
-    // и остаётся административным. Поэтому адрес раздела — профиль:
-    // ведёт туда, куда пущен любой вошедший.
-    href: "/admin/profile/",
-    items: [
-      { href: "/admin/staff/", label: "Сотрудники" },
-      { href: "/admin/profile/", label: "Мой профиль" },
-    ],
+    // Раньше здесь была «Команда» с двумя вкладками: справочник сотрудников
+    // и свой профиль. Раздел показывался всем, а внутри вкладки отбирались
+    // по роли — то есть у продавца он состоял из одного пункта, и этим
+    // пунктом был его собственный профиль.
+    //
+    // Профиль ушёл туда, где ему место: в кружок с именем справа вверху.
+    // Он и раньше вёл в профиль, просто дублировался вкладкой. Свой профиль
+    // — не раздел портала, а «я»; искать его в навигации рядом с продукцией
+    // и заявками неоткуда.
+    //
+    // Осталось то, что действительно раздел: состав компании. Он
+    // административный, поэтому и контур административный — без этого
+    // раздел показывался бы продавцу пустым.
+    label: "Сотрудники",
+    href: "/admin/staff/",
+    contour: "admin",
+    items: [],
   },
   { label: "Журнал", href: "/admin/audit/", items: [], contour: "admin" },
 ] as const;
 
+/**
+ * Страницы, до которых добираются не через навигацию.
+ *
+ * Свой профиль открывается кружком с именем справа вверху, и раздела
+ * в шапке у него нет. Но крошки нужны: без этого списка человек
+ * на профиле видел бы над заголовком одинокое «Админка», как будто
+ * страница ниоткуда.
+ */
+const APART: readonly Item[] = [{ href: "/admin/profile/", label: "Мой профиль" }];
+
 type State =
   | { kind: "checking" }
   | { kind: "anonymous" }
-  | { kind: "refused"; reason: string }
+  /** Запрос не дошёл до портала: сеть, адрес, лежащий стек. Статуса нет. */
+  | { kind: "unreachable"; reason: string }
+  /** Портал ответил и отказал. Статус говорит, почему именно. */
+  | { kind: "refused"; status: number; reason: string }
   | { kind: "ready"; who: Session };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -139,9 +160,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         const who = await session();
         if (alive) setState({ kind: "ready", who });
       } catch (e) {
-        // Токен есть, а портал его не принял. Причина в сообщении: не тот
-        // realm, не та аудитория, нет роли.
-        if (alive) setState({ kind: "refused", reason: message(e) });
+        if (!alive) return;
+
+        // «Не дошло» и «отказали» — разные беды, и советы у них
+        // противоположные. Клиент их различает: у сетевого сбоя статуса
+        // нет вовсе, и он приезжает нулём (lib/admin, request).
+        //
+        // Раньше оболочка сваливала оба случая в один экран и объясняла
+        // любой из них отсутствием ролей. На отказе 403 это верно,
+        // а на недозвоне — уводит в сторону: человек идёт в Keycloak
+        // проверять роли, которых там и так достаточно.
+        const status = e instanceof AdminError ? e.status : -1;
+        setState(
+          status === 0
+            ? { kind: "unreachable", reason: message(e) }
+            : { kind: "refused", status, reason: message(e) },
+        );
       }
     })();
 
@@ -215,22 +249,60 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  // Токен есть, а портал его не принял. Это отдельный случай, а не «войдите
-  // ещё раз»: повторный вход выдаст тот же токен и получит тот же отказ.
+  // Запрос не дошёл. Про роли здесь говорить нельзя: портал не отвечал,
+  // и что он думает о токене — неизвестно.
+  if (state.kind === "unreachable") {
+    return (
+      <Entry state="портал не ответил" title="Портал не ответил">
+        <p>{state.reason}</p>
+        <p>
+          Запрос не дошёл до портала — значит дело не в токене и не в ролях: портал
+          не успел о них ничего сказать.
+        </p>
+        <p style={{ fontSize: "var(--t-small)" }}>
+          Чаще всего админку открыли мимо единой точки входа. Она живёт по тому же
+          адресу, что сайт и API — тогда браузер не делает кросс-доменных запросов
+          и разрешения ему не нужны. Открытая напрямую по адресу контейнера сайта,
+          она стучится на другой порт, и браузер молча отменяет запрос ещё
+          до отправки.
+        </p>
+        <div className="row">
+          <button className="btn" onClick={() => location.reload()}>
+            Попробовать снова
+          </button>
+        </div>
+      </Entry>
+    );
+  }
+
+  // Портал ответил и отказал. Совет зависит от того, ЧЕМ он отказал:
+  // повторный вход лечит просроченный или чужой токен и не лечит
+  // отсутствие роли.
   if (state.kind === "refused") {
+    const проРоли = state.status === 403;
     return (
       <Entry state="токен не принят" title="Портал отказал">
         <p>{state.reason}</p>
-        <p>
-          Вход в Keycloak прошёл — иначе токена не было бы вовсе. Отказал уже портал, и чаще
-          всего потому, что у учётной записи нет ни одной роли портала:{" "}
-          <code>portal-admin</code>, <code>portal-sales</code> или{" "}
-          <code>portal-production</code> в realm&apos;е. Роль выдаёт тот, кто держит Keycloak;
-          повторный вход ничего не изменит, токен будет тот же.
-        </p>
+        {проРоли ? (
+          <p>
+            Вход в систему прошёл — иначе токена не было бы вовсе. Отказал уже портал,
+            и на этом коде причина одна: у учётной записи нет ни одной роли портала:{" "}
+            <code>portal-admin</code>, <code>portal-sales</code> или{" "}
+            <code>portal-production</code>. Роль выдаёт администратор портала
+            в разделе «Сотрудники» либо тот, кто держит систему входа. Повторный вход
+            ничего не изменит, токен будет тот же.
+          </p>
+        ) : (
+          <p>
+            Портал ответил {state.status > 0 ? state.status : "отказом"}. Это не про роли:
+            токен либо просрочен, либо выдан не тем realm&apos;ом — так бывает после
+            того, как систему входа поднимали заново. Такой отказ лечится повторным
+            входом.
+          </p>
+        )}
         <div className="row">
           <button className="btn" onClick={() => logout()}>
-            Выйти и войти другой учётной записью
+            Выйти и войти заново
           </button>
         </div>
       </Entry>
@@ -243,11 +315,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // отказов 401 при каждом открытии двери.
   return (
     <ToastHost>
-      <WhoHost who={state.who}>
-        <CountsHost who={state.who}>
-          <Chrome who={state.who}>{children}</Chrome>
-        </CountsHost>
-      </WhoHost>
+      {/* Поток разговоров — один на вкладку и выше всех, кому он нужен:
+          счётчику в шапке, виджету очереди и самому разделу «Разговоры».
+          Внутри ToastHost, потому что о новом обращении сообщает всплывашкой. */}
+      <LiveHost>
+        <WhoHost who={state.who}>
+          <CountsHost who={state.who}>
+            <WaitingToast />
+              <Chrome who={state.who}>{children}</Chrome>
+          </CountsHost>
+        </WhoHost>
+      </LiveHost>
     </ToastHost>
   );
 }
@@ -307,9 +385,10 @@ function Chrome({ who, children }: { who: Session; children: React.ReactNode }) 
   // телефона: два независимых фильтра однажды разойдутся, и разойдутся
   // молча, оставив на телефоне раздел, которого нет на большом экране.
   //
-  // Внутри раздела вкладки отбираются тоже: «Команда» видна всем, но
-  // «Сотрудники» в ней — административная страница, а «Мой профиль» нужен
-  // каждому.
+  // Внутри раздела вкладки отбираются тоже. Сегодня это отбор про запас:
+  // разделов, где вкладки принадлежат разным контурам, не осталось —
+  // «Команда» была последней. Убирать отбор не за чем: он стоит ноль
+  // и ловит первый же раздел, где такое повторится.
   const мои = NAV.filter((s) => may(who, s.contour ?? "any")).map((s) => ({
     ...s,
     items: s.items.filter((item) => mayOpen(who, item.href)),
@@ -325,7 +404,7 @@ function Chrome({ who, children }: { who: Session; children: React.ReactNode }) 
   const here =
     active && active.items.length > 0
       ? active.items.find((item) => within(pathname ?? "", item.href))
-      : active;
+      : (active ?? APART.find((item) => within(pathname ?? "", item.href)));
 
   // Стоим ровно на пункте навигации, а не глубже. within() совпадает и со
   // списком, и с карточкой внутри него, поэтому здесь нужна точность.
@@ -595,8 +674,9 @@ function Chrome({ who, children }: { who: Session; children: React.ReactNode }) 
 function Who({ who }: { who: Session }) {
   return (
     // Ссылка, а не просто блок: у кружка с именем в шапке ровно одно
-    // назначение — попасть в свой профиль. До появления раздела «Команда»
-    // вести ему было некуда, и блок был мёртвым местом на экране.
+    // назначение — попасть в свой профиль. Это единственный путь туда:
+    // вкладку «Мой профиль» из навигации убрали, потому что свой профиль
+    // — не раздел портала, а «я».
     <Link className="admin-who" href="/admin/profile/">
       {/* Кружок с инициалами появился не ради красоты: в журнале и на карточке
           сделки тот же кружок помечает, кто что сделал, и в шапке он говорит,
@@ -640,4 +720,44 @@ function within(pathname: string, href: string): boolean {
   const base = href.replace(/\/+$/, "");
   if (base === "/admin") return path === "/admin";
   return path === base || path.startsWith(`${base}/`);
+}
+
+/**
+ * Мини-уведомление о новом обращении.
+ *
+ * Колокол в шапке пуст намеренно: у портала нет понятия уведомления
+ * с адресатом и отметкой о прочтении, и рисовать ленту, которой нет,
+ * значит обещать несуществующее. Но один случай стоит особняком —
+ * разговор: это единственная запись, у которой на том конце человек
+ * ждёт ОТВЕТА ПРЯМО СЕЙЧАС.
+ *
+ * Поэтому сообщаем ровно о нём и ровно тогда, когда очередь выросла.
+ * Не о каждом событии в разговорах: посетитель пишет второе сообщение —
+ * очередь та же, и всплывашка на него была бы шумом.
+ *
+ * Первое значение счётчика не считается ростом: иначе всплывашка
+ * встречала бы человека на каждом открытии админки сообщением о том,
+ * что очередь, в которой три разговора со вчера, «выросла».
+ */
+function WaitingToast() {
+  const { counts } = useCounts();
+  const toast = useToast();
+  const ждут = counts.chats;
+  const было = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (ждут === undefined) return;
+    const прошлое = было.current;
+    было.current = ждут;
+    if (прошлое === null || ждут <= прошлое) return;
+
+    const сколько = ждут - прошлое;
+    toast(
+      сколько === 1
+        ? "Новое обращение — ждёт ответа"
+        : `Новых обращений: ${сколько} — ждут ответа`,
+    );
+  }, [ждут, toast]);
+
+  return null;
 }

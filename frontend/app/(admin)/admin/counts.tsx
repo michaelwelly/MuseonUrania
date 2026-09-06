@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import {
   chatQueue,
   clients,
@@ -12,6 +12,7 @@ import {
   quotes,
   type Session,
 } from "@/lib/admin";
+import { useLive } from "./live";
 import { may, type Contour } from "./roles";
 
 // Счётчики на вкладках.
@@ -120,6 +121,27 @@ export function CountsHost({
   }, [attempt, роли]);
 
   const refresh = useCallback(() => setAttempt((a) => a + 1), []);
+
+  // Живые обновления разговоров.
+  //
+  // Раньше счётчик ждущих обновлялся только при переходе между
+  // страницами: новое обращение появлялось на кнопке виджета тогда,
+  // когда сотрудник и так куда-то шёл. Теперь — сам.
+  //
+  // События приходят пачкой: одно сообщение посетителя даёт и ответ
+  // Ведалиной, и смену статуса. Перечитывать счётчики на каждое значит
+  // послать три одинаковых запроса подряд, поэтому пачка сводится
+  // к одному обновлению.
+  const отложенное = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useLive({
+    changed: () => {
+      if (отложенное.current) clearTimeout(отложенное.current);
+      отложенное.current = setTimeout(refresh, 400);
+    },
+  });
+  useEffect(() => () => {
+    if (отложенное.current) clearTimeout(отложенное.current);
+  }, []);
 
   return <Ctx.Provider value={{ counts, refresh }}>{children}</Ctx.Provider>;
 }

@@ -11,6 +11,7 @@ import ru.vedal.portal.common.TooManyRequestsException;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -90,6 +91,19 @@ public class ChatStream {
     private final Map<String, List<SseEmitter>> byVisitor = new ConcurrentHashMap<>();
     private final List<SseEmitter> desks = new CopyOnWriteArrayList<>();
 
+    // Разговоры, в которых Ведалина сейчас думает над ответом.
+    //
+    // Держится в памяти, а не в базе, по той же причине, что и «печатает»:
+    // факт живёт секунды. Но в отличие от «печатает» его спрашивают —
+    // виджет, открытый заново посреди ожидания, обязан снова показать точки,
+    // а не пустое окно, в котором вопрос задан и ничего не происходит.
+    // Событие для этого не годится: оно было отправлено до того, как виджет
+    // подписался.
+    //
+    // При втором экземпляре приложения ограничение то же, что у подписок:
+    // разговор, ответ на который готовит сосед, здесь не значится.
+    private final Set<UUID> answering = ConcurrentHashMap.newKeySet();
+
 
     /** Подписка посетителя. Разговора может ещё не быть — поток просто молчит. */
     public SseEmitter watch(String visitorKey) {
@@ -158,10 +172,59 @@ public class ChatStream {
         }
 
         var emitter = new SseEmitter(TIMEOUT);
+        var first = desks.isEmpty();
         desks.add(emitter);
-        forget(emitter, () -> desks.remove(emitter));
+        forget(emitter, () -> {
+            desks.remove(emitter);
+            // Ушёл последний — на связи больше никого.
+            if (desks.isEmpty()) announcePresence(false);
+        });
+
+        // Пришёл первый — появился первый живой человек. Сообщается только
+        // на переходах: рассылать это на каждое открытие вкладки значит
+        // будить всех посетителей сайта каждый раз, когда сотрудник
+        // переходит между разделами админки.
+        if (first) announcePresence(true);
         return emitter;
     }
+
+    /**
+     * Есть ли сейчас на связи живой сотрудник.
+     *
+     * <p>Факт, а не расписание: открытое рабочее место означает, что кто-то
+     * смотрит в экран прямо сейчас. Надпись «мы онлайн», выставленная
+     * по часам работы, — обещание, и в обеденный перерыв или в отпуске
+     * она врёт ровно тому, кто на неё понадеялся.
+     *
+     * <p>Обратное неверно: закрытая вкладка не означает, что сотрудник ушёл
+     * домой. Поэтому «никого нет» показывается вместе с часами работы,
+     * а не вместо них.
+     */
+    public boolean staffOnline() {
+        return !desks.isEmpty();
+    }
+
+    /**
+     * Сообщить посетителям, что живой человек появился или пропал.
+     *
+     * <p>Всем сразу — событие редкое: на переходах, а не на каждой вкладке.
+     * Виджет по нему меняет надпись в шапке, ленту не перечитывает: о самом
+     * разговоре здесь не сказано ничего.
+     */
+    private void announcePresence(boolean online) {
+        for (var subscribers : byVisitor.values()) {
+            for (var emitter : subscribers) {
+                try {
+                    emitter.send(SseEmitter.event().name("presence").data(new Presence(online)));
+                } catch (IOException | IllegalStateException e) {
+                    emitter.completeWithError(e);
+                }
+            }
+        }
+    }
+
+    /** Есть ли на связи живой сотрудник. В базе не хранится: состояние минуты. */
+    public record Presence(boolean online) {}
 
     private void forget(SseEmitter emitter, Runnable remove) {
         emitter.onCompletion(remove);
@@ -229,6 +292,71 @@ public class ChatStream {
 
     /** Кто печатает и в каком разговоре. В базе не хранится: живёт секунды. */
     public record Typing(UUID conversationId, String who) {}
+
+    /**
+     * Ведалина взялась за ответ.
+     *
+     * <p>Отдельно от {@link #typing}, хотя виджет рисует то же самое.
+     * «Печатает» гаснет по таймеру: событие «перестал» невозможно, человек
+     * волен закрыть вкладку. Раздумье Ведалины кончается ровно одним из двух
+     * способов — ответом или передачей человеку, — и оба видны рассылке.
+     * Поэтому здесь не таймер, а состояние, которое к тому же можно спросить.
+     */
+    public void startedAnswering(UUID conversationId, String visitorKey) {
+        answering.add(conversationId);
+        typing(conversationId, visitorKey, ChatMessage.ASSISTANT);
+    }
+
+    /**
+     * Ведалина закончила — ответом, отказом или падением.
+     *
+     * <p>Вызывается из finally, а не после успеха. Флаг, оставшийся включённым
+     * после сбоя, — это вечные точки в окне посетителя: он ждёт ответа,
+     * которого никто уже не готовит.
+     */
+    public void finishedAnswering(UUID conversationId) {
+        answering.remove(conversationId);
+    }
+
+    /** Думает ли Ведалина над ответом в этом разговоре прямо сейчас. */
+    public boolean answering(UUID conversationId) {
+        return conversationId != null && answering.contains(conversationId);
+    }
+
+    /**
+     * Кусок ответа, который ещё не дописан.
+     *
+     * <p><b>Здесь и только здесь по потоку идёт текст.</b> В остальном
+     * рассылка несёт «в разговоре что-то изменилось», и это правило: положи
+     * мы тело сообщения в событие — рассылка стала бы вторым местом, где
+     * решается, кому что видно.
+     *
+     * <p>Исключение не отменяет правила по двум причинам. Первая: черновик
+     * уходит только подписчикам этого {@code visitorKey} — тому же человеку,
+     * который через секунду прочитает этот же текст в ленте по своему ключу.
+     * Второго набора прав не появляется. Вторая: на рабочие места черновик
+     * не идёт вовсе. Сотруднику незачем смотреть, как машина подбирает слова,
+     * а вот его дверь — это как раз то место, где права другие.
+     *
+     * <p>Черновик ничего не значит сам по себе: он не хранится, не считается
+     * сообщением и заменяется лентой, как только ответ записан. Виджет обязан
+     * показывать его как незаконченный и не имеет права оставить на экране,
+     * если {@code changed} так и не пришло.
+     */
+    public void draft(UUID conversationId, String visitorKey, String chunk) {
+        for (var emitter : byVisitor.getOrDefault(visitorKey, List.of())) {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("draft")
+                        .data(new Draft(conversationId, chunk)));
+            } catch (IOException | IllegalStateException e) {
+                emitter.completeWithError(e);
+            }
+        }
+    }
+
+    /** Кусок недописанного ответа. В базе не хранится: ответ запишется целиком. */
+    public record Draft(UUID conversationId, String chunk) {}
 
     private void send(List<SseEmitter> subscribers, Changed event) {
         for (var emitter : subscribers) {

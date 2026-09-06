@@ -54,7 +54,8 @@ public class LeadNotifier implements DomainEventConsumer {
             return;
         }
 
-        var context = new MailTemplate.Context(leadId, contact.form(), contact.productSlug(), portalUrl);
+        var context = new MailTemplate.Context(leadId, contact.number(), contact.form(),
+                contact.productSlug(), portalUrl);
         mailer.queue(MailTemplate.LEAD_CONFIRMATION, contact.email(), context, leadId);
 
         if (manager.isBlank()) {

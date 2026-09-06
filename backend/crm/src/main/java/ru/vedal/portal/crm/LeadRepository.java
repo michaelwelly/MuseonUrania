@@ -15,6 +15,12 @@ public interface LeadRepository extends JpaRepository<Lead, UUID> {
 
     Optional<Lead> findByIdempotencyKey(String idempotencyKey);
 
+    // Номер выдаёт последовательность базы, а не счётчик в коде: две заявки,
+    // отправленные в одну секунду, получили бы у счётчика один номер — и дальше
+    // спор о том, какая из них та самая. Тем же способом нумеруются КП.
+    @Query(value = "select nextval('lead_number_seq')", nativeQuery = true)
+    long nextNumber();
+
     // Отбор для автоочистки: старше срока и ещё не обезличенные. Под него
     // заведён частичный индекс lead_retention_idx — обезличенные из выборки
     // уходят навсегда, и место под них в индексе держать незачем, а со

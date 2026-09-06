@@ -4,13 +4,19 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.vedal.portal.PostgresTestBase;
 import ru.vedal.portal.audit.AuditEntryRepository;
 
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -25,6 +31,9 @@ class DocumentsApiTest extends PostgresTestBase {
 
     @Autowired
     AuditEntryRepository audit;
+
+    @Autowired
+    FileStorage storage;
 
     // Перечень показывается вместе со статусом доступа, даже когда файла нет:
     // страница «Документы» так и устроена. Но ссылки на файл быть не должно.
@@ -118,10 +127,59 @@ class DocumentsApiTest extends PostgresTestBase {
                 .allSatisfy(d -> assertThat(d.getSensitivity()).isEqualTo("public"));
     }
 
+    // Двенадцать, а не десять: V27 добавила регистрацию VEDAL R2, которая
+    // потерялась при разделении изделия «VEDAL R1, R2» на два, и членский
+    // билет ТПП в новой группе «О компании».
+    // Открывать в браузере можно ТОЛЬКО pdf.
+    //
+    // За документом приходят посмотреть, поэтому pdf отдаётся с inline
+    // и открывается прямо во вкладке. Но inline на что угодно — дыра:
+    // тип файла при загрузке не ограничен, а StorageLimits.contentType
+    // умеет image/svg+xml. SVG — это документ со скриптами, и показанный
+    // inline он выполняет их в нашем источнике.
+    //
+    // Проверяются обе стороны правила. Половина, проверяющая только pdf,
+    // зеленела бы и после того, как inline поставят всему подряд.
+    @Test
+    void onlyPdfOpensInTheBrowser() throws Exception {
+        publishWithFile("katalog-produkcii-2026", "probe.pdf");
+
+        mvc.perform(get("/api/public/v1/documents/katalog-produkcii-2026/file"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("inline")))
+                .andExpect(header().string("X-Content-Type-Options", "nosniff"));
+    }
+
+    @Test
+    void anythingButPdfIsDownloadedAndNotShown() throws Exception {
+        publishWithFile("katalog-produkcii-2026", "probe.svg");
+
+        mvc.perform(get("/api/public/v1/documents/katalog-produkcii-2026/file"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("attachment")))
+                .andExpect(header().string("X-Content-Type-Options", "nosniff"));
+    }
+
+    // Кладёт файл в хранилище и публикует документ. Тест откатывается
+    // (PostgresTestBase транзакционный), файл остаётся — он в каталоге
+    // сборки и на следующий запуск не влияет: ключ перезаписывается.
+    private void publishWithFile(String slug, String key) throws Exception {
+        var body = "проба".getBytes(StandardCharsets.UTF_8);
+        storage.put(FileStorage.Area.DOCUMENTS, key, new ByteArrayInputStream(body), body.length,
+                null);
+
+        var document = documents.findBySlug(slug).orElseThrow();
+        document.setStorageKey(key);
+        document.setFileSize((long) body.length);
+        document.setListed(true);
+        document.setPublished(true);
+        documents.saveAndFlush(document);
+    }
+
     @Test
     void seedMatchesTheDocumentsPage() {
-        assertThat(documents.findAll()).hasSize(10);
-        assertThat(documents.findByListedTrueOrderByDocGroupAscTitleAsc()).hasSize(10);
+        assertThat(documents.findAll()).hasSize(12);
+        assertThat(documents.findByListedTrueOrderByDocGroupAscTitleAsc()).hasSize(12);
         assertThat(documents.findAll())
                 .as("ни один документ ещё не согласован к публикации")
                 .allSatisfy(d -> assertThat(d.isPublished()).isFalse());

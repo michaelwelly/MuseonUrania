@@ -252,6 +252,11 @@ export type Page<T> = { items: T[]; page: number; size: number; total: number; p
 
 export type LeadRow = {
   id: string;
+  /**
+   * Номер заявки для людей: «З-2026-0042». Его называет клиент по телефону
+   * и по нему же ищет менеджер — идентификатор для этого не годится.
+   */
+  number: string;
   form: string;
   name: string;
   company: string | null;
@@ -655,9 +660,28 @@ export type StaffMember = {
   name: string | null;
   /** Отключённые остаются в списке: на них висят старые сделки. */
   enabled: boolean;
+  /**
+   * Портальные роли в форме realm'а: portal-admin, portal-sales,
+   * portal-production. Пусто — человек заведён в системе входа,
+   * но в портал не пущен.
+   */
+  roles: string[];
 };
 
 export const staff = () => get<StaffMember[]>("/staff");
+
+/**
+ * Выдать сотруднику РОВНО ЭТОТ набор портальных ролей.
+ *
+ * Набор целиком, а не «добавь одну»: снятие роли — такое же обычное
+ * действие, как выдача. Пустой список означает «в портал не пущен».
+ *
+ * Отвечает обновлённым справочником — тем же, что отдаёт staff().
+ * Так список на экране обновляется из ответа, а не вторым запросом,
+ * который мог бы приехать раньше, чем Keycloak применит изменение.
+ */
+export const assignRoles = (login: string, roles: string[]) =>
+  put<StaffMember[]>(`/staff/${encodeURIComponent(login)}/roles`, { roles });
 
 // ————— журнал —————
 
@@ -709,6 +733,15 @@ export type ChatLine = {
   /** Когда прочитано посетителем. null — ещё нет. */
   readAt: string | null;
   at: string;
+  id: string;
+  /**
+   * Помог ли ответ Ведалины, по мнению посетителя. null — не оценивал.
+   *
+   * Сотруднику это нужнее, чем кому-либо: журнал показывает, когда ассистент
+   * молчит, и не показывает худшего — он ответил уверенно и не по делу.
+   * Помеченный «не помог» ответ виден прямо в переписке, вместе с вопросом.
+   */
+  helpful: boolean | null;
 };
 
 export type ChatThread = { id: string | null; status: ChatStatus; messages: ChatLine[] };

@@ -1,4 +1,5 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Сотрудники и профиль.
@@ -25,6 +26,7 @@ const mocks = vi.hoisted(() => ({
   deals: vi.fn(),
   chatsAll: vi.fn(),
   audit: vi.fn(),
+  assignRoles: vi.fn(),
 }));
 
 vi.mock("@/lib/admin", () => ({
@@ -33,11 +35,14 @@ vi.mock("@/lib/admin", () => ({
   deals: mocks.deals,
   chatsAll: mocks.chatsAll,
   audit: mocks.audit,
+  assignRoles: mocks.assignRoles,
   staff: () =>
     Promise.resolve([
-      { login: "i.koltsova", name: "Ирина Кольцова", enabled: true },
-      { login: "a.rogov", name: "Антон Рогов", enabled: false },
-      { login: "noname", name: null, enabled: true },
+      // Роли разные намеренно: список, где у всех одно и то же, зеленел бы
+      // и на карточке, которая роли не показывает вовсе.
+      { login: "i.koltsova", name: "Ирина Кольцова", enabled: true, roles: ["portal-admin"] },
+      { login: "a.rogov", name: "Антон Рогов", enabled: false, roles: ["portal-sales"] },
+      { login: "noname", name: null, enabled: true, roles: [] },
     ]),
 }));
 
@@ -71,6 +76,7 @@ beforeEach(() => {
     total: 0,
     pages: 0,
   });
+  mocks.assignRoles.mockReset().mockResolvedValue([]);
   mocks.audit.mockReset().mockResolvedValue({
     items: [
       {
@@ -94,22 +100,40 @@ beforeEach(() => {
 
 const Я = { actor: "i.koltsova", roles: ["portal-admin"], authentication: "keycloak" };
 
-async function сотрудники() {
+async function сотрудники(роли: string[] = ["portal-admin"]) {
   render(
-    <WhoHost who={Я}>
+    <WhoHost who={{ ...Я, roles: роли }}>
       <StaffPage />
     </WhoHost>,
   );
   await screen.findByText(/Ирина Кольцова/);
 }
 
-async function профиль() {
+/** Карточка названного человека — по логину, который в ней стоит. */
+function карточкаПо(логин: string): HTMLElement {
+  return screen.getByText(логин).closest("article") as HTMLElement;
+}
+
+/** Кнопка-чип роли на карточке. Нет кнопки — значит редактора там нет. */
+function чип(логин: string, роль: string): HTMLButtonElement | undefined {
+  return [...карточкаПо(логин).querySelectorAll("button")].find(
+    (b) => b.textContent === роль,
+  ) as HTMLButtonElement | undefined;
+}
+
+async function профиль(роли: string[] = ["portal-admin"]) {
   render(
-    <WhoHost who={Я}>
+    <WhoHost who={{ ...Я, roles: роли }}>
       <ProfilePage />
     </WhoHost>,
   );
   await screen.findByRole("heading", { name: "Ирина Кольцова" });
+}
+
+/** Пункт списка «что можно»: открыт он или стоит с прочерком. */
+function можно(текст: string): boolean {
+  const строка = screen.getByText(new RegExp(текст)).closest("li")!;
+  return строка.className.includes("check__row--on");
 }
 
 function карточка(имя: string) {
@@ -154,6 +178,72 @@ describe("карточка сотрудника", () => {
     // именем и логином, — и это не ошибка: строка логина нужна и там,
     // где имя есть.
     expect(screen.getAllByText(/^noname$/).length).toBe(2);
+  });
+
+  // Роль сотрудника раньше можно было узнать только в консоли Keycloak.
+  //
+  // Проверяются обе стороны: и что роль показана, и что её отсутствие
+  // названо словами. Карточка, рисующая на месте ролей пустоту, прошла бы
+  // проверку «portal-admin на экране есть».
+  it("роли видны на карточке, а их отсутствие названо словами", async () => {
+    await сотрудники();
+
+    // Своя карточка — только показ, поэтому роль там ровно одна и текстом.
+    expect(within(карточкаПо("i.koltsova")).getByText("portal-admin")).toBeTruthy();
+    expect(screen.getByText("в портал не пущен")).toBeTruthy();
+  });
+
+  // ————— выдача ролей —————
+
+  // Набор уходит ЦЕЛИКОМ, а не «добавь одну»: дверь принимает его так же.
+  // Проверяется именно аргумент, а не факт вызова — запрос с половиной
+  // набора молча снял бы роль, которую никто не трогал.
+  it("администратор выдаёт роль, и набор уходит целиком", async () => {
+    await сотрудники();
+
+    const user = userEvent.setup();
+    await user.click(чип("a.rogov", "portal-production")!);
+    await user.click(screen.getByRole("button", { name: "Сохранить" }));
+
+    await waitFor(() =>
+      expect(mocks.assignRoles).toHaveBeenCalledWith("a.rogov", [
+        "portal-sales",
+        "portal-production",
+      ]),
+    );
+  });
+
+  // Кнопки нет, пока ничего не изменилось: роль решает, что человек видит
+  // в закрытом контуре, и «Сохранить» на нетронутой карточке приглашает
+  // нажать не глядя.
+  it("кнопка появляется только после изменения", async () => {
+    await сотрудники();
+
+    expect(screen.queryByRole("button", { name: "Сохранить" })).toBeNull();
+
+    const user = userEvent.setup();
+    await user.click(чип("a.rogov", "portal-admin")!);
+
+    expect(screen.getByRole("button", { name: "Сохранить" })).toBeTruthy();
+  });
+
+  // Ограничение №3 со стороны интерфейса. Запирает его портал — он
+  // отказывает на любую попытку сменить роли себе, — а здесь мы просто
+  // не показываем кнопку, которая привела бы к отказу.
+  it("свои роли не редактируются", async () => {
+    await сотрудники();
+
+    expect(чип("i.koltsova", "portal-sales")).toBeUndefined();
+  });
+
+  // Ограничение №1 со стороны интерфейса: редактора нет ни у кого, кроме
+  // администратора. Проверка на одном администраторе зеленела бы и на
+  // редакторе, показанном всем подряд.
+  it("продавец редактора не видит вовсе", async () => {
+    await сотрудники(["portal-sales"]);
+
+    expect(чип("a.rogov", "portal-production")).toBeUndefined();
+    expect(within(карточкаПо("a.rogov")).getByText("portal-sales")).toBeTruthy();
   });
 });
 
@@ -225,6 +315,7 @@ describe("нагрузка", () => {
   });
 });
 
+
 describe("профиль", () => {
   it("незаполненное названо словами, а не прочерком", async () => {
     await профиль();
@@ -233,19 +324,54 @@ describe("профиль", () => {
     expect(screen.getAllByText("ожидает уточнения").length).toBeGreaterThanOrEqual(4);
   });
 
-  it("про роли сказано, что они дают одно и то же", async () => {
+  // Список «что можно» раньше был прошит: пять пунктов, четыре всегда «да».
+  // Тогда это была правда — ролей было две и обе пускали ко всему. Теперь
+  // ролей три, и делят они контуры, а прошитый список стал враньём:
+  // продавец читал у себя в профиле, что ему можно править каталог.
+  //
+  // Проверяются обе стороны. Тест на одном администраторе зеленел бы
+  // и на прежнем списке, где «да» стоит у всех и всегда.
+  it("администратору открыты оба контура и журнал", async () => {
     await профиль();
 
-    // SecurityConfig пускает обе роли ко всему админскому API одним
-    // правилом. Показать разные права значило бы дать ложное чувство
-    // границы: сотрудник решит, что редактор чего-то не может.
-    expect(screen.getByText(/дают\s+одно и то же/)).toBeTruthy();
+    expect(можно("Править каталог")).toBe(true);
+    expect(можно("Вести заявки")).toBe(true);
+    expect(можно("Читать журнал")).toBe(true);
+  });
+
+  it("продавцу не обещают правку каталога и журнал", async () => {
+    await профиль(["portal-sales"]);
+
+    expect(можно("Вести заявки")).toBe(true);
+    expect(можно("Править каталог")).toBe(false);
+    expect(можно("Читать журнал")).toBe(false);
   });
 
   it("заводить сотрудников портал не умеет, и это сказано", async () => {
     await профиль();
 
     expect(screen.getByText(/консоль системы входа, а не портал/)).toBeTruthy();
+  });
+
+  // Профиль открыт любой роли, а журнал и заявки — нет. Раньше их спрашивали
+  // всегда: продавец читал текст ошибки 403 прямо у себя на профиле,
+  // а у контура сайта вечно крутилась плитка заявок.
+  //
+  // Проверяется не только текст на экране, но и то, что запроса НЕ БЫЛО.
+  // Проверка одного текста зеленела бы и на прежнем коде: там ошибка тоже
+  // рисовалась, просто другими словами.
+  it("продавцу журнал не показывают и не спрашивают", async () => {
+    await профиль(["portal-sales"]);
+
+    expect(mocks.audit).not.toHaveBeenCalled();
+    expect(screen.getByText(/Журнал открыт администратору/)).toBeTruthy();
+  });
+
+  it("контуру сайта не спрашивают заявки", async () => {
+    await профиль(["portal-production"]);
+
+    expect(mocks.leads).not.toHaveBeenCalled();
+    expect(screen.getByText(/заявки ведёт контур продаж/)).toBeTruthy();
   });
 
   it("последние действия берутся по вошедшему", async () => {

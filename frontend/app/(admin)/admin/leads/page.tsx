@@ -615,6 +615,10 @@ function Table({
             <th className="tight">
               <HeadBox selection={selection} rows={rows.map((r) => r.id)} what="заявки" />
             </th>
+            {/* Номер первым столбцом: с ним заявку ищут глазами, когда
+                клиент называет его по телефону. Прочее — про содержание,
+                а номер про то, «эта ли». */}
+            <th>Номер</th>
             <th>Когда</th>
             {видно("form") && <th>Форма</th>}
             <th>Кто обратился</th>
@@ -660,6 +664,8 @@ function Table({
                     aria-label={`Выбрать заявку: ${row.name}, ${when(row.createdAt)}`}
                   />
                 </td>
+
+                <td className="tight mono">{row.number}</td>
 
                 <td className="tight mono">{when(row.createdAt)}</td>
 
