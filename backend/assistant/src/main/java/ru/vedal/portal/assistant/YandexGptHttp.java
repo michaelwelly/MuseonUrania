@@ -47,8 +47,10 @@ public class YandexGptHttp implements YandexGpt {
      * тем же кодом, что работает в проде. Настройкой приложения адрес при
      * этом не стал: в работе он один и меняться ему незачем.
      */
-    public static final URI CLOUD =
-            URI.create("https://llm.api.cloud.yandex.net/foundationModels/v1/completion");
+    public static final String CLOUD_URL =
+            "https://llm.api.cloud.yandex.net/foundationModels/v1/completion";
+
+    public static final URI CLOUD = URI.create(CLOUD_URL);
 
     private final URI url;
     private final HttpClient http;

@@ -32,6 +32,15 @@ class AssistantApiTest extends PostgresTestBase {
     }
 
     @Test
+    void greetingGetsAssistantReplyWithoutHandoff() throws Exception {
+        mvc.perform(ask("привет"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.answer").value(org.hamcrest.Matchers.containsString("Я Ведалина")))
+                .andExpect(jsonPath("$.sources").isEmpty())
+                .andExpect(jsonPath("$.handoff").doesNotExist());
+    }
+
+    @Test
     void clinicalQuestionGetsHandoffInsteadOfAnswer() throws Exception {
         mvc.perform(ask("какой диагноз ставить и чем лечить"))
                 .andExpect(status().isOk())

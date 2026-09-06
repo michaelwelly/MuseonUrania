@@ -70,6 +70,15 @@ public class AssistantService {
             return new AskReply(refusal.get(), List.of(), handoff(refusal.get()));
         }
 
+        // Приветствие — не вопрос: искать по нему нечего, и до правки «привет»
+        // уходил к человеку как вопрос без источников. Отвечается заготовкой
+        // и в модель не идёт: платить за «здравствуйте» незачем.
+        var smallTalk = ScriptedReplies.smallTalk(question);
+        if (smallTalk.isPresent()) {
+            journal(actor, "scripted", 0);
+            return new AskReply(smallTalk.get(), List.of(), null);
+        }
+
         var grounded = engine.answer(question, scope, onChunk);
         if (grounded.isEmpty()) {
             journal(actor, "no-sources", 0);
@@ -94,6 +103,24 @@ public class AssistantService {
     @Transactional
     public Optional<AskReply> scripted(String intent, String actor) {
         return ScriptedReplies.answerFor(intent).map(text -> {
+            journal(actor, "scripted", 0);
+            return new AskReply(text, List.of(), null);
+        });
+    }
+
+    /**
+     * Приветствие или короткое «спасибо» — ответ на них известен заранее.
+     *
+     * <p>Отдельно от {@link #ask}, чтобы разговор мог ответить сразу, тем же
+     * путём, что и на нажатую кнопку. Иначе «привет» уходил бы в очередь
+     * на вычисление ответа: посетитель смотрел бы на точки, портал занимал бы
+     * поток, а модель получала бы деньги за «здравствуйте».
+     *
+     * <p>Пустой Optional — обычный вопрос, он идёт своим путём.
+     */
+    @Transactional
+    public Optional<AskReply> smallTalk(String question, String actor) {
+        return ScriptedReplies.smallTalk(question).map(text -> {
             journal(actor, "scripted", 0);
             return new AskReply(text, List.of(), null);
         });

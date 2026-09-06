@@ -74,10 +74,12 @@ public class YandexGptEngine implements LlmEngine {
 
     private final DeterministicSearch search;
     private final YandexGpt model;
+    private final boolean fallback;
 
-    public YandexGptEngine(DeterministicSearch search, YandexGpt model) {
+    public YandexGptEngine(DeterministicSearch search, YandexGpt model, boolean fallback) {
         this.search = search;
         this.model = model;
+        this.fallback = fallback;
     }
 
     @Override
@@ -100,9 +102,18 @@ public class YandexGptEngine implements LlmEngine {
             return Optional.of(new Grounded(text.strip(), sources));
 
         } catch (RuntimeException e) {
-            // Модель молчит — материалы всё равно есть. Отдаём их перечнем:
-            // посетитель получает ссылки сразу, а не ждёт человека из-за
-            // чужой недоступности.
+            // Модель молчит — материалы всё равно есть. По умолчанию отдаём
+            // их перечнем: посетитель получает ссылки сразу, а не ждёт
+            // человека из-за чужой недоступности.
+            //
+            // Настройкой это выключается: если перечень сочтут недостаточным
+            // ответом, пустой Optional отправит разговор к специалисту —
+            // тем же путём, что и вопрос без источников.
+            if (!fallback) {
+                log.warn("YandexGPT не ответил, разговор уходит человеку: {}", e.toString());
+                return Optional.empty();
+            }
+
             log.warn("YandexGPT не ответил, отдаю перечень найденного: {}", e.toString());
             return search.answer(question, scope);
         }

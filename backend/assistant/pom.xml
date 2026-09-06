@@ -13,6 +13,10 @@
 
 	<dependencies>
 		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-restclient</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>ru.vedal</groupId>
 			<artifactId>portal-common</artifactId>
 		</dependency>

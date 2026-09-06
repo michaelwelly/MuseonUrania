@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Primary;
 import ru.vedal.portal.common.RateLimit;
 import tools.jackson.databind.ObjectMapper;
 
+import java.net.URI;
 import java.time.Duration;
 
 @Configuration
@@ -51,6 +52,8 @@ public class AssistantConfig {
             @Value("${vedal.assistant.engine:search}") String engine,
             @Value("${vedal.assistant.yandex.api-key:}") String apiKey,
             @Value("${vedal.assistant.yandex.model-uri:}") String modelUri,
+            @Value("${vedal.assistant.yandex.endpoint:" + YandexGptHttp.CLOUD_URL + "}") String endpoint,
+            @Value("${vedal.assistant.yandex.fallback:true}") boolean fallback,
             @Value("${vedal.assistant.yandex.temperature:0.2}") double temperature,
             @Value("${vedal.assistant.yandex.max-tokens:600}") int maxTokens,
             @Value("${vedal.assistant.yandex.timeout:PT25S}") Duration timeout) {
@@ -100,7 +103,8 @@ public class AssistantConfig {
 
         log.info("Ведалина отвечает моделью {}", modelUri);
         return new YandexGptEngine(search,
-                new YandexGptHttp(YandexGptHttp.CLOUD, json, apiKey, modelUri,
-                        temperature, maxTokens, timeout));
+                new YandexGptHttp(URI.create(endpoint), json, apiKey, modelUri,
+                        temperature, maxTokens, timeout),
+                fallback);
     }
 }
