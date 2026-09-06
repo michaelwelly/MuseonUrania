@@ -59,7 +59,7 @@ export default function VedalinaWidget() {
           position: absolute и inset: 0, и обёртка перестаёт управлять
           её размером. Растягивает портрет по кругу CSS — object-fit. */}
       <span className={styles.launcherAvatar}>
-        <Image src={vedalina.avatar} alt="" width={48} height={48} />
+        <Image src={vedalina.avatar} alt="" width={96} height={96} />
         <span className={styles.launcherDot} aria-hidden="true" />
       </span>
       <span className={styles.launcherLabel}>Задать вопрос</span>
