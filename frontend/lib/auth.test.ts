@@ -1,3 +1,4 @@
+import { createHash, webcrypto } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const ISSUER = "https://keycloak.test/realms/vedal";
@@ -54,6 +55,32 @@ describe("вход через Keycloak", () => {
     expect(challenge).toBeTruthy();
     expect(challenge).not.toBe(verifier);
     expect(target.searchParams.get("code_verifier")).toBeNull();
+  });
+
+  // Стенд открыт по http на адресе-числе, и браузер там не даёт
+  // `crypto.subtle` вовсе. Раньше это роняло вход на `undefined.digest` —
+  // человек жал «Войти», и не происходило ничего, даже перехода.
+  it("уводит в Keycloak и там, где браузер не даёт crypto.subtle", async () => {
+    const insecure = {
+      getRandomValues: (array: Uint8Array) => webcrypto.getRandomValues(array),
+    };
+    vi.stubGlobal("crypto", insecure);
+
+    const { login } = await auth();
+    await login("/admin/");
+
+    const target = new URL(vi.mocked(window.location.assign).mock.calls[0][0] as string);
+    const verifier = sessionStorage.getItem("vedal.admin.pkce") ?? "";
+    expect(verifier).toHaveLength(43);
+
+    // Метод остаётся S256: с `plain` verifier уехал бы в адресной строке —
+    // и в истории браузера, и в логах всего, что стоит по дороге.
+    expect(target.searchParams.get("code_challenge_method")).toBe("S256");
+    expect(target.searchParams.get("code_challenge")).toBe(
+      createHash("sha256").update(verifier).digest("base64url"),
+    );
+
+    vi.unstubAllGlobals();
   });
 
   it("обменивает код на токены и возвращает адрес, с которого уходили", async () => {
