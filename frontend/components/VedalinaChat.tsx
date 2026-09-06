@@ -726,17 +726,22 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
         {/* Размер пропами, а не fill — см. VedalinaWidget: fill выставляет
             картинке inset: 0, и обёртка перестаёт управлять её размером.
 
-            Просим вдвое больше, чем занимает круг: кадр увеличен маской
-            в 1.7 раза, и картинка ровно по размеру круга при таком
-            увеличении мылит. Отображаемый размер держит CSS. */}
-        <div className={styles.avatarWrap}>
-          <Image
-            className={styles.avatar}
-            src={vedalina.avatar}
-            alt={`Портрет ассистента ${vedalina.name}`}
-            width={88}
-            height={88}
-          />
+            Просим вдвое больше, чем занимает круг: кадр немного увеличен
+            маской, и картинка ровно по размеру круга при этом мылит.
+            Отображаемый размер держит CSS.
+
+            Точка «на связи» — снаружи круга: он обрезает содержимое ради
+            кадра, и точка на краю превращалась в бледный серп. */}
+        <div className={styles.avatarSlot}>
+          <div className={styles.avatarWrap}>
+            <Image
+              className={styles.avatar}
+              src={vedalina.avatar}
+              alt={`Портрет ассистента ${vedalina.name}`}
+              width={88}
+              height={88}
+            />
+          </div>
           <span className={styles.status} aria-hidden="true" />
         </div>
         <div>
