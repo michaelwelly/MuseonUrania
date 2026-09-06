@@ -50,8 +50,7 @@ public class AssistantConfig {
             ObjectMapper json,
             @Value("${vedal.assistant.engine:search}") String engine,
             @Value("${vedal.assistant.yandex.api-key:}") String apiKey,
-            @Value("${vedal.assistant.yandex.folder-id:}") String folderId,
-            @Value("${vedal.assistant.yandex.model:yandexgpt-lite/latest}") String model,
+            @Value("${vedal.assistant.yandex.model-uri:}") String modelUri,
             @Value("${vedal.assistant.yandex.temperature:0.2}") double temperature,
             @Value("${vedal.assistant.yandex.max-tokens:600}") int maxTokens,
             @Value("${vedal.assistant.yandex.timeout:PT25S}") Duration timeout) {
@@ -65,13 +64,26 @@ public class AssistantConfig {
         // Отказ на старте, а не при первом вопросе посетителя: без ключа
         // модель не ответит ни разу, и узнать об этом лучше при развёртывании,
         // чем из жалобы «ассистент перестал отвечать».
-        if (apiKey.isBlank() || folderId.isBlank()) {
+        if (apiKey.isBlank() || modelUri.isBlank()) {
             throw new IllegalStateException("""
-                    vedal.assistant.engine=yandexgpt, но ключ модели не задан.
+                    vedal.assistant.engine=yandexgpt, но доступ к модели не задан.
                     Нужны переменные окружения VEDAL_YANDEX_API_KEY (Api-Key \
-                    сервисного аккаунта) и VEDAL_YANDEX_FOLDER (идентификатор \
-                    каталога Yandex Cloud). Без них ассистент отвечать не сможет; \
-                    чтобы работать без модели, поставьте vedal.assistant.engine=search.""");
+                    сервисного аккаунта) и VEDAL_YANDEXGPT_MODEL_URI — адрес \
+                    модели целиком, вида gpt://<каталог>/yandexgpt-lite/latest. \
+                    Без них ассистент отвечать не сможет; чтобы работать без \
+                    модели, поставьте vedal.assistant.engine=search.""");
+        }
+
+        // Адрес модели проверяется здесь, а не в облаке: без схемы gpt://
+        // дверь отвечает 404, и по коду это неотличимо от «нет такой модели».
+        // Разбирать URI на каталог и имя портал не станет — его выдаёт консоль
+        // целиком, и лишний разбор означал бы третью переменную и третий способ
+        // ошибиться.
+        if (!modelUri.startsWith("gpt://")) {
+            throw new IllegalStateException(
+                    "VEDAL_YANDEXGPT_MODEL_URI должен начинаться с gpt:// и выглядеть как "
+                            + "gpt://<идентификатор каталога>/yandexgpt-lite/latest, а задано: "
+                            + modelUri);
         }
 
         // Ключ уезжает в заголовок Authorization, а туда пускают только ASCII.
@@ -86,9 +98,9 @@ public class AssistantConfig {
                             + "похоже, при копировании прихватилось лишнее.");
         }
 
-        log.info("Ведалина отвечает моделью {} (каталог {})", model, folderId);
+        log.info("Ведалина отвечает моделью {}", modelUri);
         return new YandexGptEngine(search,
-                new YandexGptHttp(YandexGptHttp.CLOUD, json, apiKey, folderId, model,
+                new YandexGptHttp(YandexGptHttp.CLOUD, json, apiKey, modelUri,
                         temperature, maxTokens, timeout));
     }
 }

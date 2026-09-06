@@ -82,7 +82,8 @@ that existed before the model. The materials were found after all; making the
 visitor wait for a human because of someone else's downtime is pointless.
 
 **No key lives in the repository.** `VEDAL_YANDEX_API_KEY` and
-`VEDAL_YANDEX_FOLDER` come from the environment, and with `engine=yandexgpt`
+`VEDAL_YANDEXGPT_MODEL_URI` (the full model address, `gpt://folder/model`)
+come from the environment, and with `engine=yandexgpt`
 the portal will not start without them — deliberately: otherwise it would
 quietly answer with a list of links, and the substitution would only be
 noticeable by the answers becoming drier.
