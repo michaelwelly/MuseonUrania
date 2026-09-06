@@ -126,6 +126,16 @@ public class ChatDesk {
             return thread(conversation);
         }
 
+        // Приветствие — тоже известный ответ, и путь у него тот же, что
+        // у кнопки. Отправь его считаться вместе с вопросами — посетитель
+        // смотрел бы на точки, портал занимал бы поток, а модель получала бы
+        // деньги за «здравствуйте».
+        var greeting = assistant.smallTalk(text, "public");
+        if (greeting.isPresent()) {
+            append(conversation, ChatMessage.ASSISTANT, null, greeting.get().answer(), null);
+            return thread(conversation);
+        }
+
         // ————— свободный вопрос отвечается отдельно —————
         //
         // Раньше движок вызывался прямо здесь, и ответ уходил в теле того же

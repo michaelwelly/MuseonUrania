@@ -41,7 +41,7 @@ class YandexGptEngineTest extends PostgresTestBase {
     @Test
     void theAnswerComesFromTheModelAndTheLinksFromThePortal() {
         var model = new Подставная();
-        var engine = new YandexGptEngine(search, model);
+        var engine = new YandexGptEngine(search, model, true);
 
         var answer = engine.answer("Что такое VEDAL A-2000?", LlmEngine.Scope.PUBLIC).orElseThrow();
 
@@ -59,7 +59,7 @@ class YandexGptEngineTest extends PostgresTestBase {
     @Test
     void withoutMaterialsTheModelIsNotAskedAtAll() {
         var model = new Подставная();
-        var engine = new YandexGptEngine(search, model);
+        var engine = new YandexGptEngine(search, model, true);
 
         var answer = engine.answer("расскажи про погоду в Кабуле", LlmEngine.Scope.PUBLIC);
 
@@ -75,7 +75,7 @@ class YandexGptEngineTest extends PostgresTestBase {
     @Test
     void theModelSeesTheFoundMaterialsNumberedTheSameWayAsTheLinks() {
         var model = new Подставная();
-        var engine = new YandexGptEngine(search, model);
+        var engine = new YandexGptEngine(search, model, true);
 
         var answer = engine.answer("Что такое VEDAL A-2000?", LlmEngine.Scope.PUBLIC).orElseThrow();
 
@@ -102,7 +102,7 @@ class YandexGptEngineTest extends PostgresTestBase {
     @Test
     void theQuestionIsAskedAsTheVisitorsOwnMessage() {
         var model = new Подставная();
-        new YandexGptEngine(search, model).answer("Что такое VEDAL A-2000?", LlmEngine.Scope.PUBLIC);
+        new YandexGptEngine(search, model, true).answer("Что такое VEDAL A-2000?", LlmEngine.Scope.PUBLIC);
 
         var user = model.asked.stream().filter(m -> m.role() == YandexGpt.Role.USER).toList();
         assertThat(user).hasSize(1);
@@ -115,7 +115,7 @@ class YandexGptEngineTest extends PostgresTestBase {
         var model = new Подставная();
         var chunks = new ArrayList<String>();
 
-        new YandexGptEngine(search, model)
+        new YandexGptEngine(search, model, true)
                 .answer("Что такое VEDAL A-2000?", LlmEngine.Scope.PUBLIC, chunks::add);
 
         assertThat(String.join("", chunks)).isEqualTo(model.reply);
@@ -127,7 +127,7 @@ class YandexGptEngineTest extends PostgresTestBase {
     void whenTheModelIsDownTheFoundMaterialsAreStillAnswered() {
         var model = new Подставная();
         model.fail = new IllegalStateException("Модель недоступна");
-        var engine = new YandexGptEngine(search, model);
+        var engine = new YandexGptEngine(search, model, true);
 
         var answer = engine.answer("Что такое VEDAL A-2000?", LlmEngine.Scope.PUBLIC).orElseThrow();
 

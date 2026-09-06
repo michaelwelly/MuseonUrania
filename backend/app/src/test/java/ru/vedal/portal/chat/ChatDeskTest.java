@@ -34,6 +34,20 @@ class ChatDeskTest extends ChatTestBase {
         assertThat(accepted.messages().getFirst().author()).isEqualTo(ChatMessage.VISITOR);
     }
 
+    // Приветствие — не вопрос, и ответ на него известен заранее. Поэтому оно
+    // приходит сразу, тем же путём, что заготовки кнопок: ни очереди,
+    // ни обращения к модели. До правки «привет» уходил к человеку как вопрос,
+    // по которому не нашлось источников.
+    @Test
+    void greetingDoesNotPutTheConversationInTheQueue() {
+        var thread = desk.say(visitor(), "привет", FROM_SITE);
+
+        assertThat(thread.status()).isEqualTo(Conversation.OPEN);
+        assertThat(thread.messages()).hasSize(2);
+        assertThat(thread.messages().get(1).author()).isEqualTo(ChatMessage.ASSISTANT);
+        assertThat(thread.messages().get(1).body()).contains("Ведалина");
+    }
+
     // Ответ обязан нести источники: правило проекта — утверждение без ссылки
     // проверить нечем. В базе они лежат снимком, и лента обязана их вернуть,
     // иначе виджет покажет ответ, которому нельзя верить.
