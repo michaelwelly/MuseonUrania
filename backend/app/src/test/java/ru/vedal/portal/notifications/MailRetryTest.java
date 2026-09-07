@@ -154,6 +154,40 @@ class MailRetryTest extends PostgresTestBase {
         }
     }
 
+    // Портал без настроенной почты. Раньше письмо в этом случае помечалось
+    // отправленным: на стенде так и стояли две записи со статусом sent,
+    // которых никто не получал, — а человек, ждущий заявку письмом, о ней
+    // не знал вовсе.
+    @Test
+    void withoutSmtpMailWaitsInsteadOfBeingCalledSent() {
+        sender.configured = false;
+        var id = queued("client@example.ru");
+
+        assertThat(dispatch.drain()).as("очередь не трогаем вовсе").isZero();
+
+        var mail = mails.findById(id).orElseThrow();
+        assertThat(mail.getStatus()).isEqualTo("queued");
+        assertThat(mail.getAttempts())
+                .as("попытки не расходуются: виновата настройка, а не адресат")
+                .isZero();
+        assertThat(sender.sent).isEmpty();
+    }
+
+    // И главное следствие: настроенная почта забирает накопленное. Заявки,
+    // пришедшие до настройки SMTP, дойдут письмами задним числом.
+    @Test
+    void whenSmtpAppearsTheWaitingMailGoesOut() {
+        sender.configured = false;
+        var id = queued("client@example.ru");
+        dispatch.drain();
+
+        sender.configured = true;
+
+        assertThat(dispatch.drain()).isEqualTo(1);
+        assertThat(mails.findById(id).orElseThrow().getStatus()).isEqualTo("sent");
+        assertThat(sender.sent).containsExactly("client@example.ru");
+    }
+
     private UUID queued(String to) {
         var mail = new OutboundMail();
         mail.setId(UUID.randomUUID());
@@ -186,6 +220,8 @@ class MailRetryTest extends PostgresTestBase {
         volatile Supplier<RuntimeException> failure;
         // Адрес, на котором отказывать. null — отказывать на всех.
         volatile String failFor;
+        // Настроен ли SMTP. false — портал поднят без почты.
+        volatile boolean configured = true;
         final List<String> sent = new CopyOnWriteArrayList<>();
 
         @Override
@@ -197,9 +233,15 @@ class MailRetryTest extends PostgresTestBase {
             sent.add(to);
         }
 
+        @Override
+        public boolean configured() {
+            return configured;
+        }
+
         void reset() {
             failure = null;
             failFor = null;
+            configured = true;
             sent.clear();
         }
     }

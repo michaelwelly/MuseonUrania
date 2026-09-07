@@ -2,6 +2,9 @@ package ru.vedal.portal.notifications;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import ru.vedal.portal.PostgresTestBase;
 import ru.vedal.portal.common.EventConsumedRepository;
 import ru.vedal.portal.common.OutboxRelay;
@@ -113,5 +116,19 @@ class LeadNotificationTest extends PostgresTestBase {
         consumed.deleteAll();
         outbox.deleteAll();
         leads.deleteAll();
+    }
+
+    // Настроенный транспорт нужен здесь по существу: тест проверяет, что
+    // письмо уходит один раз и не уходит второй. Без него очередь стоит
+    // нетронутой — портал без SMTP не притворяется отправившим, — и
+    // проверять было бы нечего.
+    @TestConfiguration
+    static class Transport {
+
+        @Bean
+        @Primary
+        MailSender workingSender() {
+            return (to, subject, body) -> { };
+        }
     }
 }

@@ -29,12 +29,15 @@ public class MailDispatch {
 
     private final OutboundMailRepository mails;
     private final MailAttempt attempt;
+    private final MailSender sender;
     private final AtomicLong queued = new AtomicLong();
     private final AtomicLong failed = new AtomicLong();
 
-    public MailDispatch(OutboundMailRepository mails, MailAttempt attempt, MeterRegistry meters) {
+    public MailDispatch(OutboundMailRepository mails, MailAttempt attempt,
+                        MailSender sender, MeterRegistry meters) {
         this.mails = mails;
         this.attempt = attempt;
+        this.sender = sender;
         meters.gauge("vedal.mail.queued", queued);
         meters.gauge("vedal.mail.failed", failed);
     }
@@ -42,6 +45,17 @@ public class MailDispatch {
     // Возвращает, сколько писем взято в работу за этот заход, — не сколько
     // ушло. Часть могла отказать и остаться в очереди до следующей попытки.
     public int drain() {
+        // Почты нет — очередь не трогаем. Отправить нечем, а любое действие
+        // здесь было бы враньём: пометка «отправлено» скрывает от человека
+        // заявку, которую он ждёт письмом, а отказ израсходует попытки
+        // и похоронит письмо из-за незаданной настройки.
+        //
+        // Письма ждут. Когда SMTP настроят, накопленное уедет тем же заходом,
+        // и заказчик получит и те заявки, что пришли раньше.
+        if (!sender.configured()) {
+            return 0;
+        }
+
         var due = mails.findDue(OutboundMail.QUEUED, Instant.now(), Limit.of(BATCH));
         for (var id : due) {
             attempt.run(id);
@@ -55,6 +69,14 @@ public class MailDispatch {
         failed.set(mails.countByStatus(OutboundMail.FAILED));
         if (failed.get() > 0) {
             log.warn("писем в разборе: {}", failed.get());
+        }
+        // Копящаяся очередь при ненастроенной почте — не поломка, а состояние,
+        // о котором надо говорить вслух: снаружи оно выглядит как «заявки
+        // приходят, а писем нет», и списывают это обычно на почтовый ящик.
+        if (!sender.configured() && queued.get() > 0) {
+            log.warn("писем ждёт отправки: {}. SMTP не настроен — задайте"
+                    + " SPRING_MAIL_HOST, SPRING_MAIL_USERNAME и SPRING_MAIL_PASSWORD,"
+                    + " и накопленное уйдёт", queued.get());
         }
     }
 }

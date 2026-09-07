@@ -16,10 +16,12 @@ Recommended top-level navigation:
 2. Продукция
 3. Производство
 4. Документы
-5. Пресс-центр
-6. Партнёры
-7. Сервис
-8. Контакты
+5. Новости
+6. Сервис
+7. Контакты
+
+There is no press centre and no partners page in the navigation — the reason
+is in "First Release Routes" below.
 
 Persistent elements:
 
@@ -38,10 +40,29 @@ Persistent elements:
 | `/products/<slug>/` | Product detail | MVP | individual product page with specs, docs, media, CTA |
 | `/production/` | Производство | MVP | production story, quality system, approved photos |
 | `/documents/` | Документы | MVP | approved public certificates, catalog, brochures |
-| `/press/` | Пресс-центр | MVP | Innoprom release and news |
-| `/partners/` | Партнёры | MVP | Divisy, Morus MS, Smart Solution role |
+| `/news/` | Новости | done | news feed, including the Innoprom release |
+| `/news/<slug>/` | News entry | done | a single article |
+| `/about/` | О компании | done | who we are, in-house R&D, Ural Chamber of Commerce membership |
 | `/service/` | Сервис | MVP | service request and support routing |
 | `/contacts/` | Контакты | MVP | contact details and forms |
+| `/legal/privacy/` | Политика приватности | done | personal data handling, consent used by the forms |
+
+There is no press centre and no partners page in the code, and that is not
+an omission.
+
+`/press/` became `/news/`: for a visitor a press centre and a news feed are
+the same thing, and two sections with the same content would have to be filled
+twice. The Innoprom release will be an article in the feed, not a route
+of its own.
+
+`/partners/` is deliberately absent: naming a company as a partner in public
+is a statement about them, not about us, and it needs their consent. After the
+meeting with the customer the partners block was removed from the home page;
+Ural Chamber of Commerce membership stands in its place.
+
+The discrepancy had lived since the frontend began and became visible together
+with `sitemap.xml`: the crawler-facing map is built from actual routes, and
+promising there what the portal does not serve means sending crawlers to a 404.
 
 ## Later Routes
 
@@ -66,8 +87,8 @@ Persistent elements:
 4. Priority products.
 5. Production and quality block.
 6. Documents/certification teaser.
-7. Press/Innoprom block.
-8. Partners and Smart Solution integration.
+7. News/Innoprom block.
+8. Ural Chamber of Commerce membership.
 9. Lead capture block.
 10. Footer.
 
@@ -94,8 +115,8 @@ Smart Solution should appear as:
 
 Recommended placement:
 
-- partner/integration block on Home.
-- short explanation on Partners page.
+- a mention in the footer rather than a block of its own on Home.
+- short explanation on the About page.
 - internal architecture roadmap, not headline brand.
 
 ## SEO Route Notes
@@ -106,6 +127,6 @@ Priority SEO pages:
 - `/products/<slug>/`
 - `/production/`
 - `/documents/`
-- `/press/innoprom/` if separate Innoprom article is approved.
+- `/news/` and its articles, including the Innoprom release.
 
 No SEO page should publish unapproved certification, clinical, price, availability, or delivery claims.
