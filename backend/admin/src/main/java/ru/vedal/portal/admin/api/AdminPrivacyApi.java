@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.vedal.portal.chat.ChatPrivacy;
 import ru.vedal.portal.crm.PersonalData;
+import ru.vedal.portal.notifications.MailPrivacy;
 
 import java.util.Map;
 import java.util.UUID;
@@ -33,10 +34,12 @@ public class AdminPrivacyApi {
 
     private final PersonalData privacy;
     private final ChatPrivacy chats;
+    private final MailPrivacy mails;
 
-    public AdminPrivacyApi(PersonalData privacy, ChatPrivacy chats) {
+    public AdminPrivacyApi(PersonalData privacy, ChatPrivacy chats, MailPrivacy mails) {
         this.privacy = privacy;
         this.chats = chats;
+        this.mails = mails;
     }
 
     @Operation(summary = "Уничтожить персональные данные заявки",
@@ -50,6 +53,10 @@ public class AdminPrivacyApi {
                     Удалить строку было бы нельзя, не порвав ссылку из сделки, разрез
                     аналитики и запись в неизменяемом журнале.
 
+                    Разговор, из которого выросла заявка, и письмо-подтверждение,
+                    отправленное по ней, стираются вместе с заявкой: обращение человек
+                    подаёт одно, а данные его лежат в трёх местах.
+
                     Повторный вызов ничего не меняет и отвечает `already`: обращение
                     приходит дважды чаще, чем кажется.
                     """)
@@ -60,17 +67,20 @@ public class AdminPrivacyApi {
         var actor = Actor.of(authentication);
         var erased = privacy.eraseLead(id, PersonalData.Basis.REQUEST, actor);
 
-        // Разговор, из которого выросла заявка, стирается вместе с ней.
-        // Человек подаёт одно обращение, а данные его лежат в двух местах:
-        // исполнить только половину — значит не исполнить.
+        // Разговор, из которого выросла заявка, и письмо-подтверждение по ней
+        // стираются вместе с ней. Человек подаёт одно обращение, а данные его
+        // лежат в трёх местах: исполнить только часть — значит не исполнить.
         //
-        // Делается это здесь, а не внутри PersonalData: crm и chat друг о друге
-        // не знают, и связывать их ради одной операции значит потерять
-        // возможность вынести чат отдельно. Дверь знает про оба — ей и сшивать.
+        // Делается это здесь, а не внутри PersonalData: crm, chat и notifications
+        // друг о друге не знают ради одной операции, и связывать их значило бы
+        // потерять возможность вынести любой из модулей отдельно. Дверь знает
+        // про все три — ей и сшивать.
         var talks = chats.eraseByLead(id, PersonalData.Basis.REQUEST.text(), actor);
+        var letters = mails.eraseByLead(id, PersonalData.Basis.REQUEST.text(), actor);
 
         return Map.of("result", erased ? "erased" : "already",
-                "conversations", String.valueOf(talks));
+                "conversations", String.valueOf(talks),
+                "mail", String.valueOf(letters));
     }
 
     @Operation(summary = "Уничтожить персональные данные разговора",

@@ -23,6 +23,9 @@ class ChatPrivacyTest extends PostgresTestBase {
     @Autowired
     ru.vedal.portal.crm.LeadRepository leads;
 
+    @Autowired
+    org.springframework.context.ApplicationContext context;
+
     private static final ChatDesk.Context FROM_SITE =
             new ChatDesk.Context("ru", "innoprom", "/products/");
 
@@ -103,6 +106,18 @@ class ChatPrivacyTest extends PostgresTestBase {
 
         assertThat(privacy.eraseByLead(lead.getId(), "обращение субъекта", "anna")).isEqualTo(1);
         assertThat(conversations.findById(id).orElseThrow().getErasedAt()).isNotNull();
+    }
+
+    // Срок хранения разговоров не подтверждён заказчиком (docs/PROJECT.md,
+    // 12.2), а обезличивание необратимо. Поэтому механизм есть, а бина нет:
+    // без свойства vedal.privacy.retention.chat класс не создаётся вовсе.
+    // Проверяется отсутствие бина, а не то, что он «ничего не делает» —
+    // тот же довод, что и у RetentionSweep заявок в crm.
+    @Test
+    void retentionSweepDoesNotExistUntilTheTermIsConfirmed() {
+        assertThat(context.getBeanNamesForType(ConversationRetentionSweep.class))
+                .as("Автоочистка разговоров включается только явно заданным сроком хранения")
+                .isEmpty();
     }
 
     private ru.vedal.portal.crm.Lead newLead() {

@@ -56,6 +56,16 @@ public class OutboundMail {
     @Column(name = "next_attempt_at")
     private Instant nextAttemptAt = Instant.now();
 
+    // Когда персональные данные письма уничтожены и на каком основании.
+    // Пусто — не уничтожались. Само письмо остаётся: template, статус,
+    // число попыток и корреляция по-прежнему нужны разбору доставки,
+    // а адрес и текст — то, что позволяет опознать человека.
+    @Column(name = "erased_at")
+    private Instant erasedAt;
+
+    @Column(name = "erasure_basis")
+    private String erasureBasis;
+
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
     public String getTemplate() { return template; }
@@ -82,4 +92,8 @@ public class OutboundMail {
     public void setSentAt(Instant sentAt) { this.sentAt = sentAt; }
     public Instant getNextAttemptAt() { return nextAttemptAt; }
     public void setNextAttemptAt(Instant nextAttemptAt) { this.nextAttemptAt = nextAttemptAt; }
+    public Instant getErasedAt() { return erasedAt; }
+    public void setErasedAt(Instant erasedAt) { this.erasedAt = erasedAt; }
+    public String getErasureBasis() { return erasureBasis; }
+    public void setErasureBasis(String erasureBasis) { this.erasureBasis = erasureBasis; }
 }
