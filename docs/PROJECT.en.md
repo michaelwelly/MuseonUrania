@@ -1132,9 +1132,15 @@ no separate port had to be introduced for that.
 **Technical, awaiting confirmation:**
 
 1. Acceptable data loss and time to recovery — 5 minutes and 1 hour proposed.
-2. Lead retention period — 3 years proposed. There is no auto-cleanup, and until
-   the period is confirmed it must not be introduced: deleting by a wrong period
-   is irreversible.
+2. Retention period for leads, conversations and mail — 3 years proposed.
+   **The auto-cleanup mechanism is written and off by default** (issue #47):
+   leads — `RetentionSweep` in `crm`, conversations —
+   `ConversationRetentionSweep` in `chat`, mail — `MailRetentionSweep` in
+   `notifications`. Until the period is confirmed it must not be switched on —
+   erasure is irreversible, and there is nowhere to restore from either, since
+   there are no backups. Each kind of data turns on with its own property
+   (`vedal.privacy.retention`, `.chat`, `.mail`), a period value such as `P3Y`;
+   without the property the bean is not created at all.
 3. Whether `/admin` is closed at the network level or left behind a password and
    MFA. The door is single, so either option is one rule in the `Caddyfile` plus
    a realm policy. The proxy rule now exists: `@admin` only lets private ranges
