@@ -45,6 +45,13 @@
 			<groupId>ru.vedal</groupId>
 			<artifactId>portal-chat</artifactId>
 		</dependency>
+		<!-- Уничтожение персональных данных по обращению субъекта достаёт
+		     заодно и письма, отправленные по заявке: обращение одно,
+		     а данные лежат в трёх местах. -->
+		<dependency>
+			<groupId>ru.vedal</groupId>
+			<artifactId>portal-notifications</artifactId>
+		</dependency>
 		<!-- Ведалина в закрытом контуре: /api/admin/v1/assistant.
 		     Через portal-chat он приезжает и транзитивно, но зависимость,
 		     которой пользуются напрямую, объявляют явно: иначе перестановка
