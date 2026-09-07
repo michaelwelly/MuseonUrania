@@ -66,8 +66,21 @@ public class MailSenderConfig {
     // Запасной отправитель: письмо уходит в лог. Адрес пишем, тело — нет:
     // в письме клиенту стоит номер обращения, и лог не должен становиться
     // ещё одним местом хранения переписки.
+    //
+    // configured() = false — то, ради чего это не лямбда: очередь такого
+    // отправителя не трогает вовсе, и письма ждут настроенной почты.
     private static MailSender loggingMailSender() {
-        return (to, subject, body) -> log.info("письмо на {} тема «{}» ({} символов) —"
-                + " наружу НЕ отправлено, SMTP не настроен", to, subject, body.length());
+        return new MailSender() {
+            @Override
+            public void send(String to, String subject, String body) {
+                log.info("письмо на {} тема «{}» ({} символов) —"
+                        + " наружу НЕ отправлено, SMTP не настроен", to, subject, body.length());
+            }
+
+            @Override
+            public boolean configured() {
+                return false;
+            }
+        };
     }
 }
