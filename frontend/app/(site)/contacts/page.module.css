@@ -121,25 +121,6 @@
   font-size: 15px;
 }
 
-.routeCta {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 50px;
-  padding: 0 24px;
-  margin-top: 26px;
-  border-radius: 2px;
-  background: var(--green-dark);
-  color: #fff;
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.routeCta:hover {
-  background: var(--green-ink-hover);
-  color: #fff;
-}
-
 .mapSlot {
   min-height: 520px;
 }
@@ -357,9 +338,5 @@
 
   .mapSlot {
     min-height: 300px;
-  }
-
-  .routeCta {
-    width: 100%;
   }
 }

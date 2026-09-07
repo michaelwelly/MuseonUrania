@@ -29,7 +29,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: JDK 25
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           java-version: "25"
           distribution: temurin
@@ -74,7 +74,7 @@ jobs:
       # выглядит как «не сошлось число».
       - name: Отчёт покрытия
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: покрытие-портала
           path: backend/app/target/site/jacoco-aggregate/
@@ -197,7 +197,7 @@ jobs:
           ignore-unfixed: true
 
       - name: Отчёт в Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-portal.sarif
           category: trivy-portal
