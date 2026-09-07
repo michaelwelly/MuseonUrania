@@ -72,6 +72,85 @@
    учётке в момент её создания. Сотрудникам, уже заведённым в Keycloak,
    `CONFIGURE_TOTP` нужно назначить отдельно, по одному или списком.
 
+## Фактическая проверка на стенде — 7 сентября
+
+Проверено на живом Keycloak (`51.250.31.97`, контейнер `vedal-keycloak`,
+`kcadm.sh get realms/vedal`) накануне сдачи заказчику. Обязательный MFA
+**не включался** — только сверка состояния и два безопасных пункта ниже.
+
+### Расхождение с `backend/keycloak/prod/vedal-realm.json`
+
+| Настройка | В git-файле | На стенде до проверки |
+| --- | --- | --- |
+| `passwordPolicy` | `length(12)` + история 3 + спецсимвол + заглавная + цифра | не задана вовсе |
+| `bruteForceProtected` | `true`, `failureFactor: 10` | `false`, `failureFactor: 30` (значение Keycloak по умолчанию) |
+| `otpPolicyType` | `totp` | `totp` — совпадает |
+| `CONFIGURE_TOTP.defaultAction` | `false` (после правки issue #42) | `false` — уже совпадает, форс никому не стоит |
+| `sslRequired` | `all` | `none` — ожидаемое расхождение: на стенде нет HTTPS |
+
+Причина расхождения — то же самое, что и в разделе выше: realm на стенде
+заведён `--import-realm` один раз, и правки `vedal-realm.json` до него без
+ручного применения не доходят.
+
+### Что применено (MFA не включался и не выключался)
+
+Через `kcadm.sh update realms/vedal` на живом стенде добавлены только
+политика паролей и защита от перебора. Оба значения не проверяются у уже
+существующего пароля — только при попытке его подобрать или сменить,
+поэтому вход действующим учёткам не ломается:
+
+```bash
+docker exec vedal-keycloak /opt/keycloak/bin/kcadm.sh update realms/vedal \
+  -s "passwordPolicy=length(12) and notUsername(undefined) and notEmail(undefined) and passwordHistory(3) and specialChars(1) and upperCase(1) and digits(1)" \
+  -s bruteForceProtected=true \
+  -s permanentLockout=false \
+  -s failureFactor=10 \
+  -s waitIncrementSeconds=60 \
+  -s maxFailureWaitSeconds=900
+```
+
+Применено, подтверждено повторным `kcadm.sh get`, вход администратора
+в саму консоль Keycloak (`kcadm.sh config credentials`) продолжает
+работать без изменений.
+
+**Откат одной командой** (возвращает ровно то, что было на стенде до
+проверки: без политики паролей, без защиты от перебора):
+
+```bash
+docker exec vedal-keycloak /opt/keycloak/bin/kcadm.sh update realms/vedal \
+  -s 'passwordPolicy=' \
+  -s bruteForceProtected=false \
+  -s permanentLockout=false \
+  -s failureFactor=30 \
+  -s waitIncrementSeconds=60 \
+  -s maxFailureWaitSeconds=900
+```
+
+### Проверка механики TOTP на одноразовой учётке
+
+Обязательный MFA не назначался ни одному реальному сотруднику. Механика
+required action проверена на одноразовой тестовой учётке `mfa-smoke-test`,
+заведённой и удалённой в рамках этой же проверки:
+
+1. Учётка создана в realm `vedal` с `requiredActions: ["CONFIGURE_TOTP"]`
+   и постоянным паролем (`temporary=false` — форсится именно настройка
+   TOTP, а не смена пароля).
+2. Попытка получить токен верным паролем напрямую (`grant_type=password`,
+   клиент `vedal-admin-ui`) вернула `HTTP 400`:
+   `{"error":"invalid_grant","error_description":"Account is not fully set up"}`.
+   Это и есть подтверждение: required action `CONFIGURE_TOTP` блокирует
+   вход до привязки приложения-аутентификатора, даже при верном пароле.
+3. Учётка `mfa-smoke-test` удалена сразу после проверки — повторный
+   `kcadm.sh get users -q username=mfa-smoke-test` возвращает пустой
+   список.
+
+Не проверено и не может быть проверено без браузера: сам экран привязки
+приложения-аутентификатора (сканирование QR-кода, ввод шестизначного
+кода) — это браузерный flow Keycloak, а не то, что видно через прямую
+выдачу токена паролем. Шаг 4 «Порядка включения» ниже (обкатка на одной
+живой учётке) всё ещё нужен именно ради этой части и пропускать его
+нельзя.
+
 ## Порядок включения
 
 Выполняется владельцем/тем, кто держит Keycloak, после сдачи, не раньше.

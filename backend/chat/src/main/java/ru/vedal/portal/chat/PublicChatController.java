@@ -41,11 +41,17 @@ public class PublicChatController {
 
     private final ChatDesk desk;
     private final RateLimit rateLimit;
+    private final RateLimit readRateLimit;
+    private final RateLimit typingRateLimit;
 
     public PublicChatController(ChatDesk desk,
-                                @Qualifier("assistantRateLimit") RateLimit rateLimit) {
+                                @Qualifier("assistantRateLimit") RateLimit rateLimit,
+                                @Qualifier("chatReadRateLimit") RateLimit readRateLimit,
+                                @Qualifier("chatTypingRateLimit") RateLimit typingRateLimit) {
         this.desk = desk;
         this.rateLimit = rateLimit;
+        this.readRateLimit = readRateLimit;
+        this.typingRateLimit = typingRateLimit;
     }
 
     @Schema(name = "ChatSay", description = "Сообщение посетителя.")
@@ -218,10 +224,22 @@ public class PublicChatController {
                     Лента по ключу браузера. Разговора нет — пустая лента, а не 404:
                     для виджета «ещё не писали» и «не нашли» это одно и то же состояние,
                     и различать их незачем.
+
+                    Свой лимит частоты, отдельный от `ask`/`say`: 60 обращений за 10
+                    минут с адреса. Дверь читает базу по чужому ключу без проверки
+                    прав, и без предела перебор ключей упирался бы не в потолок,
+                    а в диск.
                     """)
     @ApiResponse(responseCode = "200", description = "Лента разговора, возможно пустая.")
+    @ApiResponse(responseCode = "429", description = "Превышен лимит частоты.",
+            content = @Content(mediaType = "application/problem+json",
+                    schema = @Schema(ref = "#/components/schemas/ProblemDetail")))
     @GetMapping("/{visitorKey}")
-    public ChatDesk.Thread thread(@PathVariable @Size(max = 64) String visitorKey) {
+    public ChatDesk.Thread thread(@PathVariable @Size(max = 64) String visitorKey,
+                                  HttpServletRequest http) {
+        if (!readRateLimit.allow(http.getRemoteAddr())) {
+            throw new TooManyRequestsException("Слишком много обращений подряд. Попробуйте позже.");
+        }
         return desk.threadFor(visitorKey);
     }
 
@@ -234,11 +252,21 @@ public class PublicChatController {
                     Виджет шлёт это не на каждую букву, а раз в несколько секунд, пока
                     поле не пустое: на каждое нажатие получился бы поток запросов
                     ради надписи, которая и так не меняется.
+
+                    Свой, более широкий лимит частоты: 240 обращений за 10 минут
+                    с адреса. Общий с `ask`/`say` (20 за 10 минут) обрывал бы надпись
+                    «печатает» на середине обычного набора текста.
                     """)
     @ApiResponse(responseCode = "204", description = "Принято.")
+    @ApiResponse(responseCode = "429", description = "Превышен лимит частоты.",
+            content = @Content(mediaType = "application/problem+json",
+                    schema = @Schema(ref = "#/components/schemas/ProblemDetail")))
     @PostMapping("/{visitorKey}/typing")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void typing(@PathVariable @Size(max = 64) String visitorKey) {
+    public void typing(@PathVariable @Size(max = 64) String visitorKey, HttpServletRequest http) {
+        if (!typingRateLimit.allow(http.getRemoteAddr())) {
+            throw new TooManyRequestsException("Слишком много обращений подряд. Попробуйте позже.");
+        }
         desk.typing(visitorKey);
     }
 
