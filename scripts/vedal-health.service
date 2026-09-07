@@ -1,0 +1,19 @@
+[Unit]
+Description=VEDAL: проверить, жив ли стенд
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+# Те же переменные, что у стека: имя контейнера базы и адрес шлюза берутся
+# оттуда, а не дублируются здесь.
+EnvironmentFile=-/opt/vedal-portal/backend/.env
+ExecStart=/opt/vedal-portal/scripts/healthcheck.sh
+
+# Проверка укладывается в секунды; минута — потолок на случай, когда
+# портал отвечает медленно, а не не отвечает вовсе.
+TimeoutStartSec=1min
+
+StandardOutput=journal
+StandardError=journal
