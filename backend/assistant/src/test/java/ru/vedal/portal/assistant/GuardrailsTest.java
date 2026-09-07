@@ -117,6 +117,90 @@ class GuardrailsTest {
                 .isEmpty();
     }
 
+    // ————— чужой язык —————
+    //
+    // Замер на стенде 7 сентября: «Сколько стоит VEDAL A-2000?» получал ответ
+    // про расчёт под комплектацию и приглашение запросить КП, а «How much does
+    // the VEDAL A-2000 cost?» уходил мимо правил — до модели. Цену она не
+    // выдумала, но человек так и не узнал, что цену считают под комплектацию
+    // и что можно оставить запрос. И держалось это на промпте, то есть
+    // на просьбе к модели, — ровно на том, от чего правила и вынесены отдельно.
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "How much does the VEDAL A-2000 cost?",
+            "what is the price of an incubator",
+            "send me your pricing",
+            "any discount for two units?",
+    })
+    void priceQuestionsAreRefusedInEnglishToo(String question) {
+        assertThat(guardrails.refuse(question))
+                .as("цена по-английски: %s", question)
+                .isPresent()
+                .get().asString().contains("Prices are not published");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "what is the delivery time for R2",
+            "do you have it in stock",
+            "when can you ship the incubator",
+    })
+    void deliveryQuestionsAreRefusedInEnglishToo(String question) {
+        assertThat(guardrails.refuse(question))
+                .as("сроки по-английски: %s", question)
+                .isPresent()
+                .get().asString().contains("do not invent");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "what dosage should I use",
+            "how to treat hypothermia in a newborn",
+            "my baby is not breathing, what do I do",
+    })
+    void clinicalQuestionsAreRefusedInEnglishToo(String question) {
+        assertThat(guardrails.refuse(question))
+                .as("клиника по-английски: %s", question)
+                .isPresent()
+                .get().asString().contains("do not give medical conclusions");
+    }
+
+    // Китайский: пробелов между словами нет, и \b там не находит ничего —
+    // поэтому иероглифы ищутся подстрокой.
+    @Test
+    void chineseQuestionsAreRefusedAndAnsweredInChinese() {
+        assertThat(guardrails.refuse("VEDAL A-2000 价格是多少？"))
+                .isPresent()
+                .get().asString().contains("我们不公开价格");
+
+        assertThat(guardrails.refuse("交货时间是多久？"))
+                .isPresent()
+                .get().asString().contains("交货时间");
+    }
+
+    // Язык определяется письменностью, а не словарём: латиница в русском
+    // вопросе не должна переключать ответ на английский.
+    @Test
+    void aRussianQuestionWithLatinModelNameStaysRussian() {
+        assertThat(guardrails.refuse("Сколько стоит VEDAL A-2000?"))
+                .isPresent()
+                .get().asString().contains("Цены не публикуются");
+    }
+
+    // Обычный английский вопрос про изделие правила не трогают: иначе
+    // иностранный клиент не получит ответа ни на один вопрос.
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "what monitoring channels does the A-2000 have",
+            "which products do you have for resuscitation",
+            "where is the registration certificate",
+    })
+    void legitimateEnglishQuestionsPass(String question) {
+        assertThat(guardrails.refuse(question))
+                .as("обычный вопрос по-английски: %s", question)
+                .isEmpty();
+    }
+
     @Test
     void emptyQuestionAsksToRephrase() {
         assertThat(guardrails.refuse("  ")).isPresent();
