@@ -1,5 +1,7 @@
 # Включение Ведалины через YandexGPT
 
+**Русский** · [English](yandexgpt_activation.en.md)
+
 ## Что уже делает код
 
 `VEDAL_ASSISTANT_ENGINE=yandexgpt` включает YandexGPT как слой формулировки ответа
