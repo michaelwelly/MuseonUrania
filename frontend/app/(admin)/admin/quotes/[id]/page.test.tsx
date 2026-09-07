@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   updateQuote: vi.fn(),
   sendQuote: vi.fn(),
   decideQuote: vi.fn(),
+  products: vi.fn(),
 }));
 
 vi.mock("@/lib/admin", () => ({
@@ -24,6 +25,7 @@ vi.mock("@/lib/admin", () => ({
   updateQuote: mocks.updateQuote,
   sendQuote: mocks.sendQuote,
   decideQuote: mocks.decideQuote,
+  products: mocks.products,
 }));
 
 import QuoteCard from "./page";
@@ -35,6 +37,22 @@ const ITEM = {
   unitPrice: 1250000,
   amount: 2500000,
 };
+
+function catalogProduct(slug: string, name: string) {
+  return {
+    id: slug,
+    slug,
+    name,
+    kind: "medical",
+    summary: "",
+    docStatus: "ok",
+    published: true,
+    sortOrder: 0,
+    imageSrc: null,
+    categories: [],
+    updatedAt: "2026-08-01T00:00:00Z",
+  };
+}
 
 function quote(overrides: Record<string, unknown> = {}) {
   return {
@@ -75,6 +93,10 @@ beforeEach(() => {
   mocks.updateQuote.mockReset().mockResolvedValue(quote({ version: 3 }));
   mocks.sendQuote.mockReset().mockResolvedValue(quote({ status: "sent" }));
   mocks.decideQuote.mockReset().mockResolvedValue(quote({ status: "accepted" }));
+  mocks.products.mockReset().mockResolvedValue([
+    catalogProduct("vedal-r1", "Реанимационная система VEDAL R1"),
+    catalogProduct("vedal-r2", "Реанимационная система VEDAL R2"),
+  ]);
 });
 
 describe("карточка КП", () => {
@@ -135,5 +157,40 @@ describe("карточка КП", () => {
     // Портал откажет отправить пустое КП. Показать это до нажатия дешевле,
     // чем после: отказ приходит уже после того, как человек решил, что отправил.
     expect(send).toBeDisabled();
+  });
+
+  // issue #81: в КП-2026-0001 наименование позиции («VEDAL R2») разошлось
+  // со слагом изделия (vedal-r1) — оба поля вводятся текстом порознь, и
+  // разъехались от руки. Не баг: имя нарочно не читается из каталога по
+  // ссылке (см. комментарий Quote.java) — но пустое имя каталог может
+  // подсказать сам, раз изделие уже выбрано.
+  it("пустое наименование позиции подставляется по изделию каталога", async () => {
+    const user = userEvent.setup();
+    mocks.quote.mockResolvedValue(quote({ items: [], total: null }));
+    await open();
+    await waitFor(() => expect(mocks.products).toHaveBeenCalled());
+
+    await user.click(await screen.findByRole("button", { name: "Добавить позицию" }));
+    await user.type(screen.getByLabelText("Изделие позиции 1"), "vedal-r1");
+
+    expect(
+      await screen.findByDisplayValue("Реанимационная система VEDAL R1"),
+    ).toBeInTheDocument();
+  });
+
+  it("своё наименование позиции подсказка каталога не переписывает", async () => {
+    const user = userEvent.setup();
+    await open();
+    await waitFor(() => expect(mocks.products).toHaveBeenCalled());
+
+    const slug = await screen.findByLabelText("Изделие позиции 1");
+    await user.clear(slug);
+    await user.type(slug, "vedal-r1");
+
+    // Наименование уже вписано редактором («VEDAL R2») — подсказка каталога
+    // (тут это было бы «VEDAL R1») его не трогает.
+    expect(
+      screen.getByDisplayValue("Реанимационная система VEDAL R2"),
+    ).toBeInTheDocument();
   });
 });

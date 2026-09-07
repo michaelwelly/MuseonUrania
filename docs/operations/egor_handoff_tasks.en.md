@@ -214,3 +214,46 @@ Egor owns UX/UI and frontend implementation. Mikhail owns backend/CMS, infrastru
 2. Mikhail prepares API contracts and CMS data model.
 3. NN confirms product list, documents, service conditions, and public wording.
 4. Team reviews the first deployed stand before moving deeper into backend integration.
+
+---
+
+## State as of 7 September 2026
+
+Verified against the code and the live stand, not from memory. Every line below
+is the result of a check, not an intention.
+
+### P0 — done
+
+| Item | Evidence |
+| --- | --- |
+| Hero and navigation | The header carries «Продукция», «Сервис», «Документы», «Новости», «Контакты», «О компании», the phone number and the «Запросить КП» call to action — all present on the live home page |
+| Mobile header | At 375 px none of the ten pages produces horizontal scrolling (measured `scrollWidth − clientWidth = 0`) |
+| Vedalina interface | Hero card, floating button, quick actions, and the «Задать вопрос Ведалине» label |
+| Core pages | Ten routes plus the privacy policy; catalog, news and documents come from the portal rather than living in the code |
+| Post-meeting corrections | The numbers block, «Направления» and «Партнёры» are gone; the Ural Chamber of Commerce membership stands in place of partners; the background pattern is in; the tree mark is in place |
+
+### P1 — done, apart from dependencies
+
+| Item | State |
+| --- | --- |
+| Forms | Four of five: quote, catalog, consultation, service. The partner form awaits approval — it was never ordered |
+| Content structure | Four products, public documents only, news supported — but not a single one published, there is no material |
+| SEO | The sitemap and `robots.txt` are built from the portal; canonical and Open Graph on every page |
+| Analytics events | All nine names from the checklist are wired in the code |
+| Yandex Metrica | Not connected: the customer has not confirmed whether the counter may be installed |
+
+### Acceptance criteria — verified
+
+Desktop and mobile layouts are stable, header items do not wrap badly, product
+cards do not collapse when part of the data is missing, forms have validation,
+success and error states. There are no invented prices, certificates or clinical
+claims — and that is held not by a promise but by rules that run before the
+engine (`Guardrails`) and by tests.
+
+### What is not done, and why
+
+Everything left depends on the customer's materials, access and decisions:
+photos and video, final copy and publication approvals, the domain and HTTPS,
+the mailbox, company details and contacts, the lead retention period, Metrica,
+languages, 1C. Collected into a single list in
+[customer_checklist.en.md](../requests/customer_checklist.en.md).
