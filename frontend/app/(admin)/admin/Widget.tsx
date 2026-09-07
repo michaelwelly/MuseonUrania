@@ -57,9 +57,13 @@ export function Widget() {
           который её закрыл. */}
       {open && <Queue ждут={ждут} onClose={() => setOpen(false)} />}
 
+      {/* title — ради всплывающей подсказки: подпись «Разговоры» на кнопке
+          скрыта с глаз (см. .widget__label в admin.css), и наведение —
+          единственный способ прочитать её тому, кто видит только круг. */}
       <button
         type="button"
         className="widget__button"
+        title="Разговоры"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
       >
