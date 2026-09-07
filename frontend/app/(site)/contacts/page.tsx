@@ -75,9 +75,11 @@ export default async function ContactsPage() {
               </li>
             ))}
           </ul>
-          <Link className={styles.routeCta} href="/production/#map">
-            {route.cta}
-          </Link>
+          {/* Кнопка «Построить маршрут» убрана по GitHub issue #74: схема
+              проезда ниже нарисована CSS, без настоящей карты, и вести
+              маршрут ей неоткуда. Ссылка на живую карту (Яндекс.Карты)
+              не подключена — решение о внешнем скрипте и ключе API ждёт
+              заказчика, см. обсуждение в #74. */}
         </div>
         <div className={styles.mapSlot} data-reveal="1">
           <VedalMap />
