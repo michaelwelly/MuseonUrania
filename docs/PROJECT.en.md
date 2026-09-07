@@ -1148,11 +1148,19 @@ no separate port had to be introduced for that.
    **MFA is still off in the realm**, and until it is on the network restriction
    must stay — otherwise it is an editor's password against the internet.
    There is no Caddy on the stand at all, so the admin area is open there;
-   see issue #42.
+   see issue #42. Both options, the rollout order and the rollback are laid
+   out in [mfa_rollout.en.md](operations/mfa_rollout.en.md): the network stays
+   on by default, and MFA is a second, independent layer on top of it, not
+   a replacement.
 4. Which cloud. The storage runs on S3, and moving between S3-compatible
    stores changes the address and the keys, not the code.
 5. When MFA is switched on in the realm. This does not concern the portal: it
    verifies an issued token and does not know how many factors were presented.
+   The realm file and the rollout order are ready (issue #42,
+   [mfa_rollout.en.md](operations/mfa_rollout.en.md)): the second factor
+   (TOTP) is mandatory for `portal-admin` and `portal-sales`, optional for
+   `portal-production`. Switching it on on the live Keycloak is the owner's
+   decision and action, not an automatic consequence of the git change.
 6. Who runs Keycloak in a deployed environment and how employees are created in it.
 
 ---
