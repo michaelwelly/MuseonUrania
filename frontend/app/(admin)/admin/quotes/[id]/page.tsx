@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import {
   decideQuote,
+  products as loadProducts,
   quote as loadQuote,
   sendQuote,
   updateQuote,
+  type ProductRow,
   type Quote,
   type QuoteForm,
   type QuoteItemForm,
@@ -109,6 +111,17 @@ function Draft({
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
 
+  // Список каталога — только чтобы подсказать наименование по изделию, не
+  // больше. Само наименование по-прежнему хранится своё (см. комментарий
+  // в Quote.java), поэтому подсказка не идёт поверх правки руками и молчит,
+  // если каталог не загрузился.
+  const [catalog, setCatalog] = useState<ProductRow[]>([]);
+  useEffect(() => {
+    loadProducts()
+      .then(setCatalog)
+      .catch(() => setCatalog([]));
+  }, []);
+
   const set = <K extends keyof QuoteForm>(key: K, value: QuoteForm[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
 
@@ -117,6 +130,20 @@ function Draft({
       "items",
       form.items.map((item, i) => (i === index ? { ...item, ...next } : item)),
     );
+
+  // КП-2026-0001 назвало позицию «VEDAL R2», привязав к слагу vedal-r1
+  // (issue #81): оба поля — обычный текст, и разошлись при вводе руками.
+  // Расхождение — не баг: имя нарочно не читается из каталога по ссылке
+  // (см. комментарий Quote.java), иначе переименование изделия задним
+  // числом переписывало бы уже отправленное предложение. Но пустое имя
+  // при выборе изделия из каталога подставить можно и нужно — это только
+  // подсказка при вводе, а не связь после сохранения: сама она никогда
+  // не перезаписывает то, что редактор уже вписал.
+  const onSlugChange = (index: number, slug: string) => {
+    const item = form.items[index];
+    const known = catalog.find((p) => p.slug === slug);
+    patch(index, known && !item.name.trim() ? { productSlug: slug, name: known.name } : { productSlug: slug });
+  };
 
   // Предварительная сумма: настоящую считает портал и присылает в ответе.
   // Показывается она ради того, чтобы опечатка в цене была видна до
@@ -198,13 +225,16 @@ function Draft({
                       />
                       {/* Изделие каталога — ссылкой, а наименование своё:
                           переименование изделия не должно задним числом
-                          менять уже отправленное предложение. */}
+                          менять уже отправленное предложение. Список ниже —
+                          подсказка при вводе слага и пустого наименования
+                          (issue #81), не источник истины после сохранения. */}
                       <input
                         className="mono quote__slug"
                         aria-label={`Изделие позиции ${i + 1}`}
                         placeholder="без карточки"
+                        list="quote-item-catalog"
                         value={item.productSlug}
-                        onChange={(e) => patch(i, { productSlug: e.target.value })}
+                        onChange={(e) => onSlugChange(i, e.target.value)}
                       />
                     </td>
                     <td className="tight">
@@ -250,6 +280,14 @@ function Draft({
               </tbody>
             </table>
           </div>
+
+          <datalist id="quote-item-catalog">
+            {catalog.map((p) => (
+              <option key={p.slug} value={p.slug}>
+                {p.name}
+              </option>
+            ))}
+          </datalist>
 
           {errors.items && <p className="note note--error">{errors.items}</p>}
 
