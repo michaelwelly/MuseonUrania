@@ -39,8 +39,8 @@ exactly when `spring.mail.host` is set.
 
 | What is set | What happens |
 | --- | --- |
-| `SPRING_MAIL_HOST` not set | the letter goes to the log and is marked sent; a warning is logged at startup |
-| set together with username and password | the letter goes out over Yandex 360 SMTP |
+| `SPRING_MAIL_HOST` not set | the letter goes to the log and stays queued with status `queued` — it is not marked sent; a warning is logged at startup |
+| set together with username and password | the letter goes out over Yandex 360 SMTP, and whatever piled up while mail was unset goes out in the same pass |
 
 Three variables, and from the environment only — a literal password in the
 repository can be removed only by rewriting history:
@@ -80,3 +80,8 @@ once.
 
 `failed` means manual review. The `vedal.mail.queued` and `vedal.mail.failed`
 metrics report both figures.
+
+## Turning it on in production
+
+Step by step — variables, restart, checking delivery, what to do about mail
+landing in spam: [docs/operations/mail_setup.en.md](../../docs/operations/mail_setup.en.md).
