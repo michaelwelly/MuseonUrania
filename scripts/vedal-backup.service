@@ -1,0 +1,20 @@
+[Unit]
+Description=VEDAL: резервная копия базы с проверкой восстановлением
+# База в контейнере — без docker копировать нечего.
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+# Ключи и имена берутся из того же файла, что и у стека: держать их
+# в двух местах значит однажды поменять в одном.
+EnvironmentFile=-/opt/vedal-portal/backend/.env
+ExecStart=/opt/vedal-portal/scripts/backup.sh
+
+# Дамп с проверкой восстановлением идёт минуты. Потолок — чтобы зависший
+# прогон не держал следующий.
+TimeoutStartSec=30min
+
+StandardOutput=journal
+StandardError=journal
