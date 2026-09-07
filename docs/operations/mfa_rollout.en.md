@@ -74,6 +74,89 @@ Nothing — automatically. Two independent facts are at play:
    at the moment it is created. Employees already present in Keycloak need
    `CONFIGURE_TOTP` assigned separately, one at a time or as a list.
 
+## What was actually checked on the stand — September 7
+
+Checked against the live Keycloak (`51.250.31.97`, container
+`vedal-keycloak`, `kcadm.sh get realms/vedal`) the night before the
+customer handoff. Mandatory MFA **was not switched on** — only a state
+comparison and the two safe items below.
+
+### Drift from `backend/keycloak/prod/vedal-realm.json`
+
+| Setting | In the git file | On the stand before the check |
+| --- | --- | --- |
+| `passwordPolicy` | `length(12)` + history of 3 + special char + uppercase + digit | not set at all |
+| `bruteForceProtected` | `true`, `failureFactor: 10` | `false`, `failureFactor: 30` (Keycloak's own default) |
+| `otpPolicyType` | `totp` | `totp` — matches |
+| `CONFIGURE_TOTP.defaultAction` | `false` (after the issue #42 fix) | `false` — already matches, nothing is forced on anyone |
+| `sslRequired` | `all` | `none` — expected drift: the stand has no HTTPS |
+
+The reason for the drift is the same one described above: the realm on
+the stand was created once via `--import-realm`, and changes to
+`vedal-realm.json` do not reach it without a manual apply.
+
+### What was applied (MFA was neither turned on nor off)
+
+Only the password policy and brute-force protection were added to the
+live stand, via `kcadm.sh update realms/vedal`. Neither setting is
+checked against an already-stored password — only when someone tries to
+guess it or change it — so logging in with an existing password is not
+affected:
+
+```bash
+docker exec vedal-keycloak /opt/keycloak/bin/kcadm.sh update realms/vedal \
+  -s "passwordPolicy=length(12) and notUsername(undefined) and notEmail(undefined) and passwordHistory(3) and specialChars(1) and upperCase(1) and digits(1)" \
+  -s bruteForceProtected=true \
+  -s permanentLockout=false \
+  -s failureFactor=10 \
+  -s waitIncrementSeconds=60 \
+  -s maxFailureWaitSeconds=900
+```
+
+Applied and confirmed with a follow-up `kcadm.sh get`; the admin's own
+login into the Keycloak console (`kcadm.sh config credentials`) kept
+working unchanged.
+
+**One-command rollback** (restores exactly what the stand had before the
+check: no password policy, no brute-force protection):
+
+```bash
+docker exec vedal-keycloak /opt/keycloak/bin/kcadm.sh update realms/vedal \
+  -s 'passwordPolicy=' \
+  -s bruteForceProtected=false \
+  -s permanentLockout=false \
+  -s failureFactor=30 \
+  -s waitIncrementSeconds=60 \
+  -s maxFailureWaitSeconds=900
+```
+
+### Checking the TOTP mechanism on a throwaway account
+
+Mandatory MFA was not assigned to any real employee. The required-action
+mechanism was checked on a throwaway test account, `mfa-smoke-test`,
+created and deleted within the same check:
+
+1. The account was created in the `vedal` realm with
+   `requiredActions: ["CONFIGURE_TOTP"]` and a permanent password
+   (`temporary=false` — so it is specifically TOTP setup being forced,
+   not a password change).
+2. Requesting a token with the correct password directly
+   (`grant_type=password`, client `vedal-admin-ui`) returned `HTTP 400`:
+   `{"error":"invalid_grant","error_description":"Account is not fully set up"}`.
+   That is the confirmation: the `CONFIGURE_TOTP` required action blocks
+   login until the authenticator app is enrolled, even with the correct
+   password.
+3. The `mfa-smoke-test` account was deleted right after the check — a
+   follow-up `kcadm.sh get users -q username=mfa-smoke-test` returns an
+   empty list.
+
+Not checked, and not checkable without a browser: the enrollment screen
+itself (scanning the QR code, entering the six-digit code) — that is
+Keycloak's browser flow, not something visible through a direct
+password-grant token request. Step 4 of the rollout order below (trying
+it on one live account) is still needed for exactly that part and cannot
+be skipped.
+
 ## Rollout order
 
 Carried out by the owner, or whoever runs Keycloak, after the handoff —
