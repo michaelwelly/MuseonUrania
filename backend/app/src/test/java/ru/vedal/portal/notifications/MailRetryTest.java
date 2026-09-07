@@ -188,6 +188,36 @@ class MailRetryTest extends PostgresTestBase {
         assertThat(sender.sent).containsExactly("client@example.ru");
     }
 
+    // Та же ситуация, но с накопившейся очередью, а не одним письмом: несколько
+    // заявок пришли, пока почта не была настроена, — заказчик должен получить
+    // все, за один заход, и ровно по одному разу на каждую.
+    @Test
+    void whenSmtpAppearsAllWaitingMailGoesOutInOneDrain() {
+        sender.configured = false;
+        var addresses = List.of(
+                "first@example.ru", "second@example.ru", "third@example.ru",
+                "fourth@example.ru", "fifth@example.ru");
+        var ids = addresses.stream().map(this::queued).toList();
+
+        // Пока почта не настроена, ни одна попытка не расходуется — заходов
+        // может быть сколько угодно, очередь от этого не меняется.
+        assertThat(dispatch.drain()).isZero();
+        assertThat(dispatch.drain()).isZero();
+
+        sender.configured = true;
+
+        assertThat(dispatch.drain()).as("все письма — за один заход").isEqualTo(addresses.size());
+        assertThat(mails.findAllById(ids)).allSatisfy(mail -> {
+            assertThat(mail.getStatus()).isEqualTo("sent");
+            assertThat(mail.getAttempts()).isEqualTo(1);
+        });
+        // Порядок неважен, а вот кратность — важна: ни одно письмо не потеряно
+        // и ни одно не ушло дважды.
+        assertThat(sender.sent).containsExactlyInAnyOrderElementsOf(addresses);
+
+        assertThat(dispatch.drain()).as("отправленное второй раз не берётся").isZero();
+    }
+
     private UUID queued(String to) {
         var mail = new OutboundMail();
         mail.setId(UUID.randomUUID());
