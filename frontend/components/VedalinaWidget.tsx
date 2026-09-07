@@ -68,7 +68,11 @@ export default function VedalinaWidget() {
         </span>
         <span className={styles.launcherDot} aria-hidden="true" />
       </span>
-      <span className={styles.launcherLabel}>Задать вопрос</span>
+      {/* С именем, а не просто «Задать вопрос»: из кнопки должно быть видно,
+          кому вопрос. Имя берётся из карточки ассистента, а не пишется здесь
+          строкой, — переименование Урании в Ведалину уже однажды прошло
+          по десятку файлов. */}
+      <span className={styles.launcherLabel}>Задать вопрос {vedalina.dative}</span>
     </button>
   );
 }
