@@ -11,6 +11,14 @@ if (!globalThis.crypto?.subtle) {
   Object.defineProperty(globalThis, "crypto", { value: webcrypto, configurable: true });
 }
 
+// jsdom не умеет прокручивать: у него нет ни раскладки, ни экрана, и
+// scrollIntoView в нём просто не определён. Лента разговора вызывает его
+// после каждой отрисовки, чтобы показывать последнее сообщение, — без этой
+// заглушки падает не проверка прокрутки (её и нет), а сам рендер компонента.
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}
+
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
