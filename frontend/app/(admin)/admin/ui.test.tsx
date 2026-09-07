@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { useLoad, when, waited } from "./ui";
+import { useLoad, when, waited, where } from "./ui";
 
 // Хук загрузки страницы. Три свойства, которые ломаются молча и дорого:
 // ответ на отменённый запрос не должен побеждать свежий, данные не должны
@@ -155,5 +155,19 @@ describe("сколько ждёт", () => {
     expect(waited(11 * 60)).toBe("11 часов");
     expect(waited(21 * 60)).toBe("21 час");
     expect(waited(11 * 24 * 60)).toBe("11 дней");
+  });
+});
+
+describe("откуда написали", () => {
+  it("корень называет главной — одинокий слэш читался как опечатка", () => {
+    expect(where("/")).toBe("главная");
+  });
+
+  it("остальные адреса оставляет как есть: путь говорит больше пересказа", () => {
+    expect(where("/products/vedal-r1/")).toBe("/products/vedal-r1/");
+  });
+
+  it("без адреса говорит об этом прямо, а не показывает пустоту", () => {
+    expect(where(null)).toBe("страница неизвестна");
   });
 });

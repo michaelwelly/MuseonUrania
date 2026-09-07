@@ -19,7 +19,7 @@ import { useLive } from "../live";
 import { apiUrl } from "@/lib/submit";
 import EraseData from "../EraseData";
 import { CHAT_STATUS, LEAD_LANGUAGE, label } from "../labels";
-import { Note, message, useLoad, waited, when } from "../ui";
+import { Note, message, useLoad, waited, when, where } from "../ui";
 
 // Разговоры посетителей.
 //
@@ -253,7 +253,7 @@ function Chats() {
                   </span>
                 </span>
                 <span className="talk__first">{first[c.id] ?? "обращение читается…"}</span>
-                <span className="talk__where mono">{c.page ?? "страница неизвестна"}</span>
+                <span className="talk__where mono">{where(c.page)}</span>
               </button>
             );
           })}
