@@ -16,6 +16,11 @@ const docs = [
   { kind: "PDF", title: "Каталог продукции 2026", note: "Коммерческие материалы · выдаётся по запросу" },
 ];
 
+// Индекс, а не сам текст таба: id должен остаться стабильным символом
+// (латиница/цифры), а названия табов — кириллица с пробелами.
+const tabId = (t: Tab) => `product-tab-${TABS.indexOf(t)}`;
+const panelId = "product-tabpanel";
+
 export default function ProductTabs({ product }: { product: Product }) {
   const [tab, setTab] = useState<Tab>("Характеристики");
 
@@ -25,9 +30,11 @@ export default function ProductTabs({ product }: { product: Product }) {
         {TABS.map((t) => (
           <button
             key={t}
+            id={tabId(t)}
             type="button"
             role="tab"
             aria-selected={tab === t}
+            aria-controls={panelId}
             className={`${styles.tab} ${tab === t ? styles.tabActive : ""}`}
             onClick={() => setTab(t)}
           >
@@ -36,7 +43,12 @@ export default function ProductTabs({ product }: { product: Product }) {
         ))}
       </div>
 
-      <section className={styles.panel}>
+      <section
+        id={panelId}
+        role="tabpanel"
+        aria-labelledby={tabId(tab)}
+        className={styles.panel}
+      >
         {tab === "Характеристики" &&
           (product.specs ? (
             <>

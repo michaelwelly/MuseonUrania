@@ -715,9 +715,8 @@
   color: var(--ink);
 }
 
-.input:focus {
-  outline: none;
-}
+/* outline не снимаем: без него поле ввода при фокусе с клавиатуры
+   не отличить от незафокусированного — ни border, ни фона у .input нет. */
 
 .input::placeholder {
   color: var(--muted);
