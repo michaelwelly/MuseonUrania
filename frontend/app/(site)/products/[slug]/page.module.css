@@ -37,8 +37,12 @@
   overflow: hidden;
 }
 
+/* GitHub issue #70: снимки изделий портретные, а блок под них — почти
+   квадратный. object-fit: cover масштабировал фото по ширине блока и обрезал
+   его сверху и снизу — верх или низ изделия уходил за рамку. contain
+   вписывает снимок целиком, без обрезки, поле вокруг закрывает фон блока. */
 .photo img {
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .photoEmpty {
@@ -472,8 +476,10 @@
   background: var(--img-bg);
 }
 
+/* Та же причина, что у .photo выше (issue #70): портретный снимок в низкой
+   карточке cover обрезал бы ещё сильнее. */
 .cardPhoto img {
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .cardBody {

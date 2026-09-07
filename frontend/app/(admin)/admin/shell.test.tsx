@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({
   session: vi.fn(),
   push: vi.fn(),
   clients: vi.fn(),
+  reply: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -50,8 +51,25 @@ vi.mock("@/lib/admin", () => {
     products: () => Promise.resolve([{ id: "p1", slug: "vedal-r1", name: "VEDAL R1" }]),
     news: () => Promise.resolve([]),
     documents: () => Promise.resolve([{ id: "d1" }, { id: "d2" }, { id: "d3" }]),
-    chatQueue: страница(3),
-    chatThread: () => Promise.resolve({ id: null, status: "closed", messages: [] }),
+    // В очереди настоящая карточка, а не пустой список: панель виджета
+    // показывает её, и по ней же открывается лента.
+    chatQueue: () =>
+      Promise.resolve({
+        items: [{ id: "c1", status: "waiting", page: "/products/", lastAt: new Date().toISOString() }],
+        page: 0,
+        size: 5,
+        total: 3,
+        pages: 1,
+      }),
+    chatThread: () =>
+      Promise.resolve({
+        id: "c1",
+        status: "waiting",
+        messages: [{ author: "visitor", body: "Нужен инкубатор", at: new Date().toISOString() }],
+      }),
+    replyInChat: mocks.reply,
+    pingTypingInChat: () => Promise.resolve(),
+    closeChat: () => Promise.resolve(),
     leads: страница(12),
     clients: mocks.clients,
     deals: страница(19),
@@ -356,6 +374,46 @@ describe("виджет разговоров", () => {
     await shell("/admin/chats/");
 
     expect(screen.queryByRole("button", { name: /Разговоры/ })).toBeNull();
+  });
+
+  // Ответить можно, не уходя с экрана, на котором работаешь. Раньше карточка
+  // была ссылкой в раздел: менеджер, правивший сделку, терял место ради двух
+  // строк ответа.
+  it("карточка открывает ленту прямо в панели, а не уводит в раздел", async () => {
+    const user = userEvent.setup();
+    await shell();
+
+    await user.click(await screen.findByRole("button", { name: /Разговоры/ }));
+    await user.click(await screen.findByText("Нужен инкубатор"));
+
+    // Лента показана целиком: переписка и поле ответа. Одного текста
+    // сообщения мало — он есть и в карточке очереди.
+    expect(await screen.findByLabelText("Ответ посетителю")).toBeTruthy();
+    expect(mocks.push).not.toHaveBeenCalled();
+  });
+
+  it("из ленты можно вернуться к очереди", async () => {
+    const user = userEvent.setup();
+    await shell();
+
+    await user.click(await screen.findByRole("button", { name: /Разговоры/ }));
+    await user.click(await screen.findByText("Нужен инкубатор"));
+    await user.click(await screen.findByRole("button", { name: /К очереди/ }));
+
+    expect(screen.queryByLabelText("Ответ посетителю")).toBeNull();
+  });
+
+  it("ответ уходит в портал", async () => {
+    mocks.reply.mockClear();
+    const user = userEvent.setup();
+    await shell();
+
+    await user.click(await screen.findByRole("button", { name: /Разговоры/ }));
+    await user.click(await screen.findByText("Нужен инкубатор"));
+    await user.type(await screen.findByLabelText("Ответ посетителю"), "Сейчас посмотрю");
+    await user.click(screen.getByRole("button", { name: "Ответить" }));
+
+    await waitFor(() => expect(mocks.reply).toHaveBeenCalledWith("c1", "Сейчас посмотрю"));
   });
 });
 
