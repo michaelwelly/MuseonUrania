@@ -196,6 +196,14 @@ services:
       VEDAL_DOMAIN: ${VEDAL_DOMAIN:?задайте VEDAL_DOMAIN, например vedal-med.ru}
       VEDAL_KEYCLOAK_DOMAIN: ${VEDAL_KEYCLOAK_DOMAIN:?задайте VEDAL_KEYCLOAK_DOMAIN, например id.vedal-med.ru}
       VEDAL_MEDIA_DOMAIN: ${VEDAL_MEDIA_DOMAIN:?задайте VEDAL_MEDIA_DOMAIN, например media.vedal-med.ru}
+      # Caddyfile читает эти две переменные через {$VAR:умолчание}, но Caddy
+      # видит только то, что compose явно положил в environment контейнера —
+      # значение в backend/.env само по себе внутрь не попадает. Без строк
+      # ниже VEDAL_ADMIN_ALLOW и VEDAL_ACME_EMAIL можно было менять в .env
+      # сколько угодно: Caddy всё равно получал бы захардкоженное умолчание
+      # (private_ranges и admin@localhost) и молчал бы об этом.
+      VEDAL_ADMIN_ALLOW: ${VEDAL_ADMIN_ALLOW:-private_ranges}
+      VEDAL_ACME_EMAIL: ${VEDAL_ACME_EMAIL:-admin@localhost}
     volumes:
       - ./proxy/Caddyfile:/etc/caddy/Caddyfile:ro
       - vedal-caddy-data:/data
