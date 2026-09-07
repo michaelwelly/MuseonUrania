@@ -6,10 +6,22 @@ The single entry point into the project. Everything else is detail; what is
 collected here is what you need in order to make a decision or start work without
 re-reading thirty-nine files.
 
-**State as of 14 August 2026.** Verified against the code of the `dev` branch
+**State as of 7 September 2026.** Verified against the code of the `dev` branch
 after the `back`, `front`, `infra` and `docs` layers were merged in. The numbers in
 "Current state" are the result of counting across the repository, not a retelling
 of documents.
+
+What changed since the previous check (14 August): Vedalina now answers with the
+YandexGPT model on top of search over published material, the conversation
+streams with a "typing" indicator, a request raised from the chat creates a lead
+with a human-readable number, and the answer can be rated. Staff sign-in to the
+admin area works on the stand. The portal sees the visitor's real address rather
+than the gateway's. The site has a crawler-facing sitemap and its own tab icon.
+The database is copied every night and the copy is verified by restoring it;
+the stand's health is checked every five minutes.
+
+Tasks are tracked in GitHub — [Project "VEDAL — финальная приемка и
+запуск"](https://github.com/users/michaelwelly/projects/3), not in Jira.
 
 ---
 
@@ -824,10 +836,11 @@ upon request; infrastructure in Russia.
 
 ### 6.1 Backend — working
 
-141 Java files in the portal and 2 in the gateway, 25 test classes (169 portal
-tests, 4 gateway tests, all green; plus 62 frontend tests), 15 Flyway migrations,
-19 controllers, 12 catalog items in the seed, 5 categories. The coverage gate is
-70% of instructions and 45% of branches against 72% and 47% achieved.
+166 Java files in the portal and 3 in the gateway, 56 test classes and 364 tests
+on the backend, 353 frontend tests across 33 files — all green. 31 Flyway
+migrations (the latest, V31, is the answer rating), 23 controllers, 13 catalog
+items in the seed, 5 categories. The coverage gate is 70% of instructions and
+45% of branches.
 Spring Boot 4.1.0 on Spring Framework 7, Java 25, Jackson 3,
 PostgreSQL 16, Testcontainers. The gateway runs Spring Boot 4.0.7 with Spring
 Cloud Gateway 5.0.2: that is the only supported pair, and the version skew is
@@ -878,6 +891,18 @@ deal amounts and quote prices belong to the closed contour. Nothing of this goes
 outward, topics included: a deal event carries the identifier, the pipeline and
 the stage, but not the client's name and not the amount.
 
+What appeared after 14 August and is not in the table above: a conversation with
+a streamed answer and a "typing" indicator (`/api/assistant/v1/chat`, `/stream`,
+`/typing`, `/rating`), a request raised from the chat that creates a lead with
+a human-readable number `З-2026-0042`, staff presence and support hours, and
+a visitor's rating of the answer. The answer is worded by **YandexGPT** on top
+of search over published material: the engine is switched on by
+`vedal.assistant.engine=yandexgpt`, and the links under the answer come from
+the portal, not from the model. Since 7 September the gateway passes the
+visitor's real address to the portal (`ClientAddress`) — before that the audit
+log recorded the gateway's own address and the rate limit counted every visitor
+as one client.
+
 A note on `assistant`: the limits live in `Guardrails` **before** the engine is
 called, not in the prompt — a prompt is a request to the model, not a guarantee.
 Closed materials are physically unreachable: `LlmEngine` only goes through
@@ -891,12 +916,16 @@ there is a handoff to a human.
 Next.js 16.3.0, React 19.2.8, App Router, TypeScript, CSS Modules, no external
 dependencies besides Next and React.
 
-Nine site routes: `/`, `/products`, `/products/[slug]`, `/production`,
-`/documents`, `/news`, `/service`, `/about`, `/contacts`. Twelve product cards
-(R1 and R2 share one), five categories, animations, a preloader, an animated
-VEDAL mark, a map, tabs on the product page.
+Ten site routes: `/`, `/products`, `/products/[slug]`, `/production`,
+`/documents`, `/news`, `/news/[slug]`, `/service`, `/about`, `/contacts`, plus
+`/legal/privacy`. Thirteen product cards, five categories, animations,
+a preloader, an animated VEDAL mark, a map, tabs on the product page.
+Since 7 September — a sitemap and `robots.txt` built from the portal, and the
+site's own tab icon. Indexing is switched on by `NEXT_PUBLIC_SITE_URL`: while
+it is empty, crawling is closed entirely, so the stand with draft copy does not
+end up in search results.
 
-Twenty-one admin routes. Site content: dashboard, products with a list and an
+Twenty-four admin routes. Site content: dashboard, products with a list and an
 edit form, categories, news, documents, audit log, the Keycloak callback. CRM:
 leads with conversion into a deal, clients, deals across three pipelines, quotes,
 analytics in four dimensions. The navigation is split into those two sections:
@@ -1108,8 +1137,12 @@ no separate port had to be introduced for that.
    is irreversible.
 3. Whether `/admin` is closed at the network level or left behind a password and
    MFA. The door is single, so either option is one rule in the `Caddyfile` plus
-   a realm policy. **Neither is done today:** there is no rule at the proxy and
-   MFA is off in the realm.
+   a realm policy. The proxy rule now exists: `@admin` only lets private ranges
+   through, and it is lifted by a single `VEDAL_ADMIN_ALLOW` variable.
+   **MFA is still off in the realm**, and until it is on the network restriction
+   must stay — otherwise it is an editor's password against the internet.
+   There is no Caddy on the stand at all, so the admin area is open there;
+   see issue #42.
 4. Which cloud. The storage runs on S3, and moving between S3-compatible
    stores changes the address and the keys, not the code.
 5. When MFA is switched on in the realm. This does not concern the portal: it
