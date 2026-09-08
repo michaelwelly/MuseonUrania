@@ -7,6 +7,31 @@ Related: [issue #62](https://github.com/michaelwelly/MuseonUrania/issues/62) —
 fix: "it looks off" is not a bug report. This checklist takes five minutes
 and produces something we can act on.
 
+## What the code review already fixed
+
+Nobody on the team has a Mac, so the search was not visual but by property:
+which constructs in our stylesheets does WebKit parse differently from
+Chromium. Five turned up, all fixed on the `front` branch. Worth knowing
+before you check: if any of them is still visible, you are looking at an old
+build, and the thing to fix is not the CSS.
+
+| What | Works from Safari | How it looked before the fix |
+| --- | --- | --- |
+| `overflow: clip` on `html` and `body` | 16.0 | page wider than the screen, scrolls sideways |
+| `color-mix()` | 16.2 | five places in the chat window with no fill |
+| `svh` and `dvh` units | 15.4 | chat window taller than the screen; blank strip under the footer |
+| unprefixed `appearance` | 15.4 | the "Изделие" dropdown shorter than the fields next to it, with its own arrow |
+| field font size under 16px | — | tapping a field zooms the page in and it never zooms back |
+
+The versions come from `caniuse-lite`, the very database the project builds
+against, not from memory.
+
+Which makes one thing the priority here: **the Safari version is the most
+valuable line in the report.** A Mac that cannot go past macOS Catalina
+stops at Safari 15.6.1, and the first three rows hit it directly. A Mac on
+a current system was never affected by them — in which case the cause is
+something else, and the screenshot matters even more.
+
 ## Before you start
 
 1. Open the page in a **private window** (Safari: Cmd+Shift+N, Chrome:
@@ -74,6 +99,29 @@ On every screenshot, in this order:
   on scroll, does the table spill horizontally, are the filter chips
   readable?
 - **Footer** — do the link columns shift, is any text clipped?
+
+## What still needs a live Mac
+
+The fixes in the table above were verified by property analysis and a run in
+Chromium, where the result did not change. What analysis cannot verify:
+
+- **The sticky header on old Safari.** The fallback for `overflow: clip`
+  puts the clipping on `html`, not on `body`, precisely so the header keeps
+  sticking. Chromium confirms the difference by substitution: with clipping
+  on `html` the header stays put at a scroll of 900 pixels, with clipping on
+  `body` it scrolls away with the page. WebKit follows the same spec rule,
+  but nobody has seen it with their own eyes. **Scroll any long page and
+  check whether the header stays.**
+- **The chat window on an iPhone** — does it fit, is the close button visible.
+- **The row of fields on `/service/`** — are the text field and the "Изделие"
+  dropdown the same height, is the dropdown arrow visible.
+- **Fallback font metrics.** While our own fonts load, the page is set in a
+  system font whose metrics Next adjusts to match ours — `size-adjust` goes
+  as high as 136%. WebKit picked that adjustment up later than Chromium, so
+  on old Safari the first fractions of a second are set noticeably narrower.
+  A screenshot taken at that moment looks like "everything is broken" even
+  though it settles an instant later. **If the breakage disappears after a
+  reload, this is the cause, and it is not in the table above.**
 
 ## How to attach it to the issue
 
