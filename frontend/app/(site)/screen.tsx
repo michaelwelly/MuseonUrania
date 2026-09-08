@@ -92,14 +92,18 @@ export default function HomeScreen({ lang }: { lang: Lang }) {
             {c.t(homeHero.lead)}
           </p>
           <div className={styles.heroActions} data-anim="cascade">
-            <Link
+            {/* Обычный `<a>` и без localePath: это якорь на форму внизу
+                этой же страницы (issue #103). `Link` здесь был бы вреден
+                вдвойне — он приписал бы языковой префикс к хешу и менял бы
+                адрес своим `pushState`, см. components/Blocks.tsx. */}
+            <a
               className={`${styles.btn} ${styles.btnPrimary}`}
-              href={at(homeHero.primary.href)}
+              href={homeHero.primary.href}
               data-analytics="hero_quote_click"
             >
               {strings.actions.requestQuote}
               <Arrow />
-            </Link>
+            </a>
             <Link
               className={`${styles.btn} ${styles.btnOutline}`}
               href={at(homeHero.secondary.href)}
@@ -325,7 +329,10 @@ export default function HomeScreen({ lang }: { lang: Lang }) {
           куда лечь: остальные полосы заняты фото и карточками во всю ширину.
           Без квадратов и на 9%: насыщенный зелёный на почти чёрном тянул бы
           взгляд сильнее заголовка. */}
-      <section className={`${styles.cta} patternHost`}>
+      {/* id — цель кнопки «Запросить КП» с первого экрана (issue #103).
+          Стоит на секции, а не на самой форме: человека надо привести
+          к заголовку «Подберём конфигурацию», а не к первому полю. */}
+      <section className={`${styles.cta} patternHost`} id="quote">
         <LivePattern variant={1} tone="dark" />
         <div data-reveal="0">
           <h2 className={styles.ctaTitle} data-words="30" lang={c.mark(homeCta.title)}>
