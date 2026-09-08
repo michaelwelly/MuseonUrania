@@ -3,10 +3,10 @@ package ru.vedal.portal.notifications;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import ru.vedal.portal.common.OnRetentionTerm;
 
 import java.time.Instant;
 import java.time.Period;
@@ -25,8 +25,9 @@ import java.time.ZoneOffset;
 //
 // Тот же открытый вопрос 12.2 из docs/PROJECT.md: срок не подтверждён
 // заказчиком, а обезличивание необратимо. Без свойства
-// vedal.privacy.retention.mail @ConditionalOnProperty не создаёт этот класс
-// вовсе — включается одной переменной в тот день, когда срок назван:
+// vedal.privacy.retention.mail — или с пустым его значением — @OnRetentionTerm
+// не создаёт этот класс вовсе — включается одной переменной в тот день,
+// когда срок назван:
 //
 //   VEDAL_PRIVACY_RETENTION_MAIL=P3Y
 //
@@ -34,7 +35,7 @@ import java.time.ZoneOffset;
 //
 // То же рассуждение, что у RetentionSweep в crm.
 @Component
-@ConditionalOnProperty(name = "vedal.privacy.retention.mail")
+@OnRetentionTerm("vedal.privacy.retention.mail")
 public class MailRetentionSweep {
 
     private static final Logger log = LoggerFactory.getLogger(MailRetentionSweep.class);

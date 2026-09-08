@@ -3,10 +3,10 @@ package ru.vedal.portal.crm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import ru.vedal.portal.common.OnRetentionTerm;
 
 import java.time.Instant;
 import java.time.Period;
@@ -22,10 +22,10 @@ import java.time.ZoneOffset;
 // сторону — вычистим клиентскую базу за позапрошлый квартал, и восстановить
 // её будет неоткуда, кроме бэкапа, который тоже стареет.
 //
-// Поэтому механизм есть, а бина нет: без свойства vedal.privacy.retention
-// @ConditionalOnProperty не создаёт этот класс вовсе, и в логе на старте
-// нет даже упоминания об очистке. Включается одной переменной в тот день,
-// когда срок назван:
+// Поэтому механизм есть, а бина нет: без свойства vedal.privacy.retention —
+// или с пустым его значением — @OnRetentionTerm не создаёт этот класс вовсе,
+// и в логе на старте нет даже упоминания об очистке. Включается одной
+// переменной в тот день, когда срок назван:
 //
 //   VEDAL_PRIVACY_RETENTION=P3Y
 //
@@ -36,7 +36,7 @@ import java.time.ZoneOffset;
 // таблицы на минуты и распухший журнал предзаписи, из которого Debezium
 // будет выгребать всё это время. Пачка за проход, следующая — на следующем.
 @Component
-@ConditionalOnProperty(name = "vedal.privacy.retention")
+@OnRetentionTerm("vedal.privacy.retention")
 public class RetentionSweep {
 
     private static final Logger log = LoggerFactory.getLogger(RetentionSweep.class);
