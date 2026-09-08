@@ -155,6 +155,11 @@
 }
 
 .subscribeInput {
+  /* Системную отрисовку поля снимаем: на айфоне WebKit кладёт поверх своё
+     скругление и внутреннюю тень, и на тёмной подложке подвала это видно.
+     Chromium у поля ввода такой отрисовки не имеет. */
+  -webkit-appearance: none;
+  appearance: none;
   flex: 1;
   min-width: 0;
   height: 46px;
@@ -165,6 +170,14 @@
   color: #fff;
   font: inherit;
   font-size: 14px;
+}
+
+/* Мобильный Safari приближает страницу при фокусе в поле с кеглем меньше
+   16px и обратно не отъезжает. Подробнее — в LeadForm.module.css. */
+@media (pointer: coarse) {
+  .subscribeInput {
+    font-size: 16px;
+  }
 }
 
 .subscribeInput::placeholder {

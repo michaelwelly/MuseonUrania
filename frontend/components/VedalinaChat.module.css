@@ -346,6 +346,18 @@
   content: "";
   flex: 1;
   height: 1px;
+  /* Первая строка — запас для WebKit. color-mix() появился в Safari 16.2;
+   * до неё объявление с ним отбрасывается целиком, и элемент остаётся
+   * вовсе без фона. В этом файле на color-mix держатся разделитель, сноска,
+   * строка часов, наведение на кнопку и плашка номера обращения — в старом
+   * Safari все пять теряют заливку разом, и виджет выглядит развалившимся.
+   *
+   * color-mix(in srgb, C p%, transparent) — это ровно rgba(C, p/100), так что
+   * запас не приблизительный, а тождественный, и Chromium ничего не замечает:
+   * он берёт вторую строку. Числа — развёрнутые --green (#149c3c) и
+   * --green-dark (#0f7c30): var() внутрь rgba() не подставить. За тем, чтобы
+   * запас не разошёлся с токеном, следит app/webkit-fallbacks.test.ts. */
+  background: rgba(15, 124, 48, 0.35);
   background: color-mix(in srgb, var(--green-dark) 35%, transparent);
 }
 
@@ -357,6 +369,7 @@
   margin: 0 1px;
   padding: 0 3px;
   border-radius: 2px;
+  background: rgba(20, 156, 60, 0.14); /* запас для Safari < 16.2, см. .fresh */
   background: color-mix(in srgb, var(--green) 14%, transparent);
   color: var(--green-dark);
   font-size: 10px;
@@ -367,6 +380,7 @@
 }
 
 .note:hover {
+  background: rgba(20, 156, 60, 0.26); /* запас для Safari < 16.2, см. .fresh */
   background: color-mix(in srgb, var(--green) 26%, transparent);
 }
 
@@ -489,6 +503,7 @@
   margin: 0;
   padding: 10px 14px;
   border-bottom: 1px solid var(--line, #e3e6e3);
+  background: rgba(20, 156, 60, 0.05); /* запас для Safari < 16.2, см. .fresh */
   background: color-mix(in srgb, var(--green) 5%, transparent);
   font-size: 12px;
   line-height: 1.45;
@@ -514,6 +529,7 @@
 }
 
 .ticketOpen:hover {
+  background: rgba(20, 156, 60, 0.08); /* запас для Safari < 16.2, см. .fresh */
   background: color-mix(in srgb, var(--green) 8%, transparent);
 }
 
@@ -542,11 +558,27 @@
 }
 
 .ticketField {
+  /* Системную отрисовку поля снимаем: на айфоне WebKit добавляет своё
+     скругление и внутреннюю тень поверх заданных здесь. Chromium
+     у поля ввода такой отрисовки не имеет. */
+  -webkit-appearance: none;
+  appearance: none;
   padding: 9px 11px;
   border: 1px solid var(--line, #e3e6e3);
   border-radius: 2px;
   font: inherit;
   font-size: 14px;
+}
+
+/* Мобильный Safari приближает страницу при фокусе в поле с кеглем меньше
+   16px и обратно не отъезжает: окно чата остаётся увеличенным и сдвинутым.
+   Подробнее — в LeadForm.module.css. На указателе мыши правило не работает,
+   десктопный Chromium его не видит. */
+@media (pointer: coarse) {
+  .ticketField,
+  .input {
+    font-size: 16px;
+  }
 }
 
 .ticketConsent {
@@ -605,6 +637,7 @@
   margin: 6px 0 0;
   padding: 9px 12px;
   border-left: 2px solid var(--green);
+  background: rgba(20, 156, 60, 0.06); /* запас для Safari < 16.2, см. .fresh */
   background: color-mix(in srgb, var(--green) 6%, transparent);
   font-size: 12px;
   line-height: 1.45;

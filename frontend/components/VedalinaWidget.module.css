@@ -147,6 +147,12 @@
   bottom: 24px;
   z-index: 55;
   width: 404px;
+  /* Первая строка — запас для WebKit: единицы svh/dvh появились в Safari 15.4,
+   * до неё объявление отбрасывается целиком и предела высоты не остаётся
+   * вовсе — окно чата вырастает за экран, а закрыть его нечем, кнопка уехала.
+   * vh в старом Safari — это большая область просмотра, то есть предел
+   * получается щедрее нужного, но он есть. Chromium берёт вторую строку. */
+  max-height: min(640px, calc(100vh - var(--header-h) - 48px));
   max-height: min(640px, calc(100svh - var(--header-h) - 48px));
   display: flex;
   animation: w-in 0.2s ease both;
@@ -199,6 +205,8 @@
     left: 12px;
     bottom: 12px;
     width: auto;
+    /* Запас для Safari до 15.4, как у .panel выше. */
+    max-height: min(78vh, calc(100vh - 24px));
     max-height: min(78svh, calc(100svh - 24px));
   }
 }

@@ -41,6 +41,13 @@
 
 .input,
 .textarea {
+  /* Отказ от системной отрисовки поля — та же причина, что в LeadForm:
+     на айфоне WebKit добавляет полю своё скругление и внутреннюю тень,
+     и на тёмной подложке формы это видно особенно хорошо. Chromium
+     у поля ввода и текстовой области системной отрисовки не имеет,
+     для него правило пустое. */
+  -webkit-appearance: none;
+  appearance: none;
   transition: border-color var(--dur) var(--ease);
   width: 100%;
   min-width: 0;
@@ -59,6 +66,15 @@
   margin-top: 14px;
   padding: 14px 15px;
   resize: none;
+}
+
+/* Мобильный Safari приближает страницу при фокусе в поле с кеглем меньше
+   16px и обратно не отъезжает. Подробнее — в LeadForm.module.css. */
+@media (pointer: coarse) {
+  .input,
+  .textarea {
+    font-size: 16px;
+  }
 }
 
 .input::placeholder,

@@ -57,6 +57,18 @@
 .input,
 .select,
 .textarea {
+  /* Отказ от системной отрисовки поля. WebKit рисует поля средствами
+     операционной системы, и на маке это заметно: у select своя высота,
+     свои скругления и своя стрелка, а height и border-radius отсюда он
+     частью игнорирует. Рядом с полями ввода в 50 пикселей получается
+     ряд разной высоты — тот случай, который и называют «форма едет».
+     На айфоне то же свойство убирает внутреннюю тень и скругление
+     у input и textarea.
+     Chromium ничего не теряет: у поля ввода и текстовой области системной
+     отрисовки нет, а стрелку select ниже рисуем сами.
+     Префикс обязателен: без него Safari до 15.4 объявление не понимает. */
+  -webkit-appearance: none;
+  appearance: none;
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -71,10 +83,34 @@
   transition: border-color var(--dur) var(--ease);
 }
 
+/* Своя стрелка вместо системной — той больше нет. Тот же знак в обоих
+   движках, вместо системного в каждом свой. */
+.select {
+  padding-right: 38px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4.5 6 8.5 10 4.5' fill='none' stroke='%235e6b73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 12px 12px;
+}
+
 .textarea {
   height: 120px;
   padding: 14px;
   resize: none;
+}
+
+/* Сенсорный экран — почти всегда айфон или айпад. Мобильный Safari
+   приближает страницу, когда фокус попадает в поле с кеглем меньше 16px,
+   и обратно сам не отъезжает: страница остаётся увеличенной и сдвинутой
+   вбок. Ровно это выглядит как «после нажатия на поле всё разъехалось».
+   На указателе мыши правило не срабатывает, десктопный Chromium его
+   не видит. */
+@media (pointer: coarse) {
+  .input,
+  .select,
+  .textarea {
+    font-size: 16px;
+  }
 }
 
 .input:focus,
