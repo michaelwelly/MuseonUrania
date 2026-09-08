@@ -168,6 +168,31 @@ only when the image or the service configuration changed; a change in
 does nothing. That is, **on a typical deploy port 18080 is never released**, and
 the log says so: `шлюз не менялся — порт 18080 не освобождался`.
 
+### Why step 5 used to fire every time
+
+Ordering alone was not enough. A rebuild **with no change at all** produced a new
+image id: by default buildx attaches a provenance attestation to the image, and
+that attestation carries the build time. Every layer is `CACHED`, yet the
+manifest differs, so the id differs. To compose a new image id means "the service
+changed", that is, recreate the container.
+
+That is why every deploy recreated the gateway — even when the change was a
+single frontend file. It is visible by name: on 8 September `vedal-gateway`,
+`vedal-portal` and `vedal-site` were recreated within the same second, although
+not the whole stack had changed.
+
+One variable fixes it, and the script exports it before the build:
+
+```bash
+export BUILDX_NO_DEFAULT_ATTESTATIONS=1
+```
+
+Verified both ways: a repeated build with no changes yields a byte-for-byte
+identical id and compose leaves the container alone, while a real source change
+still recreates it. All that is lost is the provenance signature in the image
+metadata — not needed here: the image is built on the same machine it runs on and
+is never published anywhere.
+
 The build is a separate step ahead of everything else. It ran first before as
 well (`up --build` builds and then recreates), but now a failed build says so in
 words: `стек не тронут, работает прежняя версия`.
