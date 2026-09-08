@@ -1140,7 +1140,11 @@ no separate port had to be introduced for that.
    erasure is irreversible, and there is nowhere to restore from either, since
    there are no backups. Each kind of data turns on with its own property
    (`vedal.privacy.retention`, `.chat`, `.mail`), a period value such as `P3Y`;
-   without the property the bean is not created at all.
+   without the property — and with an empty value for it — the bean is not
+   created at all. The three variables reach the portal through compose and
+   are listed, empty, in `backend/.env.example`. The order of switching on,
+   what exactly is erased from each carrier and what happens on the first pass
+   — [data_retention.en.md](operations/data_retention.en.md).
 3. Whether `/admin` is closed at the network level or left behind a password and
    MFA. The door is single, so either option is one rule in the `Caddyfile` plus
    a realm policy. The proxy rule now exists: `@admin` only lets private ranges

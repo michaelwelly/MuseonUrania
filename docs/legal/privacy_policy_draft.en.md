@@ -23,7 +23,11 @@
 The draft cannot be completed from the code — these are company decisions:
 
 1. **Retention period for enquiries.** The code has the erasure-on-expiry
-   mechanism (`PersonalData.Basis.RETENTION`) but no actual period.
+   mechanism (`PersonalData.Basis.RETENTION`) but no actual period. Up to
+   three periods need naming — an enquiry, a conversation and a mail are kept
+   for different reasons, and one shared period for them would be a decision
+   nobody made. How to switch it on and what exactly is erased —
+   [data_retention.en.md](../operations/data_retention.en.md).
 2. **The person responsible for organizing personal data processing** — name,
    position, contact for data subject requests.
 3. **Contractors the data is passed to**, if any, and on what basis.
@@ -97,20 +101,40 @@ establish what exactly a person agreed to if the consent text changes later.
 
 `awaiting clarification` — the period is set by the company.
 
-Once the period expires the data is erased automatically, and the basis is
-recorded as "retention period expired".
+The data from an enquiry sits in three places, kept for different reasons, so
+each may have a period of its own:
+
+| What is kept | Why |
+| --- | --- |
+| the enquiry itself — name, phone, email, text | until the question behind it is closed: an answer, a quote, a repeat enquiry |
+| the conversation with the site assistant | an enquiry grows out of it, and it explains what the person was asking about |
+| the mail sent for the enquiry | delivery confirmation: did the mail leave and what the mail server answered |
+
+Once the period expires the data is erased automatically, without any request
+from the person, and the basis is recorded as "retention period expired". All
+three are erased — the enquiry, the conversation and the mail, each by its own
+period.
+
+Erasure is irreversible: the data cannot be restored afterwards, neither at
+the person's request nor by a decision of the company.
 
 ## 7. Erasure and withdrawal of consent
 
 A data subject may withdraw consent at any time and demand erasure by contacting
 the company using the details in section 2.
 
+One request from a person is executed in full: the data is erased in all three
+places at once — in the enquiry itself, in the conversation with the assistant
+it grew out of, and in the mail sent for it.
+
 Erasure is performed by de-identification rather than by deleting the record:
 
-- **erased**: name, phone, email, enquiry text, and the subject and content of
-  correspondence about the enquiry;
+- **erased**: name, phone, email, enquiry text, the subject and content of
+  correspondence about the enquiry, the content of the conversation messages,
+  and the recipient address, subject and text of the mail sent;
 - **retained**: the form, source, language, campaign, status and timestamps —
-  none of which identify a person;
+  none of which identify a person; the fact that the conversation happened and
+  that the mail was sent;
 - organization details are untouched, as they are not personal data.
 
 After de-identification the record no longer allows identification and ceases to
