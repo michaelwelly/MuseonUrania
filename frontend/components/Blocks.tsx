@@ -12,6 +12,41 @@ import styles from "./Blocks.module.css";
 
 type Action = { label: string; href: string; analytics?: string };
 
+/**
+ * Кнопка полосы: якорь внутри страницы рисуется обычным `<a>`, переход
+ * на другой адрес — через `Link`.
+ *
+ * Разница не косметическая. `Link` перехватывает клик и меняет адрес своим
+ * `history.pushState`, а браузер шлёт `hashchange` только на настоящей
+ * навигации по хешу. Виджет Ведалины открывается именно по `hashchange`
+ * (`components/VedalinaWidget.tsx`), и «Спросить Ведалину» через `Link`
+ * дописывала `#vedalina` в адрес, не открывая окна вовсе — issue #101.
+ *
+ * Клиентский переход якорю и не нужен: страница не меняется, а `<a>` вдобавок
+ * работает без JS. Те же якоря в других местах — `#quote` на карточке изделия,
+ * `#map` на «Производстве» — обычными `<a>` и нарисованы.
+ */
+function CtaLink({
+  action,
+  className,
+}: {
+  action: Action;
+  className: string;
+}) {
+  if (action.href.startsWith("#")) {
+    return (
+      <a className={className} href={action.href} data-analytics={action.analytics}>
+        {action.label}
+      </a>
+    );
+  }
+  return (
+    <Link className={className} href={action.href} data-analytics={action.analytics}>
+      {action.label}
+    </Link>
+  );
+}
+
 /** Тёмная полоса-призыв с двумя кнопками. Экраны 02, 04 и далее. */
 export function DarkCta({
   title,
@@ -50,21 +85,9 @@ export function DarkCta({
         <p className={styles.ctaText}>{text}</p>
       </div>
       <div className={styles.ctaActions} data-reveal="1">
-        <Link
-          className={`${styles.btn} ${styles.btnPrimary}`}
-          href={primary.href}
-          data-analytics={primary.analytics}
-        >
-          {primary.label}
-        </Link>
+        <CtaLink action={primary} className={`${styles.btn} ${styles.btnPrimary}`} />
         {secondary && (
-          <Link
-            className={`${styles.btn} ${styles.btnGhost}`}
-            href={secondary.href}
-            data-analytics={secondary.analytics}
-          >
-            {secondary.label}
-          </Link>
+          <CtaLink action={secondary} className={`${styles.btn} ${styles.btnGhost}`} />
         )}
       </div>
     </section>
