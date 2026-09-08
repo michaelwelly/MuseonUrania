@@ -5,11 +5,14 @@ import {
   createDocument,
   documentVocabulary,
   documents,
+  knowledge,
   publishDocument,
+  reindexKnowledge,
   updateDocument,
   uploadDocumentFile,
   type DocumentForm,
   type DocumentRow,
+  type KnowledgeState,
   type Vocabulary,
 } from "@/lib/admin";
 import { SearchIcon } from "../icons";
@@ -42,6 +45,15 @@ function размер(bytes: number): string {
 export default function DocumentsPage() {
   const { data, error, loading, reload, setError } = useLoad<DocumentRow[]>(documents);
   const { data: vocabulary } = useLoad<Vocabulary>(documentVocabulary);
+  // Состояние индекса Ведалины живёт здесь, а не внутри своей карточки:
+  // по нему же строки таблицы показывают, попал документ в поиск или нет.
+  const {
+    data: index,
+    error: indexError,
+    reload: reloadIndex,
+    setError: setIndexError,
+  } = useLoad<KnowledgeState>(knowledge);
+  const [reindexing, setReindexing] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [editing, setEditing] = useState<DocumentRow | null>(null);
   const [creating, setCreating] = useState(false);
@@ -49,6 +61,17 @@ export default function DocumentsPage() {
   const [pick, setPick] = useState<"all" | "live" | "nofile" | "closed">("all");
 
   const all = useMemo(() => data ?? [], [data]);
+
+  // Сколько фрагментов у документа в индексе — по slug. Перебирать список
+  // индекса в каждой строке значит обходить его столько раз, сколько
+  // документов; здесь он обходится один.
+  const фрагменты = useMemo(() => {
+    const карта = new Map<string, number>();
+    for (const row of index?.rows ?? []) {
+      if (row.kind === "document") карта.set(row.externalId, row.chunks);
+    }
+    return карта;
+  }, [index]);
 
   // Отбор по прочитанному списку, а не запросом: документов десять, портал
   // отдаёт их целиком, и «ничего не найдено» здесь означает «во всём
@@ -69,12 +92,32 @@ export default function DocumentsPage() {
     });
   }, [all, typed, pick]);
 
+  // Переиндексация может идти секундами: разбор файлов и обращения к модели
+  // эмбеддингов. Кнопка на это время гаснет — второе нажатие означало бы
+  // второй прогон и второй счёт, а не «побыстрее».
+  async function reindex() {
+    setReindexing(true);
+    setIndexError(null);
+    try {
+      await reindexKnowledge();
+      reloadIndex();
+    } catch (e) {
+      setIndexError(message(e));
+    } finally {
+      setReindexing(false);
+    }
+  }
+
   async function act(id: string, action: () => Promise<unknown>) {
     setBusy(id);
     setError(null);
     try {
       await action();
       reload();
+      // Правка документа поднимает переиндексацию событием, и она идёт
+      // фоном. Перечитываем состояние индекса, чтобы строка не показывала
+      // заведомо устаревшее «нет в индексе».
+      reloadIndex();
     } catch (e) {
       setError(message(e));
     } finally {
@@ -122,6 +165,13 @@ export default function DocumentsPage() {
       </p>
 
       <Note kind="error">{error}</Note>
+
+      <KnowledgeIndex
+        state={index}
+        error={indexError}
+        busy={reindexing}
+        onReindex={reindex}
+      />
 
       {(creating || editing) && vocabulary && (
         <DocumentCard
@@ -227,6 +277,18 @@ export default function DocumentsPage() {
                     </button>
                     <span className="row__under mono">{row.slug}</span>
                     <span className="row__under">{row.subject}</span>
+                    {/* Статус индексации. Показываем только при включённой
+                        индексации: при выключенной «нет в индексе» верно
+                        у всех и потому не значит ничего. */}
+                    {index?.enabled && (
+                      <span className="row__under">
+                        {фрагменты.has(row.slug) ? (
+                          <>Ведалина ищет по нему: {фрагменты.get(row.slug)} фр.</>
+                        ) : (
+                          <span className="nobody">не в индексе Ведалины</span>
+                        )}
+                      </span>
+                    )}
                   </td>
 
                   <td className="tight">{row.group}</td>
@@ -299,6 +361,82 @@ export default function DocumentsPage() {
       )}
     </>
   );
+}
+
+/**
+ * Индекс Ведалины: что в нём лежит и кнопка «переиндексировать».
+ *
+ * Стоит на странице документов, а не отдельным разделом: именно документы
+ * составляют корпус, и вопрос «нашла ли Ведалина этот документ» возникает
+ * здесь, рядом со строкой, а не через два перехода.
+ *
+ * Выключенная индексация — рабочее состояние, а не поломка: пока корпуса
+ * нет, Ведалина отвечает поиском по словам. Карточка говорит это словами,
+ * а не пустотой: пустой индекс при включённой индексации значит «ещё
+ * не собирали», при выключенной — «и не собирается», и одинаково пустая
+ * таблица в обоих случаях врала бы в одном из них.
+ */
+function KnowledgeIndex({
+  state,
+  error,
+  busy,
+  onReindex,
+}: {
+  state: KnowledgeState | null;
+  error: string | null;
+  busy: boolean;
+  onReindex: () => void;
+}) {
+  // Двери индекса нет или она отказала — молчим. Отсутствие карточки
+  // не мешает работать с документами, а красная плашка над таблицей
+  // мешала бы каждый день.
+  if (!state && !error) return null;
+
+  return (
+    <div className="admin-card">
+      <div className="admin-head" style={{ marginBottom: "var(--s2)" }}>
+        <h2 style={{ fontSize: "var(--t-base)" }}>Индекс Ведалины</h2>
+        {state?.enabled && (
+          <button className="btn btn--small" disabled={busy} onClick={onReindex}>
+            {busy ? "Собираем…" : "Переиндексировать"}
+          </button>
+        )}
+      </div>
+
+      <Note kind="error">{error}</Note>
+
+      {state && !state.enabled && (
+        <p className="muted">
+          Поиск по близости выключен: Ведалина отвечает поиском по словам, как и
+          до появления индекса. Включается на стороне портала переменными{" "}
+          <code>VEDAL_RAG_ENABLED</code>, <code>VEDAL_RAG_DOCUMENT_MODEL_URI</code> и{" "}
+          <code>VEDAL_RAG_QUERY_MODEL_URI</code>.
+        </p>
+      )}
+
+      {state?.enabled && (
+        <p className="muted">
+          В индексе <span className="mono">{state.sources}</span>{" "}
+          {склонение(state.sources, "материал", "материала", "материалов")} и{" "}
+          <span className="mono">{state.chunks}</span>{" "}
+          {склонение(state.chunks, "фрагмент", "фрагмента", "фрагментов")}. Индекс
+          догоняет правку сам; кнопка нужна, когда индексацию включили позже, чем
+          правили документы. Материал с неизменившимся текстом не переиндексируется —
+          повторное нажатие ничего не стоит.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** Русское число: 1 материал, 2 материала, 5 материалов. */
+function склонение(сколько: number, один: string, два: string, много: string): string {
+  const сотня = сколько % 100;
+  if (сотня >= 11 && сотня <= 14) return много;
+  const единицы = сколько % 10;
+  if (единицы === 1) return один;
+  if (единицы >= 2 && единицы <= 4) return два;
+  return много;
 }
 
 function DocumentCard({

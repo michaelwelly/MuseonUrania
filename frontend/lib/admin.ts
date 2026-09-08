@@ -235,6 +235,33 @@ export function uploadDocumentFile(id: string, file: File) {
   return request<DocumentRow>(`/documents/${id}/file`, { method: "POST", body });
 }
 
+// ————— индекс Ведалины —————
+
+/** Материал в индексе: то, что ассистент может найти по близости. */
+export type KnowledgeRow = {
+  kind: string;
+  externalId: string;
+  title: string;
+  chunks: number;
+  indexedAt: string;
+};
+
+export type KnowledgeState = {
+  /**
+   * Индексация включена. Выключена — индекс пуст, а Ведалина отвечает
+   * поиском по словам. Это рабочее состояние, а не поломка, и интерфейс
+   * обязан его различать: пустой индекс при включённой индексации значит
+   * «ещё не собирали», при выключенной — «и не собирается».
+   */
+  enabled: boolean;
+  sources: number;
+  chunks: number;
+  rows: KnowledgeRow[];
+};
+
+export const knowledge = () => get<KnowledgeState>("/knowledge");
+export const reindexKnowledge = () => post<KnowledgeState>("/knowledge/reindex");
+
 // ————— изображения —————
 
 export type Uploaded = { path: string; size: number };
