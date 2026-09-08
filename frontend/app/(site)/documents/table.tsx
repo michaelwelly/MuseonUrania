@@ -4,10 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { groups } from "@/content/documents";
 import type { Doc } from "@/lib/api";
+import { accessBadge, actionLabel, badgeIsOk, docHref, linkTarget } from "@/lib/documents";
 import styles from "./page.module.css";
-
-const badgeClass = (access: string) =>
-  access === "Уточняется" ? styles.badgeMuted : styles.badgeOk;
 
 // Перечень приходит сверху: его читает серверный компонент на сборке.
 // Ссылка на файл есть только у опубликованных — её ставит бэкенд.
@@ -55,31 +53,32 @@ export default function DocumentsTable({ documents }: { documents: Doc[] }) {
 
           {shown.length === 0 && <p className={styles.empty}>В этом разделе пока нет документов.</p>}
 
-          {shown.map((d) => {
-            // Открыть можно только то, что опубликовано И загружено. Одного
-            // published мало: ссылку на файл ставит бэкенд, и у документа
-            // без файла её просто нет.
-            const open = Boolean(d.published && d.file);
-            return (
-              <Link
-                key={d.slug || `${d.title}-${d.product}`}
-                className={styles.row}
-                // Не опубликован — ведём на запрос, а не в пустоту.
-                href={open ? d.file! : "/contacts/"}
-                // Новая вкладка только у открываемых. PDF показывается прямо
-                // в браузере, и уводить с перечня незачем: документы смотрят
-                // подряд, а не по одному. rel обязателен — без него открытая
-                // вкладка получает доступ к window.opener.
-                {...(open ? { target: "_blank", rel: "noopener" } : {})}
-                data-analytics="document_download_click"
-              >
+          {/* Куда ведёт строка и что говорит бейдж — решает lib/documents:
+              то же правило работает на вкладке «Документы» карточки изделия. */}
+          {shown.map((d) => (
+            <Link
+              key={d.slug || `${d.title}-${d.product}`}
+              className={styles.row}
+              href={docHref(d)}
+              {...linkTarget(d)}
+              data-analytics="document_download_click"
+            >
+              <span className={styles.cell}>
                 <span className={styles.docTitle}>{d.title}</span>
-                <span className={styles.dim}>{d.group}</span>
-                <span className={`${styles.dim} ${styles.product}`}>{d.product}</span>
-                <span className={`${styles.badge} ${badgeClass(d.access)}`}>{d.access}</span>
-              </Link>
-            );
-          })}
+                {/* Что произойдёт по нажатию — словами. Без этой строки
+                    «Запросить» отличается от «Открыть» только адресом
+                    в статусной строке браузера. */}
+                <span className={styles.action}>{actionLabel(d)}</span>
+              </span>
+              <span className={styles.dim}>{d.group}</span>
+              <span className={`${styles.dim} ${styles.product}`}>{d.product}</span>
+              <span
+                className={`${styles.badge} ${badgeIsOk(d) ? styles.badgeOk : styles.badgeMuted}`}
+              >
+                {accessBadge(d)}
+              </span>
+            </Link>
+          ))}
         </div>
       </div>
     </>

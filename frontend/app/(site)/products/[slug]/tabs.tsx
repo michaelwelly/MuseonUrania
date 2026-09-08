@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import type { Product } from "@/lib/api";
+import type { Doc, Product } from "@/lib/api";
+import { REQUEST_HREF, accessBadge, docHref, docNote, isOpen, linkTarget } from "@/lib/documents";
 import styles from "./page.module.css";
 
 const ALL_TABS = ["Характеристики", "Комплектация", "Документы", "Сервис и обучение"] as const;
@@ -17,20 +18,29 @@ type Tab = (typeof ALL_TABS)[number];
 const HIDDEN_TABS: readonly Tab[] = ["Комплектация"];
 const TABS = ALL_TABS.filter((t) => !HIDDEN_TABS.includes(t));
 
-// Документы у всех позиций пока published:false — правило из content/documents.ts.
-// Поэтому ссылок на скачивание нет, вместо них запрос через форму.
-const docs = [
-  { kind: "PDF", title: "Описание изделия", note: "Техническая документация · выдаётся по запросу" },
-  { kind: "РУ", title: "Регистрационное удостоверение", note: "Лицензирование · выдаётся по запросу" },
-  { kind: "PDF", title: "Каталог продукции 2026", note: "Коммерческие материалы · выдаётся по запросу" },
-];
+// Раньше здесь стоял список из трёх строк, набранный руками: «Описание
+// изделия», «Регистрационное удостоверение», «Каталог продукции 2026» —
+// одинаковый на каждой карточке и ведущий на форму независимо от того,
+// что лежит в перечне портала. Это нарушало сразу два правила: карточка
+// утверждала наличие документов, которых у изделия может не быть, и не
+// показывала файл, когда он есть.
+//
+// Теперь перечень приходит из портала (issue #73). Правило ссылки — общее
+// с /documents/, оно в lib/documents.
 
 // Индекс, а не сам текст таба: id должен остаться стабильным символом
 // (латиница/цифры), а названия табов — кириллица с пробелами.
 const tabId = (t: Tab) => `product-tab-${TABS.indexOf(t)}`;
 const panelId = "product-tabpanel";
 
-export default function ProductTabs({ product }: { product: Product }) {
+export default function ProductTabs({
+  product,
+  documents,
+}: {
+  product: Product;
+  /** Документы этого изделия. Отбор делает страница — см. lib/documents.forProduct. */
+  documents: Doc[];
+}) {
   const [tab, setTab] = useState<Tab>("Характеристики");
 
   return (
@@ -94,28 +104,48 @@ export default function ProductTabs({ product }: { product: Product }) {
         {tab === "Документы" && (
           <>
             <h2 className={styles.panelTitle}>Документы к изделию</h2>
-            <ul className={styles.docs}>
-              {docs.map((d) => (
-                <li key={d.title}>
-                  <Link className={styles.doc} href="/contacts/">
-                    <span
-                      className={`${styles.docKind} ${
-                        d.kind === "PDF" ? styles.docKindPdf : styles.docKindRu
-                      }`}
-                    >
-                      {d.kind}
-                    </span>
-                    <span className={styles.docBody}>
-                      <span className={styles.docTitle}>{d.title}</span>
-                      <span className={styles.docNote}>{d.note}</span>
-                    </span>
-                    <span className={styles.docArrow} aria-hidden="true">
-                      →
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+
+            {documents.length === 0 ? (
+              // Пустая вкладка честнее выдуманного списка: у изделия может
+              // не быть ни одной строки в перечне, и рисовать кнопку под
+              // документ, которого нет, нельзя.
+              <p className={styles.awaiting}>
+                В перечне документов пока нет ни одной строки об этом изделии. Документация
+                выдаётся по запросу — укажите модель в заявке, специалист пришлёт актуальную
+                редакцию.
+              </p>
+            ) : (
+              <ul className={styles.docs}>
+                {documents.map((d) => (
+                  <li key={d.slug || d.title}>
+                    <Link className={styles.doc} href={docHref(d)} {...linkTarget(d)}>
+                      <span
+                        className={`${styles.docKind} ${
+                          isOpen(d) ? styles.docKindOpen : styles.docKindMuted
+                        }`}
+                      >
+                        {accessBadge(d)}
+                      </span>
+                      <span className={styles.docBody}>
+                        <span className={styles.docTitle}>{d.title}</span>
+                        <span className={styles.docNote}>{docNote(d)}</span>
+                      </span>
+                      <span className={styles.docArrow} aria-hidden="true">
+                        →
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {/* Документы компании — лицензия, сертификат системы качества,
+                каталог — к изделию не привязаны и живут в общем перечне.
+                Ссылка ведёт туда, а не подмешивает их в список изделия. */}
+            <p className={styles.docsAll}>
+              <Link href="/documents/">Все документы и лицензирование</Link> · не найденное
+              в перечне <Link href={REQUEST_HREF}>запрашивается</Link> у специалиста.
+            </p>
           </>
         )}
 

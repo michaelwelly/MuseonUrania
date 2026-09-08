@@ -7,6 +7,7 @@ import { documentsHero, order, request } from "@/content/documents";
 import { companyContact, STAFF_AWAITING } from "@/content/staff";
 import { vedalina } from "@/content/vedalina";
 import { fetchDocuments } from "@/lib/api";
+import { isOpen } from "@/lib/documents";
 import DocumentsTable from "./table";
 import styles from "./page.module.css";
 
@@ -18,6 +19,11 @@ export const metadata: Metadata = pageMetadata({
 
 export default async function DocumentsPage() {
   const documents = await fetchDocuments();
+
+  // Подпись под легендой не должна утверждать, что файлов нет, когда они
+  // есть. Считаем по самому перечню: редактор выкладывает файл через
+  // админку и не открывает при этом content/documents.ts.
+  const anyOpen = documents.some(isOpen);
 
   return (
     <main className={styles.page}>
@@ -53,9 +59,11 @@ export default async function DocumentsPage() {
           <ul className={styles.legend}>
             {order.legend.map((l) => (
               <li key={l.badge} className={styles.legendRow}>
+                {/* Зелёный — только у выложенного файла. «По запросу»
+                    и «Уточняется» одинаково означают, что файла нет. */}
                 <span
                   className={`${styles.legendBadge} ${
-                    l.badge === "Уточняется" ? styles.badgeMuted : styles.badgeOk
+                    l.badge === "Файл" ? styles.badgeOk : styles.badgeMuted
                   }`}
                 >
                   {l.badge}
@@ -65,7 +73,7 @@ export default async function DocumentsPage() {
             ))}
           </ul>
 
-          <p className={styles.note}>{order.note}</p>
+          <p className={styles.note}>{anyOpen ? order.notes.some : order.notes.none}</p>
         </div>
 
         <div className={styles.request} data-reveal="1">

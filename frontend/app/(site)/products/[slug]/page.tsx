@@ -3,7 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { statusLabel } from "@/content/products";
-import { fetchProduct, fetchProducts } from "@/lib/api";
+import { fetchDocuments, fetchProduct, fetchProducts } from "@/lib/api";
+import { forProduct } from "@/lib/documents";
 import ProductTabs from "./tabs";
 import styles from "./page.module.css";
 import { mediaSrc } from "@/lib/media";
@@ -39,7 +40,14 @@ function Arrow() {
 
 export default async function ProductPage(props: PageProps<"/products/[slug]">) {
   const { slug } = await props.params;
-  const [product, products] = await Promise.all([fetchProduct(slug), fetchProducts()]);
+  // Перечень документов читается тем же запросом, что и страница /documents/,
+  // и с тем же сроком обновления: вкладка «Документы» карточки обязана
+  // показывать то же самое, а не собственный список.
+  const [product, products, documents] = await Promise.all([
+    fetchProduct(slug),
+    fetchProducts(),
+    fetchDocuments(),
+  ]);
   // Неопубликованное изделие бэкенд отдаёт как 404 — страницы у него нет.
   if (!product) notFound();
 
@@ -110,9 +118,15 @@ export default async function ProductPage(props: PageProps<"/products/[slug]">) 
             </Link>
           </div>
 
+          {/* Обещать высылку регистрационного удостоверения нельзя: письмо
+              заказчика от 10 августа 2026 — «удостоверение не выдаётся, есть
+              только реестровая запись». Миграция V27 по этой причине перевела
+              строки перечня в «Уточняется», а здесь то же обещание оставалось
+              набранным руками. Состояние каждого документа теперь видно
+              на вкладке «Документы» ниже. */}
           <p className={styles.note}>
-            Регистрационное удостоверение и сертификаты выдаются по запросу. Ведалина подберёт
-            конфигурацию и пришлёт документы в чате.
+            Сертификаты и техническая документация выдаются по запросу, регистрационный статус —
+            ожидает уточнения. Ведалина подберёт конфигурацию и пришлёт документы в чате.
           </p>
         </div>
       </section>
@@ -157,7 +171,7 @@ export default async function ProductPage(props: PageProps<"/products/[slug]">) 
         </div>
       </section>
 
-      <ProductTabs product={product} />
+      <ProductTabs product={product} documents={forProduct(documents, product.slug)} />
 
       <section className={styles.related}>
         <h2 className={styles.relatedTitle} data-words="34">
