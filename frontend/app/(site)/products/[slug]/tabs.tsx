@@ -5,8 +5,17 @@ import Link from "next/link";
 import type { Product } from "@/lib/api";
 import styles from "./page.module.css";
 
-const TABS = ["Характеристики", "Комплектация", "Документы", "Сервис и обучение"] as const;
-type Tab = (typeof TABS)[number];
+const ALL_TABS = ["Характеристики", "Комплектация", "Документы", "Сервис и обучение"] as const;
+type Tab = (typeof ALL_TABS)[number];
+
+// Вкладка «Комплектация» снята по просьбе заказчика после показа стенда
+// (issue #83) — на всех четырёх карточках изделий набор вкладок общий,
+// поэтому одна правка здесь убирает её везде. Панель ниже (JSX-ветка
+// tab === "Комплектация") нарочно оставлена в файле: заказчик может
+// попросить вернуть вкладку, и тогда это одна строка — убрать её из
+// HIDDEN_TABS, — а не восстановление текста заново.
+const HIDDEN_TABS: readonly Tab[] = ["Комплектация"];
+const TABS = ALL_TABS.filter((t) => !HIDDEN_TABS.includes(t));
 
 // Документы у всех позиций пока published:false — правило из content/documents.ts.
 // Поэтому ссылок на скачивание нет, вместо них запрос через форму.
