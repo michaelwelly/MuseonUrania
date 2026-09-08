@@ -62,6 +62,9 @@ class RoleMatrixTest extends PostgresTestBase {
             "/api/admin/v1/categories",
             "/api/admin/v1/news",
             "/api/admin/v1/documents",
+            // Индекс Ведалины собирается из того, что уходит наружу.
+            // Продавцу он не нужен, а нажатие стоит вызовов модели.
+            "/api/admin/v1/knowledge",
     };
 
     // Двери, которые не нужны для работы ни одного контура.

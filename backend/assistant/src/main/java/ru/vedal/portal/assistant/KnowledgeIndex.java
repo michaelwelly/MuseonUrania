@@ -8,6 +8,7 @@ import ru.vedal.portal.catalog.CatalogQuery;
 import ru.vedal.portal.content.ContentQuery;
 import ru.vedal.portal.documents.DocumentQuery;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -25,12 +26,12 @@ import java.util.UUID;
  * и так показывает. Ничего нового в них не появляется; появляется другой
  * способ их найти.
  *
- * <p><b>Чего здесь нет и появится с корпусом.</b> Извлечения текста из PDF
- * и DOCX. Оно не написано намеренно: разбор файла проверяется файлами,
- * а придумывать содержимое датащитов VEDAL, чтобы было на чём проверить,
- * запрещено правилами проекта. {@link Material} принимает уже готовый текст,
- * и в тот день, когда появятся файлы, к нему добавляется извлечение —
- * а не переписывается всё остальное.
+ * <p><b>Файлы.</b> Текст опубликованного PDF или DOCX достаётся
+ * {@link FileText} и приклеивается к карточке документа: датащит приезжает
+ * файлом, а в индекс попадает текст. Файла нет, формат не читается или
+ * текста в нём не нашлось — документ индексируется одной карточкой, ровно
+ * как раньше. Отказ разбора не роняет переиндексацию: один битый файл
+ * не должен оставлять весь индекс несобранным.
  *
  * <p><b>Про деньги.</b> Каждый фрагмент — это вызов модели эмбеддингов,
  * то есть счёт. Поэтому материал с неизменившимся текстом не
@@ -65,11 +66,28 @@ public class KnowledgeIndex {
         /** Отпечаток совпал — модель не спрашивалась. */
         UNCHANGED,
         /** Текста нет — индексировать нечего, материал в индекс не попадает. */
-        EMPTY
+        EMPTY,
+        /**
+         * Материала больше нет там, откуда его берут, — он убран из индекса.
+         *
+         * <p>Отдельно от {@link #EMPTY}: «у материала опустел текст»
+         * и «материал сняли с публикации» выглядят в индексе одинаково,
+         * но означают разное, и в журнале переиндексации их надо различать.
+         */
+        FORGOTTEN
     }
 
     /** Сколько всего лежит в индексе. */
     public record Stats(int sources, int chunks) {}
+
+    /**
+     * Строка индекса: что в нём лежит и когда попало.
+     *
+     * <p>Для админки. Без неё «переиндексировать» — кнопка, после которой
+     * ничего не видно: и до, и после она выглядит одинаково.
+     */
+    public record Indexed(String kind, String externalId, String title, int chunks,
+                          java.time.Instant indexedAt) {}
 
     private final JdbcClient jdbc;
     private final TransactionTemplate transactions;
@@ -173,6 +191,42 @@ public class KnowledgeIndex {
         return new Stats(sources, chunks);
     }
 
+    /** Что лежит в индексе — построчно, для админки. */
+    public java.util.List<Indexed> indexed() {
+        return jdbc.sql("""
+                        select s.kind, s.external_id, s.title, s.indexed_at,
+                               (select count(*) from knowledge_chunk c where c.source_id = s.id) as chunks
+                        from knowledge_source s
+                        order by s.kind, s.title
+                        """)
+                .query((rs, row) -> new Indexed(rs.getString("kind"), rs.getString("external_id"),
+                        rs.getString("title"), rs.getInt("chunks"),
+                        rs.getTimestamp("indexed_at").toInstant()))
+                .list();
+    }
+
+    /**
+     * Переиндексировать один документ — по событию о его правке.
+     *
+     * <p>Состояние берётся заново из перечня, а не из тела события. Причина
+     * та же, по которой уведомление о заявке не носит в себе адрес: событие
+     * говорит, что материал изменился, а каким он стал — знает тот, кто
+     * его хранит. Документа в перечне не оказалось (сняли с публикации,
+     * закрыли уровнем, убрали из перечня) — он уходит из индекса.
+     */
+    public Outcome indexDocument(String slug) {
+        var card = documents.listedDocuments().stream()
+                .filter(candidate -> candidate.slug().equals(slug))
+                .findFirst()
+                .orElse(null);
+
+        if (card == null) {
+            forget("document", slug);
+            return Outcome.FORGOTTEN;
+        }
+        return index(material(card));
+    }
+
     /**
      * Переиндексировать всё, что портал показывает сегодня.
      *
@@ -201,22 +255,72 @@ public class KnowledgeIndex {
         }
 
         for (var document : documents.listedDocuments()) {
-            // Статус доступа идёт в текст материала, а не только в подпись:
-            // без него выдержка про «Регистрационное удостоверение» читается
-            // как утверждение, что удостоверение есть. Правило то же, что
-            // и в поиске по словам.
-            index(new Material("document", document.slug(),
-                    label(document),
-                    document.published() ? document.fileUrl() : "/documents/", "ru", "public",
-                    join("Раздел: " + document.group(), "Относится к: " + document.subject(),
-                            "pending".equals(document.access())
-                                    ? "Статус: наличие уточняется"
-                                    : "Статус: опубликован")));
+            index(material(document));
         }
 
         var stats = stats();
         log.info("Индекс Ведалины: {} материалов, {} фрагментов", stats.sources(), stats.chunks());
         return stats;
+    }
+
+    /**
+     * Материал из карточки документа: подпись, статус и — если файл
+     * опубликован и читается — его текст.
+     */
+    private Material material(DocumentQuery.Card card) {
+        // Статус доступа идёт в текст материала, а не только в подпись:
+        // без него выдержка про «Регистрационное удостоверение» читается
+        // как утверждение, что удостоверение есть. Правило то же, что
+        // и в поиске по словам.
+        var about = join("Раздел: " + card.group(), "Относится к: " + card.subject(),
+                "pending".equals(card.access())
+                        ? "Статус: наличие уточняется"
+                        : "Статус: опубликован");
+
+        return new Material("document", card.slug(), label(card),
+                card.published() ? card.fileUrl() : "/documents/", "ru", "public",
+                join(about, fileText(card)));
+    }
+
+    /**
+     * Текст файла документа.
+     *
+     * <p><b>Только у опубликованного.</b> Файл снятого с публикации
+     * документа не отдаётся посетителю ни по одному адресу — и его
+     * содержимое не должно оказаться в ответе ассистента. Правило «наружу
+     * уходит только опубликованное» нарушается здесь незаметнее всего:
+     * ссылки нет, а текст пересказан.
+     *
+     * <p><b>Отказ разбора не роняет переиндексацию.</b> Один битый или
+     * зашифрованный файл не должен оставлять весь индекс несобранным:
+     * такой документ попадает в индекс карточкой, а причина — в журнал.
+     */
+    private String fileText(DocumentQuery.Card card) {
+        if (!card.published()) return "";
+
+        var file = documents.listedFile(card.slug()).orElse(null);
+        if (file == null) return "";
+
+        try (var data = file.stored().data()) {
+            if (!FileText.supports(file.filename())) {
+                log.info("Документ {}: файл {} не разбирается на текст, "
+                        + "в индекс идёт карточка", card.slug(), file.filename());
+                return "";
+            }
+
+            var text = FileText.of(file.filename(), data);
+            if (text.isBlank()) {
+                // Чаще всего это скан: страницы есть, текста в них нет.
+                log.info("Документ {}: в файле нет извлекаемого текста, "
+                        + "в индекс идёт карточка", card.slug());
+                return "";
+            }
+            return text;
+        } catch (IOException | RuntimeException e) {
+            log.warn("Документ {}: файл не прочитан ({}), в индекс идёт карточка",
+                    card.slug(), e.getMessage());
+            return "";
+        }
     }
 
     private static String label(DocumentQuery.Card card) {

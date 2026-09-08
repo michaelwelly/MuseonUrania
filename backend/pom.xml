@@ -59,6 +59,17 @@
 		     кодировка темы, обратный адрес и авторизация ломаются именно
 		     на протоколе. В BOM Spring Boot не входит. -->
 		<greenmail.version>2.1.13</greenmail.version>
+		<!-- Разбор PDF: извлечение текста из датащитов и буклетов в индекс
+		     Ведалины. В BOM Spring Boot не входит. -->
+		<pdfbox.version>3.0.6</pdfbox.version>
+		<!-- Офисные форматы — только в тестах, и это не экономия.
+		     Читать DOCX умеет сам портал (FileText): это ZIP с одной
+		     частью XML, и ради него не нужны ни xmlbeans, ни полтора
+		     десятка мегабайт в образе. А вот СОБРАТЬ настоящий DOCX,
+		     на котором проверяется чтение, нужно чем-то, чему мы верим
+		     больше, чем себе: файл, собранный тем же кодом, что его
+		     читает, зеленеет на любой общей ошибке. -->
+		<poi.version>5.4.1</poi.version>
 		<jacoco.version>0.8.15</jacoco.version>
 	</properties>
 
@@ -157,6 +168,17 @@
 				<groupId>com.icegreen</groupId>
 				<artifactId>greenmail-junit5</artifactId>
 				<version>${greenmail.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.pdfbox</groupId>
+				<artifactId>pdfbox</artifactId>
+				<version>${pdfbox.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.poi</groupId>
+				<artifactId>poi-ooxml</artifactId>
+				<version>${poi.version}</version>
 				<scope>test</scope>
 			</dependency>
 		</dependencies>

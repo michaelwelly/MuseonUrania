@@ -195,4 +195,17 @@ public class AssistantConfig {
                                   ContentQuery content, DocumentQuery documents) {
         return new KnowledgeIndex(jdbc, transactions, embeddings, catalog, content, documents);
     }
+
+    /**
+     * Очередь индексации: правка документа — событие — переиндексация.
+     *
+     * <p>Условие то же, что у остального RAG. Потребитель без индекса —
+     * это событие, которое некому обработать, и отметка «обработано»
+     * у необработанного: следующая доставка его уже пропустит.
+     */
+    @Bean
+    @ConditionalOnProperty(name = "vedal.assistant.rag.enabled", havingValue = "true")
+    KnowledgeIndexer knowledgeIndexer(KnowledgeIndex index) {
+        return new KnowledgeIndexer(index);
+    }
 }

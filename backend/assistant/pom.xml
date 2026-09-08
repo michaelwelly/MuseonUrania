@@ -36,5 +36,19 @@
 			<groupId>ru.vedal</groupId>
 			<artifactId>portal-documents</artifactId>
 		</dependency>
+		<!-- Текст из PDF: датащит и буклет приезжают файлом, а индексируется
+		     текст. Без разбора документ виден Ведалине одним названием
+		     карточки. -->
+		<dependency>
+			<groupId>org.apache.pdfbox</groupId>
+			<artifactId>pdfbox</artifactId>
+		</dependency>
+		<!-- Только чтобы собрать настоящий DOCX в тесте: сам портал читает
+		     его без библиотеки офисных форматов. -->
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 </project>
