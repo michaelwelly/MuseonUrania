@@ -206,4 +206,37 @@ class GuardrailsTest {
         assertThat(guardrails.refuse("  ")).isPresent();
         assertThat(guardrails.refuse(null)).isPresent();
     }
+
+    // «Материалов нет» — самый частый ответ иностранному посетителю, и это
+    // не случайность: материалы у нас русские, и по английскому вопросу
+    // поиск не находит ничего. Значит именно этот текст обязан звучать
+    // на языке вопроса чаще прочих.
+    //
+    // Поймано на прогоне сценария показа: «Do you have neonatal incubators?»
+    // получал ответ по-русски. Язык определялся верно — текст стоял мимо
+    // этой механики, одной русской строкой в сервисе.
+    @Test
+    void notFoundSpeaksTheLanguageOfTheQuestion() {
+        assertThat(guardrails.notFound("Есть ли у вас инкубаторы?"))
+                .as("русский вопрос")
+                .contains("нет согласованных материалов");
+
+        assertThat(guardrails.notFound("Do you have neonatal incubators?"))
+                .as("английский вопрос")
+                .contains("no approved materials")
+                .doesNotContain("согласованных");
+
+        assertThat(guardrails.notFound("你们有婴儿培养箱吗？"))
+                .as("китайский вопрос")
+                .contains("核准的资料")
+                .doesNotContain("согласованных");
+    }
+
+    // Латиница внутри русского вопроса не делает его английским: спрашивают
+    // по-русски, и отвечать надо по-русски. Кириллица решает первой.
+    @Test
+    void latinModelNameDoesNotSwitchTheLanguage() {
+        assertThat(guardrails.notFound("Что скажете про VEDAL A-2000 и R1?"))
+                .contains("нет согласованных материалов");
+    }
 }

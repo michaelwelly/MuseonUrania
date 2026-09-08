@@ -175,6 +175,48 @@ public class Guardrails {
                 || block == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS_EXTENSION_A;
     }
 
+    /**
+     * «Материалов нет» — на языке вопроса.
+     *
+     * <p>Живёт здесь, а не в {@code AssistantService}, по той же причине,
+     * по какой здесь живут отказы ограничений: язык вопроса определяется
+     * письменностью, и определение это одно на весь ассистент. Второе место,
+     * где выбирают язык, — второй способ ошибиться.
+     *
+     * <p>Поймано на прогоне сценария показа 8 сентября. Вопрос
+     * «Do you have neonatal incubators?» получал ответ по-русски: язык
+     * определялся правильно, но текст «нет согласованных материалов» стоял
+     * в сервисе одной русской строкой мимо всей этой механики. Хуже места
+     * не придумать — это ровно тот ответ, который видит иностранный
+     * посетитель, потому что материалы у нас русские и найти по его вопросу
+     * нечего.
+     */
+    public String notFound(String question) {
+        return switch (speechOf(question)) {
+            case RU -> NOT_FOUND_RU;
+            case EN -> NOT_FOUND_EN;
+            case ZH -> NOT_FOUND_ZH;
+        };
+    }
+
+    private static final String NOT_FOUND_RU =
+            "По этому вопросу у меня нет согласованных материалов, и выдумывать я не стану. "
+                    + "Если речь про оборудование VEDAL — назовите модель или задачу "
+                    + "(инкубатор, реанимационная система, терморегуляция, сервис), "
+                    + "и я найду. Если нет — передам специалисту, он ответит точно.";
+
+    private static final String NOT_FOUND_EN =
+            "I have no approved materials on this, and I will not invent any. "
+                    + "If this is about VEDAL equipment, name the model or the task "
+                    + "(incubator, resuscitation system, thermoregulation, service) "
+                    + "and I will find it. If not, I will pass the question to a specialist.";
+
+    private static final String NOT_FOUND_ZH =
+            "关于这个问题，我没有经过核准的资料，也不会凭空编造。"
+                    + "如果您问的是 VEDAL 设备，请说明型号或用途"
+                    + "（婴儿培养箱、新生儿复苏系统、体温调节、服务），我来查找。"
+                    + "如果不是，我会转交给专家答复。";
+
     // Пустой Optional означает «вопрос можно передать движку».
     public Optional<String> refuse(String question) {
         if (question == null || question.isBlank()) {
