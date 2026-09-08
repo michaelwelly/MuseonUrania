@@ -256,4 +256,54 @@ Everything left depends on the customer's materials, access and decisions:
 photos and video, final copy and publication approvals, the domain and HTTPS,
 the mailbox, company details and contacts, the lead retention period, Metrica,
 languages, 1C. Collected into a single list in
-[customer_checklist.en.md](../requests/customer_checklist.en.md).
+“customer_checklist.en.md” (`docs/requests/customer_checklist.en.md` — moved out of the public repository, see [the 8 September cleanup](../security/public_repo_cleanup_2026-09-08.md)).
+
+## State on 8 September 2026
+
+A day later, ahead of the customer demo. What changed in those 24 hours.
+
+### Fixes after the customer walked the stand
+
+On 8 September the customer walked the stand and named nine fixes. Eight are done:
+
+| Fix | How it was done |
+| --- | --- |
+| KPP 668601001 everywhere the company details appear | one place in the code, the pages take it from there |
+| The Ural Chamber of Commerce line must not be a link | membership stayed plain text, footer included |
+| Hide the social buttons until the links exist | hidden; they come back once the channels are confirmed (§13.5) |
+| Working hours 9:00–17:30 | both on the site and in the portal's answers about who is on the line |
+| Remove the "Комплектация" tab on all four product cards | one shared component draws the tabs, so one edit covers all four |
+| Map on the contacts page | no embedded map — the iframe sets third-party cookies; the "Построить маршрут" link to Yandex Maps works, using the address from the company card |
+| Vedalina's portrait in the "Быстрее — через Ведалину" block | the same portrait as in the chat, taken from the assistant's card |
+| Browser tab icon | favicon, app icon and iOS icon |
+
+The ninth — the "Описание" links pointing at real catalogue files — waits for
+the files themselves and for permission to publish them.
+
+### Mail
+
+The mailbox is in hand and the transport was verified from outside:
+`mail.vedal-med.ru`, port 465 with implicit TLS, login accepted. No code
+changes were needed — that transport was already hard-wired. What remains is
+three variables on the machine, see [mail_setup.en.md](mail_setup.en.md).
+
+### Domain
+
+`vedal-med.ru` exists, its zone sits at `nic.ru`, and the A record **already
+points at our machine**. The domain's mail lives on a separate host and is not
+touched by editing the A record. What answers on 80/443 for that name is still
+to be found out on the machine itself, see
+[domain_cutover_vedal_med_ru.en.md](domain_cutover_vedal_med_ru.en.md).
+
+### Metrika
+
+The counter loads on two conditions at once: the id is set and the visitor
+accepted the consent notice. The notice is done; the counter id is on the
+customer.
+
+### What is in the way right now
+
+SSH access to the machine is closed: the developer's external address changed
+and the security group still holds the previous one. Until that rule is
+updated, the stand cannot have its mail configured, its domain checked, or the
+last `main` confirmed as deployed.

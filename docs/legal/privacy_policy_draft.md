@@ -185,4 +185,4 @@
 - [Требования соответствия](compliance_requirements.md) — персональные
   данные, размещение, открытый и закрытый контуры.
 - [Требования к защите контента](../strategy/content_protection_requirements.md).
-- [Запрос материалов Николаю Николаевичу](../requests/nikolay_materials_request.md).
+- «Запрос материалов Николаю Николаевичу» (`docs/requests/nikolay_materials_request.md` — вынесен из публичного репозитория, см. [чистку 8 сентября](../security/public_repo_cleanup_2026-09-08.md)).

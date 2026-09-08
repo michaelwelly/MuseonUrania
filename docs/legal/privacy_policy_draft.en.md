@@ -185,4 +185,4 @@ at `/legal/privacy/`.
 - [Compliance requirements](compliance_requirements.en.md) — personal data,
   hosting, open and closed contours.
 - [Content protection requirements](../strategy/content_protection_requirements.en.md).
-- [Materials request to Nikolay Nikolaevich](../requests/nikolay_materials_request.en.md).
+- “Materials request to Nikolay Nikolaevich” (`docs/requests/nikolay_materials_request.en.md` — moved out of the public repository, see [the 8 September cleanup](../security/public_repo_cleanup_2026-09-08.md)).

@@ -84,7 +84,7 @@ ready by day X, the date moves, speed does not compensate for it.
 1. **New VM.** A Yandex Cloud instance separate from `smart_soultion_mvp`
    — no neighbor `c3ag.ru`. Docker and the Docker Compose plugin installed,
    the repository cloned into `/opt/vedal-portal` (following
-   [vedal_vm_deploy_plan_2026-08-18.md](../../outputs/server/vedal_vm_deploy_plan_2026-08-18.md), section 3).
+   “vedal_vm_deploy_plan_2026-08-18.md” (`outputs/server/vedal_vm_deploy_plan_2026-08-18.md` — moved out of the public repository, see [the 8 September cleanup](../security/public_repo_cleanup_2026-09-08.md)), section 3).
 2. **Security group.** `80` and `443` open to the whole internet (otherwise
    Caddy cannot get a certificate and no visitor can open the site). SSH
    — only from the team's exact IPs, on a non-standard port, same as on
@@ -409,4 +409,4 @@ day after the switch, longer if DNS has not propagated everywhere yet.
 - [Stand-prod perimeter](stand_prod_perimeter.en.md).
 - [Monitoring](monitoring.en.md).
 - [Stand autodeploy](autodeploy.en.md).
-- [VM deploy plan](../../outputs/server/vedal_vm_deploy_plan_2026-08-18.md).
+- “VM deploy plan” (`outputs/server/vedal_vm_deploy_plan_2026-08-18.md` — moved out of the public repository, see [the 8 September cleanup](../security/public_repo_cleanup_2026-09-08.md)).

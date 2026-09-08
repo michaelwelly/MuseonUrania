@@ -84,7 +84,7 @@ Compose поднимется и без них — они падают на вс�
 1. **Новая ВМ.** Yandex Cloud, отдельная от `smart_soultion_mvp` — без
    соседства с `c3ag.ru`. Docker + Docker Compose плагин установлены,
    репозиторий склонирован в `/opt/vedal-portal` (по образцу
-   [vedal_vm_deploy_plan_2026-08-18.md](../../outputs/server/vedal_vm_deploy_plan_2026-08-18.md), раздел 3).
+   «vedal_vm_deploy_plan_2026-08-18.md» (`outputs/server/vedal_vm_deploy_plan_2026-08-18.md` — вынесен из публичного репозитория, см. [чистку 8 сентября](../security/public_repo_cleanup_2026-09-08.md)), раздел 3).
 2. **Security group.** `80` и `443` открыты всему интернету (иначе Caddy не
    получит сертификат и посетитель не откроет сайт). SSH — только по
    точным IP команды, по нестандартному порту, как сейчас на старой ВМ.
@@ -400,4 +400,4 @@ TO vedal_app` для несуществующей роли — по умолча
 - [Периметр стенд-прода](stand_prod_perimeter.md).
 - [Мониторинг](monitoring.md).
 - [Автодеплой стенда](autodeploy.md).
-- [План деплоя на ВМ](../../outputs/server/vedal_vm_deploy_plan_2026-08-18.md).
+- «План деплоя на ВМ» (`outputs/server/vedal_vm_deploy_plan_2026-08-18.md` — вынесен из публичного репозитория, см. [чистку 8 сентября](../security/public_repo_cleanup_2026-09-08.md)).

@@ -116,4 +116,4 @@
 - [Требования соответствия](../legal/compliance_requirements.md) — персональные
   данные, размещение, открытый и закрытый контуры.
 - [Подключение домена vedal-med.ru](../operations/domain_cutover_vedal_med_ru.md).
-- [Запрос материалов Николаю Николаевичу](../requests/nikolay_materials_request.md).
+- «Запрос материалов Николаю Николаевичу» (`docs/requests/nikolay_materials_request.md` — вынесен из публичного репозитория, см. [чистку 8 сентября](../security/public_repo_cleanup_2026-09-08.md)).

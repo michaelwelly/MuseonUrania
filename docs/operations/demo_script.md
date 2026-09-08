@@ -6,7 +6,7 @@
 показ, не решая на ходу, что открыть следующим. Источник фактов: протокол
 сквозного прогона [issue #57](https://github.com/michaelwelly/MuseonUrania/issues/57)
 от 7 сентября (после выкатки `1ec291b`) и
-[реестр выполненных работ](../commercial/act2_work_registry.md).
+«реестр выполненных работ» (`docs/commercial/act2_work_registry.md` — вынесен из публичного репозитория, см. [чистку 8 сентября](../security/public_repo_cleanup_2026-09-08.md)).
 
 ## Перед показом (пять минут)
 

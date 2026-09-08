@@ -7,7 +7,7 @@ runs the demo follows it instead of deciding on the fly what to open next.
 Source of facts: the end-to-end run protocol in
 [issue #57](https://github.com/michaelwelly/MuseonUrania/issues/57) from
 September 7 (after deploying `1ec291b`) and the
-[work registry](../commercial/act2_work_registry.en.md).
+“work registry” (`docs/commercial/act2_work_registry.en.md` — moved out of the public repository, see [the 8 September cleanup](../security/public_repo_cleanup_2026-09-08.md)).
 
 ## Before the demo (five minutes)
 
