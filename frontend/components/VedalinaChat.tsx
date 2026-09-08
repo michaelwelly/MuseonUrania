@@ -768,16 +768,17 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
             </button>
           )}
         </div>
+        {/* Одна кнопка, а не две. Рядом стояла «−» с подписью «Свернуть чат»,
+            и обе вызывали один и тот же `onClose`: разговор в любом случае
+            сохранялся, окно в любом случае сворачивалось в кнопку-запускатель
+            (issue #106). Две кнопки, обещающие разное и делающие одно, — это
+            выбор, которого нет.
+
+            Второе поведение — «закрыть» как «завершить разговор» — не
+            выдумано: такой двери у портала нет, а придумывать её здесь
+            значит обещать от имени системы то, чего она не делает. */}
         {onClose && (
           <div className={styles.headTools}>
-            <button
-              type="button"
-              className={styles.headButton}
-              onClick={onClose}
-              aria-label="Свернуть чат"
-            >
-              −
-            </button>
             <button
               type="button"
               className={styles.headButton}
