@@ -147,12 +147,22 @@ export default function ProductionScreen({ lang }: { lang: Lang }) {
               <a href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a>
             </span>
           </address>
-          <Link
+          {/* Кнопка строит маршрут, а не уводит на общие контакты: раньше
+              она вела на /contacts/, и человек искал там ту же кнопку заново
+              (issue #102). Адрес тот же, что у кнопки на контактах, —
+              собран из подтверждённого site.address, см. lib/maps.ts.
+
+              Внешний адрес, поэтому обычный `<a>` и новая вкладка:
+              `Link` для чужого домена не нужен, а `rel="noopener"` обязателен —
+              без него открытая вкладка получает доступ к `window.opener`. */}
+          <a
             className={`${styles.btn} ${styles.btnOutline} ${styles.addressCta}`}
-            href={at("/contacts/")}
+            href={address.routeHref}
+            target="_blank"
+            rel="noopener noreferrer"
           >
             {strings.actions.getDirections}
-          </Link>
+          </a>
         </div>
         <div className={styles.mapSlot} data-reveal="1">
           {/* Та же карта, что на контактах, и по той же причине: страница

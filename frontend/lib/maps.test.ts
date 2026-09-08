@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { route } from "@/content/contacts";
+import { address } from "@/content/production";
 import { site } from "@/content/site";
-import { mapEmbedSrc } from "./maps";
+import { mapEmbedSrc, mapRouteHref } from "./maps";
 
 // Адрес кадра с картой. Issue #74.
 //
@@ -29,5 +30,31 @@ describe("адрес встроенной карты", () => {
     // один дом, а маршрут вёл бы к другому.
     expect(route.mapSrc).toContain(encodeURIComponent(site.address));
     expect(route.ctaHref).toContain(encodeURIComponent(site.address));
+  });
+});
+
+// Кнопка «Построить маршрут». Issue #102.
+//
+// На «Производстве» она вела на /contacts/ — то есть на общую страницу
+// вместо обещанного действия. Проверяется здесь, а не в экране: сломать
+// это можно в двух местах сразу, и оба — данные, а не разметка.
+
+describe("ссылка «Построить маршрут»", () => {
+  it("ведёт на Яндекс.Карты, а не на страницу сайта", () => {
+    expect(mapRouteHref("адрес")).toMatch(/^https:\/\/yandex\.ru\/maps\//);
+  });
+
+  it("кодирует адрес", () => {
+    expect(mapRouteHref("ул. Совхозная, стр. 20В")).toContain(
+      encodeURIComponent("ул. Совхозная, стр. 20В"),
+    );
+  });
+
+  it("одна и та же на «Контактах» и на «Производстве»", () => {
+    // Два экземпляра строки разошлись бы молча: одна страница вела бы
+    // к одному дому, вторая к другому, и заметить это можно было бы
+    // только открыв обе.
+    expect(address.routeHref).toBe(route.ctaHref);
+    expect(address.routeHref).toBe(mapRouteHref(site.address));
   });
 });
