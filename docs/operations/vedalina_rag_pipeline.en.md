@@ -52,6 +52,47 @@ PostgreSQL 16 as before, plus the extension. The schema is created by the
 `create extension if not exists vector`. In Managed PostgreSQL the extension is
 enabled from the cloud console, and there that statement is a no-op.
 
+### Switching the image on a live volume: the collation warning
+
+Caught on 8 September the first time the stack came up on the new image, and
+it will repeat on the stand — the volume there holds data, not nothing:
+
+```
+WARNING: database "vedal" has a collation version mismatch
+DETAIL:  The database was created using collation version 2.41,
+         but the operating system provides version 2.36.
+```
+
+What happened. The `postgres:16` image and the `pgvector/pgvector:pg16` image
+are built on different versions of the system library, and string sort order
+comes from it. The volume is the same and PostgreSQL is the same version, but
+the rule for "what comes first alphabetically" changed underneath. Indexes on
+text columns were built under the old rule, and from this moment the database
+knows they may lie: searching through an index sorted differently from how the
+database itself compares means rows missing from results, not an error on
+screen.
+
+The warning itself neither fixes nor breaks anything: it repeats on every
+query and waits for a person to decide.
+
+The cure is two commands, in this order:
+
+```bash
+docker exec vedal-db psql -U vedal -d vedal -c "REINDEX DATABASE vedal;"
+docker exec vedal-db psql -U vedal -d vedal -c "ALTER DATABASE vedal REFRESH COLLATION VERSION;"
+```
+
+Rebuild the indexes under the new rule first, and only then tell the database
+the version is accepted. The reverse order clears the warning while leaving the
+indexes stale — that is, it hides exactly what the warning was about.
+
+On the stand `REINDEX DATABASE` locks the tables while it runs. The database
+there is small and it takes seconds, but it belongs in the same window as the
+deploy, not in front of live visitors.
+
+Verified locally: after the two commands the warning is gone and the data is
+intact.
+
 Two tables.
 
 `knowledge_source` — a portal material:
