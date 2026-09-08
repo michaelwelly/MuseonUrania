@@ -1007,8 +1007,8 @@ left that list: the code is written and waits for one counter id (issue #53).
 | 12 | Outbox cleanup | the table grows without bound. Deleting needs care around Debezium: `skipped.operations` already drops `d`, but the replication slot must read a row before it is removed |
 | 13 | `ETag` on the public API | deliberately deferred: on twelve items the gain is zero and `Cache-Control` is already in place |
 | 14 | ~~Dependency and image scanning in CI~~ | ✅ three checks that do not overlap: Dependabot on versions (PRs land in `infra`), CodeQL on the code, Trivy inside the images. Trivy's threshold is split in two: HIGH is visible in the report, CRITICAL with a released fix fails the build |
-| 15 | **Restrict `/admin/**` at the proxy** | there is no rule in the `Caddyfile`; the editing door is open to the internet and held only by the token |
-| 16 | **Enable MFA in the realm** | a leaked editor password is the entire client base |
+| 15 | ~~Restrict `/admin/**` at the proxy~~ | ✅ the `@admin` rule in the `Caddyfile` only lets private ranges through and is lifted by the `VEDAL_ADMIN_ALLOW` variable. **It only works where the proxy is ours:** there is no Caddy on the stand, where the door is held by the second factor — see question 12.3 |
+| 16 | **Enable MFA in the realm** | a leaked editor password is the entire client base. Done and verified in the realm file (issue #42): the second factor is required by role through the `vedal-browser` flow. **Not switched on on the live Keycloak** — the commands are in [mfa_rollout.en.md](operations/mfa_rollout.en.md) |
 | 17 | ~~Trim the application role's rights~~ | ✅ by migration `V15`, not by a runbook line: a `BEFORE TRUNCATE` trigger on the log plus revoking `UPDATE`/`DELETE`/`TRUNCATE`. The claim "a trigger does not protect against `TRUNCATE`" turned out to be wrong — see section 5.7. **Not closed:** the application connects as the schema owner, and in the stack as a superuser, for whom a revoke means nothing. A dedicated runtime role is the next step |
 | 18 | **A rate limit at the proxy** | today it lives in process memory: with a second instance it becomes per-instance, and there is no global one |
 | 19 | **Verify a backup restore** | the daily `pg_dump` exists and has been restored zero times. An unrestored backup is a hypothesis |
@@ -1183,26 +1183,35 @@ no separate port had to be introduced for that.
    are listed, empty, in `backend/.env.example`. The order of switching on,
    what exactly is erased from each carrier and what happens on the first pass
    — [data_retention.en.md](operations/data_retention.en.md).
-3. Whether `/admin` is closed at the network level or left behind a password and
-   MFA. The door is single, so either option is one rule in the `Caddyfile` plus
-   a realm policy. The proxy rule now exists: `@admin` only lets private ranges
-   through, and it is lifted by a single `VEDAL_ADMIN_ALLOW` variable.
-   **MFA is still off in the realm**, and until it is on the network restriction
-   must stay — otherwise it is an editor's password against the internet.
-   There is no Caddy on the stand at all, so the admin area is open there;
-   see issue #42. Both options, the rollout order and the rollback are laid
-   out in [mfa_rollout.en.md](operations/mfa_rollout.en.md): the network stays
-   on by default, and MFA is a second, independent layer on top of it, not
-   a replacement.
+3. ~~Whether `/admin` is closed at the network level or left behind a password
+   and MFA.~~ **Closed on 8 September (issue #42): the main barrier is a
+   password and a second factor; the network is a second, independent layer
+   where the proxy is ours.** Not "or": first the thing that works everywhere.
+   The network only works where the proxy is ours — in the target environment
+   that is `@admin` in the `Caddyfile`; on the stand there is no Caddy at all,
+   the admin panel is served by a shared nginx next to somebody else's
+   production sites, and a restriction there would have to be made by somebody
+   else's hands. A barrier that depends on somebody else's schedule is not a
+   barrier. The second factor is the same everywhere and lives in the realm
+   file. The `private_ranges` default is not being removed: it costs nothing
+   and cuts off what never reaches the login form. Lifting it
+   (`VEDAL_ADMIN_ALLOW="0.0.0.0/0 ::/0"`) is only allowed once the second
+   factor is confirmed working for every holder of `portal-admin` and
+   `portal-sales`. The reasoning, the order and the rollback —
+   [mfa_rollout.en.md](operations/mfa_rollout.en.md).
 4. Which cloud. The storage runs on S3, and moving between S3-compatible
    stores changes the address and the keys, not the code.
 5. When MFA is switched on in the realm. This does not concern the portal: it
    verifies an issued token and does not know how many factors were presented.
-   The realm file and the rollout order are ready (issue #42,
+   The realm file and the rollout order are ready and verified (issue #42,
    [mfa_rollout.en.md](operations/mfa_rollout.en.md)): the second factor
-   (TOTP) is mandatory for `portal-admin` and `portal-sales`, optional for
-   `portal-production`. Switching it on on the live Keycloak is the owner's
-   decision and action, not an automatic consequence of the git change.
+   (TOTP) is mandatory for `portal-admin` and `portal-sales`, not required for
+   `portal-production`. It is tied to the role by the `vedal-browser` sign-in
+   flow rather than assigned to a person by hand, so existing employees need
+   nothing assigned and nobody can be forgotten. Switching it on on the live
+   Keycloak is the owner's decision and action, not an automatic consequence of
+   the git change: `--import-realm` does not overwrite a running realm, and the
+   commands for the live stand are written out step by step in the document.
 6. Who runs Keycloak in a deployed environment and how employees are created in it.
 
 ---

@@ -2,106 +2,176 @@
 
 [Русский](mfa_rollout.md) · **English**
 
-Prepares and records what issue #42 needs. **Nothing described here is
-switched on on the live Keycloak** — this document fixes the plan and the
-realm-file change in git; switching it on at `51.250.31.97` is done by the
-owner after the customer handoff, as a separate, deliberate step.
+Closes issue #42 and open question 12.3 from [PROJECT.en.md](../PROJECT.en.md).
+Everything that lives in the repository is done and verified. **On the live
+Keycloak the mandatory second factor is not switched on yet** — that is a
+separate step, taken by the owner of the machine, and the order is written out
+below.
 
-## What the prod realm already had
+## What was decided
 
-`backend/keycloak/prod/vedal-realm.json` already carried the full technical
-foundation for MFA before this change:
+1. **The second factor is mandatory for whoever has access to personal data,
+   and it is the realm file that decides this, not the memory of whoever
+   creates the account.** It used to rest on a person remembering to assign
+   `CONFIGURE_TOTP` by hand to every new employee. Now it is tied to a role.
+2. **`/admin` is held by a password and a second factor; the network is a
+   second, independent layer where the proxy is ours.** That is the answer to
+   "close it by network or leave it behind a password and MFA": not "or", but
+   "first the thing that works everywhere".
 
-| Setting | Value | What it gives |
+## Who needs the second factor
+
+| Role | Second factor | Why |
 | --- | --- | --- |
-| `passwordPolicy` | length 12+, not the username, not the email, history of 3 passwords, one special character, one uppercase letter, one digit | a decent password as the first factor |
-| `bruteForceProtected` | `true`, `failureFactor: 10`, `waitIncrementSeconds: 60`, `maxFailureWaitSeconds: 900`, `permanentLockout: false` | lockout after 10 failures with an increasing pause capped at 15 minutes; no permanent lockout on purpose — otherwise brute-forcing a stranger's password becomes a way to lock an employee out |
-| `otpPolicyType` | `totp` (RFC 6238), `HmacSHA1`, 6 digits, 30-second period | the second factor is an authenticator app (Google Authenticator, Yandex Key, FreeOTP and similar), not SMS or a phone call |
-| `sslRequired` | `all` | login only over HTTPS, unlike `none` on the stand |
-| Required action `CONFIGURE_TOTP` | present, `enabled: true` | forces the authenticator-app setup screen on whoever this action is assigned to |
+| `portal-admin` | required | sees everything, including the staff directory and the right to destroy personal data |
+| `portal-sales` | required | the closed contour of sales: leads, clients, deals, quotes |
+| `portal-production` | not required | site content; does not see the client base |
 
-In other words: **the second-factor type is already chosen (TOTP), and the
-password policy and brute-force protection are already configured.** What
-was missing was the decision on who exactly must have the second factor,
-and that decision being recorded in code rather than assumed.
+## What is in the repository
 
-## What was missing, and what changed
+`backend/keycloak/stand/vedal-realm.json` and
+`backend/keycloak/prod/vedal-realm.json` (branch `infra`). Three objects:
 
-`CONFIGURE_TOTP` had `"defaultAction": true` — this turned on the mandatory
-second factor for **every** new account regardless of role, including
-`portal-production`, which has no access to personal data. Issue #42 asks
-for a second factor for roles with access to personal data, not for
-everyone across the board.
+1. **The `portal-mfa-required` marker role.** It grants nothing.
+   `portal-admin` and `portal-sales` include it as a composite, so the list of
+   "who needs a second factor" is edited in one place rather than account by
+   account. A fourth role with access to personal data gets the composite, and
+   that is all.
+2. **The `vedal-browser` sign-in flow.** A copy of the built-in `browser` with
+   a single substitution: in the `Browser - Conditional OTP` subflow the
+   `conditional-user-configured` condition is replaced with
+   `conditional-user-role` configured as `condUserRole=portal-mfa-required`.
 
-The change (branch `infra`, `backend/keycloak/prod/vedal-realm.json`):
+   That is the whole point of the change. The built-in condition means "ask for
+   a code from whoever already has one" — that is, it requires a second factor
+   from nobody who has not set one up voluntarily. The role condition means
+   "ask whoever is supposed to be asked".
+3. **`browserFlow: vedal-browser`** in the realm itself — otherwise the flow
+   exists but is never used.
 
-```diff
--      "defaultAction": true,
-+      "defaultAction": false,
-```
+The OTP form inside the subflow is `REQUIRED`. That is what enforces it: anyone
+without an authenticator app bound lands, after a correct password, not in the
+admin panel but on the enrolment screen.
 
-`defaultAction: false` does not disable MFA — the `CONFIGURE_TOTP` required
-action stays in the realm and still forces TOTP setup on whoever it is
-assigned to. What changes is only the moment of assignment: not
-automatically for every new user, but explicitly, by whoever creates or
-updates the account, based on role.
+Along with that:
 
-**Who the second factor is mandatory for:**
+- **the direct password grant is disabled for `vedal-admin-ui` in `stand/` and
+  `prod/`** (`directAccessGrantsEnabled: false`). It bypasses the browser
+  flow — that is, the second factor — and would have been a one-`curl`-line way
+  around everything listed above. Neither the admin panel (authorization code +
+  PKCE) nor the portal (`client_credentials`) uses it. The local realm keeps
+  it: there is no second factor there, so there is nothing to bypass;
+- **`CONFIGURE_TOTP.defaultAction` on the stand is brought to `false`**, as in
+  `prod`. `true` forced enrolment on every new account indiscriminately,
+  including `portal-production`, which sees no personal data;
+- **the password policy and brute force detection** were already in `stand/`
+  and `prod/` before this task: length 12 or more, not the username, not the
+  email, a history of 3 passwords, a special character, an uppercase letter, a
+  digit; lockout after 10 failures with a growing pause up to 15 minutes, no
+  permanent lockout (a permanent one turns guessing someone's password into a
+  way to lock that person out);
+- **the local realm** (`backend/keycloak/vedal-realm.json`) is untouched: on a
+  developer machine a second factor gets in the way and protects nothing.
 
-| Role | MFA | Why |
+## What was verified on the local stack — 8 September
+
+Keycloak 26.0, container `vedal-keycloak`. The working `vedal` realm was **not
+touched**: the checks ran in separate temporary realms, created and deleted
+within the same session.
+
+### The file imports and produces the expected layout
+
+`stand/vedal-realm.json` was imported as a new realm. The `vedal-browser` flow
+assembled in full, `conditional-user-role` picked up its
+`condUserRole=portal-mfa-required` configuration, the composites landed on
+`portal-admin` and `portal-sales`, `portal-production` stayed without them, and
+`directAccessGrantsEnabled: false` reached the client.
+
+**A trap found right here:** the first version of the role description was 262
+characters long, and the import failed not on parsing JSON but with a database
+error — `Value too long for column "DESCRIPTION CHARACTER VARYING(255)"`. Role
+and flow descriptions in the realm file must fit into 255 characters.
+
+### Behaviour by role
+
+Three accounts were created with the same password and different roles, and the
+sign-in was driven for real — a request to `openid-connect/auth`, a POST of the
+login form, and a reading of the answer:
+
+| Account | Role | What Keycloak returned after a correct password |
 | --- | --- | --- |
-| `portal-admin` | mandatory | sees everything, including the staff directory and the right to erase personal data |
-| `portal-sales` | mandatory | the sales contour: leads, clients, deals, quotes |
-| `portal-production` | optional, not mandatory | site content only, does not see the client base |
+| `chk-admin` | `portal-admin` | a redirect to `login-actions/required-action?execution=CONFIGURE_TOTP`, no authorization code |
+| `chk-sales` | `portal-sales` | the same |
+| `chk-prod` | `portal-production` | a redirect to `redirect_uri` with an authorization code |
 
-The decision is recorded here and in a comment on issue #42, so it does not
-live only in chat.
+### The full loop with a real one-time code
 
-## What happens to already-created users
+For `chk-admin` the whole chain was walked: the enrolment screen → the secret
+from the page → a code computed per RFC 6238 → the form submitted. Enrolment
+was accepted and an authorization code issued. **A subsequent sign-in with the
+correct password alone then returns the one-time code form, not an
+authorization code.** So the second factor is not only forced on the first
+sign-in but asked for on every following one.
 
-Nothing — automatically. Two independent facts are at play:
+### The direct password grant
 
-1. **`--import-realm` does not overwrite an existing realm.** If the `vedal`
-   realm already exists in the Keycloak database (it does, on
-   51.250.31.97), restarting the container with an updated
-   `vedal-realm.json` will **not** repeat the import. Changes to the realm
-   file must be applied to the live Keycloak by hand: through Admin
-   Console → Realm settings → Action → Partial import, or via
-   `kcadm.sh update`. There is no "restarted the container and it picked
-   up" here — this is the first trap this section exists to flag.
-2. **`defaultAction` only affects new users.** A required action with
-   `defaultAction: true` (or one assigned by hand) is added to an account
-   at the moment it is created. Employees already present in Keycloak need
-   `CONFIGURE_TOTP` assigned separately, one at a time or as a list.
+`grant_type=password` for `vedal-admin-ui` in a realm built from the file
+returns `unauthorized_client` / `Client not allowed for direct access grants`.
+The way around the second factor is closed.
 
-## What was actually checked on the stand — September 7
+### Password policy and brute force detection
 
-Checked against the live Keycloak (`51.250.31.97`, container
-`vedal-keycloak`, `kcadm.sh get realms/vedal`) the night before the
-customer handoff. Mandatory MFA **was not switched on** — only a state
-comparison and the two safe items below.
+- An attempt to set the password `short` was rejected:
+  `must contain at least 1 special characters`.
+- 11 failed attempts in a row on one account → `attack-detection` reports
+  `"disabled": true`, and the **correct** password then gets a `401`. A
+  noticeable detail: with a rapid burst of attempts `numFailures` is 2, not 11 —
+  Keycloak collapses attempts that come too fast
+  (`quickLoginCheckMilliSeconds`). The lockout still engages.
 
-### Drift from `backend/keycloak/prod/vedal-realm.json`
+### The rollout order on a live realm — walked end to end
+
+A separate temporary realm was brought to the state of the live stand (the old
+file imported, two accounts created in advance and signing in with a password
+alone), and then exactly the commands listed below in "What Mikhail does" were
+run on it. The result:
+
+- an account created in advance with the `portal-admin` role requires a second
+  factor after the migration — **it was not touched and nothing was assigned to
+  it**;
+- the `portal-production` account keeps signing in with a password alone;
+- a one-command rollback (`browserFlow=browser`) immediately restores password
+  sign-in, and switching it back on is one command too.
+
+That is the main practical consequence: **existing employees need nothing
+assigned to them.** They already have the role, and it is the flow that demands
+the second factor.
+
+## The actual check on the stand — 7 September
+
+Checked on the live Keycloak (`51.250.31.97`, container `vedal-keycloak`) on
+the eve of the handover to the customer. Mandatory MFA **was not switched on** —
+only a comparison of state and two safe items.
+
+### The divergence from the file in git
 
 | Setting | In the git file | On the stand before the check |
 | --- | --- | --- |
-| `passwordPolicy` | `length(12)` + history of 3 + special char + uppercase + digit | not set at all |
-| `bruteForceProtected` | `true`, `failureFactor: 10` | `false`, `failureFactor: 30` (Keycloak's own default) |
+| `passwordPolicy` | `length(12)` + history 3 + special + uppercase + digit | not set at all |
+| `bruteForceProtected` | `true`, `failureFactor: 10` | `false`, `failureFactor: 30` (the Keycloak default) |
 | `otpPolicyType` | `totp` | `totp` — matches |
-| `CONFIGURE_TOTP.defaultAction` | `false` (after the issue #42 fix) | `false` — already matches, nothing is forced on anyone |
-| `sslRequired` | `all` | `none` — expected drift: the stand has no HTTPS |
+| `CONFIGURE_TOTP.defaultAction` | `false` | `false` — matches |
+| `sslRequired` | `all` | `none` — an expected divergence: there is no HTTPS on the stand |
 
-The reason for the drift is the same one described above: the realm on
-the stand was created once via `--import-realm`, and changes to
-`vedal-realm.json` do not reach it without a manual apply.
+The reason is the same everywhere: the realm on the stand was created by
+`--import-realm` once, and edits to the file do not reach it without being
+applied by hand.
 
-### What was applied (MFA was neither turned on nor off)
+### What was applied
 
-Only the password policy and brute-force protection were added to the
-live stand, via `kcadm.sh update realms/vedal`. Neither setting is
-checked against an already-stored password — only when someone tries to
-guess it or change it — so logging in with an existing password is not
-affected:
+The password policy and brute force detection. Neither is checked against an
+existing password — only when one is being guessed or changed — so sign-in for
+working accounts does not break:
 
 ```bash
 docker exec vedal-keycloak /opt/keycloak/bin/kcadm.sh update realms/vedal \
@@ -113,149 +183,218 @@ docker exec vedal-keycloak /opt/keycloak/bin/kcadm.sh update realms/vedal \
   -s maxFailureWaitSeconds=900
 ```
 
-Applied and confirmed with a follow-up `kcadm.sh get`; the admin's own
-login into the Keycloak console (`kcadm.sh config credentials`) kept
-working unchanged.
+### The TOTP mechanics check
 
-**One-command rollback** (restores exactly what the stand had before the
-check: no password policy, no brute-force protection):
+A one-off account `mfa-smoke-test` was created with `requiredActions:
+["CONFIGURE_TOTP"]`, a token request with the correct password returned
+`HTTP 400` `invalid_grant` / `Account is not fully set up`, and the account was
+deleted right after the check. Nothing was assigned to real employees.
+
+## What Mikhail does on the machine
+
+Whoever prepared the change has no access to the machine. Below is what has to
+be run on `51.250.31.97` for the above to take effect. There is no password
+anywhere in the text: `kcadm.sh config credentials` without `--password` asks
+for it itself, which is why the first step goes through `docker exec -it`.
+
+The order matters: the role first, then the flow, and binding it last. Until
+the flow is bound to the realm nothing about sign-in changes, so the first
+three steps are safe and reversible on their own.
+
+### 0. Sign in to kcadm
 
 ```bash
-docker exec vedal-keycloak /opt/keycloak/bin/kcadm.sh update realms/vedal \
-  -s 'passwordPolicy=' \
-  -s bruteForceProtected=false \
-  -s permanentLockout=false \
-  -s failureFactor=30 \
-  -s waitIncrementSeconds=60 \
-  -s maxFailureWaitSeconds=900
+docker exec -it vedal-keycloak /opt/keycloak/bin/kcadm.sh config credentials \
+  --server http://127.0.0.1:8080 --realm master --user admin
 ```
 
-### Checking the TOTP mechanism on a throwaway account
+The Keycloak admin password is typed into the prompt. The session lives inside
+the container; `-it` is not needed after this.
 
-Mandatory MFA was not assigned to any real employee. The required-action
-mechanism was checked on a throwaway test account, `mfa-smoke-test`,
-created and deleted within the same check:
+### 1. Take a rollback point
 
-1. The account was created in the `vedal` realm with
-   `requiredActions: ["CONFIGURE_TOTP"]` and a permanent password
-   (`temporary=false` — so it is specifically TOTP setup being forced,
-   not a password change).
-2. Requesting a token with the correct password directly
-   (`grant_type=password`, client `vedal-admin-ui`) returned `HTTP 400`:
-   `{"error":"invalid_grant","error_description":"Account is not fully set up"}`.
-   That is the confirmation: the `CONFIGURE_TOTP` required action blocks
-   login until the authenticator app is enrolled, even with the correct
-   password.
-3. The `mfa-smoke-test` account was deleted right after the check — a
-   follow-up `kcadm.sh get users -q username=mfa-smoke-test` returns an
-   empty list.
+```bash
+docker exec vedal-keycloak /opt/keycloak/bin/kcadm.sh get realms/vedal \
+  > /tmp/vedal-realm-before.json
+docker cp vedal-keycloak:/tmp/vedal-realm-before.json ./vedal-realm-before.json
+```
 
-Not checked, and not checkable without a browser: the enrollment screen
-itself (scanning the QR code, entering the six-digit code) — that is
-Keycloak's browser flow, not something visible through a direct
-password-grant token request. Step 4 of the rollout order below (trying
-it on one live account) is still needed for exactly that part and cannot
-be skipped.
+This is the state of the realm, not the accounts: **it does not contain and
+does not replace a dump of the employees.** It exists so that there is
+something to compare against if things go sideways.
 
-## Rollout order
+### 2. The marker role and the composites
 
-Carried out by the owner, or whoever runs Keycloak, after the handoff —
-not before.
+```bash
+KC="docker exec vedal-keycloak /opt/keycloak/bin/kcadm.sh"
 
-1. **Export the current realm from 51.250.31.97** (Admin Console → Realm
-   settings → Action → Partial export, include clients, roles and users)
-   and keep the copy outside the repository — this is a rollback point,
-   not a history archive.
-2. **Apply the updated realm file** (`backend/keycloak/prod/vedal-realm.json`
-   from the `infra`/`main` branch after merge) via Partial import — the
-   password policy, brute-force protection and OTP policy get applied to
-   the running realm.
-3. **Assign `CONFIGURE_TOTP` to existing employees** holding `portal-admin`
-   and `portal-sales`: Admin Console → Users → pick a user → Details tab
-   → Required user actions → add Configure OTP → Save. The role list is
-   itself the assignment list — check the live realm, don't guess from
-   memory.
-4. **Try it on one account first.** One employee (ideally whoever runs
-   Keycloak) logs in, sees the TOTP setup screen, scans the QR code with
-   an authenticator app, enters the confirmation code. Only after that
-   login succeeds — move to the next step.
-5. **Warn the rest of the staff in advance**, not after the fact: on the
-   next login after `CONFIGURE_TOTP` is assigned, they will see the
-   authenticator-app enrollment screen instead of the usual password
-   prompt. Without warning, that looks like a broken login rather than an
-   expected step.
-6. **Roll out to the rest** of `portal-admin`/`portal-sales` from the list
-   in step 3.
-7. `portal-production` — at the owner's discretion, via the same
-   procedure, as a separate decision, not automatically bundled with the
-   rest.
+$KC create roles -r vedal -s name=portal-mfa-required \
+  -s 'description=Marker: has access to personal data, needs a second factor.'
+$KC add-roles -r vedal --rname portal-admin --rolename portal-mfa-required
+$KC add-roles -r vedal --rname portal-sales --rolename portal-mfa-required
+```
 
-## How to check it without breaking anyone else's login
+Check:
 
-- The realm file's JSON is syntactically valid — checked before the
-  commit (`node -e "JSON.parse(...)"` raised no errors).
-- Keycloak's partial import, by default, does **not** delete what is
-  missing from the imported file (users, for instance) — it adds and
-  updates entities that match by name. This is not a reason to skip the
-  export in step 1: the exact behavior depends on the mode chosen in the
-  dialog (skip/overwrite), and so does what happens to any discrepancies.
-- Trying it on one account (step 4) is the check. If the login does not
-  go through, do not proceed down the list.
-- The `/admin` network restriction (see below) stays on during the
-  trial: even if something in MFA goes wrong, the editing door does not
-  become reachable from the internet — it just becomes unreachable to
-  everyone until it is fixed, which is the safer failure mode.
+```bash
+$KC get roles/portal-admin/composites -r vedal --fields name
+```
 
-## Rollback if a login breaks
+It should return `portal-mfa-required`.
 
-- **One employee cannot get past OTP** (lost phone, device clock drifted):
-  Admin Console → Users → the user → Credentials → remove the OTP
-  credential. On the next login, if `CONFIGURE_TOTP` is still in Required
-  user actions, Keycloak will ask them to enroll again — they set it up
-  on a new device.
-- **Widespread breakage after applying the realm file**: restore the realm
-  from the export taken in step 1 (Partial import the same way, with the
-  rollback file instead of the new one).
-- **MFA is in the way and there is no time to investigate**: remove
-  `CONFIGURE_TOTP` from the affected accounts (Required user actions →
-  remove Configure OTP) — this rolls back the mandatory second factor for
-  specific people without touching the password, brute-force policy, or
-  the `/admin` network restriction. The network restriction keeps
-  protecting the editing door on its own regardless.
-- In any rollback scenario, **do not lift** `VEDAL_ADMIN_ALLOW` — until
-  the second factor is confirmed working for every `portal-admin` holder,
-  the network is the only barrier actually holding.
+### 3. The sign-in flow
 
-## The `/admin` decision: network or password+MFA
+```bash
+OTP='vedal-browser%20Browser%20-%20Conditional%20OTP'
 
-Open question 12.3 from `docs/PROJECT.md` — whether to close `/admin` at
-the network level or leave it behind a password and MFA. The `@admin`
-rule in `backend/proxy/Caddyfile` already answers it with its default
-value, and that is a decision, not a stopgap:
+$KC create authentication/flows/browser/copy -r vedal -s newName=vedal-browser
 
-- **By default `/admin` is reachable only from private ranges** —
-  `VEDAL_ADMIN_ALLOW` is unset, so `private_ranges` applies. A wrongly
-  closed door breaks the editor's work and that is visible within a
-  minute; a wrongly opened one breaks nothing and is never seen. The
-  safer failure mode is what ships as the default.
-- **The network restriction lifts with a single variable**:
-  `VEDAL_ADMIN_ALLOW="0.0.0.0/0 ::/0"`. This opens `/admin` to the whole
-  internet behind a password and MFA — the other side of the same open
-  question.
-- **Lifting the network restriction is safe only after MFA is confirmed
-  working** for every `portal-admin` holder (step 4 of the rollout order
-  above, and beyond). Before that, lifting it means an editor's password
-  against the internet — exactly what the comment in `Caddyfile` warns
-  against.
-- Network and MFA are not mutually exclusive options but two independent
-  layers. Nothing requires lifting the network restriction right after
-  turning MFA on: keeping both layers at once is safer, and lifting the
-  network only buys operational convenience — reaching `/admin` from
-  outside the office or a VPN. Whether to lift it is a separate decision
-  for the owner, best made no sooner than after a few calm days running
-  with MFA.
-- On the stand (`51.250.31.97:18080`) there is no Caddy at all — there
-  never was a network restriction there and this change does not add
-  one; the stand's admin area stays open to the internet until the stand
-  moves behind a proxy. That is a separate and more serious problem than
-  deferring MFA, and it is not solved within issue #42.
+COND=$($KC get "authentication/flows/$OTP/executions" -r vedal \
+  --fields id,providerId --format csv --noquotes | tr -d '\r' \
+  | awk -F, '$2=="conditional-user-configured"{print $1}')
+$KC delete "authentication/executions/$COND" -r vedal
+
+$KC create "authentication/flows/$OTP/executions/execution" -r vedal \
+  -s provider=conditional-user-role
+NEW=$($KC get "authentication/flows/$OTP/executions" -r vedal \
+  --fields id,providerId --format csv --noquotes | tr -d '\r' \
+  | awk -F, '$2=="conditional-user-role"{print $1}')
+
+$KC create "authentication/executions/$NEW/config" -r vedal \
+  -s alias=vedal-mfa-role \
+  -s config.condUserRole=portal-mfa-required -s config.negate=false
+$KC create "authentication/executions/$NEW/raise-priority" -r vedal
+$KC update authentication/flows/vedal-browser/executions -r vedal -n \
+  -s id="$NEW" -s requirement=REQUIRED
+```
+
+Check — exactly two executions should remain in the subflow, both `REQUIRED`,
+the condition first:
+
+```bash
+$KC get "authentication/flows/$OTP/executions" -r vedal \
+  --fields index,displayName,providerId,requirement
+```
+
+The same by clicking, if that feels calmer step by step: Authentication →
+`browser` → Action → Duplicate → name `vedal-browser` → in the
+`Browser - Conditional OTP` subflow delete `Condition - user configured` →
+Add condition → `Condition - user role` → Requirement `Required` → the gear
+icon → alias `vedal-mfa-role`, role `portal-mfa-required`.
+
+### 4. Binding the flow — the moment behaviour changes
+
+```bash
+$KC update realms/vedal -s browserFlow=vedal-browser
+```
+
+From this second on, `portal-admin` and `portal-sales` get the authenticator
+enrolment screen on their next sign-in.
+
+### 5. Try it on yourself first — before anyone else finds out
+
+Sign out of the admin panel, sign back in with your own `portal-admin` account,
+go through enrolment: scan the QR code with an app (Google Authenticator,
+Yandex Key, FreeOTP — any RFC 6238 TOTP), type the six-digit code. Make sure
+the sign-in goes through and the admin panel opens.
+
+**If it does not — step 4 is rolled back with one command (see "Rollback"), and
+you do not go further.**
+
+### 6. Warn the others
+
+Not after the fact. On their next sign-in, an employee with the `portal-admin`
+or `portal-sales` role meets the enrolment screen instead of the usual
+password. Without a warning that looks like a broken sign-in.
+
+Nothing has to be assigned to anyone in the process: people already have the
+role.
+
+### 7. Disable the direct password grant
+
+```bash
+CID=$($KC get clients -r vedal -q clientId=vedal-admin-ui --fields id \
+  --format csv --noquotes | tr -d '\r')
+$KC update "clients/$CID" -r vedal -s directAccessGrantsEnabled=false
+```
+
+This goes last, because until this moment `grant_type=password` is a working
+way to check that a password is accepted at all, bypassing the browser screen.
+After step 5 it is no longer needed, and left enabled it is a way around the
+second factor.
+
+## Rollback
+
+| What happened | What to do |
+| --- | --- |
+| Sign-in broke for everyone | `$KC update realms/vedal -s browserFlow=browser` — sign-in returns to the password immediately, deleting nothing. Verified. |
+| One person cannot pass OTP (lost the phone, clocks drifted) | Admin Console → Users → the user → Credentials → delete the OTP credential. On the next sign-in the flow offers enrolment again. |
+| The second factor has to come off one specific person, leaving the others | Remove their `portal-admin`/`portal-sales` role, or (if the role is needed) drop the composite from the role itself — but then the factor disappears for everyone holding it. For a one-off, the first is more honest. |
+| The direct password grant has to come back | `$KC update "clients/$CID" -r vedal -s directAccessGrantsEnabled=true` |
+
+A full rollback in reverse order: unbind the flow, restore
+`directAccessGrantsEnabled`, drop the composites, delete the role and the flow.
+The first item alone is enough for people to keep working — the rest can be
+untangled without hurry.
+
+## The `/admin` decision: network, or password and MFA
+
+Question 12.3 from [PROJECT.en.md](../PROJECT.en.md) is closed like this: **the
+main barrier is a password and a second factor; the network restriction is a
+second, independent layer where the proxy is ours.**
+
+Why not the other way round, even though the network looks stronger:
+
+1. **The network only works where the proxy is ours.** In the target deployed
+   environment that is Caddy and the `@admin` rule in
+   `backend/proxy/Caddyfile`. On the stand (`51.250.31.97`) there is no Caddy
+   at all: the admin panel is served by a shared nginx that sits on the same
+   machine next to somebody else's production sites. A network restriction
+   there would have to be made by somebody else's hands — asking the owner of
+   that nginx to edit their config for the sake of our door. A barrier that
+   depends on somebody else's schedule is not a barrier.
+2. **The second factor is the same everywhere.** It lives in the realm file,
+   travels with the realm into both the stand and the deployed environment,
+   and after this change does not depend on anyone remembering to assign it to
+   a particular person.
+3. **The network is not being removed.** The default in the `Caddyfile` is
+   `private_ranges`, and it stays: it costs nothing and cuts off what never
+   even reaches the login form. Of the two possible mistakes — a door wrongly
+   closed breaks the editor's work and is visible within a minute, a door
+   wrongly opened breaks nothing and is never visible — the default is the one
+   that gets noticed.
+4. **The network layer may be removed, but not before the second factor is
+   confirmed working** for every holder of `portal-admin` and `portal-sales`.
+   It is one variable:
+
+   ```
+   VEDAL_ADMIN_ALLOW="0.0.0.0/0 ::/0"
+   ```
+
+   The point of it is access to editing from outside the office and without a
+   VPN. That is operational convenience, not a security requirement, and the
+   decision is a separate one, the owner's.
+
+What remains true and should be said plainly: **until the steps above are
+carried out, the stand's admin panel is open to the internet and rests on a
+single password.** There is neither Caddy nor a second factor there right now.
+That is exactly why enabling the second factor is the first thing worth doing
+after the handover, rather than "some day".
+
+## Traps already stumbled over
+
+- **`--import-realm` does not overwrite an existing realm.** Edits to
+  `vedal-realm.json` will not appear on a running Keycloak from a container
+  restart or an image rebuild. Hence the whole "What Mikhail does" section: the
+  file is the source of truth for a clean install, a live realm is edited with
+  commands.
+- **Recreating the `vedal-keycloak` volume wipes the accounts** created in the
+  console. That is not a way to "apply the file".
+- **Role and flow descriptions must be no longer than 255 characters**, or the
+  realm file import fails with a database error rather than a parse error.
+- **`defaultAction` only affects new users** and is assigned at the moment the
+  account is created. That is precisely why the second factor is enforced by a
+  flow rather than by a default required action.
+- **The direct password grant bypasses the browser flow.** Any second factor
+  configured in the browser flow is worked around by it as long as it is
+  enabled.
