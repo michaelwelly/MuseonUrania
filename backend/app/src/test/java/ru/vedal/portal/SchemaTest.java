@@ -26,6 +26,27 @@ class SchemaTest extends PostgresTestBase {
         assertThat(tables).contains("category", "product", "product_category", "product_spec");
     }
 
+    // Хранилище векторов Ведалины заводится до корпуса документов и до того,
+    // как включат RAG. Проверяется здесь не поиск, а то, что образ базы несёт
+    // pgvector: без расширения миграция V34 не применяется вовсе, и портал
+    // не поднимается — а узнать об этом лучше из теста, чем из падения стенда.
+    @Test
+    void migrationCreatesTheKnowledgeIndexOnPgvector() {
+        var tables = jdbc.sql("""
+                        select table_name from information_schema.tables
+                        where table_schema = 'public'
+                        """)
+                .query(String.class)
+                .list();
+
+        assertThat(tables).contains("knowledge_source", "knowledge_chunk");
+        assertThat(jdbc.sql("select exists (select 1 from pg_extension where extname = 'vector')")
+                .query(Boolean.class)
+                .single())
+                .as("образ базы обязан нести pgvector — иначе V34 не применится")
+                .isTrue();
+    }
+
     @Test
     void migrationCreatesCrmTables() {
         var tables = jdbc.sql("""

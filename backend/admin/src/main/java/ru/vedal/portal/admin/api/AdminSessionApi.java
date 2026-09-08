@@ -10,6 +10,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import ru.vedal.portal.iam.StaffDirectory;
 
 import java.util.List;
 import java.util.Locale;
@@ -68,6 +69,15 @@ public class AdminSessionApi {
     // устройство Spring Security, и клиенту про него знать незачем. Имя роли
     // в realm'е — это то, что администратор видит в консоли Keycloak
     // и что портал показывает человеку в отказе («нужна роль portal-sales»).
+    //
+    // Отдаются только роли из PORTAL_ROLES — то же правило, по которому их
+    // показывает справочник сотрудников. Приставка `portal-` в имени роли
+    // realm'а не значит «рабочая роль»: `portal-mfa-required` (issue #42) —
+    // служебный признак, по которому Keycloak решает, спрашивать ли второй
+    // фактор, и композитом входит в portal-admin и portal-sales. Человеку
+    // он не говорит ничего, а оболочка и профиль печатают этот список
+    // как есть — и в подписи под именем появилось бы
+    // «portal-admin · portal-mfa-required».
     private static List<String> roles(Authentication who) {
         if (who == null) return List.of();
 
@@ -77,6 +87,7 @@ public class AdminSessionApi {
                 .map(a -> "portal-" + a.substring(PREFIX.length())
                         .toLowerCase(Locale.ROOT)
                         .replace('_', '-'))
+                .filter(StaffDirectory.PORTAL_ROLES::contains)
                 .sorted()
                 .toList();
     }

@@ -192,6 +192,20 @@ class RoleMatrixTest extends PostgresTestBase {
                         containsInAnyOrder("portal-admin", "portal-sales")));
     }
 
+    // Приставка `portal-` в имени роли realm'а не значит «рабочая роль».
+    // `portal-mfa-required` (issue #42) — служебный признак, по которому
+    // Keycloak решает, спрашивать ли второй фактор; композитом он входит
+    // в portal-admin и portal-sales, то есть приезжает в токене КАЖДОГО
+    // администратора. Оболочка и профиль печатают этот список как есть,
+    // и без фильтра под именем человека стояло бы
+    // «portal-admin · portal-mfa-required».
+    @Test
+    @WithMockUser(username = "boss", roles = {"PORTAL_ADMIN", "PORTAL_MFA_REQUIRED"})
+    void theSecondFactorMarkerRoleStaysInsideKeycloak() throws Exception {
+        mvc.perform(get("/api/admin/v1/session"))
+                .andExpect(jsonPath("$.roles").value(contains("portal-admin")));
+    }
+
     // ————— выдача ролей —————
     //
     // Дверь лежит под /staff/**, а тот открыт любой портальной роли:

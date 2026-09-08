@@ -13,9 +13,9 @@ import java.util.stream.IntStream;
  * Ответ Ведалины формулирует модель — но только по найденному у нас.
  *
  * <p><b>Главное правило устройства.</b> Модель здесь не источник знаний,
- * а способ связать слова. Ищет по-прежнему {@link DeterministicSearch}:
- * у него есть доступ к каталогу, к новостям и к документам с учётом прав,
- * а у модели нет ничего, кроме того, что мы ей покажем. Не нашлось
+ * а способ связать слова. Ищет по-прежнему портал — через {@link Retrieval}:
+ * у него есть доступ к каталогу, к новостям, к документам с учётом прав
+ * и к индексу pgvector, а у модели нет ничего, кроме того, что мы ей покажем. Не нашлось
  * материалов — модель не спрашивается вовсе: правило проекта «нет
  * опубликованных источников — нет ответа» сильнее желания что-нибудь
  * сказать, а просить модель ответить «не знаю» значит платить за отказ.
@@ -72,11 +72,11 @@ public class YandexGptEngine implements LlmEngine {
 
             Не здоровайся и не представляйся: это продолжение разговора.""";
 
-    private final DeterministicSearch search;
+    private final Retrieval search;
     private final YandexGpt model;
     private final boolean fallback;
 
-    public YandexGptEngine(DeterministicSearch search, YandexGpt model, boolean fallback) {
+    public YandexGptEngine(Retrieval search, YandexGpt model, boolean fallback) {
         this.search = search;
         this.model = model;
         this.fallback = fallback;
@@ -92,7 +92,7 @@ public class YandexGptEngine implements LlmEngine {
         var found = search.find(question, scope);
         if (found.isEmpty()) return Optional.empty();
 
-        var sources = found.stream().map(DeterministicSearch.Passage::source).toList();
+        var sources = found.stream().map(Retrieval.Passage::source).toList();
 
         try {
             var text = model.complete(List.of(
@@ -115,7 +115,13 @@ public class YandexGptEngine implements LlmEngine {
             }
 
             log.warn("YandexGPT не ответил, отдаю перечень найденного: {}", e.toString());
-            return search.answer(question, scope);
+            // Перечень собирается из УЖЕ найденного, а не вторым поиском.
+            // Второй поиск стоил бы ещё одного прохода — а с векторным
+            // поиском ещё и второго вызова эмбеддингов, — и мог бы вернуть
+            // другое: редактор успевает снять карточку с публикации между
+            // двумя запросами, и тогда сноски в тексте вели бы не туда,
+            // куда ссылки под ним.
+            return Optional.of(Listing.of(found));
         }
     }
 
@@ -126,7 +132,7 @@ public class YandexGptEngine implements LlmEngine {
      * иначе сноска [2] в тексте уведёт читателя не туда. Порядок задаёт
      * поиск: он же определяет, что показать под ответом.
      */
-    private static String materials(List<DeterministicSearch.Passage> found) {
+    private static String materials(List<Retrieval.Passage> found) {
         return IntStream.range(0, found.size())
                 .mapToObj(at -> {
                     var passage = found.get(at);
