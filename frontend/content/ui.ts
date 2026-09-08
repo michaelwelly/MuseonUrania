@@ -196,6 +196,9 @@ export type UiStrings = {
     allDocuments: string;
     notInListing: string;
     requestIt: string;
+    /** Форма запроса КП на самой карточке: заголовок и что она делает. */
+    quoteTitle: string;
+    quoteText: string;
   };
 
   documents: {
@@ -390,6 +393,9 @@ const ru: UiStrings = {
     allDocuments: "Все документы и лицензирование",
     notInListing: "не найденное в перечне —",
     requestIt: "запрашивается у специалиста",
+    quoteTitle: "Запросить КП на это изделие",
+    quoteText:
+      "Изделие уже подставлено — выбирать его заново не нужно. Конфигурацию и стоимость считает специалист: цен на сайте нет.",
   },
   documents: {
     all: "Все документы",
@@ -578,6 +584,9 @@ const en: UiStrings = {
     allDocuments: "All documents and licensing",
     notInListing: "anything not in the listing can be",
     requestIt: "requested from a specialist",
+    quoteTitle: "Request a quote for this product",
+    quoteText:
+      "The product is already filled in — no need to pick it again. Configuration and pricing are worked out by a specialist: no prices are published on the site.",
   },
   documents: {
     all: "All documents",

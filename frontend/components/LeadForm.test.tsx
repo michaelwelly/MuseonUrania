@@ -228,3 +228,113 @@ describe("подсказка под полем", () => {
     );
   });
 });
+
+// Запрос КП с карточки изделия (issue про кнопку-пустышку).
+//
+// Проверяется не то, что название нарисовано, а два решения, которые
+// ломаются тихо и одинаково незаметно.
+//
+// Первое: изделие не спрашивается второй раз. Человек уже выбрал его тем,
+// что дошёл до карточки; селектор рядом — это выбор, который можно сделать
+// неправильно, и заявка уедет не про то изделие, которое человек читал.
+//
+// Второе: слаг всё равно уезжает. Форма без селектора выглядит исправной
+// и тогда, когда `productSlug` не отправляется вовсе, — а без него менеджер
+// в админке видит заявку «по чему-то», и весь смысл кнопки на карточке
+// пропадает. Проверка идёт по телу, ушедшему в submitLead, а не по разметке.
+const ИЗДЕЛИЕ = { slug: "vedal-a-2000", name: "VEDAL A-2000", kind: "Аппарат ИВЛ" };
+
+async function формаКарточки() {
+  const user = userEvent.setup();
+  await act(async () => {
+    render(
+      <LeadForm
+        form="quote"
+        product={ИЗДЕЛИЕ}
+        analytics="quote_form_submit"
+        submitLabel="Запросить КП"
+      />,
+    );
+  });
+  return user;
+}
+
+const запросить = (user: ReturnType<typeof userEvent.setup>) =>
+  user.click(screen.getByRole("button", { name: "Запросить КП" }));
+
+describe("изделие, заданное страницей", () => {
+  it("названо, но не спрашивается", async () => {
+    await формаКарточки();
+
+    expect(screen.getByText(/VEDAL A-2000/)).toBeInTheDocument();
+    expect(screen.queryByLabelText("Изделие")).not.toBeInTheDocument();
+  });
+
+  it("уезжает с заявкой слагом", async () => {
+    const user = await формаКарточки();
+    await заполнитьОбязательное(user);
+
+    await запросить(user);
+
+    expect(mocks.submitLead.mock.calls[0][0]).toMatchObject({
+      form: "quote",
+      productSlug: "vedal-a-2000",
+    });
+  });
+
+  // Список каталога и заданное изделие вместе не встречаются: на карточке
+  // выбирать нечего. Перекрытие проверяется здесь, потому что иначе рядом
+  // с названием изделия однажды окажется селектор всего каталога — и не
+  // будет видно, что именно уедет.
+  it("перекрывает список каталога", async () => {
+    const user = userEvent.setup();
+    await act(async () => {
+      render(
+        <LeadForm
+          form="quote"
+          product={ИЗДЕЛИЕ}
+          products={[ИЗДЕЛИЕ, { slug: "vedal-r1", name: "VEDAL R1", kind: "Аппарат ИВЛ" }]}
+          analytics="quote_form_submit"
+          submitLabel="Запросить КП"
+        />,
+      );
+    });
+
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+
+    await заполнитьОбязательное(user);
+    await запросить(user);
+
+    expect(mocks.submitLead.mock.calls[0][0].productSlug).toBe("vedal-a-2000");
+  });
+
+  // Согласие обязательно и здесь — §14.6 плана. Форма на карточке ничем
+  // не отличается от формы на /contacts/ в том, что касается персональных
+  // данных, и «быстрый запрос» не является причиной его не спрашивать.
+  it("без согласия ничего не отправляет", async () => {
+    const user = await формаКарточки();
+
+    await user.type(screen.getByLabelText(/Контактное лицо/), "Ольга Кузнецова");
+    await user.type(screen.getByLabelText(/Телефон/), "+7 343 200 10 10");
+    await user.type(screen.getByLabelText(/Электронная почта/), "olga@rd2.ru");
+    await user.type(
+      screen.getByLabelText(/Суть обращения/),
+      "Нужна конфигурация для отделения реанимации новорождённых.",
+    );
+    await запросить(user);
+
+    expect(mocks.submitLead).not.toHaveBeenCalled();
+    expect(screen.getByText("Без согласия отправить запрос нельзя")).toBeInTheDocument();
+  });
+});
+
+// Форма без изделия и без списка каталога — та, что стоит в сервисном
+// обращении. Поле изделия там не должно появляться вовсе: пустая подпись
+// «Изделие» без значения читается как потерянные данные.
+describe("формы без изделия", () => {
+  it("поля изделия не рисуют", async () => {
+    await сервиснаяФорма();
+
+    expect(screen.queryByText("Изделие")).not.toBeInTheDocument();
+  });
+});
