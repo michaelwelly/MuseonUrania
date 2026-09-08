@@ -1,10 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRef, useState } from "react";
 import {
   audit,
   leads,
+  removeMyAvatar,
   staff as loadStaff,
+  uploadMyAvatar,
+  AVATAR_MAX_BYTES,
   type AuditEntry,
   type LeadRow,
   type Page,
@@ -14,15 +18,29 @@ import { logout } from "@/lib/auth";
 import { plural } from "@/lib/plural";
 import { Avatar } from "../Avatar";
 import { AUDIT_ACTION, AUDIT_TONE, label } from "../labels";
-import { Note, useLoad, when } from "../ui";
+import { forgetPortrait, usePortrait } from "../portraits";
+import { message, Note, useLoad, when } from "../ui";
 import { may } from "../roles";
 import { useWho } from "../who";
 
 // Мой профиль.
 //
 // Отвечает на два вопроса: кто я для портала и что мне сейчас доступно.
-// Правки здесь нет ни одной — учётная запись живёт в системе входа компании,
-// и портал её только читает.
+//
+// ───────────────────────────────────────────────────────────────────────────
+// Правка здесь ровно одна — портрет
+//
+// Раньше здесь стояло «правки нет ни одной»: учётная запись живёт в системе
+// входа компании, и портал её только читает. Про логин, имя, роли и почту
+// это по-прежнему верно и меняться не должно — второй список сотрудников
+// разошёлся бы с Keycloak на первом же увольнении.
+//
+// Портрет — исключение, и оно не размывает правило, а очерчивает его:
+// портрета в токене НЕТ. Keycloak умеет хранить его в атрибуте
+// пользователя, но менять свой атрибут может только тот, кому выдали право
+// менять пользователей, — то есть право менять кого угодно. Поэтому портрет
+// хранит портал, и это единственное поле профиля, у которого хозяин — сам
+// сотрудник (issue #93).
 //
 // ───────────────────────────────────────────────────────────────────────────
 // Что можно — считается по ролям, а не нарисовано
@@ -77,7 +95,7 @@ export default function ProfilePage() {
     <>
       <div className="admin-head">
         <div className="me">
-          <Avatar name={имя} size="xl" presence="unknown" />
+          <Avatar name={имя} login={who.actor} size="xl" presence="unknown" />
           <div className="me__who">
             <h1>{имя}</h1>
             <p className="me__role nobody">должность ожидает уточнения</p>
@@ -94,6 +112,9 @@ export default function ProfilePage() {
 
       <div className="board2">
         <section>
+          <h2 className="admin-card__title">Портрет</h2>
+          <Portrait login={who.actor} />
+
           <h2 className="admin-card__title">Учётная запись</h2>
           <div className="admin-card">
             <dl className="pairs">
@@ -225,6 +246,107 @@ export default function ProfilePage() {
         </section>
       </div>
     </>
+  );
+}
+
+/**
+ * Свой портрет: поставить, заменить, убрать.
+ *
+ * Кнопка «убрать» появляется только когда портрет есть. Не ради чистоты
+ * экрана: кнопка, которая ничего не делает, читается как сломанная —
+ * человек жмёт её, ничего не происходит, и он жмёт ещё раз.
+ *
+ * Предел размера проверяется и здесь, и на портале. Здесь — чтобы не гнать
+ * впустую файл, который всё равно отвергнут; настоящая проверка там, вместе
+ * с проверкой содержимого, которую браузеру доверить нельзя.
+ */
+function Portrait({ login }: { login: string }) {
+  const портрет = usePortrait(login);
+  const [занято, занять] = useState(false);
+  const [ошибка, сказать] = useState<string | null>(null);
+  const поле = useRef<HTMLInputElement>(null);
+
+  async function загрузить(file: File) {
+    if (file.size > AVATAR_MAX_BYTES) {
+      сказать(
+        `Файл больше ${AVATAR_MAX_BYTES / 1024 / 1024} МБ — портал его не примет. ` +
+          `Портрет показывается кружком, ему хватит небольшого снимка.`,
+      );
+      return;
+    }
+    await действие(() => uploadMyAvatar(file));
+  }
+
+  async function действие(что: () => Promise<unknown>) {
+    занять(true);
+    сказать(null);
+    try {
+      await что();
+      // Кеш портретов держит прежнее лицо: без этого кружок в шапке
+      // показывал бы старое до перезагрузки страницы.
+      forgetPortrait(login);
+    } catch (e) {
+      сказать(message(e));
+    } finally {
+      занять(false);
+      // Сброс поля: без него выбор того же файла второй раз не вызывает
+      // onChange — браузер считает, что ничего не изменилось.
+      if (поле.current) поле.current.value = "";
+    }
+  }
+
+  return (
+    <div className="admin-card">
+      <div className="portrait">
+        <Avatar name={login} login={login} size="xl" />
+
+        <div className="portrait__actions">
+          <label className="file">
+            <input
+              ref={поле}
+              type="file"
+              accept="image/jpeg,image/png"
+              aria-label="Свой портрет"
+              disabled={занято}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void загрузить(file);
+              }}
+            />
+            <span className="file__word">
+              {портрет ? "заменить портрет" : "загрузить портрет"}
+            </span>
+          </label>
+
+          {портрет && (
+            <button
+              className="btn btn--small"
+              type="button"
+              disabled={занято}
+              onClick={() => void действие(() => removeMyAvatar())}
+            >
+              Убрать
+            </button>
+          )}
+        </div>
+      </div>
+
+      <Note kind="error">{ошибка}</Note>
+
+      <p className="admin-hint">
+        JPEG или PNG до {AVATAR_MAX_BYTES / 1024 / 1024} МБ, стороной от 64 до 4096 точек.
+        Портал хранит не присланный файл, а собранный из него квадрат 256×256: всё, что
+        ехало рядом с картинкой — включая координаты съёмки из снимка телефоном, — до
+        хранилища не доезжает. Формат определяется по содержимому файла, а не по его
+        имени.
+      </p>
+
+      <p className="admin-hint">
+        Портрет видят только сотрудники: он лежит в базе портала и отдаётся дверью
+        с проверкой входа, а не ссылкой наружу. Пока портрета нет, на его месте
+        стоит кружок с первой буквой логина — и он никуда не денется.
+      </p>
+    </div>
   );
 }
 

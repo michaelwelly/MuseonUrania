@@ -44,6 +44,8 @@ vi.mock("@/lib/admin", () => {
 
   return {
     adminConfigured: true,
+    // Кружок в шапке спрашивает портрет вошедшего по логину.
+    avatarOf: () => Promise.resolve(null),
     session: mocks.session,
     // Со статусом, как настоящий: именно по нему оболочка выбирает,
     // что советовать. Пустышка extends Error зеленела бы на любой ветке.

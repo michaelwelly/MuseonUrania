@@ -40,6 +40,8 @@ vi.mock("@/lib/admin", () => {
 
   return {
     adminConfigured: true,
+    // Кружок в шапке спрашивает портрет вошедшего по логину.
+    avatarOf: () => Promise.resolve(null),
     session: mocks.session,
     AdminError: class AdminError extends Error {},
     products: пусто,

@@ -19,6 +19,17 @@ if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = () => {};
 }
 
+// jsdom не заводит blob:-адреса: за ними стоит хранилище объектов браузера,
+// которого у него нет. На них держатся портреты сотрудников — дверь портрета
+// закрыта токеном, поэтому байты приезжают запросом и превращаются в адрес
+// для src. Заглушка выдаёт разные адреса намеренно: одинаковые скрыли бы
+// ошибку «показали прежний портрет после замены».
+if (!URL.createObjectURL) {
+  let счёт = 0;
+  URL.createObjectURL = () => `blob:test/${++счёт}`;
+  URL.revokeObjectURL = () => {};
+}
+
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();

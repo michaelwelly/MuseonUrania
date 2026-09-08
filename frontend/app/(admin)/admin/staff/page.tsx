@@ -142,6 +142,7 @@ function Card({
       <div className="person__top">
         <Avatar
           name={имя}
+          login={person.login}
           size="l"
           presence={person.enabled ? "unknown" : "off"}
           tone={person.enabled ? "person" : "machine"}

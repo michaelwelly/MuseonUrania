@@ -365,7 +365,7 @@ function Card({ deal, now, onDrag }: { deal: DealRow; now: number; onDrag: () =>
 
       <span className="card__row">
         <span className="card__sum mono">{money(deal.amount, deal.currency)}</span>
-        {deal.owner && <Avatar name={deal.owner} size="s" />}
+        {deal.owner && <Avatar name={deal.owner} login={deal.owner} size="s" />}
       </span>
 
       {/* «Без изменений», а не «в стадии»: портал хранит время последней

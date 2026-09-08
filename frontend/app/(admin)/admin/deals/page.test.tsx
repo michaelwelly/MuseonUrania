@@ -34,6 +34,8 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/lib/admin", () => ({
   AdminError: class AdminError extends Error {},
+  // Кружок ответственного на карточке сделки спрашивает портрет по логину.
+  avatarOf: () => Promise.resolve(null),
   deals: mocks.deals,
   moveDeal: mocks.moveDeal,
   pipelines: () =>

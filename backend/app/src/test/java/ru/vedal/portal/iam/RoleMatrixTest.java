@@ -165,6 +165,24 @@ class RoleMatrixTest extends PostgresTestBase {
         mvc.perform(get("/api/admin/v1/session")).andExpect(status().isOk());
     }
 
+    // Свой портрет — это «я», а не раздел. Закрыв дверь одной ролью,
+    // мы отобрали бы у половины сотрудников их собственную картинку;
+    // кружок с портретом при этом стоит и в журнале, и на карточке сделки,
+    // то есть читать чужой должен уметь каждый.
+    @Test
+    @WithMockUser(username = "production", roles = "PORTAL_PRODUCTION")
+    void theSiteEditorOwnsItsOwnPortraitToo() throws Exception {
+        mvc.perform(delete("/api/admin/v1/profile/avatar")).andExpect(status().isNoContent());
+        mvc.perform(get("/api/admin/v1/staff/production/avatar")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(username = "sales", roles = "PORTAL_SALES")
+    void salesOwnsItsOwnPortraitToo() throws Exception {
+        mvc.perform(delete("/api/admin/v1/profile/avatar")).andExpect(status().isNoContent());
+        mvc.perform(get("/api/admin/v1/staff/sales/avatar")).andExpect(status().isNotFound());
+    }
+
     // Имя роли, которое отдаёт /session, — это то, по чему админка решает,
     // какие разделы показать. Разойдись форма записи, и человек с полными
     // правами увидит пустую оболочку: портал его пустит, а интерфейс
