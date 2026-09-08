@@ -54,6 +54,22 @@
   color: var(--green-dark);
 }
 
+/* Изделие, заданное страницей. Нарочно не поле ввода и не отключённый
+   select: серое неактивное поле читается как «здесь что-то сломалось»,
+   а активное приглашает менять то, что менять незачем — человек пришёл
+   на карточку именно этого изделия. Это строка ответа, а не вопрос. */
+.fixed {
+  display: flex;
+  align-items: center;
+  min-height: 50px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--green);
+  background: var(--soft);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
 .input,
 .select,
 .textarea {

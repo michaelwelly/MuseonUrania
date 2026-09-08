@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { statusLabel } from "@/content/products";
+import LeadForm from "@/components/LeadForm";
 import TranslationNotice from "@/components/TranslationNotice";
 import { ui } from "@/content/ui";
 import { fetchDocuments, fetchProduct, fetchProducts } from "@/lib/api";
@@ -138,15 +139,29 @@ export default async function ProductScreen({ slug, lang }: { slug: string; lang
             </ul>
           )}
 
+          {/* Кнопка ведёт на форму этой же страницы, а не на /contacts/.
+              Раньше человек, решивший запросить КП на конкретном изделии,
+              попадал на общие контакты и там заново выбирал тему и изделие —
+              то есть вводил заново то, что уже выбрал, дойдя до карточки.
+
+              Якорь, а не всплывающее окно и не переход с параметром:
+              — окно требует ловушки фокуса, блокировки прокрутки и своего
+                поведения на «назад», и ссылкой на него не поделишься;
+              — переход вида `/contacts/?product=...` пришлось бы читать
+                через `useSearchParams`, а он уводит страницу из статики,
+                собираемой на сборке (см. components/Analytics.tsx), — и всё
+                равно уносил бы человека с карточки, которую он читал.
+              Ссылка `/products/<slug>/#quote` работает без JS, переживает
+              пересылку и оставляет изделие перед глазами. */}
           <div className={styles.actions}>
-            <Link
+            <a
               className={`${styles.btn} ${styles.btnPrimary}`}
-              href={at("/contacts/")}
+              href="#quote"
               data-analytics="product_quote_click"
             >
               {strings.actions.requestQuote}
               <Arrow />
-            </Link>
+            </a>
           </div>
 
           {/* Обещать высылку регистрационного удостоверения нельзя: письмо
@@ -216,6 +231,35 @@ export default async function ProductScreen({ slug, lang }: { slug: string; lang
       </section>
 
       <ProductTabs product={product} documents={forProduct(documents, product.slug)} lang={lang} />
+
+      {/* Запрос КП — на самой карточке, сразу после характеристик и до
+          «других продуктов»: человек дочитал, чем это изделие отличается,
+          и следующий шаг должен быть здесь, а не на другой странице.
+
+          Форма та же, что на /contacts/ (components/LeadForm), и уходит
+          в ту же единственную дверь на запись — POST /api/forms/v1/leads.
+          Отличий два: тема закреплена запросом КП, а изделие подставлено
+          и не спрашивается. Слаг уезжает в `productSlug`, и менеджер видит
+          в админке, по какому изделию оставлена заявка.
+
+          Цель аналитики — `quote_form_submit`, как у формы контактов
+          с выбранной темой «Запрос коммерческого предложения»: это одно
+          и то же обращение, разведённое по страницам, а не два разных. */}
+      <section className={styles.quote} id="quote">
+        <div className={styles.quoteCard}>
+          <h2 className={styles.quoteTitle} data-words="30">
+            {strings.product.quoteTitle}
+          </h2>
+          <p className={styles.quoteText}>{strings.product.quoteText}</p>
+          <LeadForm
+            form="quote"
+            product={{ slug: product.slug, name: product.name, kind: product.kind }}
+            analytics="quote_form_submit"
+            lang={lang}
+            submitLabel={strings.actions.requestQuote}
+          />
+        </div>
+      </section>
 
       <section className={styles.related}>
         <h2 className={styles.relatedTitle} data-words="34">

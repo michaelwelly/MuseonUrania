@@ -457,6 +457,40 @@
   }
 }
 
+/* ---------- запрос КП на карточке ---------- */
+/* Кнопка первого экрана ведёт сюда якорем `#quote`. Отступ прокрутки
+   обязателен: шапка закреплена (position: sticky), и без него заголовок
+   формы уезжает под неё — человек видит середину формы и не понимает,
+   куда попал. Высоту шапка сообщает сама, в --header-h (Header.tsx):
+   на узком экране и с раскрытым меню она разная, и числом здесь
+   промахнулись бы в обе стороны. */
+.quote {
+  padding: 56px 48px 60px;
+  background: var(--soft);
+  scroll-margin-top: calc(var(--header-h) + 20px);
+}
+
+.quoteCard {
+  max-width: 760px;
+  padding: 36px 40px 40px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+
+.quoteTitle {
+  font-size: 30px;
+  letter-spacing: -0.03em;
+}
+
+.quoteText {
+  margin-top: 12px;
+  max-width: 62ch;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
 /* ---------- похожие ---------- */
 .related {
   padding: 56px 48px 60px;
@@ -529,6 +563,7 @@
 
   .main,
   .panel,
+  .quote,
   .related {
     padding-left: 24px;
     padding-right: 24px;
@@ -562,9 +597,21 @@
   .tabs,
   .main,
   .panel,
+  .quote,
   .related {
     padding-left: 18px;
     padding-right: 18px;
+  }
+
+  /* Карточка формы на телефоне жмётся к краям полосы: рамка с внутренними
+     отступами по 40 пикселей внутри 18-пиксельного поля страницы оставляет
+     от поля ввода половину. */
+  .quoteCard {
+    padding: 24px 18px 28px;
+  }
+
+  .quoteTitle {
+    font-size: 26px;
   }
 
   .title {

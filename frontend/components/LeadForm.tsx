@@ -70,13 +70,26 @@ export function validate(data: FormData, messages: UiStrings["form"]["errors"] =
 
 export type Topic = { code: FormType; label: string };
 
+/** Позиция каталога: то, чем связывается заявка с изделием. */
+export type ProductRef = { slug: string; name: string; kind: string };
+
 type Props = {
   /** Тип заявки. Если передан список тем, его перекрывает выбор пользователя. */
   form: FormType;
   /** Темы обращения. Если не переданы, селектор темы не показывается. */
   topics?: readonly Topic[];
+  /**
+   * Изделие, по которому оставляют заявку. Задано страницей — карточкой
+   * изделия, — поэтому селектор не показывается вовсе: человек уже выбрал
+   * изделие тем, что дошёл до его страницы, и второй выбор того же самого
+   * это выбор, который можно сделать неправильно.
+   *
+   * Перекрывает {@link Props.products}: там, где изделие известно, список
+   * каталога не нужен.
+   */
+  product?: ProductRef;
   /** Позиции каталога для селектора изделия. Приходят с бэкенда через страницу. */
-  products?: readonly { slug: string; name: string; kind: string }[];
+  products?: readonly ProductRef[];
   analytics: string;
   /** Язык страницы. Русский по умолчанию — форму строят и тесты без пропа. */
   lang?: Lang;
@@ -88,6 +101,7 @@ type Props = {
 export default function LeadForm({
   form,
   topics,
+  product,
   products = [],
   analytics,
   lang = DEFAULT_LANG,
@@ -319,7 +333,23 @@ export default function LeadForm({
         </div>
       </div>
 
-      {products.length > 0 && (
+      {/* Изделие известно странице — показываем его, а не спрашиваем.
+          Скрытое поле названо так же, как селектор ниже: отправка читает
+          `product` из FormData и про разницу между «выбрали» и «пришли
+          с карточки» знать не обязана.
+
+          Название изделия не переводится ни на одном языке — это имя
+          позиции каталога, а не подпись интерфейса; направление (`kind`)
+          идёт через `c.t`, как и везде. */}
+      {product ? (
+        <div className={`${styles.field} ${styles.fieldWide}`}>
+          <p className={styles.label}>{strings.form.product}</p>
+          <p className={styles.fixed} lang={c.mark(product.kind)}>
+            {product.name} — {c.t(product.kind)}
+          </p>
+          <input type="hidden" name="product" value={product.slug} />
+        </div>
+      ) : products.length === 0 ? null : (
         <div className={`${styles.field} ${styles.fieldWide}`}>
           <label className={styles.label} htmlFor="product">
             {strings.form.product}
