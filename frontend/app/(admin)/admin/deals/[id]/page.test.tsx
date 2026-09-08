@@ -27,6 +27,7 @@ const mocks = vi.hoisted(() => {
     updateDeal: vi.fn(),
     moveDeal: vi.fn(),
     deal: vi.fn(),
+    lead: vi.fn(),
     dealQuotes: vi.fn(),
     documents: vi.fn(),
     history: vi.fn(),
@@ -42,6 +43,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/lib/admin", () => ({
   AdminError: mocks.AdminError,
   deal: mocks.deal,
+  lead: mocks.lead,
   updateDeal: mocks.updateDeal,
   moveDeal: mocks.moveDeal,
   dealQuotes: mocks.dealQuotes,
@@ -107,6 +109,7 @@ async function open() {
 // undefined вместо обещания.
 beforeEach(() => {
   mocks.deal.mockReset().mockResolvedValue(deal());
+  mocks.lead.mockReset().mockResolvedValue({ id: "lead-9", number: "З-2026-0014" });
   mocks.updateDeal.mockReset().mockResolvedValue(deal({ version: 5 }));
   mocks.moveDeal.mockReset().mockResolvedValue(deal({ stage: "lost" }));
   mocks.dealQuotes.mockReset().mockResolvedValue([]);
@@ -224,5 +227,35 @@ describe("карточка сделки", () => {
     // что портал сломан.
     expect(save).toBeDisabled();
     expect(screen.getByRole("button", { name: "Перечитать" })).toBeInTheDocument();
+  });
+
+  // Дорога назад в заявку (issue #100).
+  //
+  // Заявка вела в сделку с самого разбора, сделка обратно — никуда, хотя
+  // `leadId` приезжает с портала. Цена видна на блоке «История»: звонки
+  // записывают на заявке, а после разбора менеджер работает в сделке
+  // и видит «Записей пока нет».
+  it("сделка из заявки ведёт обратно в неё и называет её номер", async () => {
+    mocks.deal.mockResolvedValue(deal({ leadId: "lead-9" }));
+    await open();
+
+    const ссылка = await screen.findByRole("link", { name: /из заявки/i });
+    // Слеш перед вопросительным знаком проверяется как необязательный:
+    // в разметке он есть (trailingSlash в next.config.ts), а Link,
+    // отрисованный без конфигурации Next, его срезает.
+    expect(ссылка.getAttribute("href")).toMatch(/^\/admin\/leads\/?\?open=lead-9$/);
+    // Номер спрашивается отдельно: в сделке его нет, а называет клиент
+    // по телефону именно его.
+    expect(await within(ссылка).findByText("З-2026-0014")).toBeInTheDocument();
+    expect(mocks.lead).toHaveBeenCalledWith("lead-9");
+  });
+
+  // Сделку заводят и руками — тогда заявки за ней нет, и говорить нечего.
+  it("у заведённой руками сделки ссылки на заявку нет", async () => {
+    await open();
+
+    await screen.findByDisplayValue("Поставка двух систем VEDAL R2");
+    expect(screen.queryByRole("link", { name: /из заявки/i })).toBeNull();
+    expect(mocks.lead).not.toHaveBeenCalled();
   });
 });
