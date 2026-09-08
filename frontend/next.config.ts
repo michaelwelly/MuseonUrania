@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { loadEnvConfig } from "@next/env";
+import { securityHeaders } from "./lib/security-headers";
 
 // Next читает этот файл раньше, чем подхватывает .env.local, поэтому без
 // явной загрузки process.env здесь пуст: список разрешённых хостов вышел бы
@@ -56,6 +57,13 @@ const nextConfig: NextConfig = {
   // лежал в каталоге, в презентации и в письмах заказчику. Постоянный
   // редирект уводит с него на R1: 404 на месте живой ссылки выглядит как
   // снятое с производства изделие, а не как переименованную страницу.
+  // Заголовки на всё, что отдаёт сайт. Исключений нет намеренно:
+  // страница без политики — это страница, на которой политика не работает,
+  // а какая именно окажется такой, заранее не угадать.
+  async headers() {
+    return [{ source: "/:path*", headers: securityHeaders(process.env) }];
+  },
+
   async redirects() {
     return [
       { source: "/products/vedal-r1-r2", destination: "/products/vedal-r1/", permanent: true },
