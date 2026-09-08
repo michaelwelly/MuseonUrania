@@ -442,6 +442,18 @@ same number is aligned with the gateway's body limit and with
 the upload with a 413 before the application, and the editor sees the proxy's
 page instead of a clear refusal.
 
+**The employee portrait never went into a bucket at all.** `vedal-media` is
+anonymously readable — that is its purpose — and an employee's face placed there
+would be published; on top of that the service key holds no rights on it
+(issue #37). `vedal-documents` is closed and reachable, but it is the document
+vault with its own publication rules and its own door. The portrait lives in the
+database, table `staff_avatar`: one row per login, a normalised 256×256 JPEG,
+tens of kilobytes per person — and together with the database it lands in the
+nightly backup, which buckets do not have at all. Its limit is its own, 2 MB:
+twenty megabytes per person is a file store, not a column. The reasoning lives in
+migration `V35__staff_avatar.sql` and in
+[backend/iam/README](../backend/iam/README.en.md).
+
 ### 5.5 Events
 
 A transactional outbox: the entity row and the event row are committed by a single
@@ -503,6 +515,7 @@ product_category  product_id, category_id
 product_spec      id, product_id, kind, position, label, value, muted
 outbox            id, aggregate, aggregate_id, type, payload, created_at, published_at
 audit_entry       id, at, actor, action, subject, subject_id, correlation_id, ip, payload
+staff_avatar      login, subject, content_type, bytes, width, height, etag, updated_at
 lead              id, form, name, company, phone, email, product_slug, message,
                   consent_version, consent_at, source, language, campaign,
                   status, owner, correlation_id, idempotency_key, created_at
@@ -885,6 +898,8 @@ Working routes:
 | `/api/admin/v1/media` | admin UI | image upload into the read-open bucket |
 | `/api/admin/v1/session` | admin UI | who signed in and which roles the portal parsed |
 | `/api/admin/v1/staff` | admin UI | employees to pick an owner from; read only |
+| `/api/admin/v1/staff/{login}/avatar` | admin UI | an employee portrait; no portrait means 404, and the circle keeps its letter |
+| `/api/admin/v1/profile/avatar` | admin UI | your own portrait: set, replace, remove. No login in the path — the token decides whose it is |
 | `/api/admin/v1/chats` | admin UI | conversations and the queue of those waiting; the list filters by owner |
 | `/api/admin/v1/duty` | admin UI | the on-call schedule: who is on the line today, assigning a day, handing over a shift |
 

@@ -80,6 +80,73 @@ With `manage-users` a leaked secret would mean not "they read the staff list" bu
 - **A disabled employee** stays in the list and is marked: old deals hang on
   them, and removing them would show a deal without an owner.
 
+## The employee portrait
+
+The only thing the portal stores about an employee on its own. Everything else —
+login, name, roles, mail — lives in Keycloak and arrives in the token; the
+portrait does not.
+
+Keycloak can hold it in a user attribute, but changing your own attribute there
+requires the privilege to change users — that is, the privilege to change anyone.
+The price of that privilege is named above, and paying it for a picture is not
+worth it.
+
+**Where it lives: in the database, table `staff_avatar`.** Not in object storage,
+and that is a decision rather than convenience:
+
+| Where | Why not |
+| --- | --- |
+| `vedal-media` | anonymously readable — that is its purpose. An employee's portrait placed there is published. On top of that the service key holds no rights on it at all ([issue #37](https://github.com/michaelwelly/MuseonUrania/issues/37)) |
+| `vedal-documents` | closed and reachable, but it is the document vault: its own door that checks publication and writes an audit entry, its own constraints. A portrait is not a document |
+
+The database fits on the very trait that usually rules it out — size: one row per
+login, replaced rather than appended, holding a normalised 256×256 JPEG, that is
+tens of kilobytes. Sixty employees weigh less than one datasheet. In return come
+backups (the nightly `pg_dump` covers the database only, buckets are not backed
+up at all), a single transaction with the audit row, and privacy by construction:
+the bytes are served by a portal door behind a token, not by a bucket policy.
+
+The full reasoning lives in migration `V35__staff_avatar.sql`.
+
+**What the file is checked for.** JPEG or PNG up to 2 MB, source side between 64
+and 4096 pixels. The format is decided by content: the extension and the
+`Content-Type` header are written by whoever uploads. What is stored is not the
+uploaded file but a JPEG assembled from its pixels — a tail appended after the
+end of the image, EXIF with the shooting coordinates and any polyglot payload
+never reach storage, because the new file simply does not have them. Dimensions
+are checked from the header, before decoding: otherwise the check stands after
+the thing it guards against.
+
+**Entry points.** Editing is `POST` and `DELETE /api/admin/v1/profile/avatar`,
+with no login in the path: whose portrait it is, is decided by the token, and
+there is nowhere to name someone else's. Reading is
+`GET /api/admin/v1/staff/{login}/avatar`, open to every portal role: the circle
+with a portrait marks the author of an audit row and the owner of a deal. Every
+edit lands in the audit log.
+
+**Renaming and deleting an account.** The portrait is keyed by login, like
+everything else in the portal: the owner of a lead and a deal, the person on duty
+in the schedule, `actor` in the audit log. There is no foreign key and there
+cannot be one — the portal has no employee table.
+
+- the login was **renamed** — the portrait stays under the old one, the person
+  sees the letter circle again and uploads it anew. Every other reference to a
+  login behaves the same way, and fixing it for one column means introducing a
+  second order of things next to the common one;
+- the account was **deleted** — the row stays orphaned, like an audit row of
+  someone who left. There is nowhere to show it: the directory no longer returns
+  that login;
+- the login was **handed to another person** — the only dangerous case, and the
+  `subject` column stands against it: that is `sub` from the token, which never
+  changes in Keycloak. A portrait whose `subject` does not match the owner's
+  token is erased at their very first sign-in — the shell asks for its own
+  portrait on every page.
+
+This protection is not complete: until the new owner of the login signs in, a
+colleague sees the previous face next to that login. Closing the gap entirely
+would mean asking Keycloak for the `sub` of every login — a round trip to
+Keycloak for every circle in the audit log.
+
 ### A realm edit does not reach a running Keycloak
 
 The container has a named volume, and `--import-realm` does not touch a realm

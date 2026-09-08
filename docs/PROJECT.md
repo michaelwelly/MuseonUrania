@@ -416,6 +416,17 @@ Storage тот же запуск пишет туда, откуда читает 
 меньший лимит выше по цепочке роняет загрузку с 413 до приложения, и редактор
 видит страницу прокси вместо внятного отказа.
 
+**Портрет сотрудника в бакеты не поехал вовсе.** `vedal-media` открыт на чтение
+анонимно — это его назначение, — и лицо сотрудника, положенное туда, оказалось бы
+опубликовано; вдобавок у сервисного ключа прав на него нет (issue #37).
+`vedal-documents` закрыт и доступен, но это сейф документов со своими правилами
+публикации и своей дверью. Портрет лежит в базе, таблица `staff_avatar`: одна
+строка на логин, приведённый JPEG 256×256, десятки килобайт на человека —
+и вместе с базой он попадает в ежедневный бэкап, которого у бакетов нет вовсе.
+Предел здесь свой, 2 МБ: двадцать мегабайт на человека — это уже файловое
+хранилище, а не колонка. Разбор — в миграции `V35__staff_avatar.sql`
+и в [backend/iam/README](../backend/iam/README.md).
+
 ### 5.5 События
 
 Транзакционный outbox: строка сущности и строка события коммитятся одним
@@ -474,6 +485,7 @@ product_category  product_id, category_id
 product_spec      id, product_id, kind, position, label, value, muted
 outbox            id, aggregate, aggregate_id, type, payload, created_at, published_at
 audit_entry       id, at, actor, action, subject, subject_id, correlation_id, ip, payload
+staff_avatar      login, subject, content_type, bytes, width, height, etag, updated_at
 lead              id, form, name, company, phone, email, product_slug, message,
                   consent_version, consent_at, source, language, campaign,
                   status, owner, correlation_id, idempotency_key, created_at
@@ -851,6 +863,8 @@ Testcontainers. Шлюз — Spring Boot 4.0.7 и Spring Cloud Gateway 5.0.2:
 | `/api/admin/v1/media` | админка | загрузка снимков в открытый бакет |
 | `/api/admin/v1/session` | админка | кто вошёл и какие роли разобрал портал |
 | `/api/admin/v1/staff` | админка | сотрудники для выбора ответственного; только чтение |
+| `/api/admin/v1/staff/{login}/avatar` | админка | портрет сотрудника; нет портрета — 404, и кружок остаётся с буквой |
+| `/api/admin/v1/profile/avatar` | админка | свой портрет: поставить, заменить, убрать. Логина в адресе нет — чей он, решает токен |
 | `/api/admin/v1/chats` | админка | разговоры и очередь ждущих; отбор списка по ответственному |
 | `/api/admin/v1/duty` | админка | график дежурств: кто на линии сегодня, назначение на день, передача смены |
 
