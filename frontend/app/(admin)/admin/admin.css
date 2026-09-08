@@ -4019,7 +4019,10 @@ th.tight input[type="checkbox"] {
   background: var(--surface);
 }
 
-/* ————— плашка дежурства ————— */
+/* ————— плашка дежурства —————
+   Обычное состояние — спокойное: имя дежурного не новость, а рабочий факт.
+   Цветом отмечаются только два — «никого не назначили» и расхождение
+   с присутствием: плашка, крашеная всегда, не отмечает ничего. */
 
 .duty {
   display: flex;
@@ -4028,8 +4031,14 @@ th.tight input[type="checkbox"] {
   gap: var(--s1) var(--s3);
   margin: 0;
   padding: var(--s2) var(--s3);
-  border: 1px solid var(--state-wait-line);
+  border: 1px solid var(--line);
   border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.duty--wait,
+.duty--alarm {
+  border-color: var(--state-wait-line);
   background: var(--state-wait-bg);
 }
 
@@ -4037,6 +4046,11 @@ th.tight input[type="checkbox"] {
   font-size: var(--t-micro);
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.duty--wait .duty__label,
+.duty--alarm .duty__label {
   color: var(--state-wait);
 }
 
@@ -4046,9 +4060,132 @@ th.tight input[type="checkbox"] {
   color: var(--state-wait);
 }
 
+.duty__who {
+  font-size: var(--t-small);
+  font-weight: 600;
+}
+
+/* «На месте» — про присутствие, а не про дежурство: приглушено, пока
+   человек за экраном, и заметно, когда его там нет. */
+.duty__at {
+  font-size: var(--t-micro);
+  color: var(--state-wait);
+}
+
+.duty__at--on {
+  color: var(--text-2);
+}
+
+.duty__note {
+  font-size: var(--t-micro);
+  color: var(--text-2);
+  font-style: italic;
+}
+
 .duty__why {
   font-size: var(--t-micro);
   color: var(--text-2);
+}
+
+.duty__acts {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-left: auto;
+}
+
+.duty__form {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  width: 100%;
+  padding-top: var(--s2);
+  border-top: 1px solid var(--line);
+}
+
+.duty__pick {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+}
+
+.duty__picklabel {
+  font-size: var(--t-micro);
+  color: var(--text-2);
+}
+
+/* ————— график дежурств ————— */
+
+.rota {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.rota th,
+.rota td {
+  padding: var(--s2);
+  text-align: left;
+  vertical-align: baseline;
+  border-bottom: 1px solid var(--line);
+}
+
+.rota thead th {
+  font-size: var(--t-micro);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+/* Заголовок строки остаётся ячейкой таблицы: `display: flex` вынул бы его
+   из табличной раскладки, и колонки разъехались бы на первой же строке. */
+.rota tbody th {
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.rota__today {
+  background: var(--paper);
+}
+
+.rota__dow,
+.rota__mark {
+  margin-left: var(--s1);
+  font-size: var(--t-micro);
+}
+
+.rota__dow {
+  color: var(--text-2);
+}
+
+.rota__mark {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--state-wait);
+}
+
+.rota__note,
+.rota__by {
+  font-size: var(--t-micro);
+  color: var(--text-2);
+}
+
+.rota__at {
+  margin-left: var(--s1);
+}
+
+/* Подпись остаётся в разметке и уходит с глаз. Не `display: none` —
+   так её не читают вовсе. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* ————— карточка разговора в очереди ————— */

@@ -61,6 +61,10 @@ const CONTOURS: ReadonlyArray<readonly [string, Contour]> = [
   ["/admin/deals", "sales"],
   ["/admin/quotes", "sales"],
   ["/admin/chats", "sales"],
+  // Дежурство — контур продаж, а не административный: смену передают между
+  // собой те, кто отвечает посетителям, и спрашивать на это администратора
+  // значит остановить передачу до понедельника. То же правило держит портал.
+  ["/admin/duty", "sales"],
   ["/admin/analytics", "sales"],
 
   ["/admin/products", "production"],

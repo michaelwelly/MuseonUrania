@@ -683,6 +683,75 @@ export const staff = () => get<StaffMember[]>("/staff");
 export const assignRoles = (login: string, roles: string[]) =>
   put<StaffMember[]>(`/staff/${encodeURIComponent(login)}/roles`, { roles });
 
+// ————— дежурство —————
+//
+// Третий факт рядом с двумя прежними, и ни один из них не заменяет его.
+// Часы работы поддержки — обещание, что кто-то ответит, и они не называют
+// кого. Присутствие — факт про множество: открыто ли хоть одно рабочее
+// место. Дежурство называет человека, и только с ним смену есть кому
+// передать, а за неотвеченный вопрос — с кого спросить.
+
+export type DutyShift = {
+  /** День дежурства в зоне поддержки, `YYYY-MM-DD`. */
+  date: string;
+  login: string;
+  /** Имя из справочника. Пусто — учётной записи с таким логином больше нет. */
+  name: string | null;
+  note: string | null;
+  assignedBy: string;
+  assignedAt: string;
+  /** Осмысленно только у сегодняшнего дня. */
+  atDesk: boolean;
+};
+
+export type DutyToday = {
+  date: string;
+  /** Пусто — на сегодня никого не назначили. */
+  login: string | null;
+  name: string | null;
+  note: string | null;
+  /** У дежурного открыто рабочее место. */
+  atDesk: boolean;
+  /** На линии есть хоть кто-то — не обязательно дежурный. */
+  staffOnline: boolean;
+  workingHours: boolean;
+  /**
+   * Повод оповестить: дежурный назначен, время рабочее, а рабочего места
+   * он не открыл. Считает это портал, а не экран: то же расхождение
+   * понадобится письмом, когда будет решено, кому его слать.
+   */
+  alarm: boolean;
+  supportHours: string;
+};
+
+export const dutyToday = () => get<DutyToday>("/duty/today");
+
+/** График. Без границ — от сегодня на две недели вперёд. */
+export const duty = (from?: string, to?: string) => {
+  const params = new URLSearchParams();
+  if (from) params.set("from", from);
+  if (to) params.set("to", to);
+  const query = params.toString();
+  return get<DutyShift[]>(`/duty${query ? `?${query}` : ""}`);
+};
+
+/** Поставить человека на день. Прошедшие дни портал не правит. */
+export const assignDuty = (date: string, login: string, note?: string) =>
+  put<DutyShift>(`/duty/${date}`, { login, note: note ?? null });
+
+/** Снять дежурного с дня: «никого» — это отсутствие записи, а не пустой логин. */
+export const releaseDuty = (date: string) => del(`/duty/${date}`);
+
+/**
+ * Передать смену: сегодняшнее дежурство переходит другому.
+ *
+ * Отдельно от назначения на сегодня, хотя в базе происходит то же самое.
+ * Разница в журнале: «передал смену» отвечает на вопрос «почему на линии
+ * не тот, кого ставили».
+ */
+export const handOffDuty = (login: string, note?: string) =>
+  post<DutyShift>("/duty/handoff", { login, note: note ?? null });
+
 // ————— журнал —————
 
 export type AuditEntry = {
