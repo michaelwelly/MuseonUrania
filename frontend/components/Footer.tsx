@@ -35,23 +35,12 @@ export default function Footer() {
             />
           </a>
           <p className={styles.about}>{footer.about}</p>
-          <div className={styles.messengers}>
-            {footer.messengers.map((m) =>
-              m.href ? (
-                <a key={m.label} className={styles.pill} href={m.href}>
-                  {m.label}
-                </a>
-              ) : (
-                <span
-                  key={m.label}
-                  className={`${styles.pill} ${styles.pillMuted}`}
-                  title="Ссылка на аккаунт ожидает уточнения"
-                >
-                  {m.label}
-                </span>
-              ),
-            )}
-          </div>
+          {/* Кнопки соцсетей скрыты из вёрстки целиком, а не только сделаны
+              некликабельными: по итогам просмотра стенда заказчиком
+              8 сентября (GitHub issue #69) — подтверждённых ссылок на
+              аккаунты нет, показывать пустые «пилюли» не нужно. Данные
+              остаются в content/site.ts (footer.messengers), верстка
+              вернётся одной правкой, когда заказчик передаст адреса. */}
         </div>
 
         {footer.columns.map((column) => (
