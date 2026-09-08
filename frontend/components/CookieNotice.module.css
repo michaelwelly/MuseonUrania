@@ -27,6 +27,15 @@
   border-bottom: 1px solid currentColor;
 }
 
+/* Кнопки в своей строке: их стало две, и по отдельности они сжимались бы
+   по-разному — «Только необходимые» вдвое длиннее «Принять». */
+.buttons {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .accept {
   flex: none;
   height: 40px;
@@ -47,6 +56,30 @@
   background: var(--green-ink-hover);
 }
 
+/* Отказ — контурная кнопка того же размера, а не ссылка мелким шрифтом.
+   Разный размер у «принять» и «отказать» — это выбор, подстроенный под
+   ответ, который нужен нам, а не посетителю. Контур вместо заливки
+   оставляет согласие основным действием, не пряча отказ. */
+.decline {
+  flex: none;
+  height: 40px;
+  padding: 0 18px;
+  border: 1px solid var(--on-dark-2);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--on-dark-2);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.decline:hover {
+  border-color: #fff;
+  color: #fff;
+}
+
 /* На телефоне плашка занимает ширину экрана, а кнопка уходит под текст:
    в строку они не помещаются, и кнопка сжималась бы до нечитаемой. */
 @media (max-width: 640px) {
@@ -60,5 +93,21 @@
     align-items: stretch;
     gap: 14px;
     max-width: none;
+  }
+
+  /* Кнопки делят строку поровну: столбиком они заняли бы пол-экрана,
+     а плашка и так стоит поверх содержимого. Колонки автоматические,
+     а не «1fr 1fr»: кнопка бывает и одна — там, где счётчика нет,
+     и половина ширины ей досталась бы без всякой причины. */
+  .buttons {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 10px;
+  }
+
+  .decline,
+  .accept {
+    padding: 0 10px;
   }
 }

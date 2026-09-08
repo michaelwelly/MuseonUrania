@@ -5,6 +5,7 @@ import Link from "next/link";
 import { site } from "@/content/site";
 import { consent as consentCopy } from "@/content/legal";
 import { newIdempotencyKey, submitLead } from "@/lib/submit";
+import { reachGoal } from "@/lib/analytics";
 import styles from "./HomeLeadForm.module.css";
 
 type Errors = Partial<Record<"name" | "phone" | "email" | "message" | "consent", string>>;
@@ -66,7 +67,14 @@ export default function HomeLeadForm() {
 
     setStatus(result.ok ? "sent" : "failed");
     setNotice(result.message);
-    if (result.ok) idempotencyKey.current = newIdempotencyKey();
+    if (result.ok) {
+      idempotencyKey.current = newIdempotencyKey();
+      // Цель — на принятой заявке, а не на нажатии кнопки. Клик по «Отправить»
+      // с пустым телефоном или при упавшем бэкенде отправкой формы не является,
+      // и посчитанный как отправка он завышал бы конверсию ровно на те случаи,
+      // ради которых её и смотрят.
+      reachGoal("quote_form_submit");
+    }
   }
 
   if (status === "sent") {
@@ -182,7 +190,6 @@ export default function HomeLeadForm() {
         <button
           type="submit"
           className={styles.submit}
-          data-analytics="quote_form_submit"
           disabled={status === "sending"}
         >
           {status === "sending" ? "Отправляем…" : "Отправить запрос"}

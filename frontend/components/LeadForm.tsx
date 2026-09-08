@@ -11,6 +11,7 @@ import {
   submitLead,
   type LeadForm as FormType,
 } from "@/lib/submit";
+import { reachGoal } from "@/lib/analytics";
 import styles from "./LeadForm.module.css";
 
 /**
@@ -162,6 +163,17 @@ export default function LeadForm({
       setStatus("sent");
       setNotice(result.message);
       idempotencyKey.current = newIdempotencyKey();
+      // Цель — на принятой заявке, а не на нажатии кнопки. Клик по «Отправить»
+      // с пустым телефоном или при упавшем бэкенде отправкой формы не является,
+      // и посчитанный как отправка он завышал бы конверсию ровно на те случаи,
+      // ради которых её и смотрят.
+      //
+      // Есть селектор темы — цель идёт за темой. Форма на /contacts/ отправляет
+      // и запрос цены, и запрос каталога, и сервисное обращение; посчитанные
+      // одной целью, они дают одно число, из которого не видно, чего просили.
+      // Имена совпадают со списком из чек-листа приёмки: `quote_form_submit`,
+      // `catalog_form_submit`, `service_form_submit`.
+      reachGoal(topics ? `${topic}_form_submit` : analytics);
       return;
     }
 
@@ -389,7 +401,6 @@ export default function LeadForm({
         <button
           type="submit"
           className={styles.submit}
-          data-analytics={analytics}
           disabled={sending}
         >
           {sending ? "Отправляем…" : (submitLabel ?? serviceForm.submit)}
