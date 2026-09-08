@@ -71,13 +71,10 @@
     drop-shadow(1px 0 0 #fff) drop-shadow(-1px 0 0 #fff);
 }
 
-/* Знак — ссылка на uralcci.com, у неё должно быть видимое состояние.
-   Кант утолщается вместо смены цвета: перекрашивать чужой знак нельзя. */
-.membership:hover img {
-  filter: drop-shadow(0 1px 0 #fff) drop-shadow(0 -1px 0 #fff)
-    drop-shadow(1px 0 0 #fff) drop-shadow(-1px 0 0 #fff)
-    drop-shadow(0 0 2px rgba(255, 255, 255, 0.9));
-}
+/* Раньше здесь был hover-стейт: знак был ссылкой на uralcci.com. Ссылку
+   убрали по GitHub issue #67 (клик по картинке выглядел случайным
+   переходом), и вместе с ней — эффект наведения: знак больше не кликабелен,
+   и подсказывать обратное состоянием при наведении не нужно. */
 
 .about {
   margin-top: 20px;
@@ -87,34 +84,11 @@
   color: rgba(255, 255, 255, 0.58);
 }
 
-.messengers {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 24px;
-}
-
-.pill {
-  display: inline-flex;
-  align-items: center;
-  height: 34px;
-  padding: 0 13px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 2px;
-  font-size: 12.5px;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-a.pill:hover {
-  border-color: var(--green);
-  color: #fff;
-}
-
-/* Пилюля без ссылки: аккаунт заказчик не передал. */
-.pillMuted {
-  color: var(--on-dark-3);
-  cursor: default;
-}
+/* .messengers/.pill/.pillMuted убраны вместе с кнопками соцсетей —
+   GitHub issue #69: подтверждённых ссылок нет, пустые «пилюли» не
+   показываем. Стили вернутся вместе с версткой в components/Footer.tsx,
+   когда заказчик передаст адреса — см. комментарий у footer.messengers
+   в content/site.ts. */
 
 .colTitle {
   font-family: var(--font-mono), monospace;

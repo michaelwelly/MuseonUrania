@@ -28,11 +28,13 @@ import java.util.stream.Collectors;
  * ради двух значений — работа, которая окупится тогда, когда расписание
  * станет сложным; сейчас оно проще некуда.
  *
- * <p><b>Откуда взяты значения по умолчанию.</b> «Пн–Пт 9:00–18:00» — часы
+ * <p><b>Откуда взяты значения по умолчанию.</b> «Пн–Пт 9:00–17:30» — часы
  * отдела продаж, уже опубликованные на сайте (`site.phoneHours`), и зона
  * Екатеринбурга — по адресу из реквизитов. Это не выдумка про поддержку,
  * а перенос подтверждённого: чат отвечают те же люди и в те же часы.
- * Разойдутся — правится настройкой, а не кодом.
+ * Разойдутся — правится настройкой, а не кодом. Часы обновлены по итогам
+ * просмотра стенда заказчиком 8 сентября (GitHub issue #76): было
+ * 9:00–18:00, верно 9:00–17:30.
  *
  * <p><b>Чего здесь нет.</b> Праздников и переносов. Календарь рабочих дней —
  * это внешний источник, который надо откуда-то брать и поддерживать;
@@ -56,7 +58,7 @@ public class SupportHours {
      * (`VEDAL_SUPPORT_DESCRIPTION`), а не строкой в properties: окружение
      * читается в UTF-8 и кириллицу не портит.
      */
-    private static final String DEFAULT_DESCRIPTION = "Пн–Пт 9:00–18:00 (Екатеринбург)";
+    private static final String DEFAULT_DESCRIPTION = "Пн–Пт 9:00–17:30 (Екатеринбург)";
 
     private final Set<DayOfWeek> days;
     private final LocalTime opens;
@@ -67,7 +69,7 @@ public class SupportHours {
     public SupportHours(
             @Value("${vedal.support.days:MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY}") String days,
             @Value("${vedal.support.opens:09:00}") String opens,
-            @Value("${vedal.support.closes:18:00}") String closes,
+            @Value("${vedal.support.closes:17:30}") String closes,
             @Value("${vedal.support.zone:Asia/Yekaterinburg}") String zone,
             @Value("${VEDAL_SUPPORT_DESCRIPTION:}") String description) {
 
@@ -103,7 +105,7 @@ public class SupportHours {
         if (!days.contains(local.getDayOfWeek())) return false;
 
         var time = local.toLocalTime();
-        // Граница закрытия строгая: в 18:00 уже не работают. Открытия —
+        // Граница закрытия строгая: в 17:30 уже не работают. Открытия —
         // нестрогая: в 9:00 уже работают.
         return !time.isBefore(opens) && time.isBefore(closes);
     }
@@ -112,7 +114,7 @@ public class SupportHours {
      * Часы работы одной строкой — для показа посетителю.
      *
      * <p>Готовая строка, а не три поля, которые виджет соберёт сам: расписание
-     * пишут словами («Пн–Пт 9:00–18:00»), и собирать их из дней недели значит
+     * пишут словами («Пн–Пт 9:00–17:30»), и собирать их из дней недели значит
      * получить в интерфейсе перечисление из пяти слов. Разойдутся строка
      * и границы — увидим на первом же вопросе «а почему написано одно,
      * а отвечают в другое»; поэтому и то и другое живёт в одном месте,

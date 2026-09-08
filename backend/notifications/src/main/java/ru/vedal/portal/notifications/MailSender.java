@@ -1,6 +1,7 @@
 package ru.vedal.portal.notifications;
 
-// Порт наружу. Ранняя реализация — запись в лог, полная — SMTP Яндекс 360.
+// Порт наружу. Ранняя реализация — запись в лог, полная — SMTP почтового
+// сервера домена (mail.vedal-med.ru).
 public interface MailSender {
 
     void send(String to, String subject, String body);
