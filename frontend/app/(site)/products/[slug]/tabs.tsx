@@ -61,9 +61,46 @@ export default function ProductTabs({
   const c = contentText(lang);
   const at = (path: string) => localePath(lang, path);
 
+  /**
+   * Выбрать вкладку и увести на неё фокус.
+   *
+   * Фокус переносится вручную, потому что у невыбранных вкладок
+   * `tabIndex = -1`: браузер сам туда не встанет, и стрелка меняла бы
+   * панель, оставляя фокус на прежней кнопке.
+   */
+  const focusTab = (t: Tab) => {
+    setTab(t);
+    document.getElementById(tabId(t))?.focus();
+  };
+
+  /**
+   * Клавиатура по шаблону вкладок WAI-ARIA: стрелки, Home и End.
+   *
+   * До issue #105 её не было вовсе. Роли `tablist` и `tab` уже стояли —
+   * то есть скринридер объявлял «вкладка, 1 из 3» и обещал пользователю
+   * стрелки, которых не существовало. Роль без клавиатуры хуже, чем
+   * отсутствие роли: она даёт обещание, а не подсказку.
+   *
+   * По кругу: с последней вкладки вправо — на первую. Так написано
+   * в шаблоне, и так удобнее — три вкладки обходятся одной клавишей.
+   */
+  const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const index = TABS.indexOf(tab);
+    let next: number | null = null;
+    if (event.key === "ArrowRight") next = (index + 1) % TABS.length;
+    else if (event.key === "ArrowLeft") next = (index - 1 + TABS.length) % TABS.length;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = TABS.length - 1;
+    if (next === null) return;
+    // Иначе Home и End прокрутят страницу, а стрелки — горизонтальный
+    // список вкладок: браузер сделает и то и другое поверх переключения.
+    event.preventDefault();
+    focusTab(TABS[next]);
+  };
+
   return (
     <>
-      <div className={styles.tabs} role="tablist">
+      <div className={styles.tabs} role="tablist" onKeyDown={onKeyDown}>
         {TABS.map((t) => (
           <button
             key={t}
@@ -72,6 +109,10 @@ export default function ProductTabs({
             role="tab"
             aria-selected={tab === t}
             aria-controls={panelId}
+            // Перемещающийся tabIndex: в порядок обхода Tab попадает одна
+            // вкладка — выбранная. Три подряд заставляли бы человека
+            // с клавиатуры трижды нажать Tab, чтобы миновать переключатель.
+            tabIndex={tab === t ? 0 : -1}
             className={`${styles.tab} ${tab === t ? styles.tabActive : ""}`}
             onClick={() => setTab(t)}
           >

@@ -84,3 +84,78 @@ describe("документы к изделию", () => {
     expect(названия[0]).toContain("согласуется");
   });
 });
+
+// Клавиатура. Issue #105.
+//
+// Роли `tablist` и `tab` стояли и раньше — то есть скринридер объявлял
+// «вкладка, 1 из 3» и обещал стрелки, которых не существовало. Роль без
+// клавиатуры хуже отсутствия роли: она даёт обещание.
+
+describe("вкладки с клавиатуры", () => {
+  const вкладки = () => screen.getAllByRole("tab");
+
+  function отрисовать() {
+    render(<ProductTabs product={product} documents={[]} lang="ru" />);
+  }
+
+  it("в порядок обхода Tab попадает одна вкладка — выбранная", () => {
+    отрисовать();
+
+    // Иначе человек с клавиатуры трижды нажимает Tab, чтобы миновать
+    // переключатель из трёх кнопок.
+    const [первая, ...остальные] = вкладки();
+    expect(первая).toHaveAttribute("tabindex", "0");
+    for (const t of остальные) expect(t).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("стрелка вправо переключает вкладку и уводит на неё фокус", async () => {
+    отрисовать();
+    вкладки()[0].focus();
+
+    await userEvent.keyboard("{ArrowRight}");
+
+    const [первая, вторая] = вкладки();
+    expect(вторая).toHaveAttribute("aria-selected", "true");
+    expect(первая).toHaveAttribute("aria-selected", "false");
+    // Фокус обязан ехать за выбором: у невыбранных вкладок tabindex −1,
+    // и оставшись на прежней кнопке он оказался бы вне порядка обхода.
+    expect(вторая).toHaveFocus();
+    expect(screen.getByRole("tabpanel")).toHaveAccessibleName("Документы");
+  });
+
+  it("стрелка влево с первой вкладки уходит на последнюю", async () => {
+    отрисовать();
+    вкладки()[0].focus();
+
+    await userEvent.keyboard("{ArrowLeft}");
+
+    // По кругу — так написано в шаблоне WAI-ARIA, и так три вкладки
+    // обходятся одной клавишей в любую сторону.
+    const последняя = вкладки()[вкладки().length - 1];
+    expect(последняя).toHaveAttribute("aria-selected", "true");
+    expect(последняя).toHaveFocus();
+  });
+
+  it("Home и End прыгают на края", async () => {
+    отрисовать();
+    вкладки()[0].focus();
+
+    await userEvent.keyboard("{End}");
+    expect(вкладки()[вкладки().length - 1]).toHaveAttribute("aria-selected", "true");
+
+    await userEvent.keyboard("{Home}");
+    expect(вкладки()[0]).toHaveAttribute("aria-selected", "true");
+    expect(вкладки()[0]).toHaveFocus();
+  });
+
+  it("Enter на вкладке по-прежнему её открывает", async () => {
+    отрисовать();
+    вкладки()[0].focus();
+
+    // Обычное поведение кнопки. Проверяется потому, что перемещающийся
+    // tabindex ломает именно его, если фокус не переносить вслед за выбором.
+    await userEvent.keyboard("{ArrowRight}{Enter}");
+
+    expect(вкладки()[1]).toHaveAttribute("aria-selected", "true");
+  });
+});
