@@ -109,6 +109,6 @@ journalctl -u vedal-autodeploy -n 50 --no-pager
 
 ## Связанные документы
 
-- [План деплоя на ВМ](../../outputs/server/vedal_vm_deploy_plan_2026-08-18.md) —
-  карта хостов, размещение, SSH.
 - [Подключение домена vedal-med.ru](domain_cutover_vedal_med_ru.md).
+- Детальная карта хостов, SSH и доступы хранятся вне публичного репозитория в
+  официальном пакете проекта.

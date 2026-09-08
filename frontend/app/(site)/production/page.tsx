@@ -97,7 +97,7 @@ export default function ProductionPage() {
               <span key={line}>{line}</span>
             ))}
             <span>
-              Пн–Пт 9:00–18:00 ·{" "}
+              {address.hours} ·{" "}
               <a href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a>
             </span>
           </address>

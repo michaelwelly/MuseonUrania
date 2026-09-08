@@ -146,7 +146,7 @@ public class QuoteDesk implements QuoteAdmin {
 
         // Событие и строка КП коммитятся одним COMMIT. Потребителя у него
         // пока нет: письмо клиенту с самим предложением — следующий шаг,
-        // и он упирается в SMTP Яндекс 360, которого ещё нет.
+        // и он упирается в SMTP, который до 8 сентября не был настроен.
         events.record("quote", quote.getId().toString(), KafkaTopics.DEALS,
                 Map.of("action", "quote.sent", "deal", quote.getDealId().toString(),
                         "number", quote.getNumber()));

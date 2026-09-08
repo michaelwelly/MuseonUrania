@@ -7,6 +7,8 @@ import ru.vedal.portal.assistant.AssistantService;
 import ru.vedal.portal.audit.AuditLog;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.Duration;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -54,9 +56,15 @@ class SupportPresenceTest extends ChatTestBase {
                 ownStream, hours);
     }
 
+    // Значения — те же, что действуют по умолчанию в проде (см. ChatStream):
+    // тест проверяет настоящее поведение класса, а не урезанное для удобства.
+    private static ChatStream ownStream() {
+        return new ChatStream(Duration.ofMinutes(30), 4, 500, 64);
+    }
+
     @Test
     void nobodyIsOnlineUntilADeskIsOpen() {
-        var ownStream = new ChatStream();
+        var ownStream = ownStream();
         assertThat(ownStream.staffOnline()).isFalse();
 
         ownStream.watchAll();
@@ -76,7 +84,7 @@ class SupportPresenceTest extends ChatTestBase {
     // и надпись в шапке нужна ему уже тогда.
     @Test
     void anEmptyThreadStillSaysWhetherPeopleAreAround() {
-        var ownStream = new ChatStream();
+        var ownStream = ownStream();
         var quiet = deskWith(ownStream);
 
         var thread = quiet.threadFor(visitor());
@@ -101,7 +109,7 @@ class SupportPresenceTest extends ChatTestBase {
     // ответят»: он закроет вкладку через десять минут и решит, что чат сломан.
     @Test
     void callingAHumanWhenNobodyIsAroundSaysWhenTheyAnswer() {
-        var quiet = deskWith(new ChatStream());
+        var quiet = deskWith(ownStream());
 
         var thread = quiet.callHuman(visitor(), FROM_SITE);
 
@@ -118,7 +126,7 @@ class SupportPresenceTest extends ChatTestBase {
     // А когда человек на связи — прежний текст: он и был правдой.
     @Test
     void withSomeoneAroundTheOldWordingStands() {
-        var ownStream = new ChatStream();
+        var ownStream = ownStream();
         var busy = deskWith(ownStream);
         var open = ownStream.watchAll();
 

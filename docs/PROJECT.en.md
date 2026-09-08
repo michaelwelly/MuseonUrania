@@ -168,15 +168,17 @@ MuseonVedalina/
 │  ├─ strategy/             business frame, requirements, Vedalina, SEO, competitors
 │  ├─ frontend/             sitemap, content models, page briefs, checklist
 │  ├─ legal/                compliance requirements: personal data, hosting, claims
-│  ├─ operations/           roadmap, team estimate, credentials handover,
-│  │                        vedal-med.ru domain cutover
-│  ├─ products/             VEDAL R1/R2, A-2000, Т-100 datasheets and the analysis
-│  ├─ requests/             the materials request to Nikolay Nikolaevich
+│  ├─ operations/           roadmap, autodeploy, vedal-med.ru domain cutover
+│  ├─ products/             public summary for VEDAL R1/R2, A-2000, Т-100
+│  ├─ security/             public repository cleanup checks
 │  └─ superpowers/          the backend spec, the catalog module plan
 ├─ assets/vedalina/           Vedalina avatars; MVP — vedalina-avatar-middle-v1.png
-├─ prototypes/              vedalina-web-interface.html — the source of the markup
-└─ outputs/                 presentations, pptx/pdf
+└─ assets/brand/              public brand assets
 ```
+
+Presentations, contracts, acts, credentials, commercial calculations and
+customer source materials are stored outside public git in the official project
+package.
 
 **Important about the backend layout.** The folders `backend/crm/`,
 `backend/iam/` and the rest are **real Maven modules**: their own `pom.xml`,

@@ -36,19 +36,19 @@ class MailSenderChoiceTest {
     @Test
     void configuredHostGivesSmtp() {
         context.withBean(JavaMailSender.class, JavaMailSenderImpl::new)
-                .withPropertyValues("spring.mail.host=smtp.yandex.ru",
+                .withPropertyValues("spring.mail.host=mail.vedal-med.ru",
                         "spring.mail.username=portal@vedal-med.ru")
                 .run(ctx -> assertThat(ctx.getBean(MailSender.class))
                         .isInstanceOf(SmtpMailSender.class));
     }
 
-    // Обратный адрес пуст — Яндекс 360 отверг бы каждое письмо. Отказ на старте
+    // Обратный адрес пуст — сервер отверг бы каждое письмо. Отказ на старте
     // виден сразу, отказ на первой заявке — через день и уже с потерянным
     // подтверждением.
     @Test
     void configuredSmtpWithoutSenderAddressFailsAtStartup() {
         context.withBean(JavaMailSender.class, JavaMailSenderImpl::new)
-                .withPropertyValues("spring.mail.host=smtp.yandex.ru")
+                .withPropertyValues("spring.mail.host=mail.vedal-med.ru")
                 .run(ctx -> assertThat(ctx).hasFailed());
     }
 }

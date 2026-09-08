@@ -33,12 +33,11 @@
 - `docs/frontend/implementation_checklist.md`
 - `docs/strategy/vedalina_assistant_spec.md`
 - `docs/strategy/vedalina_visual_assets.md`
-- `outputs/customer_presentation/vedal_customer_requests_plan_2026-08-18.md`
-- `outputs/server/vedal_vm_deploy_plan_2026-08-18.md`
 - `assets/vedalina/vedalina-avatar-middle-v1.png`
 - `assets/vedalina/vedalina-web-integration-mockup-v1.png`
 - `assets/brand/`
-- `outputs/vedal_architecture/v2_update/vedal_portal_architecture_and_stages_v3.pdf`
+- Клиентские презентации, VM-карта и доступы хранятся вне публичного git в
+  официальном пакете проекта.
 
 ## Текущий стенд
 

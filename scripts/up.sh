@@ -117,9 +117,8 @@ $(say "Готово.")
   Спецификация    http://localhost:${gateway_port}/swagger-ui.html
   Keycloak        http://localhost:${keycloak_port}
 
-  Вход в админку: editor / editor-local
-  (учётная запись локального стека, заведена импортом realm'а —
-   см. backend/keycloak/README.md)
+  Локальная учётная запись админки заведена импортом realm'а.
+  Подробности для разработчика: backend/keycloak/README.md
 
   Пароли базы, хранилища и консоли Keycloak — в backend/.env.
 

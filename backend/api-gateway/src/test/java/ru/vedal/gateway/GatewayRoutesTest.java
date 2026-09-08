@@ -75,6 +75,25 @@ class GatewayRoutesTest {
                 });
     }
 
+    // Публичные двери файл не принимают — только JSON с полями, ограниченными
+    // по длине на портале, — но без предела здесь тело можно раздуть до
+    // любого размера ДО того, как эта проверка вообще сработает. Issue #65:
+    // дверь без счётчика — дешевле всего кладёт портал.
+    @Test
+    void publicRouteAlsoGetsABodyLimit() {
+        var pub = definitions().stream()
+                .filter(r -> r.getId().equals("portal-public-api"))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(pub.getFilters())
+                .singleElement()
+                .satisfies(filter -> {
+                    assertThat(filter.getName()).isEqualTo("RequestSize");
+                    assertThat(filter.getArgs()).containsValue("256KB");
+                });
+    }
+
     // Серверных страниц админки у портала больше нет, и маршрута к ним быть
     // не должно: /admin/** обслуживает сайт.
     @Test
