@@ -68,6 +68,23 @@ export function Widget() {
     });
   }
 
+  // Пока панель открыта, страница отступает вправо на её ширину (см.
+  // .admin-body--widget в admin.css). Иначе панель ложится поверх таблицы:
+  // на живом стенде она закрывала у заявок колонки «Источник», «Статус»
+  // и «Ответственный».
+  //
+  // Класс на body, а не на своей обёртке: раздвинуть надо страницу, а
+  // виджет к ней не относится — он висит поверх всего, что есть в оболочке.
+  useEffect(() => {
+    const классы = document.body.classList;
+    классы.toggle("admin-body--widget", open);
+    классы.toggle("admin-body--widget-talk", open && talking !== null);
+    return () => {
+      классы.remove("admin-body--widget");
+      классы.remove("admin-body--widget-talk");
+    };
+  }, [open, talking]);
+
   return (
     <div className="widget">
       {/* Панель заводится открытием, а не прячется стилями: спрятанная она
@@ -174,20 +191,15 @@ function Queue({
 
   return (
     <div className="widget__panel" role="dialog" aria-label="Разговоры, ждущие ответа">
-      <div className="widget__head">
+      {/* Шапка в две строки: знак, название, «Развернуть» и крестик — сверху,
+          сколько ждут — своей строкой во всю ширину. В один ряд это не
+          помещалось, и сжималась именно подпись с числом ждущих, ради
+          которой в шапку и смотрят. */}
+      <div className="widget__head widget__head--queue">
         <span className="widget__disc" aria-hidden="true">
           <CrossIcon size={18} />
         </span>
-        <span className="widget__headings">
-          <span className="widget__title">Разговоры</span>
-          <span className="widget__sub mono">
-            {ждут === 0
-              ? "никто не ждёт ответа"
-              : `${ждут} ${plural(ждут, "ждёт", "ждут", "ждут")} ответа${
-                  дольше_всех === null ? "" : ` · дольше всех ${словами(дольше_всех)}`
-                }`}
-          </span>
-        </span>
+        <span className="widget__title">Разговоры</span>
         <Link className="widget__more" href="/admin/chats/" onClick={onClose}>
           Развернуть
         </Link>
@@ -199,6 +211,13 @@ function Queue({
         >
           <CloseIcon />
         </button>
+        <span className="widget__sub mono">
+          {ждут === 0
+            ? "никто не ждёт ответа"
+            : `${ждут} ${plural(ждут, "ждёт", "ждут", "ждут")} ответа${
+                дольше_всех === null ? "" : ` · дольше всех ${словами(дольше_всех)}`
+              }`}
+        </span>
       </div>
 
       <div className="widget__list">

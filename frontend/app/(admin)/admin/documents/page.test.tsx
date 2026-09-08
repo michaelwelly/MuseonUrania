@@ -10,10 +10,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // в интерфейсе на неё ничто не указывает.
 
 const updateDocument = vi.fn();
+const reindexKnowledge = vi.fn();
 
 vi.mock("@/lib/admin", () => ({
   documents: vi.fn(),
   documentVocabulary: vi.fn(),
+  knowledge: vi.fn(),
+  reindexKnowledge: (...args: unknown[]) => reindexKnowledge(...args),
   updateDocument: (...args: unknown[]) => updateDocument(...args),
   createDocument: vi.fn(),
   publishDocument: vi.fn(),
@@ -21,7 +24,7 @@ vi.mock("@/lib/admin", () => ({
   AdminError: class AdminError extends Error {},
 }));
 
-import { documentVocabulary, documents } from "@/lib/admin";
+import { documentVocabulary, documents, knowledge } from "@/lib/admin";
 import DocumentsPage from "./page";
 
 function row(overrides: Record<string, unknown>) {
@@ -50,8 +53,12 @@ function row(overrides: Record<string, unknown>) {
 const ONE = row({});
 const TWO = row({ id: "id-2", version: 7, slug: "sertifikat", title: "Сертификат ISO 13485" });
 
+const ИНДЕКС_ВЫКЛЮЧЕН = { enabled: false, sources: 0, chunks: 0, rows: [] };
+
 beforeEach(() => {
   updateDocument.mockReset().mockResolvedValue(TWO);
+  reindexKnowledge.mockReset().mockResolvedValue(ИНДЕКС_ВЫКЛЮЧЕН);
+  vi.mocked(knowledge).mockResolvedValue(ИНДЕКС_ВЫКЛЮЧЕН as never);
   vi.mocked(documents).mockResolvedValue([ONE, TWO] as never);
   vi.mocked(documentVocabulary).mockResolvedValue({
     groups: ["Лицензирование", "Система качества"],
@@ -101,5 +108,72 @@ describe("страница документов", () => {
     expect(await screen.findAllByText("Файл не загружен")).not.toHaveLength(0);
     const publish = (await screen.findAllByRole("button", { name: "Опубликовать" }))[0];
     expect(publish).toBeDisabled();
+  });
+});
+
+// Индекс Ведалины. Главное здесь — различать «индекс пуст» и «индексация
+// выключена»: в обоих случаях Ведалина не находит документ по близости,
+// но в первом кнопка помогает, а во втором она бессмысленна и стоила бы
+// вызовов модели.
+describe("индекс Ведалины на странице документов", () => {
+  it("не предлагает кнопку, пока индексация выключена", async () => {
+    render(<DocumentsPage />);
+
+    expect(await screen.findByText(/Ведалина отвечает поиском по словам/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Переиндексировать" })).not.toBeInTheDocument();
+    // «Не в индексе» верно у всех документов сразу и потому не значит ничего.
+    expect(screen.queryByText("не в индексе Ведалины")).not.toBeInTheDocument();
+  });
+
+  it("показывает у документа, ищет ли по нему Ведалина", async () => {
+    vi.mocked(knowledge).mockResolvedValue({
+      enabled: true,
+      sources: 1,
+      chunks: 4,
+      rows: [
+        {
+          kind: "document",
+          externalId: "licenziya",
+          title: "Лицензия на производство",
+          chunks: 4,
+          indexedAt: "2026-09-08T10:00:00Z",
+        },
+      ],
+    } as never);
+
+    render(<DocumentsPage />);
+
+    expect(await screen.findByText(/Ведалина ищет по нему/)).toBeInTheDocument();
+    // Второй документ в индекс не попал — и это видно, а не скрыто пустотой.
+    expect(screen.getByText("не в индексе Ведалины")).toBeInTheDocument();
+  });
+
+  it("собирает индекс по нажатию и гасит кнопку на время сборки", async () => {
+    const user = userEvent.setup();
+    vi.mocked(knowledge).mockResolvedValue({
+      enabled: true,
+      sources: 0,
+      chunks: 0,
+      rows: [],
+    } as never);
+    // Второе нажатие означало бы второй прогон и второй счёт за эмбеддинги,
+    // а не «побыстрее».
+    let отпустить: () => void = () => {};
+    reindexKnowledge.mockReturnValue(
+      new Promise((resolve) => {
+        отпустить = () => resolve({ enabled: true, sources: 1, chunks: 4, rows: [] });
+      }),
+    );
+
+    render(<DocumentsPage />);
+    await user.click(await screen.findByRole("button", { name: "Переиндексировать" }));
+
+    expect(reindexKnowledge).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: "Собираем…" })).toBeDisabled();
+
+    отпустить();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Переиндексировать" })).toBeEnabled(),
+    );
   });
 });
