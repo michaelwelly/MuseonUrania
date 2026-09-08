@@ -19,21 +19,22 @@ export default function Footer() {
               Подложка под ним осталась светлой по той же причине: знак палаты
               бордовый (#812a5d), на фоне подвала это 1.94:1. Перекрасить его
               нельзя — чужой фирменный знак. Плашка подогнана под пропорции
-              горизонтального начертания, а не квадратная. */}
-          <a
-            className={styles.membership}
-            href={membership.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={`${membership.title}: ${membership.mark.alt}`}
-          >
+              горизонтального начертания, а не квадратная.
+
+              Раньше знак был кликабельной ссылкой на uralcci.com — так же,
+              как на «О компании» до GitHub issue #67. По итогам просмотра
+              стенда заказчиком 8 сентября решение то же и здесь: знак
+              остаётся, переход убран — ссылка на сайт палаты не была явно
+              обозначена как ссылка, и клик по картинке выглядел случайным
+              переходом. */}
+          <div className={styles.membership}>
             <Image
               src={membership.markWide.src}
               alt={membership.markWide.alt}
               width={membership.markWide.width}
               height={membership.markWide.height}
             />
-          </a>
+          </div>
           <p className={styles.about}>{footer.about}</p>
           {/* Кнопки соцсетей скрыты из вёрстки целиком, а не только сделаны
               некликабельными: по итогам просмотра стенда заказчиком
