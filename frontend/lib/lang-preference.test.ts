@@ -39,11 +39,11 @@ describe("выбор человека сильнее автоопределен�
     expect(decideLang("ru", "/products/", "ru", EN_BROWSER)).toEqual({ kind: "stay" });
   });
 
-  it("выбран китайский — уводим на него даже при английском браузере", () => {
-    expect(decideLang("ru", "/about/", "zh", EN_BROWSER)).toEqual({
+  it("выбран английский — уводим на него даже при русском браузере", () => {
+    expect(decideLang("ru", "/about/", "en", RU_BROWSER)).toEqual({
       kind: "go",
-      lang: "zh",
-      href: "/zh/about/",
+      lang: "en",
+      href: "/en/about/",
     });
   });
 
@@ -69,10 +69,10 @@ describe("адрес с префиксом", () => {
     expect(decideLang("en", "/products/", "en", RU_BROWSER)).toEqual({ kind: "stay" });
   });
 
-  // Открыл английскую версию, будучи «записанным» на китайский, — верным
+  // Открыл английскую версию, будучи «записанным» на русский, — верным
   // остаётся адрес: он свежее.
   it("адрес перебивает старый выбор", () => {
-    expect(decideLang("en", "/", "zh", RU_BROWSER)).toEqual({ kind: "remember", lang: "en" });
+    expect(decideLang("en", "/", "ru", RU_BROWSER)).toEqual({ kind: "remember", lang: "en" });
   });
 });
 
@@ -82,8 +82,8 @@ describe("зацикливания не бывает", () => {
   it("переход возможен только с русского адреса", () => {
     const cases = [
       decideLang("en", "/", null, EN_BROWSER),
-      decideLang("en", "/", "zh", ["zh"]),
-      decideLang("zh", "/", null, RU_BROWSER),
+      decideLang("en", "/", "ru", ["ru"]),
+      decideLang("en", "/", null, RU_BROWSER),
     ];
     for (const decision of cases) expect(decision.kind).not.toBe("go");
   });

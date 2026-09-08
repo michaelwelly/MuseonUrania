@@ -12,6 +12,22 @@ import { LANG_STORAGE_KEY } from "@/lib/lang-preference";
 let pathname = "/products/";
 vi.mock("next/navigation", () => ({ usePathname: () => pathname }));
 
+// Список опубликованных языков подменён на все три намеренно.
+//
+// Наружу сейчас идёт один русский: содержательные тексты не переведены,
+// и показывать посетителю полурусскую английскую страницу хуже, чем
+// не показывать её вовсе (см. PUBLISHED_LANGS в lib/i18n.ts). Но механика
+// переключателя от этого решения не зависит и обязана работать в тот день,
+// когда переводы придут, — иначе проверки замолчали бы ровно там, где
+// работа продолжается.
+//
+// Поведение «языков меньше двух» проверяется отдельным тестом ниже, уже
+// на настоящем списке.
+vi.mock("@/lib/i18n", async (настоящий) => ({
+  ...(await настоящий<typeof import("@/lib/i18n")>()),
+  PUBLISHED_LANGS: ["ru", "en"] as const,
+}));
+
 describe("переключатель языка", () => {
   it("ведёт на ту же страницу в другом языке", () => {
     pathname = "/products/";
@@ -19,7 +35,6 @@ describe("переключатель языка", () => {
 
     expect(screen.getByRole("link", { name: "RU" })).toHaveAttribute("href", "/products/");
     expect(screen.getByRole("link", { name: "EN" })).toHaveAttribute("href", "/en/products/");
-    expect(screen.getByRole("link", { name: "中文" })).toHaveAttribute("href", "/zh/products/");
   });
 
   // С переведённой страницы обратный путь обязан вести на русский адрес
@@ -29,15 +44,14 @@ describe("переключатель языка", () => {
     render(<LanguageSwitcher lang="en" />);
 
     expect(screen.getByRole("link", { name: "RU" })).toHaveAttribute("href", "/documents/");
-    expect(screen.getByRole("link", { name: "中文" })).toHaveAttribute("href", "/zh/documents/");
   });
 
   it("отмечает текущий язык для скринридера", () => {
-    pathname = "/zh/";
-    render(<LanguageSwitcher lang="zh" />);
+    pathname = "/en/";
+    render(<LanguageSwitcher lang="en" />);
 
-    expect(screen.getByRole("link", { name: "中文" })).toHaveAttribute("aria-current", "true");
-    expect(screen.getByRole("link", { name: "EN" })).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("link", { name: "EN" })).toHaveAttribute("aria-current", "true");
+    expect(screen.getByRole("link", { name: "RU" })).not.toHaveAttribute("aria-current");
   });
 
   // Ради этого переключатель и не сделан обычной ссылкой без обработчика:
