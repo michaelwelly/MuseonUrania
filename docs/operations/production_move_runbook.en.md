@@ -74,6 +74,7 @@ are not fit for production.
 | `VEDAL_WATCH_MAIL_TO`, `SPRING_MAIL_HOST`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD` | empty | Without these the watchdog only writes alerts to its own log, which nobody reads on the server until something breaks — see [monitoring.md](monitoring.en.md). Set them before the move, not after the first incident. |
 | `VEDAL_NOTIFICATIONS_MANAGER` | empty | Manager's address for lead notifications. |
 | `VEDAL_GATEWAY_TRUSTED_PROXY` | docker-network ranges | The default is safe precisely because the docker network is unreachable from outside — leave it alone unless the network layout itself changes. |
+| `VEDAL_METRIKA_ID` (→ `NEXT_PUBLIC_YANDEX_METRIKA_ID`) and `VEDAL_ANALYTICS_ORIGINS` | empty | Yandex Metrica, issue #53. Empty means no counter, and that is a legitimate state: the site does not depend on analytics. Fill them in **only together** and **only after the customer answers** question 12.11 in [PROJECT.en.md](../PROJECT.en.md): `VEDAL_METRIKA_ID=<id>`, `VEDAL_ANALYTICS_ORIGINS=https://mc.yandex.ru https://mc.yandex.com`. An id without the origins gives a counter that loaded and silently counts nothing — the security policy blocks its requests while the page stays intact. |
 
 ## 2. What to set up before day X
 

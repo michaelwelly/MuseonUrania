@@ -962,8 +962,9 @@ forms and the admin UI are called from the browser (`NEXT_PUBLIC_API_URL`). One
 address for both cases is impossible: `localhost:8080` from inside a container
 leads to the container itself, and `portal:8081` does not resolve in a browser.
 
-**What is left of the old gap:** multilingual routing, SEO markup and Yandex
-Metrica from section 8 — those are about content, not about the wire.
+**What is left of the old gap:** multilingual routing and SEO markup from
+section 8 — those are about content, not about the wire. Yandex Metrica has
+left that list: the code is written and waits for one counter id (issue #53).
 
 ---
 
@@ -1007,7 +1008,7 @@ is in [architecture/target_architecture.en.md](architecture/target_architecture.
 | 4 | Bring the routes in line with the sitemap | [sitemap](frontend/sitemap.en.md) requires `/press/` (Innoprom) and `/partners/` (Divisy, Morus MS, Smart Solution) — neither exists; `/news` was built instead of `/press`, and an unplanned `/about` was added. Either build them or update the map |
 | 5 | The product page from the API plus the list of documents per product | currently from `content/products.ts` |
 | 6 | SEO: the metadata API, `sitemap.xml`, `robots.txt`, JSON-LD Product/Organization, canonical URLs | priority: `/products/`, `/products/<slug>/`, `/production/`, `/documents/` |
-| 7 | Yandex Metrica and the named events | the list is ready in the [implementation checklist](frontend/implementation_checklist.en.md): `hero_quote_click`, `hero_catalog_click`, `product_card_open`, `product_quote_click`, `document_download_click`, `vedalina_open`, `vedalina_quick_action_click`, `service_form_submit`, `quote_form_submit`, `catalog_form_submit` |
+| 7 | ~~Yandex Metrica and the named events~~ | ✅ written (issue #53): the counter loads only when both conditions hold — `VEDAL_METRIKA_ID` is set and the visitor pressed “Accept” in the banner; if either fails, the `mc.yandex.ru` script is not loaded at all. The events from the [implementation checklist](frontend/implementation_checklist.en.md) are sent by a single handler reading `data-analytics` from the markup. **Not closed:** there is no counter id — we are waiting for the answer to question 12.11 and for the id itself from the customer |
 | 8 | The multilingual skeleton `/en/`, `/zh/`, hreflang | content follows the approval of the Russian version; Hindi is a separate stage |
 | 9 | Consent text before submitting any form, accessible forms and buttons | a Safety QA item, currently not covered |
 
@@ -1126,7 +1127,14 @@ no separate port had to be introduced for that.
    to the cloud folder.
 9. The Innoprom materials.
 10. The domain: `vedal-med.ru` or another option.
-11. Whether Yandex Metrica may be installed on the public website.
+11. Whether Yandex Metrica may be installed on the public website — **and if
+    so, the counter id.** Everything else is ready (issue #53): the counter,
+    the consent banner with a decline option, the named events, the
+    environment variables and the security policy. Without the id nothing
+    is connected, and that is a working state rather than a failure: the
+    site, the forms and Vedalina do not depend on analytics by a single
+    line. Installing it before the answer is not allowed — a counter is a
+    handover of visitor data to a third party.
 12. Whether the assistant may be publicly called Vedalina and shown in the hero.
 
 **Technical, awaiting confirmation:**
