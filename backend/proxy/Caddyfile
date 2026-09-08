@@ -83,7 +83,33 @@
 		# от script-src выше.
 		#
 		# unsafe-inline для стилей — отдельная и прежняя цена CSS-модулей Next.
-		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; object-src 'none'; img-src 'self' data: https://{$VEDAL_MEDIA_DOMAIN}; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' https://{$VEDAL_KEYCLOAK_DOMAIN}; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://{$VEDAL_KEYCLOAK_DOMAIN}"
+		#
+		# ————— VEDAL_ANALYTICS_ORIGINS —————
+		#
+		# По умолчанию переменная ПУСТА, и политика остаётся ровно такой,
+		# какой была: со счётчиком Метрики она не имеет ничего общего до тех
+		# пор, пока счётчик не разрешён явно. Это не осторожность ради
+		# осторожности — открытый источник для скриптов стоит дорого, и
+		# держать его открытым на площадке без счётчика значит платить
+		# ни за что.
+		#
+		# Заполняется вместе с VEDAL_METRIKA_ID и только вместе с ним:
+		#   VEDAL_ANALYTICS_ORIGINS=https://mc.yandex.ru https://mc.yandex.com
+		#
+		# Четыре директивы, и каждая нужна: tag.js — script-src, пиксель
+		# и карта кликов — img-src, отправка целей — connect-src, кадр
+		# синхронизации — frame-src. Забыть одну означает счётчик, который
+		# загрузился и молча не считает: браузер напишет о нарушении в консоль,
+		# страница при этом целая, а в отчётах пусто.
+		#
+		# frame-src появился здесь же. Раньше кадры подпадали под default-src
+		# 'self' — то же самое, что 'self' явно; отдельная директива нужна,
+		# чтобы разрешить кадр Метрики, не открывая при этом весь default-src.
+		#
+		# Разошлись эта переменная и NEXT_PUBLIC_YANDEX_METRIKA_ID — счётчик
+		# ставится, но не работает. Обе строки живут в одном месте, рядом,
+		# в environment сервисов site и proxy.
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' {$VEDAL_ANALYTICS_ORIGINS:}; object-src 'none'; img-src 'self' data: https://{$VEDAL_MEDIA_DOMAIN} {$VEDAL_ANALYTICS_ORIGINS:}; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' https://{$VEDAL_KEYCLOAK_DOMAIN} {$VEDAL_ANALYTICS_ORIGINS:}; frame-src 'self' {$VEDAL_ANALYTICS_ORIGINS:}; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://{$VEDAL_KEYCLOAK_DOMAIN}"
 
 		# Заголовок сервера ничего не защищает, но и сообщать версию незачем.
 		-Server

@@ -2,19 +2,20 @@
 
 [Русский](README.md) · **English**
 
-Official OOO "VEDAL" datasheets on company letterhead. The full specification
-tables are in the PDFs; collected here are the facts needed for product cards and
-catalog pages.
+Public summary of approved OOO "VEDAL" product materials. Full PDF datasheets
+are not stored in the public repository: the customer provides them separately,
+they are published through S3/the documents section and pass approval before
+going live on the site.
 
 Source: handed over by the customer on 5 August 2026. These are the first
 confirmed product data in the project — before them every specification was
 marked `awaiting NN answer`.
 
-| Product | Category | File |
+| Product | Category | Status |
 | --- | --- | --- |
-| VEDAL R1, R2 | neonatal resuscitation | [vedal-r1-r2.pdf](vedal-r1-r2.pdf) |
-| VEDAL A-2000 | neonatology, intensive care | [vedal-a-2000.pdf](vedal-a-2000.pdf) |
-| VEDAL Т-100 | neonatology, intensive care | [vedal-t-100.pdf](vedal-t-100.pdf) |
+| VEDAL R1, R2 | neonatal resuscitation | catalog description added |
+| VEDAL A-2000 | neonatology, intensive care | catalog description added |
+| VEDAL Т-100 | neonatology, intensive care | catalog description added |
 
 ## Company details from the letterhead
 

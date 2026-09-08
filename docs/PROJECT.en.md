@@ -168,15 +168,17 @@ MuseonVedalina/
 │  ├─ strategy/             business frame, requirements, Vedalina, SEO, competitors
 │  ├─ frontend/             sitemap, content models, page briefs, checklist
 │  ├─ legal/                compliance requirements: personal data, hosting, claims
-│  ├─ operations/           roadmap, team estimate, credentials handover,
-│  │                        vedal-med.ru domain cutover
-│  ├─ products/             VEDAL R1/R2, A-2000, Т-100 datasheets and the analysis
-│  ├─ requests/             the materials request to Nikolay Nikolaevich
+│  ├─ operations/           roadmap, autodeploy, vedal-med.ru domain cutover
+│  ├─ products/             public summary for VEDAL R1/R2, A-2000, Т-100
+│  ├─ security/             public repository cleanup checks
 │  └─ superpowers/          the backend spec, the catalog module plan
 ├─ assets/vedalina/           Vedalina avatars; MVP — vedalina-avatar-middle-v1.png
-├─ prototypes/              vedalina-web-interface.html — the source of the markup
-└─ outputs/                 presentations, pptx/pdf
+└─ assets/brand/              public brand assets
 ```
+
+Presentations, contracts, acts, credentials, commercial calculations and
+customer source materials are stored outside public git in the official project
+package.
 
 **Important about the backend layout.** The folders `backend/crm/`,
 `backend/iam/` and the rest are **real Maven modules**: their own `pom.xml`,
@@ -881,8 +883,9 @@ Working routes:
 | `/api/admin/v1/session` | admin UI | who signed in and which roles the portal parsed |
 | `/api/admin/v1/staff` | admin UI | employees to pick an owner from; read only |
 | `/api/admin/v1/chats` | admin UI | conversations and the queue of those waiting; the list filters by owner |
+| `/api/admin/v1/duty` | admin UI | the on-call schedule: who is on the line today, assigning a day, handing over a shift |
 
-The forty-seven routes and sixty-five operations of the admin API are described by
+The sixty-three routes and eighty-two operations of the admin API are described by
 a separate specification group —
 [docs/api/vedal-admin-openapi.yaml](api/vedal-admin-openapi.yaml).
 
@@ -902,6 +905,18 @@ the portal, not from the model. Since 7 September the gateway passes the
 visitor's real address to the portal (`ClientAddress`) — before that the audit
 log recorded the gateway's own address and the rate limit counted every visitor
 as one client.
+
+A note on duty of its own, because there are three facts now and they differ.
+**Support hours** (`vedal.support.*`) are a promise that someone will answer,
+and they do not name who. **Presence** is a fact about a set: is any desk open.
+**Duty** (`duty_shift`, `/api/admin/v1/duty`) names a person for a day, and only
+with it is there someone to hand a shift to and someone to ask about an
+unanswered question. The day is counted in the support zone, not the server's;
+there is one person on duty per day; past days are not edited. The portal
+notices the disagreement between the schedule and presence on its own — someone
+on duty who has not opened a desk during working hours — and shows it in the
+admin UI. It sends no mail or messages about it: the recipient is the customer's
+decision (issue #51).
 
 A note on `assistant`: the limits live in `Guardrails` **before** the engine is
 called, not in the prompt — a prompt is a request to the model, not a guarantee.
@@ -925,10 +940,11 @@ site's own tab icon. Indexing is switched on by `NEXT_PUBLIC_SITE_URL`: while
 it is empty, crawling is closed entirely, so the stand with draft copy does not
 end up in search results.
 
-Twenty-four admin routes. Site content: dashboard, products with a list and an
+Twenty-five admin routes. Site content: dashboard, products with a list and an
 edit form, categories, news, documents, audit log, the Keycloak callback. CRM:
 leads with conversion into a deal, clients, deals across three pipelines, quotes,
-analytics in four dimensions. The navigation is split into those two sections:
+analytics in four dimensions, conversations and duty. The navigation is split
+into those two sections:
 a flat list of eleven items reads as a heap, while the sections match what the
 person is doing — an editor edits the catalog, a manager runs deals.
 
@@ -962,8 +978,9 @@ forms and the admin UI are called from the browser (`NEXT_PUBLIC_API_URL`). One
 address for both cases is impossible: `localhost:8080` from inside a container
 leads to the container itself, and `portal:8081` does not resolve in a browser.
 
-**What is left of the old gap:** multilingual routing, SEO markup and Yandex
-Metrica from section 8 — those are about content, not about the wire.
+**What is left of the old gap:** multilingual routing and SEO markup from
+section 8 — those are about content, not about the wire. Yandex Metrica has
+left that list: the code is written and waits for one counter id (issue #53).
 
 ---
 
@@ -1007,7 +1024,7 @@ is in [architecture/target_architecture.en.md](architecture/target_architecture.
 | 4 | Bring the routes in line with the sitemap | [sitemap](frontend/sitemap.en.md) requires `/press/` (Innoprom) and `/partners/` (Divisy, Morus MS, Smart Solution) — neither exists; `/news` was built instead of `/press`, and an unplanned `/about` was added. Either build them or update the map |
 | 5 | The product page from the API plus the list of documents per product | currently from `content/products.ts` |
 | 6 | SEO: the metadata API, `sitemap.xml`, `robots.txt`, JSON-LD Product/Organization, canonical URLs | priority: `/products/`, `/products/<slug>/`, `/production/`, `/documents/` |
-| 7 | Yandex Metrica and the named events | the list is ready in the [implementation checklist](frontend/implementation_checklist.en.md): `hero_quote_click`, `hero_catalog_click`, `product_card_open`, `product_quote_click`, `document_download_click`, `vedalina_open`, `vedalina_quick_action_click`, `service_form_submit`, `quote_form_submit`, `catalog_form_submit` |
+| 7 | ~~Yandex Metrica and the named events~~ | ✅ written (issue #53): the counter loads only when both conditions hold — `VEDAL_METRIKA_ID` is set and the visitor pressed “Accept” in the banner; if either fails, the `mc.yandex.ru` script is not loaded at all. The events from the [implementation checklist](frontend/implementation_checklist.en.md) are sent by a single handler reading `data-analytics` from the markup. **Not closed:** there is no counter id — we are waiting for the answer to question 12.11 and for the id itself from the customer |
 | 8 | The multilingual skeleton `/en/`, `/zh/`, hreflang | content follows the approval of the Russian version; Hindi is a separate stage |
 | 9 | Consent text before submitting any form, accessible forms and buttons | a Safety QA item, currently not covered |
 
@@ -1126,8 +1143,24 @@ no separate port had to be introduced for that.
    to the cloud folder.
 9. The Innoprom materials.
 10. The domain: `vedal-med.ru` or another option.
-11. Whether Yandex Metrica may be installed on the public website.
+11. Whether Yandex Metrica may be installed on the public website — **and if
+    so, the counter id.** Everything else is ready (issue #53): the counter,
+    the consent banner with a decline option, the named events, the
+    environment variables and the security policy. Without the id nothing
+    is connected, and that is a working state rather than a failure: the
+    site, the forms and Vedalina do not depend on analytics by a single
+    line. Installing it before the answer is not allowed — a counter is a
+    handover of visitor data to a third party.
 12. Whether the assistant may be publicly called Vedalina and shown in the hero.
+13. Duty: whether a schedule is needed at all, who fills it in, and where to
+    send word about a disagreement with presence. The mechanics are done in
+    full (issue #51): the "Duty" section shows two weeks ahead, the name of
+    whoever is on duty stands above the conversation list, a shift is handed
+    over with one button, and the portal itself works out the disagreement —
+    someone on duty who has not opened a desk during working hours. Exactly
+    one thing is deliberately not done: mail about that disagreement. We do
+    not invent the recipient, and a wrong recipient for a night-time email
+    costs more than no email at all.
 
 **Technical, awaiting confirmation:**
 
@@ -1140,7 +1173,11 @@ no separate port had to be introduced for that.
    erasure is irreversible, and there is nowhere to restore from either, since
    there are no backups. Each kind of data turns on with its own property
    (`vedal.privacy.retention`, `.chat`, `.mail`), a period value such as `P3Y`;
-   without the property the bean is not created at all.
+   without the property — and with an empty value for it — the bean is not
+   created at all. The three variables reach the portal through compose and
+   are listed, empty, in `backend/.env.example`. The order of switching on,
+   what exactly is erased from each carrier and what happens on the first pass
+   — [data_retention.en.md](operations/data_retention.en.md).
 3. Whether `/admin` is closed at the network level or left behind a password and
    MFA. The door is single, so either option is one rule in the `Caddyfile` plus
    a realm policy. The proxy rule now exists: `@admin` only lets private ranges

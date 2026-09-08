@@ -3,10 +3,10 @@ package ru.vedal.portal.chat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import ru.vedal.portal.common.OnRetentionTerm;
 
 import java.time.Instant;
 import java.time.Period;
@@ -25,8 +25,9 @@ import java.time.ZoneOffset;
 //
 // Тот же открытый вопрос 12.2 из docs/PROJECT.md, что и у заявок: срок
 // не подтверждён заказчиком, а обезличивание необратимо. Без свойства
-// vedal.privacy.retention.chat @ConditionalOnProperty не создаёт этот класс
-// вовсе — включается одной переменной в тот день, когда срок назван:
+// vedal.privacy.retention.chat — или с пустым его значением — @OnRetentionTerm
+// не создаёт этот класс вовсе — включается одной переменной в тот день,
+// когда срок назван:
 //
 //   VEDAL_PRIVACY_RETENTION_CHAT=P3Y
 //
@@ -36,7 +37,7 @@ import java.time.ZoneOffset;
 // включения под нож пойдёт всё накопленное, и одной транзакцией это
 // блокировка таблицы на минуты.
 @Component
-@ConditionalOnProperty(name = "vedal.privacy.retention.chat")
+@OnRetentionTerm("vedal.privacy.retention.chat")
 public class ConversationRetentionSweep {
 
     private static final Logger log = LoggerFactory.getLogger(ConversationRetentionSweep.class);

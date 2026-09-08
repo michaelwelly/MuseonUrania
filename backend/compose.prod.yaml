@@ -174,6 +174,23 @@ services:
       NEXT_PUBLIC_API_URL: ${VEDAL_PUBLIC_URL:?}
       NEXT_PUBLIC_MEDIA_URL: ${VEDAL_MEDIA_URL:?задайте VEDAL_MEDIA_URL}
       NEXT_PUBLIC_OIDC_ISSUER: ${VEDAL_KEYCLOAK_URL:?}/realms/vedal
+
+      # Счётчик Метрики. Issue #53, открытый вопрос 12.11.
+      #
+      # Строка повторяет базовый compose.yaml намеренно: включается счётчик
+      # именно здесь, и переменная должна быть видна тому, кто правит
+      # боевой файл, а не найдена в базовом через слияние.
+      #
+      # Без значения — вопросительного знака здесь НЕТ и быть не должно.
+      # Пустая переменная означает «счётчика нет», и это законное состояние
+      # боевого сайта: заказчик вопрос 12.11 пока не подтвердил, а падать
+      # на развёртывании из-за неподключённой аналитики — значит держать
+      # сайт заложником отчёта.
+      #
+      # Заполняется ВМЕСТЕ с VEDAL_ANALYTICS_ORIGINS у proxy ниже: без неё
+      # политика безопасности не пустит скрипт счётчика, и он молча
+      # не заработает.
+      NEXT_PUBLIC_YANDEX_METRIKA_ID: ${VEDAL_METRIKA_ID:-}
     ports: !override []
     restart: unless-stopped
     logging: *logging
@@ -196,6 +213,25 @@ services:
       VEDAL_DOMAIN: ${VEDAL_DOMAIN:?задайте VEDAL_DOMAIN, например vedal-med.ru}
       VEDAL_KEYCLOAK_DOMAIN: ${VEDAL_KEYCLOAK_DOMAIN:?задайте VEDAL_KEYCLOAK_DOMAIN, например id.vedal-med.ru}
       VEDAL_MEDIA_DOMAIN: ${VEDAL_MEDIA_DOMAIN:?задайте VEDAL_MEDIA_DOMAIN, например media.vedal-med.ru}
+      # Caddyfile читает эти две переменные через {$VAR:умолчание}, но Caddy
+      # видит только то, что compose явно положил в environment контейнера —
+      # значение в backend/.env само по себе внутрь не попадает. Без строк
+      # ниже VEDAL_ADMIN_ALLOW и VEDAL_ACME_EMAIL можно было менять в .env
+      # сколько угодно: Caddy всё равно получал бы захардкоженное умолчание
+      # (private_ranges и admin@localhost) и молчал бы об этом.
+      VEDAL_ADMIN_ALLOW: ${VEDAL_ADMIN_ALLOW:-private_ranges}
+      VEDAL_ACME_EMAIL: ${VEDAL_ACME_EMAIL:-admin@localhost}
+
+      # Источники счётчика Метрики в политике безопасности. Issue #53.
+      #
+      # Пусто — политика остаётся прежней, строгой, и это значение по
+      # умолчанию. Включается вместе с VEDAL_METRIKA_ID у site выше:
+      #   VEDAL_ANALYTICS_ORIGINS=https://mc.yandex.ru https://mc.yandex.com
+      #
+      # Разъедутся эти две переменные — счётчик поставится и молча не будет
+      # считать: браузер напишет о нарушении CSP в консоль, страница при
+      # этом останется целой, а в отчётах будет пусто.
+      VEDAL_ANALYTICS_ORIGINS: ${VEDAL_ANALYTICS_ORIGINS:-}
     volumes:
       - ./proxy/Caddyfile:/etc/caddy/Caddyfile:ro
       - vedal-caddy-data:/data

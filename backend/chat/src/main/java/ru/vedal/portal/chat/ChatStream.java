@@ -2,6 +2,7 @@ package ru.vedal.portal.chat;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -9,6 +10,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import ru.vedal.portal.common.TooManyRequestsException;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -55,34 +57,47 @@ public class ChatStream {
 
     private static final Logger log = LoggerFactory.getLogger(ChatStream.class);
 
-    // Полчаса. Браузер переподключится сам, а вечный поток означает соединение,
-    // которое никто никогда не закроет.
-    private static final long TIMEOUT = 30 * 60 * 1000L;
+    // Браузер переподключится сам, а вечный поток означает соединение,
+    // которое никто никогда не закроет. Настройка, а не константа: DDoS-разбор
+    // (issue #65) держит удержанные потоки обслуживания на счету наравне
+    // с частотой обращений, и значение стоит уметь подкрутить без сборки.
+    private final long timeoutMillis;
 
     // ————— пределы —————
     //
     // Дверь потока открыта анониму и, в отличие от остальных публичных,
     // не стоит под лимитом частоты: лимит считает обращения, а здесь важно
     // не сколько раз обратились, а сколько соединений держат открытыми.
-    // Каждое живёт полчаса и занимает поток обслуживания. Без предела
-    // цикл из десяти строк складывает приложение, не превысив ни одного
-    // счётчика.
+    // Каждое живёт до истечения таймаута и занимает поток обслуживания.
+    // Без предела цикл из десяти строк складывает приложение, не превысив
+    // ни одного счётчика.
     //
     // Четыре на ключ — это вкладки одного человека: сайт открыт в двух-трёх
     // и виджет в каждой. Пятая означает, что подписки не снимаются,
     // а не что человеку мало.
-    private static final int PER_VISITOR = 4;
+    private final int perVisitor;
 
     // Пятьсот на всех: столько посетителей одновременно на сайте, где
     // за сутки бывает несколько десятков заявок, не бывает. Предел здесь
     // не про нагрузку, а про то, чтобы отказ пришёл раньше, чем кончатся
     // потоки обслуживания и вместе с ними весь портал.
-    private static final int TOTAL_VISITORS = 500;
+    private final int totalVisitors;
 
     // Рабочих мест столько же, сколько сотрудников, — с запасом на вкладки.
     // Этот предел вдобавок ограничивает размножение события «печатает»:
     // оно рассылается всем рабочим местам сразу.
-    private static final int DESKS = 64;
+    private final int deskLimit;
+
+    public ChatStream(
+            @Value("${vedal.chat.stream.timeout:PT30M}") Duration timeout,
+            @Value("${vedal.chat.stream.per-visitor:4}") int perVisitor,
+            @Value("${vedal.chat.stream.total-visitors:500}") int totalVisitors,
+            @Value("${vedal.chat.stream.desks:64}") int deskLimit) {
+        this.timeoutMillis = timeout.toMillis();
+        this.perVisitor = perVisitor;
+        this.totalVisitors = totalVisitors;
+        this.deskLimit = deskLimit;
+    }
 
     // Подписки посетителей индексируются ключом браузера, а не разговором,
     // и это не деталь. Виджет открывается раньше первого сообщения, то есть
@@ -90,6 +105,18 @@ public class ChatStream {
     // подписаться в этот момент не на что. Ключ браузера у вкладки есть всегда.
     private final Map<String, List<SseEmitter>> byVisitor = new ConcurrentHashMap<>();
     private final List<SseEmitter> desks = new CopyOnWriteArrayList<>();
+
+    // Чьё это рабочее место.
+    //
+    // Указатель рядом со списком, а не поле в его элементе, и это вынужденно:
+    // тот же список рассылается наравне со списками посетителей (см. typing
+    // и onChange), и смена типа элемента раздвоила бы каждый путь рассылки
+    // на «для посетителей» и «для рабочих мест».
+    //
+    // Разойтись со списком он не может: снимаются обе записи одной и той же
+    // лямбдой в forget. Заведён ради вопроса, на который список не отвечает:
+    // открыл ли рабочее место КОНКРЕТНЫЙ человек — тот, кто сегодня дежурит.
+    private final Map<SseEmitter, String> deskOwner = new ConcurrentHashMap<>();
 
     // Разговоры, в которых Ведалина сейчас думает над ответом.
     //
@@ -113,13 +140,13 @@ public class ChatStream {
         // Отказ, а не молчаливое закрытие потока: виджет, получив пустой
         // ответ, переподключается — и упирается в предел снова, уже циклом.
         // 429 он понимает и ждёт.
-        if (subscribers.size() >= PER_VISITOR || openStreams() >= TOTAL_VISITORS) {
+        if (subscribers.size() >= perVisitor || openStreams() >= totalVisitors) {
             if (subscribers.isEmpty()) byVisitor.remove(visitorKey, subscribers);
             throw new TooManyRequestsException(
                     "Слишком много открытых окон чата. Закройте лишние вкладки.");
         }
 
-        var emitter = new SseEmitter(TIMEOUT);
+        var emitter = new SseEmitter(timeoutMillis);
         subscribers.add(emitter);
 
         // Снятие подписки на всех трёх исходах. Без этого список растёт на
@@ -165,17 +192,19 @@ public class ChatStream {
      * событие «печатает» рассылается всем рабочим местам сразу, и число
      * подписок — это множитель у каждого нажатия клавиши посетителем.
      */
-    public SseEmitter watchAll() {
-        if (desks.size() >= DESKS) {
+    public SseEmitter watchAll(String login) {
+        if (desks.size() >= deskLimit) {
             throw new TooManyRequestsException(
                     "Слишком много открытых рабочих мест. Закройте лишние вкладки.");
         }
 
-        var emitter = new SseEmitter(TIMEOUT);
+        var emitter = new SseEmitter(timeoutMillis);
         var first = desks.isEmpty();
         desks.add(emitter);
+        if (login != null && !login.isBlank()) deskOwner.put(emitter, login);
         forget(emitter, () -> {
             desks.remove(emitter);
+            deskOwner.remove(emitter);
             // Ушёл последний — на связи больше никого.
             if (desks.isEmpty()) announcePresence(false);
         });
@@ -202,6 +231,28 @@ public class ChatStream {
      */
     public boolean staffOnline() {
         return !desks.isEmpty();
+    }
+
+    /**
+     * Открыто ли рабочее место у ЭТОГО человека.
+     *
+     * <p>Нужно графику дежурств, и только ему. {@link #staffOnline()}
+     * отвечает на вопрос посетителя — «ответит ли мне кто-нибудь»,
+     * и множество там уместно. Вопрос дежурства другой: назначенный
+     * человек на месте или нет, — и «кто-то другой сидит» на него
+     * не отвечает.
+     *
+     * <p>Обход, а не счётчик по логину: список рабочих мест ограничен
+     * сверху ({@code vedal.chat.stream.desks}), спрашивают это раз
+     * в несколько секунд с одного экрана, а счётчик рядом с картой —
+     * это второе место, где хранится одно и то же.
+     *
+     * <p>Обратное по-прежнему неверно: закрытая вкладка не означает,
+     * что дежурный ушёл. Поэтому расхождение — повод оповестить,
+     * а не повод объявить прогул.
+     */
+    public boolean atDesk(String login) {
+        return login != null && !login.isBlank() && deskOwner.containsValue(login);
     }
 
     /**

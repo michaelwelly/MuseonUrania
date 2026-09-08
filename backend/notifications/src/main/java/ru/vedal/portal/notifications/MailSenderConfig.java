@@ -54,7 +54,7 @@ public class MailSenderConfig {
 
         var envelopeFrom = from.isBlank() ? username : from;
         if (envelopeFrom.isBlank()) {
-            // Пустой обратный адрес Яндекс 360 отвергнет на каждом письме.
+            // Пустой обратный адрес сервер отвергнет на каждом письме.
             // Поймать это на старте дешевле, чем на первой заявке.
             throw new IllegalStateException("SMTP настроен, но обратный адрес пуст:"
                     + " задайте vedal.notifications.from или spring.mail.username");

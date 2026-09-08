@@ -10,7 +10,8 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 
 import java.nio.charset.StandardCharsets;
 
-// Транспорт: корпоративная почта Яндекс 360. Реализация порта MailSender;
+// Транспорт: почтовый сервер домена, mail.vedal-med.ru. Реализация порта
+// MailSender;
 // выбор между ней и записью в лог — в MailSenderConfig.
 //
 // Отправитель ничего не решает про очередь: он либо отправил, либо бросил
@@ -22,7 +23,7 @@ public class SmtpMailSender implements MailSender {
     private final String from;
 
     // Обратный адрес отдельным параметром, а не «взять из настроек внутри».
-    // Яндекс 360 принимает письмо только от того ящика, под которым выполнен
+    // Сервер принимает письмо только от того ящика, под которым выполнен
     // вход: расхождение between From и учётной записью даёт отказ 550,
     // и увидеть его лучше на старте, чем на первой заявке.
     public SmtpMailSender(JavaMailSender transport, String from) {

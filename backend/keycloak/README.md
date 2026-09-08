@@ -52,17 +52,24 @@ VEDAL_OIDC_JWKS=http://keycloak:8080/realms/vedal/protocol/openid-connect/certs
 Первая — что сверять, вторая — откуда брать ключи. `KC_HOSTNAME` в `compose.yaml`
 задаёт Keycloak тот же внешний адрес, чтобы он попал в токен.
 
-## Вход
+## Вход в локальный стек
 
 - Админка: `http://localhost:8080/admin/` (через шлюз) или `http://localhost:3000/admin/`.
-- Учётная запись: `editor` / `editor-local`.
-- Консоль Keycloak: `http://localhost:8180/`, `admin` / `admin-local`.
+- Демонстрационные пользователи заведены в `vedal-realm.json` и используются
+  только на машине разработчика.
+- Консоль Keycloak: `http://localhost:8180/`. Пароль администратора генерирует
+  `scripts/up.sh` и кладёт в локальный `backend/.env`.
 
-Токен для curl — прямой выдачей пароля, она включена у клиента для локальной
-отладки:
+Токен для curl можно получить прямой выдачей пароля. Она включена у клиента для
+локальной отладки; логин и пароль подставьте из своего локального окружения:
 
 ```bash
-curl -s -d grant_type=password -d client_id=vedal-admin-ui -d username=editor -d password=editor-local http://localhost:8180/realms/vedal/protocol/openid-connect/token
+curl -s \
+  -d grant_type=password \
+  -d client_id=vedal-admin-ui \
+  -d username="$VEDAL_LOCAL_USER" \
+  -d password="$VEDAL_LOCAL_PASSWORD" \
+  http://localhost:8180/realms/vedal/protocol/openid-connect/token
 ```
 
 ## Второй фактор

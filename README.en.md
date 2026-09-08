@@ -1,120 +1,131 @@
-# MuseonVedalina
+# MuseonUrania / VEDAL Portal
 
 [Русский](README.md) · **English**
 
-> **Start here: [docs/PROJECT.en.md](docs/PROJECT.en.md)** — the general project
-> documentation. The essence, the architecture, the repository layout, the
-> current state, what is needed on both sides, the contradictions and the open
-> questions. Every other document is detail.
+Public portfolio version of the repository: website, admin workspace, API and
+AI assistant for a medical equipment manufacturer. Real credentials, contracts,
+acts, invoices, commercial terms, cloud keys, SMTP, S3 and YandexGPT secrets are
+not stored in git and are handed over to the customer in a separate official
+package.
 
-Project workspace for the VEDAL medical equipment digital infrastructure
-initiative.
+## What Is Inside
 
-## Running it
+VEDAL Portal combines the public website with a protected staff workspace:
 
-Docker is the only prerequisite — no Java, no Node, no Maven. Everything else
-is built inside containers.
+- public pages: home, about, products, service, production, documents, news,
+  contacts and personal data policy;
+- product catalog with cards, SEO metadata and media from object storage;
+- lead and service request forms with database persistence and notifications;
+- admin workspace for pages, products, documents, news, leads, clients, deals,
+  quotes, staff and audit log;
+- Vedalina, the AI assistant: public answers use approved materials only, while
+  the closed contour can work with an extended knowledge base;
+- preparation for CRM handoff and integration with the customer's corporate
+  contour.
+
+## Stack
+
+| Layer | Technologies |
+| --- | --- |
+| Frontend | Next.js 16, React 19, TypeScript, CSS Modules, Vitest, Testing Library |
+| Backend | Java 25, Spring Boot 4.1, Maven multi-module, Spring Data JPA, Flyway |
+| API | REST, OpenAPI/Swagger, separate gateway |
+| Data | PostgreSQL 16, transactional outbox, Kafka 3.9 in KRaft mode |
+| Files | S3-compatible object storage through AWS SDK |
+| Auth | Keycloak, OAuth2/OIDC, PKCE, protected-contour roles |
+| AI | YandexGPT API, RAG pipeline, pgvector in the target architecture |
+| Infrastructure | Docker Compose, Caddy/reverse proxy, systemd autodeploy, Yandex Cloud VM |
+
+## Quick Start
+
+Docker with Compose v2 is the only prerequisite. Java, Node and Maven do not
+need to be installed on the host: the local stack is built inside containers.
 
 ```bash
 ./scripts/up.sh
 ```
 
-On Windows without bash, the same thing:
+On Windows:
 
-```
+```powershell
 .\scripts\up.ps1
 ```
 
-The script checks Docker, generates `backend/.env` with random passwords,
-builds the images, waits for readiness and prints the addresses. **The first
-run takes about ten minutes:** Maven downloads dependencies, Next builds the
-pages. After that it is seconds — the layers are cached.
+The script checks Docker, creates a local `backend/.env`, builds the images and
+waits for the site to become healthy.
 
-| Address | What |
+| Address | Purpose |
 | --- | --- |
-| `http://localhost:8080` | the site |
-| `http://localhost:8080/admin/` | the admin |
-| `http://localhost:8080/swagger-ui.html` | API specification |
-| `http://localhost:8180` | Keycloak |
+| `http://localhost:8080` | site and gateway |
+| `http://localhost:8080/admin/` | admin workspace |
+| `http://localhost:8080/swagger-ui.html` | Swagger UI |
+| `http://localhost:8180` | local-stack Keycloak |
 
-Admin sign-in — `editor` / `editor-local`. This is a local-stack account,
-created by the realm import and never deployed to a server; why the password
-lives in the repository is explained in
-[backend/keycloak/README.en.md](backend/keycloak/README.en.md).
-
-To stop without losing data:
+Stop the stack without deleting data:
 
 ```bash
 docker compose -f backend/compose.yaml --profile app down
 ```
 
-What to do when something does not come up, how to run the applications from
-your machine instead of containers, and how the development mode differs —
-[docs/PROJECT.en.md, section 5.8](docs/PROJECT.en.md#58-environments-and-running-it).
+Recreate local data from scratch:
 
-The goal is to turn the current public presence of `vedal-med.ru` into a
-production-ready sales and information platform, then expand it into a full
-internal IT contour for a medical equipment manufacturer: CRM, media/document
-storage, multilingual content, analytics, AI-assisted document search, and
-future VLM/LLM workflows for office, sales, service, and production.
+```bash
+docker compose -f backend/compose.yaml --profile app down -v
+```
 
-## Current Focus
+## Environment Variables
 
-1. Enrich the existing `vedal-med.ru` landing page with product, production,
-   partner, and press-release content.
-2. Build a structured product catalog for about 10 products.
-3. Request missing materials from Nikolay Nikolaevich: product catalog, Innoprom
-   materials, cloud photo/video link, product documentation, and sensitivity
-   classification guidance.
-4. Design cloud infrastructure with S3-compatible media/document storage, CRM,
-   analytics, private employee contour, and AI-ready data pipelines.
-5. Prepare multilingual public content in Russian, English, Chinese, and later
-   Hindi.
+Only templates are stored in the repository:
 
-## Repository Layout
+- `backend/.env.example`;
+- `backend/.env.host.example`;
+- `frontend/.env.example`.
 
-Monorepo: `frontend/` (public site + Vedalina UI), `backend/` (API, forms/CRM
-handoff), `docs/`, `assets/`, `prototypes/`, `outputs/`.
+Production and stand `.env` files are never committed. They include PostgreSQL,
+Keycloak, SMTP, S3/Object Storage, YandexGPT and domain settings. Customer
+handover files are prepared as a separate official package outside the
+repository.
 
-Branches:
+## Development
 
-- `main`: released, finished work only;
-- `dev`: integration branch, everything is reviewed here first;
-- `front`: frontend work, merges into `dev`;
-- `back`: backend work, merges into `dev`;
-- `db`: migrations and seed data, merges into `dev`;
-- `infra`: build, CI/CD, Docker, deployment, merges into `dev`;
-- `docs`: documentation, merges into `dev`.
+Start infrastructure without the backend application and the site:
 
-Documentation rules — [docs/documentation_rules.en.md](docs/documentation_rules.en.md),
-branch rules — [docs/PROJECT.en.md, section 4](docs/PROJECT.en.md#4-branches).
+```bash
+docker compose -f backend/compose.yaml up -d
+```
 
-## Key Documents
+Then run backend and frontend from the developer machine:
 
-- [General project documentation](docs/PROJECT.en.md) — single entry point, brings everything else together
-- [Documentation rules](docs/documentation_rules.en.md) — bilingual convention, glossary, checks
-- [VEDAL Portal: closed contour and CRM](docs/architecture/vedal_portal_owner_brief.en.md) — target architecture; outranks the other documents when they disagree
-- [Backend architecture](docs/superpowers/specs/2026-08-06-vedal-portal-architecture-design.en.md) — technical decisions, accepted and rejected
-- [Product documentation](docs/products/README.en.md) — VEDAL R1/R2, A-2000, Т-100 datasheets
-- [Egor handoff tasks and work split](docs/operations/egor_handoff_tasks.en.md)
-- [Frontend handoff](HANDOFF.en.md)
-- [Frontend handoff package](docs/frontend/README.en.md)
-- [Project brief](docs/strategy/project_brief.en.md)
-- [Functional requirements](docs/strategy/functional_requirements.en.md)
-- [Infrastructure architecture](docs/architecture/infrastructure_architecture.en.md)
-- [Content and SEO plan](docs/strategy/content_and_seo_plan.en.md)
-- [Competitor notes](docs/strategy/competitor_notes.en.md)
-- [Frontend design handoff](docs/strategy/frontend_design_handoff.en.md)
-- [Frontend variants](docs/strategy/frontend_variants.en.md)
-- [Vedalina assistant spec](docs/strategy/vedalina_assistant_spec.en.md)
-- [Vedalina visual assets](docs/strategy/vedalina_visual_assets.en.md)
-- [Vedalina web prototype](prototypes/vedalina-web-interface.html)
-- [Request to Nikolay Nikolaevich](docs/requests/nikolay_materials_request.en.md)
-- [Presentation outline for Nikolay Nikolaevich](docs/strategy/nn_presentation_outline.en.md)
-- [Roadmap](docs/operations/roadmap.en.md)
-- [7-person team estimate](docs/operations/team_estimate_7_people.en.md)
+```bash
+cd backend && ./mvnw spring-boot:run -pl app
+cd frontend && npm install && npm run dev
+```
 
-## Source Notes
+Checks:
 
-Initial input came from a voice-style brief plus the handwritten photo at
-`/Users/michaelwelly/Downloads/IMG_7136.heic`.
+```bash
+cd backend && ./mvnw test
+cd frontend && npm test
+cd frontend && npm run lint
+```
+
+## Public Repository Rules
+
+The following must not be committed:
+
+- `.env`, keys, tokens, passwords, database dumps and private certificates;
+- contracts, acts, invoices, requisites and commercial calculations;
+- email drafts, signatures and personal contractor contacts;
+- customer PDFs, presentations, source media and temporary `outputs/`;
+- credential handover documents and closed-service operational instructions.
+
+If such files are needed for delivery, they live in a separate official package
+outside the repository.
+
+## GitHub Releases
+
+A GitHub Release is a named project version based on a git tag, for example
+`v1.0.0`. It can contain release notes, attached files and a link to the exact
+state of the code. It is not the deployment itself, but it works well as a
+checkpoint: “the version shown to the customer” or “the public portfolio-safe
+version”.

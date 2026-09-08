@@ -20,12 +20,16 @@ class SupportHoursTest {
 
     private static SupportHours рабочиеДни() {
         return new SupportHours("MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY",
-                "09:00", "18:00", "Asia/Yekaterinburg", "Пн–Пт 9:00–18:00 (Екатеринбург)");
+                "09:00", "17:30", "Asia/Yekaterinburg", "Пн–Пт 9:00–17:30 (Екатеринбург)");
     }
 
     private static ZonedDateTime вЕкатеринбурге(int день, int час) {
+        return вЕкатеринбурге(день, час, 0);
+    }
+
+    private static ZonedDateTime вЕкатеринбурге(int день, int час, int минута) {
         // Август 2026: 3-е — понедельник, 8-е — суббота.
-        return ZonedDateTime.of(2026, 8, день, час, 0, 0, 0, EKB);
+        return ZonedDateTime.of(2026, 8, день, час, минута, 0, 0, EKB);
     }
 
     @Test
@@ -46,12 +50,12 @@ class SupportHoursTest {
                 .isFalse();
     }
 
-    // Границы названы вслух: в 9:00 уже работают, в 18:00 уже нет. Иначе
-    // спор «а в шесть ровно?» решался бы каждый раз заново.
+    // Границы названы вслух: в 9:00 уже работают, в 17:30 уже нет. Иначе
+    // спор «а в половину шестого ровно?» решался бы каждый раз заново.
     @Test
     void theEdgesAreWhereTheyAreSaidToBe() {
         assertThat(рабочиеДни().openAt(вЕкатеринбурге(3, 9))).isTrue();
-        assertThat(рабочиеДни().openAt(вЕкатеринбурге(3, 18))).isFalse();
+        assertThat(рабочиеДни().openAt(вЕкатеринбурге(3, 17, 30))).isFalse();
         assertThat(рабочиеДни().openAt(вЕкатеринбурге(3, 17))).isTrue();
     }
 
@@ -76,7 +80,7 @@ class SupportHoursTest {
     // из пяти слов.
     @Test
     void theHoursAreShownAsWritten() {
-        assertThat(рабочиеДни().description()).isEqualTo("Пн–Пт 9:00–18:00 (Екатеринбург)");
+        assertThat(рабочиеДни().description()).isEqualTo("Пн–Пт 9:00–17:30 (Екатеринбург)");
     }
 
     // Пустое значение — это «не переопределяли», а не «часов нет».
@@ -88,7 +92,7 @@ class SupportHoursTest {
     // посетитель.
     @Test
     void withoutAnOverrideTheHoursAreStillReadable() {
-        var byDefault = new SupportHours("MONDAY,FRIDAY", "09:00", "18:00",
+        var byDefault = new SupportHours("MONDAY,FRIDAY", "09:00", "17:30",
                 "Asia/Yekaterinburg", "");
 
         assertThat(byDefault.description())

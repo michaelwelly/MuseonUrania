@@ -136,7 +136,12 @@ public class AdminChatApi {
                     попавший в ожидание, должен появиться на экране сам.
                     """)
     @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter stream() {
-        return stream.watchAll();
+    public SseEmitter stream(Authentication authentication) {
+        // Логин уходит в подписку не ради рассылки — она у всех рабочих мест
+        // одинаковая, — а ради графика дежурств: он спрашивает, открыл ли
+        // рабочее место НАЗВАННЫЙ человек. Без имени открытая вкладка
+        // означает «кто-то на месте», а этого мало, чтобы понять,
+        // на месте ли дежурный.
+        return stream.watchAll(Actor.of(authentication));
     }
 }
