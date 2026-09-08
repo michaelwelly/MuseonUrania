@@ -3787,6 +3787,17 @@ th.tight input[type="checkbox"] {
   font-weight: 600;
 }
 
+/* Дорога назад в заявку. Приглушена нарочно: это не действие карточки,
+   а происхождение сделки — читается один раз, когда спрашивают «откуда
+   это взялось». */
+.deal__from {
+  color: var(--muted);
+}
+
+.deal__from .mono {
+  color: inherit;
+}
+
 .deal {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);

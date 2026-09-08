@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { pageMetadata } from "@/lib/seo";
-import Link from "next/link";
 import PageHero from "@/components/PageHero";
 import LeadForm from "@/components/LeadForm";
 import TranslationNotice from "@/components/TranslationNotice";
@@ -235,9 +234,13 @@ export default async function ContactsScreen({ lang }: { lang: Lang }) {
             <p className={styles.vedalinaText} lang={c.mark(vedalinaCard.text)}>
               {c.t(vedalinaCard.text)}
             </p>
-            <Link className={styles.vedalinaCta} href="#vedalina" lang={c.mark(vedalinaCard.cta)}>
+            {/* Обычный `<a>`, а не `Link`: виджет Ведалины открывается
+                по `hashchange`, а `Link` меняет адрес своим `pushState`
+                и события не порождает — кнопка дописывала `#vedalina`
+                в адрес, не открывая окна (issue #101). */}
+            <a className={styles.vedalinaCta} href="#vedalina" lang={c.mark(vedalinaCard.cta)}>
               {c.t(vedalinaCard.cta)}
-            </Link>
+            </a>
           </div>
         </div>
       </section>

@@ -46,6 +46,19 @@ type Крючки = {
   onEscape: () => void;
   /** Пока открыто хоть одно окно, одиночные буквы не работают. */
   busy: boolean;
+  /**
+   * Пущен ли этот человек на эту страницу.
+   *
+   * Клавиша, ведущая в чужой контур, — не короткая дорога, а короткая
+   * дорога в стену: у производства N открывала «Новая сделка» и получала
+   * «Раздел закрыт», у продаж то же делала D с материалом (issue #96).
+   * Все остальные места роль уже учитывали — разделы в шапке, поиск,
+   * кнопки сводки, — и клавиши оставались единственным, что о ней не знало.
+   *
+   * Правило приезжает сюда решением, а не ролями: этот файл про клавиатуру,
+   * и знать, какая роль что открывает, ему незачем.
+   */
+  mayGo: (path: string) => boolean;
 };
 
 const АККОРД: readonly [string, string][] = [
@@ -67,7 +80,7 @@ function буква(e: KeyboardEvent, letter: string): boolean {
   return e.code === `Key${letter.toUpperCase()}` || e.key.toLowerCase() === letter;
 }
 
-export function useShellKeys({ onPalette, onHotkeys, onEscape, busy }: Крючки) {
+export function useShellKeys({ onPalette, onHotkeys, onEscape, busy, mayGo }: Крючки) {
   const router = useRouter();
   const chord = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ждём_букву = useRef(false);
@@ -93,9 +106,9 @@ export function useShellKeys({ onPalette, onHotkeys, onEscape, busy }: Крюч�
   // это состояние, изменённое до того, как React решил, что отрисовка
   // состоялась. При отброшенной попытке ссылка осталась бы от неё.
   const маршрут = useRef(router);
-  const свежие = useRef<Крючки>({ onPalette, onHotkeys, onEscape, busy });
+  const свежие = useRef<Крючки>({ onPalette, onHotkeys, onEscape, busy, mayGo });
   useEffect(() => {
-    свежие.current = { onPalette, onHotkeys, onEscape, busy };
+    свежие.current = { onPalette, onHotkeys, onEscape, busy, mayGo };
     маршрут.current = router;
   });
 
@@ -107,7 +120,15 @@ export function useShellKeys({ onPalette, onHotkeys, onEscape, busy }: Крюч�
     };
 
     const слушатель = (e: KeyboardEvent) => {
-      const { onPalette, onHotkeys, onEscape, busy } = свежие.current;
+      const { onPalette, onHotkeys, onEscape, busy, mayGo } = свежие.current;
+
+      // Переход, на который у этого человека нет права, не делается вовсе.
+      // Не «сходить и показать отказ»: экран «Раздел закрыт» — ответ на
+      // набранный руками адрес и на присланную ссылку, а не на случайную
+      // букву. Клавиша просто молчит — как молчат J и K там, где списка нет.
+      const веди = (куда: string) => {
+        if (mayGo(куда)) маршрут.current.push(куда);
+      };
 
       // Escape закрывает открытое раньше всех проверок, в том числе проверки
       // фокуса: набранное в поле поиска — часть открытого окна, и закрывать
@@ -137,7 +158,7 @@ export function useShellKeys({ onPalette, onHotkeys, onEscape, busy }: Крюч�
         снять_аккорд();
         if (куда) {
           e.preventDefault();
-          маршрут.current.push(куда);
+          веди(куда);
         }
         return;
       }
@@ -160,13 +181,13 @@ export function useShellKeys({ onPalette, onHotkeys, onEscape, busy }: Крюч�
 
       if (буква(e, "n")) {
         e.preventDefault();
-        маршрут.current.push("/admin/deals/new");
+        веди("/admin/deals/new");
         return;
       }
 
       if (буква(e, "d")) {
         e.preventDefault();
-        маршрут.current.push("/admin/news/new");
+        веди("/admin/news/new");
       }
     };
 

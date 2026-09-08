@@ -10,11 +10,13 @@ import {
   dealQuotes,
   detachFromDeal,
   documents as loadDocuments,
+  lead as loadLead,
   moveDeal,
   updateDeal,
   type Deal,
   type DealForm,
   type DocumentRow,
+  type Lead,
   type QuoteRow,
 } from "@/lib/admin";
 import { plural } from "@/lib/plural";
@@ -81,6 +83,7 @@ export default function DealCard({ params }: { params: Promise<{ id: string }> }
               <span className="muted">
                 {data.owner ?? "ответственного нет"} · {label(PIPELINE, data.pipeline)}
               </span>
+              <FromLead leadId={data.leadId} />
             </p>
           )}
         </div>
@@ -112,6 +115,41 @@ export default function DealCard({ params }: { params: Promise<{ id: string }> }
 }
 
 // ───────────────────────────────────────────────────────────────────────────
+/**
+ * Откуда сделка взялась — ссылка на разобранную заявку.
+ *
+ * Дорога до сих пор была односторонней: заявка вела в сделку («Открыть
+ * сделку →» в разборе), сделка обратно — никуда. `leadId` при этом
+ * приезжает с портала и не использовался ни одной страницей (issue #100).
+ *
+ * Цена односторонности видна на блоке «История». Разговор с клиентом
+ * начинается на заявке — туда записывают звонок, письмо, встречу, — а после
+ * разбора менеджер работает в сделке, и история там пуста: «Записей пока
+ * нет». Записи не потерялись, их просто неоткуда увидеть.
+ *
+ * Номер заявки («З-2026-0014») спрашивается отдельным запросом, потому что
+ * в сделке его нет. Он того стоит: именно его называет клиент по телефону,
+ * и ссылка «Из заявки →» без номера отвечала бы на половину вопроса.
+ * Не приехал — ссылка всё равно есть, просто без номера: заявка на месте,
+ * а её карточка ответит сама.
+ */
+function FromLead({ leadId }: { leadId: string | null }) {
+  const { data } = useLoad<Lead | null>(
+    () => (leadId ? loadLead(leadId) : Promise.resolve(null)),
+    leadId ?? "",
+  );
+
+  // Сделку заводят и руками — тогда заявки за ней нет вовсе, и говорить
+  // про это нечего.
+  if (!leadId) return null;
+
+  return (
+    <Link className="deal__from" href={`/admin/leads/?open=${leadId}`}>
+      из заявки {data ? <span className="mono">{data.number}</span> : null} →
+    </Link>
+  );
+}
+
 // Перевод по воронке
 
 /** Куда «дальше». Отказные стадии пропускаются: в отказ уводят нарочно. */

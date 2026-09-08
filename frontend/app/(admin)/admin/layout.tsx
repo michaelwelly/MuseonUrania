@@ -362,6 +362,10 @@ function Chrome({ who, children }: { who: Session; children: React.ReactNode }) 
       setBell(false);
     },
     busy: palette || hotkeys || bell,
+    // Тот же `mayOpen`, что отбирает разделы в шапке и решает, показать
+    // страницу или «Раздел закрыт». Разойдись они, клавиша снова повела бы
+    // туда, куда меню не ведёт (issue #96).
+    mayGo: (path) => mayOpen(who, path),
   });
 
   // Высота липкой навигации — числом в CSS-переменную.
@@ -670,7 +674,9 @@ function Chrome({ who, children }: { who: Session; children: React.ReactNode }) 
       </footer>
 
       {palette && <Palette onClose={() => setPalette(false)} />}
-      {hotkeys && <Hotkeys onClose={() => setHotkeys(false)} />}
+      {hotkeys && (
+        <Hotkeys onClose={() => setHotkeys(false)} mayGo={(path) => mayOpen(who, path)} />
+      )}
 
       {/* На самом разделе разговоров виджета нет: он повторял бы список,
           который человек уже открыл, и закрывал бы собой третью колонку. */}

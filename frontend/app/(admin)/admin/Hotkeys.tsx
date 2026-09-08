@@ -14,27 +14,43 @@ import { CloseIcon } from "./icons";
 // диапазон, E на правку) приедут вместе со списками, которые их слушают.
 // Про это сказано внизу окна словами, а не пустыми строками.
 
-type Клавиша = { key: string; what: string };
+// `where` — куда клавиша ведёт. Он же решает, показывать ли строку:
+// список обязан совпадать с тем, что у этого человека работает, а
+// клавиши навигации у ролей разные (issue #96). Без `where` — клавиша
+// без перехода, она работает у всех.
+type Клавиша = { key: string; what: string; where?: string };
 
 const НАБОР: readonly Клавиша[] = [
   { key: "⌘K / Ctrl+K", what: "Поиск по всему порталу" },
   { key: "?", what: "Это окно" },
   { key: "ESC", what: "Закрыть окно, панель или поиск" },
-  { key: "N", what: "Новая сделка" },
-  { key: "D", what: "Добавить материал" },
-  { key: "G затем C", what: "Клиенты" },
-  { key: "G затем L", what: "Заявки" },
-  { key: "G затем D", what: "Сделки" },
-  { key: "J / K", what: "По строкам списка вниз и вверх" },
-  { key: "ПРОБЕЛ", what: "Выделить строку под курсором" },
-  { key: "SHIFT+КЛИК", what: "Выделить всё до этой строки" },
-  { key: "ENTER", what: "Открыть строку под курсором" },
+  { key: "N", what: "Новая сделка", where: "/admin/deals/new" },
+  { key: "D", what: "Добавить материал", where: "/admin/news/new" },
+  { key: "G затем C", what: "Клиенты", where: "/admin/clients/" },
+  { key: "G затем L", what: "Заявки", where: "/admin/leads/" },
+  { key: "G затем D", what: "Сделки", where: "/admin/deals/" },
+  { key: "J / K", what: "По строкам списка вниз и вверх", where: "/admin/leads/" },
+  { key: "ПРОБЕЛ", what: "Выделить строку под курсором", where: "/admin/leads/" },
+  { key: "SHIFT+КЛИК", what: "Выделить всё до этой строки", where: "/admin/leads/" },
+  { key: "ENTER", what: "Открыть строку под курсором", where: "/admin/leads/" },
 ];
 
 // Окно рисуется оболочкой по флагу, а не прячется стилями: спрятанное окно
 // остаётся в дереве, и Tab продолжает ходить по кнопкам, которых не видно.
-export function Hotkeys({ onClose }: { onClose: () => void }) {
+export function Hotkeys({
+  onClose,
+  mayGo,
+}: {
+  onClose: () => void;
+  /** Пущен ли этот человек туда, куда ведёт клавиша. */
+  mayGo: (path: string) => boolean;
+}) {
   const close = useRef<HTMLButtonElement>(null);
+
+  // Строки чужого контура не показываются: у производства это были ЧЕТЫРЕ
+  // клавиши из двенадцати, и все четыре приводили к «Раздел закрыт».
+  const мои = НАБОР.filter((k) => k.where === undefined || mayGo(k.where));
+  const естьСписки = мои.some((k) => k.where === "/admin/leads/");
 
   // Фокус уводится в окно, иначе он остаётся на кнопке в футере: с клавиатуры
   // окно открылось, а Tab продолжает ходить по странице под ним.
@@ -68,7 +84,7 @@ export function Hotkeys({ onClose }: { onClose: () => void }) {
         </div>
 
         <dl className="keys">
-          {НАБОР.map((k) => (
+          {мои.map((k) => (
             <div className="keys__row" key={k.key}>
               <dt className="keys__key mono">{k.key}</dt>
               <dd className="keys__what">{k.what}</dd>
@@ -76,11 +92,13 @@ export function Hotkeys({ onClose }: { onClose: () => void }) {
           ))}
         </dl>
 
-        <p className="sheet__note">
-          Четыре последние работают там, где есть список строк, — пока это заявки. На остальных
-          экранах они молчат, а не делают что-то другое. E на правку появится вместе
-          с продукцией и новостями.
-        </p>
+        {естьСписки && (
+          <p className="sheet__note">
+            Четыре последние работают там, где есть список строк, — пока это заявки. На остальных
+            экранах они молчат, а не делают что-то другое. E на правку появится вместе
+            с продукцией и новостями.
+          </p>
+        )}
       </div>
     </div>
   );

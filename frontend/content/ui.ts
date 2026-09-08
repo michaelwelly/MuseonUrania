@@ -236,6 +236,21 @@ export type UiStrings = {
     /** Подписи карточек контактов: ключ — русский оригинал из content/contacts.ts. */
     blockTitles: Record<string, string>;
   };
+
+  /**
+   * Страница «не найдено». Интерфейс, а не содержание: она ничего не
+   * утверждает ни об изделиях, ни о документах — только объясняет, что
+   * адрес не открылся, и показывает, куда идти дальше.
+   */
+  notFound: {
+    title: string;
+    /** Почему страницы нет. Причина названа честно: адреса просто нет. */
+    text: string;
+    /** Подпись над списком разделов. */
+    linksTitle: string;
+    /** Что делать, если сюда привела ссылка с сайта. */
+    reportText: string;
+  };
 };
 
 const ru: UiStrings = {
@@ -427,6 +442,16 @@ const ru: UiStrings = {
     messageLabel: "Сообщение",
     legalTitle: "Реквизиты",
     blockTitles: {},
+  },
+  notFound: {
+    title: "Страница не найдена",
+    // Причин у 404 ровно две — адрес набран с ошибкой или страницы больше
+    // нет, — и обе названы. Догадки вроде «изделие снято с производства»
+    // сюда писать нельзя: сайт этого не знает.
+    text: "По этому адресу на сайте ничего нет. Возможно, в ссылке опечатка или страницу перенесли.",
+    linksTitle: "Куда можно перейти",
+    reportText:
+      "Если сюда привела ссылка с сайта — сообщите, поправим: позвоните или напишите на общий адрес.",
   },
 };
 
@@ -620,6 +645,13 @@ const en: UiStrings = {
       Адрес: "Address",
       "Адрес производства": "Manufacturing address",
     },
+  },
+  notFound: {
+    title: "Page not found",
+    text: "There is nothing at this address. The link may contain a typo, or the page has moved.",
+    linksTitle: "Where to go next",
+    reportText:
+      "If a link on this site brought you here, please tell us and we will fix it: call or write to the general address.",
   },
 };
 

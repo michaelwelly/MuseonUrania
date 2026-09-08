@@ -4,12 +4,16 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import {
   audit,
+  chatsAll,
+  deals,
   leads,
   removeMyAvatar,
   staff as loadStaff,
   uploadMyAvatar,
   AVATAR_MAX_BYTES,
   type AuditEntry,
+  type ChatCard,
+  type DealRow,
   type LeadRow,
   type Page,
   type StaffMember,
@@ -86,6 +90,17 @@ export default function ProfilePage() {
     () => (мойКонтурПродаж ? leads({ owner: who.actor }, 0, 1) : Promise.resolve(null)),
     `${who.actor}#${мойКонтурПродаж}`,
   );
+  // Размер страницы 1: нужно `total`, а не сами записи. Ровно так же
+  // считает нагрузку раздел «Сотрудники» — второй способ считать одно
+  // и то же однажды разошёлся бы с первым.
+  const { data: сделки } = useLoad<Page<DealRow> | null>(
+    () => (мойКонтурПродаж ? deals({ owner: who.actor }, 0, 1) : Promise.resolve(null)),
+    `${who.actor}#сделки#${мойКонтурПродаж}`,
+  );
+  const { data: разговоры } = useLoad<Page<ChatCard> | null>(
+    () => (мойКонтурПродаж ? chatsAll(who.actor, 0, 1) : Promise.resolve(null)),
+    `${who.actor}#разговоры#${мойКонтурПродаж}`,
+  );
   const { data: журнал, error } = useLoad<Page<AuditEntry> | null>(
     () => (мнеВиденЖурнал ? audit({ actor: who.actor }, 0, 8) : Promise.resolve(null)),
     `${who.actor}#${мнеВиденЖурнал}`,
@@ -157,17 +172,30 @@ export default function ProfilePage() {
                 Уничтожать персональные данные по обращению субъекта
               </Can>
               <Can yes={may(who, "admin")}>Читать журнал целиком</Can>
-              <Can>
-                Заводить сотрудников и выдавать роли — это консоль системы входа, а не
-                портал
+              {/* Раньше здесь стоял безусловный прочерк: «выдавать роли —
+                  это консоль системы входа, а не портал». С 26 августа
+                  это неправда — портал раздаёт ПОРТАЛЬНЫЕ роли сам,
+                  раздел «Сотрудники». Строка осталась от прежнего решения
+                  и отправляла администратора искать консоль Keycloak
+                  вместо соседнего раздела (issue #98).
+
+                  Граница, которая при этом никуда не делась, названа
+                  словами ниже: завести человека, отключить его и сменить
+                  пароль — по-прежнему консоль. Портал меняет НАБОР
+                  портальных ролей и ничего больше. */}
+              <Can yes={may(who, "admin")}>
+                Выдавать и снимать портальные роли в разделе «Сотрудники»
               </Can>
             </ul>
 
             <p className="admin-hint">
               Ролей три. <code>portal-admin</code> открыт везде;{" "}
               <code>portal-sales</code> и <code>portal-production</code> делят не глубину
-              доступа, а предмет работы — клиентов и содержимое сайта. Роль выдают
-              в консоли системы входа, портал её только читает из токена.
+              доступа, а предмет работы — клиентов и содержимое сайта. Сами роли
+              администратор выдаёт в разделе{" "}
+              <Link href="/admin/staff/">«Сотрудники»</Link>; завести человека,
+              отключить учётную запись и сменить пароль — работа консоли системы
+              входа, и портал за неё не берётся.
             </p>
           </div>
         </section>
@@ -192,16 +220,54 @@ export default function ProfilePage() {
               </span>
             )}
 
-            {/* Сделки и разговоры посчитать нечем: отбора по ответственному
-                у этих дверей нет. Пустая плитка честнее правдоподобной. */}
-            <span className="tile tile--none">
-              <div className="tile__num nobody">—</div>
-              <div className="tile__label">сделки: у портала нет отбора по ответственному</div>
-            </span>
-            <span className="tile tile--none">
-              <div className="tile__num nobody">—</div>
-              <div className="tile__label">разговоры: у портала нет отбора по ответственному</div>
-            </span>
+            {/* Здесь долго стоял прочерк с подписью «у портала нет отбора
+                по ответственному». Отбор есть — `/deals?owner=` и
+                `/chats?owner=`, — и раздел «Сотрудники» им уже пользуется:
+                про каждого ДРУГОГО человека нагрузка считалась, а про
+                того, кто открыл свой кабинет, — «нечем» (issue #97).
+
+                Подпись при этом не просто пустовала, она утверждала про
+                портал неправду, и прочитавший её дальше не искал. */}
+            {мойКонтурПродаж ? (
+              <>
+                <Link
+                  className="tile"
+                  href={`/admin/deals/?owner=${encodeURIComponent(who.actor)}`}
+                >
+                  <div className="tile__num">{сделки ? сделки.total : "…"}</div>
+                  <div className="tile__label">
+                    {сделки ? plural(сделки.total, "сделка", "сделки", "сделок") : "сделок"} на вас
+                  </div>
+                </Link>
+                <Link
+                  className="tile"
+                  href={`/admin/chats/?owner=${encodeURIComponent(who.actor)}`}
+                >
+                  <div className="tile__num">{разговоры ? разговоры.total : "…"}</div>
+                  <div className="tile__label">
+                    {разговоры
+                      ? plural(разговоры.total, "разговор", "разговора", "разговоров")
+                      : "разговоров"}{" "}
+                    на вас
+                  </div>
+                </Link>
+              </>
+            ) : (
+              <>
+                <span className="tile tile--none">
+                  <div className="tile__num nobody">—</div>
+                  <div className="tile__label">
+                    сделки ведёт контур продаж — вашей роли он не открыт
+                  </div>
+                </span>
+                <span className="tile tile--none">
+                  <div className="tile__num nobody">—</div>
+                  <div className="tile__label">
+                    разговоры ведёт контур продаж — вашей роли он не открыт
+                  </div>
+                </span>
+              </>
+            )}
           </div>
 
           <h2 className="admin-card__title">Последние действия в журнале</h2>

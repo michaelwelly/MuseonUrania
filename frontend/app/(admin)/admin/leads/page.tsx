@@ -87,7 +87,13 @@ export default function LeadsPage() {
 
 function Leads() {
   const who = useWho();
-  const asked = useSearchParams().get("owner");
+  const params = useSearchParams();
+  const asked = params.get("owner");
+  // Заявка, названная адресом. У карточки заявки своей страницы нет —
+  // она открывается ящиком поверх списка, — и до этого параметра ссылки
+  // на конкретную заявку не существовало вовсе: со сделки, разобранной
+  // из заявки, вернуться было некуда (issue #100).
+  const назвали = params.get("open");
   const toast = useToast();
   const counts = useCounts();
 
@@ -130,7 +136,9 @@ function Leads() {
   const [typed, setTyped] = useState("");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
-  const [open, setOpen] = useState<string | null>(null);
+  // Как и отбор: только начальное значение. Дальше открытым ящиком ведёт
+  // состояние — иначе закрытие карточки спорило бы с адресом в строке.
+  const [open, setOpen] = useState<string | null>(назвали);
   const [queue, setQueue] = useState<string[] | null>(null);
   const [cursor, setCursor] = useState(0);
 

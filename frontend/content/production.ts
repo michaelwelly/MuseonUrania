@@ -1,4 +1,4 @@
-import { mapEmbedSrc } from "@/lib/maps";
+import { mapEmbedSrc, mapRouteHref } from "@/lib/maps";
 import { site } from "./site";
 
 // Страница «Производство» (экран 05 редизайна).
@@ -67,4 +67,10 @@ export const address = {
   // было бы только глазами.
   mapSrc: mapEmbedSrc(site.address),
   mapTitle: `Карта: ${site.address}`,
+  // Кнопка «Построить маршрут» вела на /contacts/ — то есть на общую
+  // страницу вместо обещанного действия (issue #102). Адрес строится той же
+  // функцией и из того же site.address, что и на контактах: два экземпляра
+  // строки разъехались бы молча — одна страница вела бы к одному дому,
+  // вторая к другому.
+  routeHref: mapRouteHref(site.address),
 };

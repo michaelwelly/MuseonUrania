@@ -162,4 +162,20 @@ describe("отбор", () => {
       actor: "a.rogov",
     });
   });
+
+  // Изменение прав — единственный след того, что доступ у человека стал
+  // другим. Без чипа его искали перелистыванием всего журнала, а ищут
+  // ровно тогда, когда что-то пошло не так (issue #108).
+  it("у сотрудников есть свой чип, и он шлёт предмет журнала", async () => {
+    const { default: userEvent } = await import("@testing-library/user-event");
+    const user = userEvent.setup();
+    await журнал();
+
+    await user.click(screen.getByRole("button", { name: "Сотрудники" }));
+
+    expect(mocks.audit.mock.calls.at(-1)?.[0]).toEqual({
+      subject: "staff",
+      actor: "",
+    });
+  });
 });
