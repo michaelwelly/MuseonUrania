@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { serviceForm } from "@/content/service";
 import { consent as consentCopy } from "@/content/legal";
 import { site } from "@/content/site";
+import { ui, type UiStrings } from "@/content/ui";
+import { contentText } from "@/lib/content-i18n";
+import { DEFAULT_LANG, localePath, type Lang } from "@/lib/i18n";
 import {
   attribution,
   newIdempotencyKey,
@@ -42,21 +44,26 @@ type Errors = Partial<Record<Field, string>>;
 // от того, куда запрос уйдёт потом. Те же правила стоят в LeadSubmission
 // на бэкенде: браузеру верить нельзя, а пользователю нужно показать ошибку
 // сразу, не гоняя запрос.
-export function validate(data: FormData): Errors {
+//
+// Тексты ошибок приходят вторым аргументом, а не берутся из словаря внутри:
+// проверка не должна знать про язык страницы, она знает про поля. Умолчание
+// русское — так функция остаётся вызываемой одним аргументом и из тестов,
+// и из мест, где языка нет.
+export function validate(data: FormData, messages: UiStrings["form"]["errors"] = ui(DEFAULT_LANG).form.errors): Errors {
   const errors: Errors = {};
   const get = (k: string) => String(data.get(k) ?? "").trim();
 
-  if (!get("name")) errors.name = "Укажите, к кому обращаться";
-  if (get("phone").replace(/\D/g, "").length < 10) errors.phone = "Укажите телефон с кодом";
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(get("email"))) errors.email = "Проверьте адрес почты";
+  if (!get("name")) errors.name = messages.name;
+  if (get("phone").replace(/\D/g, "").length < 10) errors.phone = messages.phone;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(get("email"))) errors.email = messages.email;
   // Единственная проверка серийного номера — длина, и та же стоит на бэкенде.
   // Формат не проверяется: вид номера VEDAL в согласованных материалах
   // не описан, а маска, придуманная здесь, отклоняла бы настоящие номера.
   if (get("serialNumber").length > 100) {
-    errors.serialNumber = "Серийный номер не длиннее 100 символов";
+    errors.serialNumber = messages.serialNumber;
   }
-  if (get("message").length < 10) errors.message = "Опишите обращение хотя бы одной фразой";
-  if (!data.get("consent")) errors.consent = consentCopy.error;
+  if (get("message").length < 10) errors.message = messages.message;
+  if (!data.get("consent")) errors.consent = messages.consent;
 
   return errors;
 }
@@ -71,6 +78,8 @@ type Props = {
   /** Позиции каталога для селектора изделия. Приходят с бэкенда через страницу. */
   products?: readonly { slug: string; name: string; kind: string }[];
   analytics: string;
+  /** Язык страницы. Русский по умолчанию — форму строят и тесты без пропа. */
+  lang?: Lang;
   submitLabel?: string;
   hint?: string;
   messageLabel?: string;
@@ -81,10 +90,16 @@ export default function LeadForm({
   topics,
   products = [],
   analytics,
+  lang = DEFAULT_LANG,
   submitLabel,
   hint,
   messageLabel,
 }: Props) {
+  const strings = ui(lang);
+  const c = contentText(lang);
+  // Ответ портала всегда по-русски: тексты живут на бэкенде. Помечаем их
+  // языком, а не выдаём за язык страницы.
+  const noticeLang = lang === DEFAULT_LANG ? undefined : "ru";
   const [errors, setErrors] = useState<Errors>({});
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "failed">("idle");
   const [notice, setNotice] = useState("");
@@ -119,7 +134,7 @@ export default function LeadForm({
     const formEl = event.currentTarget;
     const data = new FormData(formEl);
 
-    const found = validate(data);
+    const found = validate(data, strings.form.errors);
     setErrors(found);
     if (Object.keys(found).length > 0) {
       // Фокус на первое поле с ошибкой. Без этого для незрячего посетителя
@@ -196,7 +211,7 @@ export default function LeadForm({
   if (status === "sent") {
     return (
       <div className={styles.form}>
-        <p className={styles.pending} role="status" data-anim="rise">
+        <p className={styles.pending} role="status" data-anim="rise" lang={noticeLang}>
           {notice}
         </p>
         <div className={styles.actions}>
@@ -208,7 +223,7 @@ export default function LeadForm({
               setNotice("");
             }}
           >
-            Отправить ещё одно обращение
+            {strings.form.again}
           </button>
         </div>
       </div>
@@ -220,7 +235,7 @@ export default function LeadForm({
       {topics && (
         <div className={`${styles.field} ${styles.fieldWide} ${styles.fieldFirst}`}>
           <label className={styles.label} htmlFor="topic">
-            Тема обращения
+            {strings.form.topic}
           </label>
           <select
             id="topic"
@@ -229,9 +244,11 @@ export default function LeadForm({
             value={topic}
             onChange={(event) => setTopic(event.target.value as FormType)}
           >
+            {/* Названия тем приходят из content/contacts.ts — это содержание,
+                а не подпись поля: тема определяет, куда уедет заявка. */}
             {topics.map((t) => (
-              <option key={t.code} value={t.code}>
-                {t.label}
+              <option key={t.code} value={t.code} lang={c.mark(t.label)}>
+                {c.t(t.label)}
               </option>
             ))}
           </select>
@@ -241,7 +258,7 @@ export default function LeadForm({
       <div className={`${styles.row} ${topics ? styles.rowSpaced : ""}`}>
         <div className={styles.field}>
           <label className={styles.label} htmlFor="name">
-            {serviceForm.fields.name} <span className={styles.required}>*</span>
+            {strings.form.name} <span className={styles.required}>*</span>
           </label>
           <input
             id="name"
@@ -257,7 +274,7 @@ export default function LeadForm({
 
         <div className={styles.field}>
           <label className={styles.label} htmlFor="company">
-            {serviceForm.fields.company}
+            {strings.form.company}
           </label>
           <input
             id="company"
@@ -269,7 +286,7 @@ export default function LeadForm({
 
         <div className={styles.field}>
           <label className={styles.label} htmlFor="phone">
-            {serviceForm.fields.phone} <span className={styles.required}>*</span>
+            {strings.form.phone} <span className={styles.required}>*</span>
           </label>
           <input
             id="phone"
@@ -286,7 +303,7 @@ export default function LeadForm({
 
         <div className={styles.field}>
           <label className={styles.label} htmlFor="email">
-            {serviceForm.fields.email} <span className={styles.required}>*</span>
+            {strings.form.email} <span className={styles.required}>*</span>
           </label>
           <input
             id="email"
@@ -305,12 +322,12 @@ export default function LeadForm({
       {products.length > 0 && (
         <div className={`${styles.field} ${styles.fieldWide}`}>
           <label className={styles.label} htmlFor="product">
-            {serviceForm.fields.product}
+            {strings.form.product}
           </label>
           {/* Значение — slug, а не название: бэкенд связывает заявку с позицией
               каталога по нему. Название в базе может смениться, slug — нет. */}
           <select id="product" name="product" className={styles.select} defaultValue="">
-            <option value="">{serviceForm.productOther}</option>
+            <option value="">{strings.form.productOther}</option>
             {products.map((p) => (
               <option key={p.slug} value={p.slug}>
                 {p.name} — {p.kind}
@@ -323,7 +340,7 @@ export default function LeadForm({
       {asksSerial && (
         <div className={`${styles.field} ${styles.fieldWide}`}>
           <label className={styles.label} htmlFor="serialNumber">
-            {serviceForm.fields.serialNumber}
+            {strings.form.serialNumber}
           </label>
           <input
             id="serialNumber"
@@ -342,7 +359,7 @@ export default function LeadForm({
             </span>
           ) : (
             <span id="serial-hint" className={styles.fieldHint}>
-              {serviceForm.serialHint}
+              {strings.form.serialHint}
             </span>
           )}
         </div>
@@ -350,7 +367,7 @@ export default function LeadForm({
 
       <div className={`${styles.field} ${styles.fieldWide}`}>
         <label className={styles.label} htmlFor="message">
-          {messageLabel ?? serviceForm.fields.message} <span className={styles.required}>*</span>
+          {messageLabel ?? strings.form.message} <span className={styles.required}>*</span>
         </label>
         <textarea
           id="message"
@@ -387,15 +404,20 @@ export default function LeadForm({
         {/* Звёздочка вплотную к тексту, разделитель с воздухом. Раньше между
             ними стояли два пробела подряд, и строка читалась как «данных * ·
             Политика» — набор знаков, а не подпись со ссылкой. */}
-        <span>
-          {consentCopy.label}
+        {/* Текст согласия мы не переводим: бэкенд хранит версию формулировки,
+            под которой человек подписался, и перевод — это другая
+            формулировка. До согласования показываем русскую и помечаем её. */}
+        <span lang={c.mark(consentCopy.label, consentCopy.linkLabel)}>
+          {c.t(consentCopy.label)}
           <span className={styles.required}>*</span>
           <span className={styles.consentSep}>·</span>
-          <Link href={consentCopy.href}>{consentCopy.linkLabel}</Link>
+          <Link href={localePath(lang, consentCopy.href)}>{c.t(consentCopy.linkLabel)}</Link>
         </span>
       </label>
       {errors.consent && <span id="consent-error" className={styles.error}>{errors.consent}</span>}
-      <p className={styles.consentNote}>{consentCopy.note}</p>
+      <p className={styles.consentNote} lang={c.mark(consentCopy.note)}>
+        {c.t(consentCopy.note)}
+      </p>
 
       <div className={styles.actions}>
         <button
@@ -403,15 +425,17 @@ export default function LeadForm({
           className={styles.submit}
           disabled={sending}
         >
-          {sending ? "Отправляем…" : (submitLabel ?? serviceForm.submit)}
+          {sending ? strings.form.sending : (submitLabel ?? strings.form.submit)}
         </button>
         {hint && <span className={styles.hint}>{hint}</span>}
       </div>
 
       {status === "failed" && (
         <p className={styles.pending} role="alert" data-anim="rise">
-          {notice} Можно написать на <a href={`mailto:${site.email}`}>{site.email}</a> или позвонить{" "}
-          <a href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a>.
+          <span lang={noticeLang}>{notice}</span> {strings.form.fallbackCall}{" "}
+          <a href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a>{" "}
+          {strings.form.fallbackWrite} <a href={`mailto:${site.email}`}>{site.email}</a>
+          {strings.form.fallbackEnd}
         </p>
       )}
     </form>

@@ -33,7 +33,7 @@ const doc = (over: Partial<Doc> = {}): Doc => ({
 const ФАЙЛ = "http://portal/api/public/v1/documents/opisanie-izdeliya-vedal-r1-r2/file";
 
 async function открытьВкладку(documents: Doc[]) {
-  render(<ProductTabs product={product} documents={documents} />);
+  render(<ProductTabs product={product} documents={documents} lang="ru" />);
   await userEvent.click(screen.getByRole("tab", { name: "Документы" }));
 }
 

@@ -25,8 +25,15 @@ export const REQUEST_HREF = "/contacts/";
  */
 export const isOpen = (d: Doc): boolean => Boolean(d.published && d.file);
 
-/** Адрес строки: файл у открытых, форма запроса у остальных. */
-export const docHref = (d: Doc): string => (isOpen(d) ? d.file! : REQUEST_HREF);
+/**
+ * Адрес строки: файл у открытых, форма запроса у остальных.
+ *
+ * Адрес формы приходит вторым аргументом, потому что у переведённых версий
+ * сайта он с языковым префиксом (). Правило «куда ведёт
+ * документ» про языки знать не должно — про них знает вызывающий экран.
+ */
+export const docHref = (d: Doc, requestHref: string = REQUEST_HREF): string =>
+  isOpen(d) ? d.file! : requestHref;
 
 /**
  * Атрибуты внешней ссылки — только у открываемых.
@@ -61,8 +68,17 @@ export const accessBadge = (d: Doc): string => {
 /** Бейдж говорит о выложенном файле — значит, он зелёный, а не приглушённый. */
 export const badgeIsOk = (d: Doc): boolean => isOpen(d);
 
-/** Что произойдёт по нажатию. Пишется словами, а не подразумевается стрелкой. */
-export const actionLabel = (d: Doc): string => (isOpen(d) ? "Открыть" : "Запросить");
+/**
+ * Что произойдёт по нажатию. Пишется словами, а не подразумевается стрелкой.
+ *
+ * Подписи приходят аргументом: это интерфейс, и на переведённых версиях они
+ * приезжают из . Умолчание русское — так функция остаётся
+ * вызываемой одним аргументом, в том числе из тестов.
+ */
+export const actionLabel = (
+  d: Doc,
+  labels: { open: string; request: string } = { open: "Открыть", request: "Запросить" },
+): string => (isOpen(d) ? labels.open : labels.request);
 
 /**
  * Подпись под названием на карточке изделия: раздел перечня и судьба нажатия.

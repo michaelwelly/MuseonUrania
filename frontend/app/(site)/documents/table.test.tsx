@@ -28,6 +28,7 @@ describe("перечень документов", () => {
         documents={[
           doc({ slug: "sertifikat-iso-13485", title: "Сертификат ISO 13485", published: true, file: ФАЙЛ }),
         ]}
+        lang="ru"
       />,
     );
 
@@ -39,7 +40,7 @@ describe("перечень документов", () => {
   });
 
   it("строка без файла ведёт на форму и подписана «Запросить»", () => {
-    render(<DocumentsTable documents={[doc()]} />);
+    render(<DocumentsTable documents={[doc()]} lang="ru" />);
 
     const строка = screen.getByRole("link", { name: /Каталог продукции 2026/ });
     // next/link в jsdom отдаёт адрес без хвостового слэша — его дописывает
@@ -52,7 +53,7 @@ describe("перечень документов", () => {
   // Ровно тот случай, из-за которого заведён issue: намерение выложить файл
   // без файла показывалось бейджем «PDF» и обещало скачивание.
   it("бейдж не обещает файл, которого нет", () => {
-    render(<DocumentsTable documents={[doc({ access: "Файл" })]} />);
+    render(<DocumentsTable documents={[doc({ access: "Файл" })]} lang="ru" />);
 
     expect(screen.getByRole("link", { name: /Каталог продукции 2026/ })).toHaveTextContent(
       "По запросу",
@@ -60,7 +61,7 @@ describe("перечень документов", () => {
   });
 
   it("«Уточняется» остаётся статусом документа", () => {
-    render(<DocumentsTable documents={[doc({ access: "Уточняется" })]} />);
+    render(<DocumentsTable documents={[doc({ access: "Уточняется" })]} lang="ru" />);
 
     expect(screen.getByRole("link", { name: /Каталог продукции 2026/ })).toHaveTextContent(
       "Уточняется",

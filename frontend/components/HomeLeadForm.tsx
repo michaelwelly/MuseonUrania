@@ -4,6 +4,9 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { site } from "@/content/site";
 import { consent as consentCopy } from "@/content/legal";
+import { ui } from "@/content/ui";
+import { contentText } from "@/lib/content-i18n";
+import { DEFAULT_LANG, localePath, type Lang } from "@/lib/i18n";
 import { newIdempotencyKey, submitLead } from "@/lib/submit";
 import { reachGoal } from "@/lib/analytics";
 import styles from "./HomeLeadForm.module.css";
@@ -20,11 +23,16 @@ type Errors = Partial<Record<"name" | "phone" | "email" | "message" | "consent",
 // кнопкой стояла подпись «нажимая кнопку, вы соглашаетесь». §14.6 плана
 // требует явную галочку: подпись под кнопкой не даёт человеку выбора,
 // а бэкенд при этом сохраняет согласие так, будто выбор был.
-export default function HomeLeadForm() {
+//
+// Язык по умолчанию русский: форму рисует и русская главная, и переведённая,
+// а тесты создают её без пропов.
+export default function HomeLeadForm({ lang = DEFAULT_LANG }: { lang?: Lang }) {
   const [errors, setErrors] = useState<Errors>({});
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "failed">("idle");
   const [notice, setNotice] = useState("");
   const idempotencyKey = useRef(newIdempotencyKey());
+  const strings = ui(lang);
+  const c = contentText(lang);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -33,11 +41,11 @@ export default function HomeLeadForm() {
     const get = (k: string) => String(data.get(k) ?? "").trim();
 
     const found: Errors = {};
-    if (!get("name")) found.name = "Как к вам обращаться";
-    if (get("phone").replace(/\D/g, "").length < 10) found.phone = "Укажите телефон с кодом";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(get("email"))) found.email = "Проверьте адрес почты";
-    if (get("message").length < 10) found.message = "Опишите задачу хотя бы одной фразой";
-    if (!data.get("consent")) found.consent = consentCopy.error;
+    if (!get("name")) found.name = strings.homeForm.errors.name;
+    if (get("phone").replace(/\D/g, "").length < 10) found.phone = strings.form.errors.phone;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(get("email"))) found.email = strings.form.errors.email;
+    if (get("message").length < 10) found.message = strings.homeForm.errors.message;
+    if (!data.get("consent")) found.consent = strings.form.errors.consent;
 
     setErrors(found);
     if (Object.keys(found).length > 0) {
@@ -77,10 +85,14 @@ export default function HomeLeadForm() {
     }
   }
 
+  // Ответ приходит от портала и всегда по-русски: тексты живут на бэкенде.
+  // Помечаем их языком, а не притворяемся, что они на языке страницы.
+  const noticeLang = lang === DEFAULT_LANG ? undefined : "ru";
+
   if (status === "sent") {
     return (
       <div className={styles.card}>
-        <p className={styles.pending} role="status" data-anim="rise">
+        <p className={styles.pending} role="status" data-anim="rise" lang={noticeLang}>
           {notice}
         </p>
       </div>
@@ -94,8 +106,8 @@ export default function HomeLeadForm() {
           <input
             className={`${styles.input} ${errors.name ? styles.invalid : ""}`}
             name="name"
-            placeholder="Имя"
-            aria-label="Имя"
+            placeholder={strings.homeForm.name}
+            aria-label={strings.homeForm.name}
             autoComplete="name"
             aria-invalid={!!errors.name}
             aria-required="true"
@@ -107,8 +119,8 @@ export default function HomeLeadForm() {
           <input
             className={styles.input}
             name="company"
-            placeholder="Организация"
-            aria-label="Организация"
+            placeholder={strings.homeForm.company}
+            aria-label={strings.homeForm.company}
             autoComplete="organization"
           />
         </div>
@@ -120,8 +132,8 @@ export default function HomeLeadForm() {
             className={`${styles.input} ${errors.phone ? styles.invalid : ""}`}
             name="phone"
             type="tel"
-            placeholder="Телефон"
-            aria-label="Телефон"
+            placeholder={strings.homeForm.phone}
+            aria-label={strings.homeForm.phone}
             autoComplete="tel"
             aria-invalid={!!errors.phone}
             aria-required="true"
@@ -134,8 +146,8 @@ export default function HomeLeadForm() {
             className={`${styles.input} ${errors.email ? styles.invalid : ""}`}
             name="email"
             type="email"
-            placeholder="Рабочая почта"
-            aria-label="Рабочая почта"
+            placeholder={strings.homeForm.email}
+            aria-label={strings.homeForm.email}
             autoComplete="email"
             aria-invalid={!!errors.email}
             aria-required="true"
@@ -148,8 +160,8 @@ export default function HomeLeadForm() {
       <textarea
         className={`${styles.textarea} ${errors.message ? styles.invalid : ""}`}
         name="message"
-        placeholder="Задача отделения, модель или вопрос"
-        aria-label="Сообщение"
+        placeholder={strings.homeForm.messagePlaceholder}
+        aria-label={strings.homeForm.messageLabel}
         aria-invalid={!!errors.message}
         aria-required="true"
         aria-describedby={errors.message ? "home-message-error" : undefined}
@@ -176,12 +188,16 @@ export default function HomeLeadForm() {
         />
         {/* Та же правка, что в LeadForm: звёздочка вплотную к тексту,
             разделитель с воздухом. Формулировка согласия одна на обе формы,
-            и вид у неё тоже должен быть один. */}
-        <span>
-          {consentCopy.label}
+            и вид у неё тоже должен быть один.
+
+            Сам текст согласия не переводится нами: бэкенд хранит версию
+            формулировки, под которой человек подписался, и перевод — это
+            другая формулировка. До согласования показываем русскую. */}
+        <span lang={c.mark(consentCopy.label, consentCopy.linkLabel)}>
+          {c.t(consentCopy.label)}
           <span className={styles.required}>*</span>
           <span className={styles.consentSep}>·</span>
-          <Link href={consentCopy.href}>{consentCopy.linkLabel}</Link>
+          <Link href={localePath(lang, consentCopy.href)}>{c.t(consentCopy.linkLabel)}</Link>
         </span>
       </label>
       {errors.consent && <span id="home-consent-error" className={styles.error}>{errors.consent}</span>}
@@ -192,16 +208,20 @@ export default function HomeLeadForm() {
           className={styles.submit}
           disabled={status === "sending"}
         >
-          {status === "sending" ? "Отправляем…" : "Отправить запрос"}
+          {status === "sending" ? strings.form.sending : strings.homeForm.submit}
         </button>
-        <span className={styles.note}>{consentCopy.note}</span>
+        <span className={styles.note} lang={c.mark(consentCopy.note)}>
+          {c.t(consentCopy.note)}
+        </span>
       </div>
 
       {status === "failed" && (
         <p className={styles.pending} role="alert" data-anim="rise">
-          {notice} Позвоните{" "}
-          <a href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a> или напишите на{" "}
-          <a href={`mailto:${site.email}`}>{site.email}</a>.
+          <span lang={noticeLang}>{notice}</span> {strings.form.fallbackCall}{" "}
+          <a href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a>{" "}
+          {strings.form.fallbackWrite}{" "}
+          <a href={`mailto:${site.email}`}>{site.email}</a>
+          {strings.form.fallbackEnd}
         </p>
       )}
     </form>
