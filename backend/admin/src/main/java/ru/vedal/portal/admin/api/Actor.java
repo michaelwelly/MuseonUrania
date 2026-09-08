@@ -34,6 +34,26 @@ final class Actor {
         return name == null || name.isBlank() ? "unknown" : name;
     }
 
+    /**
+     * Неизменяемый идентификатор учётной записи — `sub` из токена Keycloak.
+     *
+     * Логин переименовывают, `sub` — нет, и это единственное, чем портал
+     * может отличить прежнего владельца логина от нового. Нужен ровно
+     * в одном месте — у портрета сотрудника, см. StaffAvatars.
+     *
+     * В запасном режиме `vedal.iam.mode=local` токена нет вовсе, и здесь
+     * пусто. Сравнивать тогда нечего, и портал ничего не сравнивает:
+     * выдумать `sub` для локальной учётной записи значило бы завести
+     * идентификатор, который ничему не соответствует.
+     */
+    static String subjectOf(Authentication authentication) {
+        if (authentication instanceof JwtAuthenticationToken token) {
+            var subject = token.getToken().getSubject();
+            return subject == null || subject.isBlank() ? null : subject;
+        }
+        return null;
+    }
+
     private static String claim(Jwt jwt, String name) {
         var value = jwt.getClaimAsString(name);
         return value == null || value.isBlank() ? null : value;
