@@ -37,7 +37,7 @@ describe("плашка без сторонних ресурсов", () => {
   it("сообщает и не предлагает выбора", async () => {
     await показать({ счётчик: false, карта: false });
 
-    expect(screen.getByText(/Счётчики аналитики не подключены/)).toBeInTheDocument();
+    expect(screen.getByText(/Счётчиков аналитики нет/)).toBeInTheDocument();
     // Отклонять нечего: cookie самого сайта нужны, чтобы страницы работали.
     // Кнопка «отклонить» здесь была бы бутафорией.
     expect(screen.queryByRole("button", { name: "Только необходимые" })).toBeNull();
@@ -57,7 +57,7 @@ describe("плашка с картой, но без счётчика", () => {
     await показать({ счётчик: false });
 
     // Согласие на то, что человеку не назвали, согласием не является.
-    expect(screen.getByText(/карта Яндекса/)).toBeInTheDocument();
+    expect(screen.getByText(/[Кк]арта Яндекса/)).toBeInTheDocument();
     // «Только необходимые» не должно читаться как «остаться без адреса».
     expect(screen.getByText(/Построить маршрут/)).toBeInTheDocument();
   });
@@ -65,7 +65,7 @@ describe("плашка с картой, но без счётчика", () => {
   it("не обещает счётчик, которого нет", async () => {
     await показать({ счётчик: false });
 
-    expect(screen.getByText(/Счётчики аналитики не подключены/)).toBeInTheDocument();
+    expect(screen.getByText(/Счётчиков аналитики нет/)).toBeInTheDocument();
   });
 
   it("даёт обе кнопки: карту есть чем отклонить", async () => {
@@ -83,7 +83,7 @@ describe("плашка со счётчиком", () => {
 
     // Согласие на то, что человеку не назвали, согласием не является.
     expect(screen.getByText(/Яндекс Метрика/)).toBeInTheDocument();
-    expect(screen.getByText(/карта Яндекса/)).toBeInTheDocument();
+    expect(screen.getByText(/[Кк]арта Яндекса/)).toBeInTheDocument();
     expect(screen.getByText(/уходят в Яндекс/)).toBeInTheDocument();
   });
 
