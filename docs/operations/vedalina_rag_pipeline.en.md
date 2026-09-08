@@ -178,8 +178,9 @@ published products, news and document cards. It is taken through the same
 neighbour query interfaces as the word search uses — not a single new field and
 not a single new source.
 
-Files (PDFs, brochures, catalogues) are not indexed yet: text extraction from
-them does not exist. The list below is the target state.
+Files too: the text of a published PDF or DOCX is extracted and appended to the
+document card. A scan yields empty text — such a document is indexed as a card
+alone and costs not a single model call.
 
 Indexed:
 
@@ -219,7 +220,7 @@ Everything else works inside the VM or over outbound HTTPS:
 
 ## What is done and what waits for the corpus
 
-State as of 8 September 2026,
+State as of 9 September 2026,
 [issue #38](https://github.com/michaelwelly/MuseonUrania/issues/38).
 
 Done — everything that does not depend on the documents' content:
@@ -236,21 +237,82 @@ Done — everything that does not depend on the documents' content:
    index means the previous word search answers.
 8. Reindexing of what the portal already shows — products, news and document
    cards.
+9. **Text extraction from PDF and DOCX** (`FileText`). PDFBox parses PDF; the
+   portal reads DOCX itself — it is a ZIP with a single XML part, and an
+   office-format library is not worth the image size for it. The file comes
+   from whoever uploaded it, so both roads are fenced: XML external entities
+   are off, the unpacked size and the text length are capped. There is no OCR:
+   a scan yields empty text, and that is an honest answer — such a document is
+   indexed as a card.
+10. **The indexing queue** (`KnowledgeIndexer`). The `vedal.documents.v1` event
+    triggers reindexing of a single document and is now written not only on
+    publication but on card edits and file replacement too — in the same
+    transaction as the edit itself. The consumer re-reads the listing: the
+    document is there, index it; it is not, forget it.
+11. **The "reindex" button in the admin area** and the index state next to it:
+    `GET` and `POST /api/admin/v1/knowledge`, a card on the documents page.
+    Each document row shows whether Vedalina searches it and with how many
+    chunks.
 
 Waiting for the corpus:
 
-1. **Text extraction from PDF and DOCX.** Parsing files is verified with files,
-   and inventing the contents of VEDAL datasheets for a test is forbidden by the
-   project rules.
-2. **An indexing queue** triggered by document uploads and page edits. Today
-   reindexing is invoked as a method; the `vedal.documents.v1` event already
-   exists, a consumer does not.
-3. **A "reindex" button in the admin area** and an indexing status per document.
-4. **Calibration of the `vedal.assistant.rag.max-distance` threshold.** The
+1. **Calibration of the `vedal.assistant.rag.max-distance` threshold.** The
    default of 0.45 is deliberately provisional: a threshold can only be measured
-   against real documents and real questions.
-5. **A second indexing circuit** for restricted material, should VEDAL hand any
+   against real documents and real questions. How to measure it — see below.
+2. **A second indexing circuit** for restricted material, should VEDAL hand any
    over.
+
+## How to calibrate the threshold once the corpus exists
+
+`vedal.assistant.rag.max-distance` is the cosine distance beyond which a chunk
+counts as unrelated to the question. It is a single number with two failure
+modes of very different cost:
+
+- **the threshold is too large** — unrelated chunks reach the model's context
+  and Vedalina answers confidently and beside the point. This is the worst
+  failure available: the visitor cannot see that the answer was assembled from
+  something unrelated;
+- **the threshold is too small** — the assistant hands the question to a human
+  where the corpus did hold an answer. Expensive, but visible and not a lie.
+
+Hence the rule of calibration: **when in doubt, take the smaller threshold.**
+
+The procedure:
+
+1. **Build the corpus and the index.** Documents are uploaded through the admin
+   area (the file into S3 **and** a card in the database), then the "reindex"
+   button.
+2. **Assemble a list of questions.** Thirty to fifty real questions — not
+   invented by us but taken from client correspondence, from leads and from
+   Vedalina's conversation log. Half must have an answer in the corpus, half
+   must deliberately not. The second half matters more: it is what exposes a
+   threshold that is too large.
+3. **Record the distances.** For every question, note the distance to the
+   nearest chunk and whether a human considers that chunk an answer. During the
+   measurement the threshold is set deliberately high (0.9, say), otherwise
+   some of the measurements never appear.
+4. **Look at the two clouds of numbers.** Questions with an answer cluster
+   lower, questions without cluster higher. The threshold goes into the gap
+   between them, closer to the lower cloud.
+5. **Verify on held-out questions.** A dozen questions that took no part in the
+   measurement. If the threshold behaves differently on them, the clouds
+   overlap and the threshold is not the problem: the chunking or the embedding
+   model does not suit this corpus.
+
+What not to do:
+
+- **pick the threshold by feel from a handful of questions.** A single number
+  chosen from three examples is a coincidence, not a threshold;
+- **raise the threshold so that "something is found more often".** Vedalina
+  does not fall silent on an empty result: she hands the question to a human.
+  Raising the threshold turns "nothing found" into "the wrong thing found",
+  and the second is the more expensive of the two;
+- **measure on synthetic text.** Distances depend on how the real text is
+  built: a datasheet full of tables and a news item behave differently.
+
+The result is written down here and into `VEDAL_RAG_MAX_DISTANCE` on the stand.
+No reindexing is needed after changing the threshold — it applies at query time,
+not at indexing time.
 
 ## The empty index
 
