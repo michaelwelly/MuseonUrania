@@ -11,26 +11,26 @@ September 7 (after deploying `1ec291b`) and the
 
 ## Before the demo (five minutes)
 
-The channel to the stand from outside sometimes blinks and times out even
-when the portal is perfectly healthy (issue #64) — that happened during the
-September 7 run itself. So checks run **inside the VM**, and the demo itself
-runs from a machine with a stable channel (office network, not mobile
-internet through the same router as the outage).
+Since 8 September the portal lives on its own name: `https://vedal-med.ru`.
+Showing it by IP and port is no longer needed, and it is worth avoiding — an
+address bar reading `51.250.31.97:18080` on the customer's screen looks like
+unfinished work even when everything runs.
 
-Inside the VM:
+Check from outside, on the demo machine:
 
 ```bash
-ssh -p 2222 ubuntu@51.250.31.97
-curl -s http://127.0.0.1:18080/actuator/health
-curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:18080/
+curl -s -o /dev/null -w '%{http_code}\n' https://vedal-med.ru/
 ```
 
-The first command should return `{"status":"UP"}`, the second `200`.
+Expect `200`. If there is no answer, before fixing anything check whether the
+channel is at fault (issue #64): a timeout from outside with a healthy portal
+has happened here before, and it is cured by changing the channel, not by
+editing anything on the machine.
 
 Admin login — from the demo machine, ahead of time, before the customer
 arrives:
 
-- open `http://51.250.31.97:18080/admin/`, log in as `asura`
+- open `https://vedal-med.ru/admin/`, log in as `asura`
   (role `portal-admin`);
 - reach the dashboard and back to `/admin/` with no errors.
 
@@ -41,16 +41,16 @@ in front of the customer.
 
 ### 1. Public site
 
-All addresses are under `http://51.250.31.97:18080`.
+All addresses are under `https://vedal-med.ru`.
 
 | Step | What to open | What to notice | One line to say |
 | --- | --- | --- | --- |
 | 1.1 | `/` | preloader, the live VEDAL mark, animations | "This is a static storefront — a backend outage doesn't take it down" |
-| 1.2 | `/products` | five categories, thirteen cards | "The catalog is built from the same database the editor sees in the admin panel" |
+| 1.2 | `/products` | categories and product cards — how many there are right now, check before the demo rather than trusting this line: the catalog is edited in the admin panel and changes without this document | "The catalog is built from the same database the editor sees in the admin panel" |
 | 1.3 | `/products/[slug]` — open one card | tabs on the product page, specs | if a given spec says "awaiting clarification" — say so plainly: "we're waiting for this data from you, we don't make it up" |
 | 1.4 | `/production` | production text | brief, no lingering |
 | 1.5 | `/documents` | document listing | **do not click download** — see "What not to open" |
-| 1.6 | `/contacts` | map, company details | don't dwell on the tax registration code (KPP) — it's known to be wrong (issue #68), waiting on the correct value from the customer |
+| 1.6 | `/contacts` | map, company details, hours 9:00–17:30 | the tax registration code (KPP) is fixed to 668601001 (issue #68 closed) — the details can be shown calmly now. The map appears after the visitor answers the consent notice: that is not a hitch but a requirement for a third-party frame, and it is worth saying so out loud |
 
 ### 2. Vedalina
 
@@ -117,11 +117,22 @@ on the mailbox from you."
 ## If something goes wrong
 
 **A page won't load or hangs.** Most likely the channel (issue #64), not
-the portal. Check from inside the VM: `ssh -p 2222 ubuntu@51.250.31.97`,
-then `curl http://127.0.0.1:18080/actuator/health`. If it's `UP` inside,
-switch to a backup channel (a phone on a different carrier) or show the
-same screens over an SSH tunnel/screenshot rather than retrying the same
-outside connection.
+the portal. The tell: the TCP connection is established but no data comes
+back — `curl` hangs until timeout and returns `000`. It is cured by changing
+the channel (a phone on a different carrier), not by editing anything on the
+machine.
+
+Checking from inside the VM goes like this:
+
+```bash
+ssh -p 2222 ubuntu@51.250.31.97
+curl -s http://127.0.0.1:18080/actuator/health
+```
+
+But note: SSH only admits addresses listed in the security group, and the
+external address changes along with the VPN. If port 22 does not answer at
+all while 443 does, that is almost certainly why — and it is fixed in the
+Yandex console by the machine's owner, not from your side.
 
 **Admin login won't let you in.** Check which role is being used: `asura`
 is `portal-admin`; `sales` and `production` have deliberately restricted
