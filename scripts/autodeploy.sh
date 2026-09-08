@@ -37,6 +37,8 @@ STATE="${VEDAL_STATE:-/var/lib/vedal-autodeploy/deployed-sha}"
 FAILURES="${VEDAL_FAILURES:-$STATE.failures}"
 GIVE_UP_AFTER="${VEDAL_GIVE_UP_AFTER:-3}"
 LOCK="${VEDAL_LOCK:-/var/lock/vedal-autodeploy.lock}"
+# Заморозка выкатки. Пока файл существует, автодеплой ничего не разворачивает.
+FREEZE="${VEDAL_FREEZE:-/opt/vedal-portal/var/deploy-freeze}"
 
 log() { printf '%s  %s\n' "$(date --iso-8601=seconds)" "$*"; }
 
@@ -58,6 +60,32 @@ fi
 exec 9>"$LOCK"
 if ! flock -n 9; then
   log "предыдущий деплой ещё идёт — пропускаю"
+  exit 0
+fi
+
+# ————— заморозка на время показа (issue #89) —————
+#
+# Выкатка на несколько десятков секунд портит ответ сайта: пока пересоздаётся
+# контейнер, посетитель видит не страницу. В обычный день это никого
+# не касается — а на показе заказчику превращает мерж в чужой ветке в 502
+# на экране у того, кому продают.
+#
+# «Не катить во время показа» — правильное решение, но пока оно живёт
+# только в голове, оно не работает: катит не человек, катит таймер, и он
+# ни о каком показе не знает. Поэтому решение сделано выключателем:
+#
+#     touch /opt/vedal-portal/var/deploy-freeze      # перед показом
+#     rm    /opt/vedal-portal/var/deploy-freeze      # после
+#
+# В файл можно написать причину — она попадёт в журнал.
+#
+# Отметка о развёрнутом коммите при этом НЕ ставится: заморозка откладывает
+# выкатку, а не отменяет её. Снимут файл — накопившийся main приедет сам.
+if [ -e "$FREEZE" ]; then
+  reason=$(head -c 200 "$FREEZE" 2>/dev/null | tr '\n' ' ' | sed 's/[[:space:]]*$//')
+  since=$(date -r "$FREEZE" --iso-8601=seconds 2>/dev/null || echo "неизвестно когда")
+  log "выкатка заморожена с $since${reason:+ ($reason)} — пропускаю"
+  log "снять: rm $FREEZE"
   exit 0
 fi
 
