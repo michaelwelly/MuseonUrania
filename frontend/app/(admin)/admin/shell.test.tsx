@@ -102,8 +102,9 @@ beforeEach(() => {
 });
 
 /** Оболочка с полем ввода внутри: без него нечем проверить фокус. */
-async function shell(pathname = "/admin/") {
+async function shell(pathname = "/admin/", роли = ["portal-admin"]) {
   mocks.pathname = pathname;
+  mocks.session.mockResolvedValue({ actor: "Ирина Кольцова", roles: роли });
   const user = userEvent.setup();
   render(
     <AdminLayout>
@@ -268,6 +269,58 @@ describe("клавиши оболочки", () => {
     // Иначе N под открытым окном уводит на новую сделку, а окно остаётся
     // висеть поверх страницы, которую человек не открывал.
     expect(mocks.push).not.toHaveBeenCalled();
+  });
+
+  // Клавиша в чужой контур не ведёт никуда (issue #96).
+  //
+  // До правки набор был один на все роли, и у производства ВСЕ четыре
+  // клавиши навигации приводили на экран «Раздел закрыт»: N — на новую
+  // сделку, G+C, G+L и G+D — в клиентов, заявки и сделки. У продаж
+  // то же делала D с новым материалом.
+  //
+  // Показывать отказ на случайную букву незачем: экран «Раздел закрыт» —
+  // ответ на набранный адрес и на присланную ссылку. Клавиша молчит.
+  it("у контура сайта клавиши продаж молчат, а своя работает", async () => {
+    const user = await shell("/admin/products/", ["portal-production"]);
+
+    await user.keyboard("n");
+    await user.keyboard("g");
+    await user.keyboard("d");
+    await user.keyboard("g");
+    await user.keyboard("c");
+    await user.keyboard("g");
+    await user.keyboard("l");
+    expect(mocks.push).not.toHaveBeenCalled();
+
+    await user.keyboard("d");
+    expect(mocks.push).toHaveBeenCalledWith("/admin/news/new");
+  });
+
+  it("у контура продаж молчит клавиша материала, а свои работают", async () => {
+    const user = await shell("/admin/leads/", ["portal-sales"]);
+
+    await user.keyboard("d");
+    expect(mocks.push).not.toHaveBeenCalled();
+
+    await user.keyboard("n");
+    expect(mocks.push).toHaveBeenCalledWith("/admin/deals/new");
+  });
+
+  // Окно обещает ровно то, что работает. Иначе человек читает про клавишу,
+  // жмёт её, ничего не происходит — и перестаёт верить всему списку.
+  it("окно горячих клавиш показывает только клавиши этого человека", async () => {
+    const user = await shell("/admin/products/", ["portal-production"]);
+
+    await user.keyboard("?");
+    const окно = screen.getByRole("dialog", { name: "Горячие клавиши" });
+
+    expect(within(окно).getByText("Добавить материал")).toBeTruthy();
+    expect(within(окно).queryByText("Новая сделка")).toBeNull();
+    expect(within(окно).queryByText("Клиенты")).toBeNull();
+    expect(within(окно).queryByText("Заявки")).toBeNull();
+    expect(within(окно).queryByText("Сделки")).toBeNull();
+    // Клавиши списков живут на заявках — значит и они не про этого человека.
+    expect(within(окно).queryByText(/По строкам списка/)).toBeNull();
   });
 });
 
