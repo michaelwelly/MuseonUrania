@@ -129,12 +129,27 @@ docker compose ... up -d --build --remove-orphans
 ```
 
 and the window was not "while the gateway is recreated" but "while the whole
-stack comes up". The cause is `depends_on`: the gateway waits for
-`portal: service_healthy`, and the portal waits for the database, the broker and
-Keycloak. Compose honestly orders them, so the gateway is created AFTER the
-portal has applied migrations and started Spring. Port 18080 is free that whole
-time. Minutes, not seconds — on 8 September the portal owner hit exactly this
-window and spent half an hour looking for a breakage that did not exist.
+stack comes up".
+
+The cause is the order in which compose performs the two halves of a
+recreation. It removes the old container IMMEDIATELY, at the start of `up`, and
+starts the new one in dependency order — that is, the gateway starts only once
+the portal is `healthy`, and the portal applies migrations and boots Spring
+first. Between those two moments nobody holds port 18080. Minutes, not seconds —
+on 8 September the portal owner hit exactly this window and spent half an hour
+looking for a breakage that did not exist.
+
+Measured on a model (docker compose v5, two services, the dependent one
+publishes a port, the dependency takes ten-odd seconds to become healthy):
+
+| How it is deployed | Window with no answer on the port |
+| --- | --- |
+| one `up -d` command | 11 s — the whole `up` |
+| step by step with `--no-deps`, as now | 1 s — its own recreation only |
+| step by step, dependent service unchanged | no window, container untouched |
+
+The same run confirmed that recreating a dependency does not by itself touch the
+dependent: while only the portal changes, the gateway stands as it stood.
 
 The order is now spelled out by hand, and every step uses `--no-deps`, that is,
 no cascade:
