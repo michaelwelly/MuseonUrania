@@ -73,6 +73,11 @@ Along with that:
 - **the local realm** (`backend/keycloak/vedal-realm.json`) is untouched: on a
   developer machine a second factor gets in the way and protects nothing.
 
+The portal does not pass the marker role outward: `/session` filters the list
+by `PORTAL_ROLES`, otherwise the caption under a person's name would read
+"portal-admin · portal-mfa-required" — the `portal-` prefix in a realm role
+name does not mean "a working role".
+
 ## What was verified on the local stack — 8 September
 
 Keycloak 26.0, container `vedal-keycloak`. The working `vedal` realm was **not
