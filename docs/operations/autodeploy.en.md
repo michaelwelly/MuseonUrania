@@ -55,6 +55,27 @@ executed. bash reads a script by offset, and replacing it mid-run means running
 the middle of the new file from the middle of the old one. The script copies
 itself into `/tmp` first and works from there, so rewriting is safe.
 
+### A one-off step for the first switch
+
+The guard against being replaced mid-run is in the new script, not in the old
+one — and the first deploy after the merge is run by the old one, the copy
+already sitting on the machine. It would reach `git reset --hard`, get the new
+file written over itself and carry on reading it from the old offset. So the file
+is installed by hand once, before the autodeploy gets to it:
+
+```bash
+sudo systemctl stop vedal-autodeploy.timer
+
+cd /opt/vedal-portal
+git fetch origin main
+git checkout main -- scripts/deploy-stand-prod.sh scripts/autodeploy.sh
+
+sudo systemctl start vedal-autodeploy.timer
+```
+
+Do this AFTER the merge into `main`. It triggers no deploy: checking out a single
+file only puts it on disk. Everything after that runs on its own.
+
 ## Installation
 
 Once, as a user with `sudo`:
