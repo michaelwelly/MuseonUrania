@@ -31,6 +31,11 @@ REPO="${VEDAL_REPO:-https://github.com/michaelwelly/MuseonUrania.git}"
 BRANCH="${VEDAL_BRANCH:-main}"
 DEPLOY="${VEDAL_DEPLOY:-/opt/vedal-portal/scripts/deploy-stand-prod.sh}"
 STATE="${VEDAL_STATE:-/var/lib/vedal-autodeploy/deployed-sha}"
+# Сколько неудач подряд по одному коммиту терпим, прежде чем перестать
+# пытаться. Три: первая бывает случайной (сеть, гонка при старте), вторая
+# уже подозрительна, третья означает, что само не пройдёт.
+FAILURES="${VEDAL_FAILURES:-$STATE.failures}"
+GIVE_UP_AFTER="${VEDAL_GIVE_UP_AFTER:-3}"
 LOCK="${VEDAL_LOCK:-/var/lock/vedal-autodeploy.lock}"
 
 log() { printf '%s  %s\n' "$(date --iso-8601=seconds)" "$*"; }
@@ -72,6 +77,43 @@ if [ "$remote" = "$current" ]; then
   exit 0
 fi
 
+# ————— предохранитель от бесконечных попыток —————
+#
+# Отметка ставится только после удачного деплоя — и это правильно, иначе
+# упавшая сборка считалась бы развёрнутой. Но у правила есть обратная
+# сторона: пока деплой падает, отметка не совпадает с main, и таймер
+# честно начинает выкатку заново. Каждые две минуты.
+#
+# 8 сентября так и вышло. Упавшая задача Debezium ломала `up`, деплой
+# возвращал ошибку, и стенд пересобирался по кругу несколько часов —
+# каждый раз роняя живой сайт в 502 на время пересборки. Причина была
+# одна и та же, повторение не приближало к её устранению ни на шаг.
+#
+# Поэтому после нескольких неудач подряд по одному и тому же коммиту
+# скрипт перестаёт пытаться. Новый коммит в main счётчик обнуляет: если
+# автор поправил поломку, попытка возобновится сама.
+# Читаем двумя awk, а не одним read с heredoc: последний на пустом файле
+# оставляет переменные от предыдущего запуска, и в сравнение ниже уходит
+# хеш вместо числа. Ошибка звучит как «value too great for base» и на вид
+# не имеет отношения ни к чему.
+failed_sha=$(awk 'NR==1 {print $1}' "$FAILURES" 2>/dev/null || true)
+failed_count=$(awk 'NR==1 {print $2}' "$FAILURES" 2>/dev/null || true)
+case "$failed_count" in
+    ''|*[!0-9]*) failed_count=0 ;;
+esac
+
+# Счёт ведётся по коммиту, а не вообще. Новый main — новая попытка,
+# даже если прошлый падал десять раз: поломку могли уже починить,
+# и наказывать за неё следующий коммит не за что.
+[ "$failed_sha" = "$remote" ] || failed_count=0
+
+if [ "$failed_sha" = "$remote" ] && [ "$failed_count" -ge "$GIVE_UP_AFTER" ]; then
+  log "деплой ${remote:0:8} уже падал $failed_count раз подряд — не повторяю"
+  log "разберитесь в причине, затем удалите $FAILURES или запустите руками:"
+  log "  $DEPLOY $BRANCH"
+  exit 0
+fi
+
 log "новый $BRANCH: ${current:0:8} → ${remote:0:8}, разворачиваю"
 
 # Отметка о развёрнутом хеше ставится ТОЛЬКО после успешного деплоя.
@@ -80,9 +122,19 @@ log "новый $BRANCH: ${current:0:8} → ${remote:0:8}, разворачив�
 # а журнал сообщал бы, что всё в порядке.
 if "$DEPLOY" "$BRANCH"; then
   printf '%s\n' "$remote" >"$STATE"
+  rm -f "$FAILURES"
   log "готово: развёрнут ${remote:0:8}"
 else
   code=$?
-  log "деплой упал с кодом $code — отметка не обновлена, повторю в следующий раз"
+  failed=$(( failed_count + 1 ))
+  printf '%s %s\n' "$remote" "$failed" >"$FAILURES"
+
+  if [ "$failed" -ge "$GIVE_UP_AFTER" ]; then
+    log "деплой упал $failed раз подряд на ${remote:0:8} — больше не пробую"
+    log "разберитесь и удалите $FAILURES, либо запустите деплой руками:"
+    log "  $DEPLOY $BRANCH"
+  else
+    log "деплой упал с кодом $code (попытка $failed из $GIVE_UP_AFTER) — отметка не обновлена"
+  fi
   exit "$code"
 fi
