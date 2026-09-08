@@ -2548,12 +2548,22 @@ th.tight input[type="checkbox"] {
   color: #fff;
 }
 
-.widget__headings {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
+/* Шапка очереди — сетка в две строки, а не всё в один ряд.
+ *
+ * В ряд не помещалось: знак, «Разговоры», «9 ждут ответа · дольше всех
+ * 21 день», «Развернуть» и крестик теснились в 392 пикселя, и подпись
+ * с числом ждущих — единственное, ради чего в шапку смотрят, — сжималась
+ * до многоточия. Теперь она стоит на своей строке во всю ширину. */
+.widget__head--queue {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  column-gap: var(--s3);
+  row-gap: var(--s1);
+}
+
+.widget__head--queue .widget__sub {
+  grid-column: 1 / -1;
 }
 
 .widget__title {
@@ -2642,14 +2652,35 @@ th.tight input[type="checkbox"] {
   text-decoration: underline;
 }
 
+/* Кнопка, приведённая к строке списка.
+ *
+ * Здесь стоял ровно один дефект и восемь строк его последствий: у `<button>`
+ * есть собственное оформление браузера, и снимали его не полностью.
+ * Замер на живом стенде: фон rgb(240,240,240), рамка 1.6px outset с трёх
+ * сторон, шрифт Arial 13.3px, `text-align: center`. Разговоры в панели
+ * выглядели столбиком серых бугорков с текстом, набранным по центру, —
+ * то есть лесенкой, а не списком. Сброс полный и перечислен поимённо:
+ * пропущенное свойство возвращает кнопке вид кнопки. */
 .widget__row {
   display: flex;
   align-items: flex-start;
   gap: var(--s3);
+  width: 100%;
   padding: var(--s3) var(--s4);
+  border: 0;
   border-bottom: 1px solid var(--line-2);
+  background: var(--surface);
+  font: inherit;
   color: inherit;
+  text-align: left;
   text-decoration: none;
+  cursor: pointer;
+}
+
+/* Последняя строка не отчёркивается: под ней край панели, и линия читается
+   как оборванный список. */
+.widget__row:last-child {
+  border-bottom: 0;
 }
 
 .widget__row:hover {
@@ -2714,6 +2745,36 @@ th.tight input[type="checkbox"] {
   padding: var(--s5) var(--s4);
   font-size: var(--t-small);
   color: var(--muted);
+}
+
+/* ————— открытая панель раздвигает страницу, а не ложится на неё ————— */
+
+/* Замер на живом стенде: панель в правом нижнем углу закрывала у таблицы
+   заявок колонки «Источник», «Статус» и «Ответственный» — ровно те, ради
+   которых в список смотрят. Прокруткой это не лечится: панель прибита
+   к окну, под ней просто оказываются другие строки.
+ *
+ * Запас даётся только пока панель открыта — то есть по прямому действию
+ * человека — и только там, где его есть откуда взять. Класс ставит сам
+ * виджет: он единственный знает, открыт ли он и что именно открыто. */
+.admin-body--widget {
+  --widget-panel: 392px;
+}
+
+/* С открытым разговором панель шире (см. .widget__panel--talk), и запас
+   обязан считаться от того же числа: разойдись они — панель снова легла бы
+   поверх таблицы, и вина за это выглядела бы случайной. */
+.admin-body--widget-talk {
+  --widget-panel: 560px;
+}
+
+/* Ниже этого порога отступать некуда: панель занимает почти всю ширину,
+   и от таблицы осталась бы полоска. Там она по-прежнему лежит поверх —
+   но там на неё и смотрят как на окно, а не как на боковую панель. */
+@media (min-width: 1180px) {
+  .admin-body--widget .admin-main {
+    padding-right: calc(var(--widget-panel) + var(--widget-inset) + var(--s4));
+  }
 }
 
 /* Плавающее по краям экрана прижимается к полям страницы, а не к нулю:
@@ -4002,28 +4063,25 @@ th.tight input[type="checkbox"] {
   color: var(--text-2);
 }
 
-/* ————— разговоры в три колонки ————— */
+/* ————— разговоры: очередь и разговор ————— */
 
-/* Очередь — кому отвечать, переписка — что говорили, «что известно» — кто это.
-   Средняя тянется, крайние держат ширину: в очереди карточки, в правой
-   колонке пары «ключ — значение», и лишняя ширина им не даёт ничего. */
+/* Две колонки, а не три.
+ *
+ * Третьей были «сведения о посетителе», и на живом стенде она оказалась
+ * худшим местом экрана: без выбранного разговора в ней стояла надпись
+ * «здесь будет то, что известно», с выбранным — пять строк, ради которых
+ * держалась треть ширины. Переписка в это время ломалась на четыре строки
+ * в средней колонке. Сведения переехали в шапку разговора (.talk-head):
+ * они относятся к нему и без него не значат ничего.
+ *
+ * Очередь держит ширину, разговор забирает всё остальное: в очереди
+ * карточки в две строки, и лишняя ширина им не даёт ничего, а переписке
+ * и полю ответа даёт всё. */
 .chats3 {
   display: grid;
-  grid-template-columns: minmax(260px, 322px) minmax(0, 1fr) minmax(240px, 300px);
+  grid-template-columns: minmax(272px, 348px) minmax(0, 1fr);
   gap: var(--s4);
   align-items: start;
-}
-
-@media (max-width: 1320px) {
-  .chats3 {
-    grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
-  }
-
-  /* Третья колонка уходит под переписку, а не пропадает: то, что известно
-     о посетителе, нужно ровно тогда, когда ему отвечают. */
-  .chats3__known {
-    grid-column: 1 / -1;
-  }
 }
 
 @media (max-width: 900px) {
@@ -4033,27 +4091,170 @@ th.tight input[type="checkbox"] {
 }
 
 .chats3__queue,
-.chats3__thread,
-.chats3__known {
+.chats3__thread {
   min-width: 0;
 }
 
+/* Своей полосы прокрутки у очереди больше нет.
+ *
+ * Была: `max-height: calc(100vh - …)` с `overflow-y: auto`. Замер на живом
+ * стенде — четыре карточки из двадцати одной на мониторе 1440×900 и три
+ * на ноутбуке 1024×800. Очередь, которую нельзя окинуть взглядом, не даёт
+ * ответить на единственный вопрос, ради которого её открывают: кто ждёт
+ * дольше всех и сколько таких. Теперь список — часть страницы, прокрутка
+ * на весь экран одна, а на месте остаётся колонка разговора. */
 .chats3__queue {
   display: flex;
   flex-direction: column;
-  gap: var(--s2);
-  max-height: calc(100vh - var(--chrome, 78px) - 160px);
-  overflow-y: auto;
+  gap: var(--s3);
 }
 
+.talks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.talks__more {
+  align-self: stretch;
+}
+
+/* Колонка разговора липкая и ростом в экран: переписка читается сверху вниз,
+   а поле ответа обязано быть на виду всегда. Прокрутка очереди при этом
+   не уводит открытый разговор — иначе выбранный человек уезжает вверх,
+   пока листаешь список. */
 .chats3__thread {
+  position: sticky;
+  top: calc(var(--chrome, 78px) + var(--s3));
+  /* Подводка к разговору (см. `выбрать` в chats/page.tsx) не должна загонять
+     колонку под липкую навигацию: она перекрывает 137 пикселей. */
+  scroll-margin-top: calc(var(--chrome, 78px) + var(--s3));
   display: flex;
   flex-direction: column;
   min-height: 420px;
+  /* запас: svh появились в Safari 15.4 */
+  height: calc(100vh - var(--chrome, 78px) - var(--s7));
+  height: calc(100svh - var(--chrome, 78px) - var(--s7));
   padding: var(--s3);
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
   background: var(--surface);
+}
+
+/* Лента забирает всё, что осталось от шапки и поля ответа. `max-height: 52vh`
+   из общего правила здесь означал бы пустую половину колонки при короткой
+   переписке и обрезанную ленту при длинной. */
+.chats3__thread .thread {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  margin-bottom: var(--s3);
+}
+
+/* Короткая переписка прижимается к полю ответа, а не висит под шапкой.
+   Автоматический отступ сверху обнуляется сам, как только сообщений станет
+   больше, чем помещается, — поэтому длинную ленту он не обрезает. */
+.chats3__thread .thread > :first-child {
+  margin-top: auto;
+}
+
+.chats3__thread .thread__reply {
+  flex: none;
+}
+
+.chats3__idle {
+  margin: auto 0;
+  font-size: var(--t-base);
+  color: var(--muted);
+  text-align: center;
+}
+
+/* На узком экране колонки становятся строками, и липкая высотой в экран
+   означала бы разговор, приклеенный поверх очереди. Здесь предел высоты
+   возвращается — но ленте, а не списку: список читают целиком, переписку
+   листают с конца. */
+@media (max-width: 900px) {
+  .chats3__thread {
+    position: static;
+    height: auto;
+  }
+
+  /* запас: svh появились в Safari 15.4 */
+  .chats3__thread .thread {
+    max-height: 52vh;
+    max-height: 52svh;
+  }
+}
+
+/* ————— шапка разговора: что известно о посетителе ————— */
+
+.talk-head {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin-bottom: var(--s3);
+  padding-bottom: var(--s3);
+  border-bottom: 1px solid var(--line-2);
+}
+
+.talk-head__top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s3);
+  font-size: var(--t-small);
+  color: var(--muted);
+}
+
+/* Факты в строку, а не столбцом: их четыре, каждый в два слова, и столбец
+   из четырёх строк отъедал бы у переписки высоту, которой у неё и так нет. */
+.talk-head__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s5);
+  margin: 0;
+}
+
+.talk-head__fact {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  min-width: 0;
+}
+
+.talk-head__fact dt {
+  flex: none;
+  font-size: var(--t-micro);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.talk-head__fact dd {
+  margin: 0;
+  min-width: 0;
+  font-size: var(--t-small);
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Уничтожение персональных данных свёрнуто. Необратимое действие не стоит
+   в одном ряду с «Ответить»: промах уставшей рукой стоит переписки целиком. */
+.talk-head__pd > summary {
+  font-size: var(--t-micro);
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.talk-head__pd > summary:hover {
+  color: var(--ink);
 }
 
 /* ————— плашка дежурства —————
@@ -4227,16 +4428,27 @@ th.tight input[type="checkbox"] {
 
 /* ————— карточка разговора в очереди ————— */
 
+/* Плоская строка вместо карточки с плашкой.
+ *
+ * Было: крупная плашка «ждёт ответа» отдельной строкой, время, две строки
+ * вопроса, адрес страницы — 113 пикселей на разговор. Стало 76: состояние
+ * ушло точкой и словом в правый столбец, к времени ожидания, а строки
+ * вопроса и адрес остались нетронутыми — это и есть то, по чему выбирают,
+ * кому ответить первым.
+ *
+ * Та же раскладка, что у строки в виджете (.widget__row): по обе стороны
+ * это один и тот же список, и узнаваться он должен одинаково. */
 .talk {
   display: flex;
-  flex-direction: column;
-  gap: var(--s1);
+  align-items: flex-start;
+  gap: var(--s3);
   width: 100%;
-  padding: var(--s3);
+  padding: var(--s2) var(--s3);
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
   background: var(--surface);
   font: inherit;
+  color: inherit;
   text-align: left;
   cursor: pointer;
 }
@@ -4252,16 +4464,52 @@ th.tight input[type="checkbox"] {
   box-shadow: inset 3px 0 0 var(--stripe-on);
 }
 
-.talk__top {
+/* Точка состояния. Цвет — для беглого взгляда вдоль очереди, слово рядом
+   (.talk__state) — для всех остальных: одним оттенком состояние не передать
+   тому, кто цвета не различает. */
+.talk__mark {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--line-3);
+}
+
+.talk__mark--waiting {
+  background: var(--stripe-wait);
+}
+
+.talk__mark--attended {
+  background: var(--stripe-on);
+}
+
+.talk__body {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--s2);
+  flex-direction: column;
+  gap: var(--s1);
+}
+
+.talk__meta {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--s1);
+}
+
+.talk__state {
+  font-size: var(--t-micro);
+  color: var(--muted);
+  white-space: nowrap;
 }
 
 .talk__waited {
   font-size: var(--t-micro);
   color: var(--muted);
+  white-space: nowrap;
 }
 
 /* Дольше пяти минут — это уже не «сейчас ответят». */
