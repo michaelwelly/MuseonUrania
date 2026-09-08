@@ -109,7 +109,28 @@
 		# Разошлись эта переменная и NEXT_PUBLIC_YANDEX_METRIKA_ID — счётчик
 		# ставится, но не работает. Обе строки живут в одном месте, рядом,
 		# в environment сервисов site и proxy.
-		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' {$VEDAL_ANALYTICS_ORIGINS:}; object-src 'none'; img-src 'self' data: https://{$VEDAL_MEDIA_DOMAIN} {$VEDAL_ANALYTICS_ORIGINS:}; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' https://{$VEDAL_KEYCLOAK_DOMAIN} {$VEDAL_ANALYTICS_ORIGINS:}; frame-src 'self' {$VEDAL_ANALYTICS_ORIGINS:}; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://{$VEDAL_KEYCLOAK_DOMAIN}"
+		#
+		# ————— карта на контактах —————
+		#
+		# https://yandex.ru и https://yandex.com в frame-src — кадр
+		# Яндекс.Карт на странице контактов (issue #74). Записаны прямо,
+		# а не переменной, и это разница по существу: счётчик — свойство
+		# площадки, у стенда своего номера нет и быть не должно, а карта
+		# лежит в коде сайта и одинакова везде. Переменная, которую всё
+		# равно заполняют на каждой площадке одним и тем же значением,
+		# добавляет не гибкость, а место, где можно забыть, — и забытая
+		# она даёт пустой прямоугольник вместо карты без единой ошибки
+		# на странице.
+		#
+		# Только frame-src, и этого достаточно: всё, что грузится внутри
+		# кадра, живёт под политикой yandex.ru, а не под нашей. Второй домен
+		# нужен на случай, когда Яндекс уводит посетителя из-за границы
+		# на .com: адрес перенаправления проверяется той же директивой.
+		#
+		# Разрешение здесь — не разрешение на загрузку. Кадр создаётся
+		# только после согласия в плашке про cookie (frontend/lib/consent.ts),
+		# и до согласия браузеру нечего проверять этой строкой.
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' {$VEDAL_ANALYTICS_ORIGINS:}; object-src 'none'; img-src 'self' data: https://{$VEDAL_MEDIA_DOMAIN} {$VEDAL_ANALYTICS_ORIGINS:}; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' https://{$VEDAL_KEYCLOAK_DOMAIN} {$VEDAL_ANALYTICS_ORIGINS:}; frame-src 'self' https://yandex.ru https://yandex.com {$VEDAL_ANALYTICS_ORIGINS:}; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://{$VEDAL_KEYCLOAK_DOMAIN}"
 
 		# Заголовок сервера ничего не защищает, но и сообщать версию незачем.
 		-Server
