@@ -27,7 +27,6 @@ import type { ContentDictionary } from "@/lib/content-i18n";
 // Механика собрана и работает: как только первая строка появится здесь,
 // она появится и на странице, без правки кода.
 
-export const contentTranslations: Partial<Record<"en" | "zh", ContentDictionary>> = {
-  en: {},
-  zh: {},
+export const contentTranslations: Partial<Record<"en", ContentDictionary>> = {
+  en: {},
 };

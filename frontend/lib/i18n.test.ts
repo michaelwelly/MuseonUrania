@@ -9,6 +9,7 @@ import {
   localePath,
   PREFIXED_LANGS,
   preferredLang,
+  PUBLISHED_LANGS,
   stripLocale,
 } from "./i18n";
 
@@ -23,14 +24,12 @@ describe("адрес языковой версии", () => {
 
   it("остальные языки получают префикс", () => {
     expect(localePath("en", "/products/")).toBe("/en/products/");
-    expect(localePath("zh", "/legal/privacy/")).toBe("/zh/legal/privacy/");
   });
 
   // trailingSlash в next.config: адрес без слеша отвечает 308, и ссылка
   // из шапки заставляла бы браузер ходить дважды за каждой страницей.
   it("корень переведённой версии — со слэшем на конце", () => {
     expect(localePath("en", "/")).toBe("/en/");
-    expect(localePath("zh", "/")).toBe("/zh/");
   });
 
   it("путь без ведущего слэша всё равно даёт абсолютный адрес", () => {
@@ -41,8 +40,8 @@ describe("адрес языковой версии", () => {
 describe("разбор адреса", () => {
   it("узнаёт язык и путь внутри него", () => {
     expect(stripLocale("/en/products/")).toEqual({ lang: "en", path: "/products/" });
-    expect(stripLocale("/zh/news/innoprom-2026/")).toEqual({
-      lang: "zh",
+    expect(stripLocale("/en/news/innoprom-2026/")).toEqual({
+      lang: "en",
       path: "/news/innoprom-2026/",
     });
   });
@@ -72,13 +71,25 @@ describe("разбор адреса", () => {
 });
 
 describe("hreflang", () => {
-  it("называет все три версии и запасную", () => {
-    expect(alternateLanguages("/products/")).toEqual({
-      ru: "/products/",
-      en: "/en/products/",
-      "zh-Hans": "/zh/products/",
-      "x-default": "/products/",
-    });
+  // Названы опубликованные версии, а не все заведённые. Разница не в
+  // формальности: hreflang на страницу, которой нет, — обещание поисковику,
+  // за которым ничего не стоит, и обходчик приносит человеку 404.
+  it("называет каждую опубликованную версию и запасную", () => {
+    const ожидаемое: Record<string, string> = { "x-default": "/products/" };
+    for (const lang of PUBLISHED_LANGS) ожидаемое[htmlLang[lang]] = localePath(lang, "/products/");
+
+    expect(alternateLanguages("/products/")).toEqual(ожидаемое);
+  });
+
+  // Отдельно и прямо: неопубликованного языка в hreflang быть не должно.
+  // Проверка переживёт возврат языков — она смотрит на список, а не на код.
+  it("не обещает языков, которых нет наружу", () => {
+    const названные = Object.keys(alternateLanguages("/products/"));
+
+    for (const lang of LANGS) {
+      if (PUBLISHED_LANGS.includes(lang)) continue;
+      expect(названные).not.toContain(htmlLang[lang]);
+    }
   });
 
   // x-default — та версия, которую отдают человеку, чей язык не назван
@@ -92,7 +103,7 @@ describe("hreflang", () => {
 describe("язык браузера", () => {
   it("берёт первый подходящий из списка предпочтений", () => {
     expect(preferredLang(["en-GB", "ru"])).toBe("en");
-    expect(preferredLang(["fr-FR", "zh-Hans-CN", "en"])).toBe("zh");
+    expect(preferredLang(["fr-FR", "en-GB", "ru"])).toBe("en");
   });
 
   it("не путается в регионе и регистре", () => {
@@ -109,14 +120,11 @@ describe("язык браузера", () => {
 });
 
 describe("справочник языков", () => {
-  it("под префиксом живут все языки, кроме русского", () => {
-    expect(PREFIXED_LANGS).toEqual(["en", "zh"]);
-  });
-
-  // zh, а не zh-Hans, оставило бы браузеру выбор между упрощённым
-  // и традиционным начертанием, а от него зависит подбор шрифта.
-  it("китайский помечается упрощённым начертанием", () => {
-    expect(htmlLang.zh).toBe("zh-Hans");
+  // Не «все, кроме русского», а «опубликованные, кроме русского»: пока
+  // переводов нет, список пуст, и Next не собирает ни одной страницы под
+  // префиксом — адрес честно отвечает «нет такой страницы».
+  it("под префиксом живут опубликованные языки, кроме русского", () => {
+    expect(PREFIXED_LANGS).toEqual(PUBLISHED_LANGS.filter((lang) => lang !== "ru"));
   });
 
   it("узнаёт свои коды и не узнаёт чужие", () => {

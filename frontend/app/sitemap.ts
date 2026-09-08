@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { fetchNews, fetchProducts } from "@/lib/api";
-import { alternateLanguages, DEFAULT_LANG, LANGS, localePath } from "@/lib/i18n";
+import { alternateLanguages, DEFAULT_LANG, localePath, PUBLISHED_LANGS } from "@/lib/i18n";
 import { publicSite } from "@/lib/seo";
 
 // Карта сайта.
@@ -77,7 +77,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: "daily" | "weekly" | "monthly" | "yearly",
   ) => {
     const languages = languagesOf(path);
-    for (const lang of LANGS) {
+    for (const lang of PUBLISHED_LANGS) {
       entries.push({
         url: `${publicSite}${localePath(lang, path)}`,
         lastModified: now,
