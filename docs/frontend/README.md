@@ -13,6 +13,7 @@
 - [Контекстный пакет для Claude](claude_context_bundle.md)
 - [Чек-лист реализации](implementation_checklist.md)
 - [Чек-лист проверки вёрстки на маке](mac_check.md)
+- [Мультиязычность сайта](i18n.md)
 
 ## Связанные материалы
 

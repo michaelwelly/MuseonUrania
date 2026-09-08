@@ -334,7 +334,7 @@ configuration.
 | `EventPublisher` | log, Kafka or Debezium — via `vedal.events.publisher` | Managed Kafka |
 | `MailSender` | writes to the log | Yandex 360 SMTP |
 | `FileStorage` | local directory or S3 — via `vedal.storage.kind`; a directory in the stack by default, the real Object Storage once keys are set | Yandex Object Storage |
-| `LlmEngine` | deterministic word search | YandexGPT + pgvector |
+| `LlmEngine` | YandexGPT over the portal search: by words, and with `VEDAL_RAG_ENABLED=true` by proximity in pgvector | PDF indexing once the corpus arrives |
 
 ### Buckets are created by hand, once
 
@@ -518,6 +518,9 @@ quote_item        id, quote_id, position, product_slug, name, quantity,
 interaction       id, deal_id, client_id, lead_id, kind, direction, at,
                   subject, body, actor, created_at
 deal_document     deal_id, document_id, attached_by, attached_at
+knowledge_source  id, kind, external_id, title, url, visibility, language,
+                  checksum, indexed_at
+knowledge_chunk   id, source_id, position, text, model, embedding, created_at
 ```
 
 `language` and `campaign` on a lead are not decoration: without them two of the
@@ -1007,8 +1010,8 @@ left that list: the code is written and waits for one counter id (issue #53).
 | 12 | Outbox cleanup | the table grows without bound. Deleting needs care around Debezium: `skipped.operations` already drops `d`, but the replication slot must read a row before it is removed |
 | 13 | `ETag` on the public API | deliberately deferred: on twelve items the gain is zero and `Cache-Control` is already in place |
 | 14 | ~~Dependency and image scanning in CI~~ | ✅ three checks that do not overlap: Dependabot on versions (PRs land in `infra`), CodeQL on the code, Trivy inside the images. Trivy's threshold is split in two: HIGH is visible in the report, CRITICAL with a released fix fails the build |
-| 15 | **Restrict `/admin/**` at the proxy** | there is no rule in the `Caddyfile`; the editing door is open to the internet and held only by the token |
-| 16 | **Enable MFA in the realm** | a leaked editor password is the entire client base |
+| 15 | ~~Restrict `/admin/**` at the proxy~~ | ✅ the `@admin` rule in the `Caddyfile` only lets private ranges through and is lifted by the `VEDAL_ADMIN_ALLOW` variable. **It only works where the proxy is ours:** there is no Caddy on the stand, where the door is held by the second factor — see question 12.3 |
+| 16 | **Enable MFA in the realm** | a leaked editor password is the entire client base. Done and verified in the realm file (issue #42): the second factor is required by role through the `vedal-browser` flow. **Not switched on on the live Keycloak** — the commands are in [mfa_rollout.en.md](operations/mfa_rollout.en.md) |
 | 17 | ~~Trim the application role's rights~~ | ✅ by migration `V15`, not by a runbook line: a `BEFORE TRUNCATE` trigger on the log plus revoking `UPDATE`/`DELETE`/`TRUNCATE`. The claim "a trigger does not protect against `TRUNCATE`" turned out to be wrong — see section 5.7. **Not closed:** the application connects as the schema owner, and in the stack as a superuser, for whom a revoke means nothing. A dedicated runtime role is the next step |
 | 18 | **A rate limit at the proxy** | today it lives in process memory: with a second instance it becomes per-instance, and there is no global one |
 | 19 | **Verify a backup restore** | the daily `pg_dump` exists and has been restored zero times. An unrestored backup is a hypothesis |
@@ -1027,7 +1030,7 @@ is in [architecture/target_architecture.en.md](architecture/target_architecture.
 | 2 | `LeadForm` → `POST /api/forms/v1/leads` | `Idempotency-Key` (a uuid per form mount), the consent text version and time, a honeypot, success/error states, handling `202`. Plus attribution: the page language and `utm_campaign` are captured when the form mounts rather than when it is submitted — otherwise the tag is lost for everyone who did not fill the form on the very first page |
 | 3 | `VedalinaChat` → `POST /api/assistant/v1/chat` | render the list of sources; when there are none, show the handoff to a human with contacts and forms rather than an invented answer. Buttons come from `GET /prompts`; «Позвать специалиста» is a separate door, `/chat/handoff` |
 | 4 | Bring the routes in line with the sitemap | [sitemap](frontend/sitemap.en.md) requires `/press/` (Innoprom) and `/partners/` (Divisy, Morus MS, Smart Solution) — neither exists; `/news` was built instead of `/press`, and an unplanned `/about` was added. Either build them or update the map |
-| 5 | The product page from the API plus the list of documents per product | currently from `content/products.ts` |
+| 5 | ~~The product page from the API plus the list of documents per product~~ | ✅ done (issue #73): the product page reads both the product and the document listing from the Public API, and documents are selected by `product_slug`. One link rule for the whole site lives in `frontend/lib/documents.ts`: when a file exists the link points at the file in a new tab, when it does not the link points at the request form, and when the listing has no rows for the product there are no buttons at all. The badge shows the state of the file rather than the editor's intent: `pdf` without a file reads “По запросу”, not “PDF” — the listing does not return the file type, so the site is not entitled to promise a format. **Not closed:** there are no files in the `vedal-documents` bucket (#37) and no publication approvals (#35) — until then every row honestly leads to the request form |
 | 6 | SEO: the metadata API, `sitemap.xml`, `robots.txt`, JSON-LD Product/Organization, canonical URLs | priority: `/products/`, `/products/<slug>/`, `/production/`, `/documents/` |
 | 7 | ~~Yandex Metrica and the named events~~ | ✅ written (issue #53): the counter loads only when both conditions hold — `VEDAL_METRIKA_ID` is set and the visitor pressed “Accept” in the banner; if either fails, the `mc.yandex.ru` script is not loaded at all. The events from the [implementation checklist](frontend/implementation_checklist.en.md) are sent by a single handler reading `data-analytics` from the markup. **Not closed:** there is no counter id — we are waiting for the answer to question 12.11 and for the id itself from the customer |
 | 8 | The multilingual skeleton `/en/`, `/zh/`, hreflang | content follows the approval of the Russian version; Hindi is a separate stage |
@@ -1183,26 +1186,35 @@ no separate port had to be introduced for that.
    are listed, empty, in `backend/.env.example`. The order of switching on,
    what exactly is erased from each carrier and what happens on the first pass
    — [data_retention.en.md](operations/data_retention.en.md).
-3. Whether `/admin` is closed at the network level or left behind a password and
-   MFA. The door is single, so either option is one rule in the `Caddyfile` plus
-   a realm policy. The proxy rule now exists: `@admin` only lets private ranges
-   through, and it is lifted by a single `VEDAL_ADMIN_ALLOW` variable.
-   **MFA is still off in the realm**, and until it is on the network restriction
-   must stay — otherwise it is an editor's password against the internet.
-   There is no Caddy on the stand at all, so the admin area is open there;
-   see issue #42. Both options, the rollout order and the rollback are laid
-   out in [mfa_rollout.en.md](operations/mfa_rollout.en.md): the network stays
-   on by default, and MFA is a second, independent layer on top of it, not
-   a replacement.
+3. ~~Whether `/admin` is closed at the network level or left behind a password
+   and MFA.~~ **Closed on 8 September (issue #42): the main barrier is a
+   password and a second factor; the network is a second, independent layer
+   where the proxy is ours.** Not "or": first the thing that works everywhere.
+   The network only works where the proxy is ours — in the target environment
+   that is `@admin` in the `Caddyfile`; on the stand there is no Caddy at all,
+   the admin panel is served by a shared nginx next to somebody else's
+   production sites, and a restriction there would have to be made by somebody
+   else's hands. A barrier that depends on somebody else's schedule is not a
+   barrier. The second factor is the same everywhere and lives in the realm
+   file. The `private_ranges` default is not being removed: it costs nothing
+   and cuts off what never reaches the login form. Lifting it
+   (`VEDAL_ADMIN_ALLOW="0.0.0.0/0 ::/0"`) is only allowed once the second
+   factor is confirmed working for every holder of `portal-admin` and
+   `portal-sales`. The reasoning, the order and the rollback —
+   [mfa_rollout.en.md](operations/mfa_rollout.en.md).
 4. Which cloud. The storage runs on S3, and moving between S3-compatible
    stores changes the address and the keys, not the code.
 5. When MFA is switched on in the realm. This does not concern the portal: it
    verifies an issued token and does not know how many factors were presented.
-   The realm file and the rollout order are ready (issue #42,
+   The realm file and the rollout order are ready and verified (issue #42,
    [mfa_rollout.en.md](operations/mfa_rollout.en.md)): the second factor
-   (TOTP) is mandatory for `portal-admin` and `portal-sales`, optional for
-   `portal-production`. Switching it on on the live Keycloak is the owner's
-   decision and action, not an automatic consequence of the git change.
+   (TOTP) is mandatory for `portal-admin` and `portal-sales`, not required for
+   `portal-production`. It is tied to the role by the `vedal-browser` sign-in
+   flow rather than assigned to a person by hand, so existing employees need
+   nothing assigned and nobody can be forgotten. Switching it on on the live
+   Keycloak is the owner's decision and action, not an automatic consequence of
+   the git change: `--import-realm` does not overwrite a running realm, and the
+   commands for the live stand are written out step by step in the document.
 6. Who runs Keycloak in a deployed environment and how employees are created in it.
 
 ---
