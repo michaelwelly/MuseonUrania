@@ -11,18 +11,18 @@ portal's server side.
 | `vedal-openapi.json` | The same, for Postman, Insomnia, client generation, `editor.swagger.io` |
 | `vedal-admin-openapi.yaml` | Admin API: the contract of the admin UI |
 | `vedal-admin-openapi.json` | The same in JSON |
-| `vedal.postman_collection.json` | Every door in one Postman import: 16 folders, 73 requests |
+| `vedal.postman_collection.json` | Every door in one Postman import: 21 folders, 99 requests |
 
 ## Two groups, and not for tidiness
 
 **`vedal-public`** — the `/api/public`, `/api/forms`, `/api/assistant` doors.
 What outsiders integrate against; read by people who have no portal account and
-never will. Nine operations, five sections.
+never will. Seventeen operations, five sections.
 
 **`vedal-admin`** — `/api/admin/v1/**`. The editing and CRM doors: products,
 categories, news, documents with file upload, leads, clients, deals, quotes,
-correspondence history, funnel analytics, audit log, images. Forty-six routes,
-sixty-four operations.
+correspondence history, funnel analytics, audit log, conversations, the on-call
+schedule, images. Sixty-three routes, eighty-two operations.
 
 The CRM doors live here and nowhere else. The client base, deal amounts and
 quote prices belong to the closed contour: they are absent from the public

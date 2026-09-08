@@ -1280,6 +1280,152 @@ paths:
       summary: Снять документ с публикации
       tags:
       - "Админка: документы"
+  /api/admin/v1/duty:
+    get:
+      description: |
+        Заполненные дни отрезка, по порядку. Дни без дежурного строк не имеют:
+        запись «дежурного нет» в базе неотличима от записи, которую забыли
+        удалить, — пустые дни дорисовывает экран.
+
+        Без параметров — от сегодня на две недели вперёд. Дальше договориться
+        всё равно нельзя: отпуска и командировки меняются, и график,
+        заполненный на месяц, к третьей неделе врёт.
+      operationId: schedule
+      parameters:
+      - description: С какого дня включительно. По умолчанию сегодня.
+        in: query
+        name: from
+        required: false
+        schema:
+          type: string
+          format: date
+      - description: По какой день включительно. По умолчанию 13 дней от начала.
+        in: query
+        name: to
+        required: false
+        schema:
+          type: string
+          format: date
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DutyShift"
+          description: OK
+      security:
+      - keycloak: []
+      summary: График дежурств
+      tags:
+      - "Админка: дежурство"
+  /api/admin/v1/duty/handoff:
+    post:
+      description: |
+        Сегодняшнее дежурство переходит другому. В таблице происходит то же,
+        что при назначении на сегодня, а в журнале — разное: «передал смену»
+        отвечает на вопрос «почему на линии не тот, кого ставили»,
+        «назначил дежурного» на него не отвечает.
+
+        Передавать нечего, если на сегодня никого не ставили: это
+        не передача, а назначение, и делается оно графиком.
+      operationId: handOff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DutyAssignment"
+        required: true
+      responses:
+        "409":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DutyShift"
+          description: "На сегодня дежурного нет, смена уже на этом человеке или л\
+            огина нет в справочнике."
+      security:
+      - keycloak: []
+      summary: Передать смену
+      tags:
+      - "Админка: дежурство"
+  /api/admin/v1/duty/today:
+    get:
+      description: |
+        День считается в зоне поддержки (`vedal.support.zone`), а не в зоне
+        сервера: «сегодня» кончается по часам дежурного.
+
+        Дежурство и присутствие отдаются вместе и не заменяют друг друга.
+        Дежурство говорит, кто ДОЛЖЕН быть на линии; присутствие — кто
+        на ней ЕСТЬ. Расхождение между ними и есть единственное, о чём
+        стоит оповещать.
+      operationId: today
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DutyToday"
+          description: OK
+      security:
+      - keycloak: []
+      summary: Кто сегодня на линии
+      tags:
+      - "Админка: дежурство"
+  /api/admin/v1/duty/{date}:
+    delete:
+      description: |
+        «Никого» выражается отсутствием записи, а не пустым логином:
+        пустая строка в графике выглядит как занятый день, на котором
+        никого нет.
+      operationId: release
+      parameters:
+      - in: path
+        name: date
+        required: true
+        schema:
+          type: string
+          format: date
+      responses:
+        "204":
+          description: Снято; или дежурного и не было.
+      security:
+      - keycloak: []
+      summary: Снять дежурного с дня
+      tags:
+      - "Админка: дежурство"
+    put:
+      description: |
+        Что прислали, то и стало: на день дежурный один. Прошедшие дни
+        не правятся — график вперёд это договорённость, график назад
+        это переписывание истории.
+      operationId: assign_1
+      parameters:
+      - in: path
+        name: date
+        required: true
+        schema:
+          type: string
+          format: date
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DutyAssignment"
+        required: true
+      responses:
+        "409":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DutyShift"
+          description: "Прошедший день или логин, которого нет в справочнике."
+      security:
+      - keycloak: []
+      summary: Поставить дежурного на день
+      tags:
+      - "Админка: дежурство"
   /api/admin/v1/leads:
     get:
       operationId: leads
@@ -2060,9 +2206,9 @@ paths:
   /api/admin/v1/quotes/{id}/send:
     post:
       description: |
-        Письмо портал пока не шлёт: `MailSender` пишет в лог, SMTP Яндекс 360 —
-        следующий шаг. Отметка фиксирует, что предложение ушло, и с этого момента
-        оно не правится.
+        Письмо с самим предложением портал пока не шлёт — это следующий шаг.
+        Отметка фиксирует, что предложение ушло, и с этого момента оно
+        не правится.
       operationId: send
       parameters:
       - in: path
@@ -3579,6 +3725,103 @@ components:
           format: int64
         wonAmount:
           type: number
+    DutyAssignment:
+      type: object
+      description: Кого поставить и с какой запиской.
+      properties:
+        login:
+          type: string
+          description: Логин сотрудника. Он обязан существовать в справочнике.
+          example: editor
+          minLength: 1
+        note:
+          type:
+          - string
+          - "null"
+          description: Записка к смене. Необязательна.
+          maxLength: 500
+          minLength: 0
+      required:
+      - login
+    DutyShift:
+      type: object
+      description: "Смена: кто на линии в этот день."
+      properties:
+        assignedAt:
+          type: string
+          format: date-time
+        assignedBy:
+          type: string
+          description: Кто поставил.
+        atDesk:
+          type: boolean
+          description: Открыто ли у дежурного рабочее место прямо сейчас. Осмысленно
+            только у сегодняшнего дня.
+        date:
+          type: string
+          format: date
+          description: День дежурства в зоне поддержки.
+          example: 2026-09-08
+        login:
+          type: string
+          description: Логин дежурного.
+          example: editor
+        name:
+          type:
+          - string
+          - "null"
+          description: Имя из справочника. Пусто — учётной записи с таким логином
+            там больше нет.
+        note:
+          type:
+          - string
+          - "null"
+          description: "Записка к смене: «до 15:00, дальше Иванов». Портал по ней\
+            \ ничего не решает."
+    DutyToday:
+      type: object
+      description: |
+        Кто сегодня на линии — вместе с тем, что об этом знает присутствие.
+      properties:
+        alarm:
+          type: boolean
+          description: |
+            Повод оповестить: дежурный назначен, время рабочее, а рабочего
+            места он не открыл. Вне рабочего времени это не расхождение,
+            а вечер; без назначенного дежурного — не расхождение, а пустой
+            график, и говорит о нём другая надпись.
+
+            Самого оповещения — письма или сообщения в мессенджер — портал
+            не шлёт: кому и куда писать, решает заказчик.
+        atDesk:
+          type: boolean
+          description: У дежурного открыто рабочее место.
+        date:
+          type: string
+          format: date
+        login:
+          type:
+          - string
+          - "null"
+          description: Дежурный. Пусто — на сегодня никого не назначили.
+        name:
+          type:
+          - string
+          - "null"
+        note:
+          type:
+          - string
+          - "null"
+        staffOnline:
+          type: boolean
+          description: На линии есть хоть кто-то — не обязательно дежурный.
+        supportHours:
+          type: string
+          description: Часы работы поддержки словами.
+          example: Пн–Пт 9:00–17:30 (Екатеринбург)
+        workingHours:
+          type: boolean
+          description: Идёт ли рабочее время поддержки прямо сейчас.
     Handoff:
       type: object
       description: "Куда обращаться, когда ассистент не отвечает."

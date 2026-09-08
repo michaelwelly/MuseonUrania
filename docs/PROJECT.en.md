@@ -883,8 +883,9 @@ Working routes:
 | `/api/admin/v1/session` | admin UI | who signed in and which roles the portal parsed |
 | `/api/admin/v1/staff` | admin UI | employees to pick an owner from; read only |
 | `/api/admin/v1/chats` | admin UI | conversations and the queue of those waiting; the list filters by owner |
+| `/api/admin/v1/duty` | admin UI | the on-call schedule: who is on the line today, assigning a day, handing over a shift |
 
-The forty-seven routes and sixty-five operations of the admin API are described by
+The sixty-three routes and eighty-two operations of the admin API are described by
 a separate specification group —
 [docs/api/vedal-admin-openapi.yaml](api/vedal-admin-openapi.yaml).
 
@@ -904,6 +905,18 @@ the portal, not from the model. Since 7 September the gateway passes the
 visitor's real address to the portal (`ClientAddress`) — before that the audit
 log recorded the gateway's own address and the rate limit counted every visitor
 as one client.
+
+A note on duty of its own, because there are three facts now and they differ.
+**Support hours** (`vedal.support.*`) are a promise that someone will answer,
+and they do not name who. **Presence** is a fact about a set: is any desk open.
+**Duty** (`duty_shift`, `/api/admin/v1/duty`) names a person for a day, and only
+with it is there someone to hand a shift to and someone to ask about an
+unanswered question. The day is counted in the support zone, not the server's;
+there is one person on duty per day; past days are not edited. The portal
+notices the disagreement between the schedule and presence on its own — someone
+on duty who has not opened a desk during working hours — and shows it in the
+admin UI. It sends no mail or messages about it: the recipient is the customer's
+decision (issue #51).
 
 A note on `assistant`: the limits live in `Guardrails` **before** the engine is
 called, not in the prompt — a prompt is a request to the model, not a guarantee.
@@ -927,10 +940,11 @@ site's own tab icon. Indexing is switched on by `NEXT_PUBLIC_SITE_URL`: while
 it is empty, crawling is closed entirely, so the stand with draft copy does not
 end up in search results.
 
-Twenty-four admin routes. Site content: dashboard, products with a list and an
+Twenty-five admin routes. Site content: dashboard, products with a list and an
 edit form, categories, news, documents, audit log, the Keycloak callback. CRM:
 leads with conversion into a deal, clients, deals across three pipelines, quotes,
-analytics in four dimensions. The navigation is split into those two sections:
+analytics in four dimensions, conversations and duty. The navigation is split
+into those two sections:
 a flat list of eleven items reads as a heap, while the sections match what the
 person is doing — an editor edits the catalog, a manager runs deals.
 
@@ -1138,6 +1152,15 @@ no separate port had to be introduced for that.
     line. Installing it before the answer is not allowed — a counter is a
     handover of visitor data to a third party.
 12. Whether the assistant may be publicly called Vedalina and shown in the hero.
+13. Duty: whether a schedule is needed at all, who fills it in, and where to
+    send word about a disagreement with presence. The mechanics are done in
+    full (issue #51): the "Duty" section shows two weeks ahead, the name of
+    whoever is on duty stands above the conversation list, a shift is handed
+    over with one button, and the portal itself works out the disagreement —
+    someone on duty who has not opened a desk during working hours. Exactly
+    one thing is deliberately not done: mail about that disagreement. We do
+    not invent the recipient, and a wrong recipient for a night-time email
+    costs more than no email at all.
 
 **Technical, awaiting confirmation:**
 
