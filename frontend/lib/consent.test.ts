@@ -1,13 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Согласие — единственное, что стоит между посетителем и передачей данных
-// в Яндекс. Ошибка здесь не ломает страницу и ничем себя не выдаёт:
-// счётчик просто начинает работать у того, кто его не разрешал.
-describe("согласие на аналитику", () => {
+// в Яндекс. Ошибка здесь не ломает страницу и ничем себя не выдаёт: счётчик
+// и карта просто начинают работать у того, кто их не разрешал.
+describe("согласие на сторонние ресурсы Яндекса", () => {
   const saved = process.env.NEXT_PUBLIC_YANDEX_METRIKA_ID;
 
   beforeEach(() => {
     vi.resetModules();
+    vi.doUnmock("./maps");
     delete process.env.NEXT_PUBLIC_YANDEX_METRIKA_ID;
     localStorage.clear();
   });
@@ -24,29 +25,73 @@ describe("согласие на аналитику", () => {
     return import("./consent");
   };
 
-  describe("площадка без счётчика", () => {
+  // Карта стоит на контактах всегда, и снимается она правкой одной строки
+  // в lib/maps.ts. Ветка «спрашивать не о чем» существует ради этой правки —
+  // здесь она и проверяется.
+  const безСторонних = async () => {
+    vi.doMock("./maps", () => ({ mapEmbedded: false }));
+    return import("./consent");
+  };
+
+  describe("площадка без сторонних ресурсов", () => {
     it("до ответа плашку показывает", async () => {
-      const { readConsent } = await import("./consent");
+      const { readConsent } = await безСторонних();
 
       expect(readConsent()).toBe("unanswered");
     });
 
     it("после «Понятно» плашку больше не показывает", async () => {
-      const { acknowledge, readConsent } = await import("./consent");
+      const { acknowledge, readConsent } = await безСторонних();
 
       acknowledge();
 
       expect(readConsent()).toBe("necessary");
     });
 
-    it("«Понятно» не записывает ответ про аналитику", async () => {
-      const { acknowledge } = await import("./consent");
+    it("«Понятно» не записывает ответ про сторонние ресурсы", async () => {
+      const { acknowledge } = await безСторонних();
 
       acknowledge();
 
-      // Записать сюда «granted» значило бы включить счётчик тому,
-      // кого о счётчике не спрашивали.
+      // Записать сюда «granted» значило бы включить счётчик и карту тому,
+      // кого о них не спрашивали.
       expect(localStorage.getItem("vedal.analytics.v1")).toBeNull();
+    });
+  });
+
+  describe("площадка с картой, но без счётчика", () => {
+    it("спрашивает: разрешать есть что", async () => {
+      // Счётчика нет, а кадр Яндекс.Карт на контактах есть, и он такая же
+      // передача данных третьей стороне. Молчать про него нельзя.
+      const { asksThirdParty, readConsent } = await import("./consent");
+
+      expect(asksThirdParty).toBe(true);
+      expect(readConsent()).toBe("unanswered");
+    });
+
+    it("старое «Понятно» ответом не считается", async () => {
+      // «Понятно» было дано на плашку без выбора, когда сторонних ресурсов
+      // не было вовсе. Карта появилась позже, и вопрос задаётся заново.
+      localStorage.setItem("vedal.cookies.v1", "2026-01-01T00:00:00.000Z");
+      const { readConsent } = await import("./consent");
+
+      expect(readConsent()).toBe("unanswered");
+    });
+
+    it("«Принять» разрешает карту", async () => {
+      const { answer, readConsent } = await import("./consent");
+
+      answer(true);
+
+      expect(readConsent()).toBe("analytics");
+    });
+
+    it("«Только необходимые» карту не разрешает", async () => {
+      const { answer, readConsent } = await import("./consent");
+
+      answer(false);
+
+      expect(readConsent()).toBe("necessary");
     });
   });
 

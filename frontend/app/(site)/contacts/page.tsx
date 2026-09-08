@@ -5,6 +5,7 @@ import Link from "next/link";
 import PageHero from "@/components/PageHero";
 import LeadForm from "@/components/LeadForm";
 import VedalMap from "@/components/VedalMap";
+import VedalMapEmbed from "@/components/VedalMapEmbed";
 import { fetchProducts } from "@/lib/api";
 import { companyContact, STAFF_AWAITING } from "@/content/staff";
 import { vedalina } from "@/content/vedalina";
@@ -77,17 +78,22 @@ export default async function ContactsPage() {
               </li>
             ))}
           </ul>
-          {/* GitHub issue #74: живую карту на страницу не ставим (см. комментарий
-              в components/VedalMap.tsx — нужен либо ключ API, которого нет,
-              либо сторонний скрипт до баннера согласия из #53), но кнопка
-              маршрута теперь рабочая: ведёт на Яндекс.Карты по адресу
-              производства, без ключа и без стороннего кода на этой странице. */}
+          {/* Ссылка остаётся и после того, как появилась встроенная карта
+              (issue #74): она работает у всех — у отказавшегося от кадра,
+              у браузера без JS и у поисковика, — и ведёт на Яндекс.Карты
+              по адресу производства, никуда ничего не отправляя до клика. */}
           <a className={styles.routeCta} href={route.ctaHref} target="_blank" rel="noopener">
             {route.cta}
           </a>
         </div>
         <div className={styles.mapSlot} data-reveal="1">
-          <VedalMap />
+          {/* Кадр Яндекс.Карт — только после согласия в плашке про cookie,
+              по тому же признаку, что поднимает счётчик Метрики (issue #53).
+              Без согласия остаётся схема проезда на CSS, а адрес и маршрут
+              стоят в панели слева. */}
+          <VedalMapEmbed src={route.mapSrc} title={route.mapTitle}>
+            <VedalMap />
+          </VedalMapEmbed>
         </div>
       </section>
 

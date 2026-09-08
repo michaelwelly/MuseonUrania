@@ -2,16 +2,18 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// Плашка согласия. Issue #53.
+// Плашка согласия. Issues #53 и #74.
 //
-// Проверяется не вёрстка, а два свойства, которые ломаются молча:
-// плашка не возвращается к тому, кто уже ответил, и выбор «только
-// необходимые» появляется ровно тогда, когда есть что отклонять.
+// Проверяется не вёрстка, а три свойства, которые ломаются молча:
+// плашка не возвращается к тому, кто уже ответил; выбор «только
+// необходимые» появляется ровно тогда, когда есть что отклонять;
+// и текст называет то, что на площадке действительно есть.
 
 const saved = process.env.NEXT_PUBLIC_YANDEX_METRIKA_ID;
 
 beforeEach(() => {
   vi.resetModules();
+  vi.doUnmock("@/lib/maps");
   delete process.env.NEXT_PUBLIC_YANDEX_METRIKA_ID;
   localStorage.clear();
 });
@@ -23,16 +25,17 @@ afterEach(() => {
 
 // Номер счётчика читается на импорте, поэтому компонент импортируется заново
 // в каждом тесте — уже после того, как переменная окружения выставлена.
-async function показать({ счётчик }: { счётчик: boolean }) {
+async function показать({ счётчик, карта = true }: { счётчик: boolean; карта?: boolean }) {
   if (счётчик) process.env.NEXT_PUBLIC_YANDEX_METRIKA_ID = "12345678";
+  if (!карта) vi.doMock("@/lib/maps", () => ({ mapEmbedded: false, mapEmbedSrc: () => "" }));
   const { default: CookieNotice } = await import("./CookieNotice");
   render(<CookieNotice />);
   return userEvent.setup();
 }
 
-describe("плашка без счётчика", () => {
+describe("плашка без сторонних ресурсов", () => {
   it("сообщает и не предлагает выбора", async () => {
-    await показать({ счётчик: false });
+    await показать({ счётчик: false, карта: false });
 
     expect(screen.getByText(/Счётчики аналитики не подключены/)).toBeInTheDocument();
     // Отклонять нечего: cookie самого сайта нужны, чтобы страницы работали.
@@ -41,7 +44,7 @@ describe("плашка без счётчика", () => {
   });
 
   it("после «Понятно» не возвращается", async () => {
-    const user = await показать({ счётчик: false });
+    const user = await показать({ счётчик: false, карта: false });
 
     await user.click(screen.getByRole("button", { name: "Понятно" }));
 
@@ -49,12 +52,38 @@ describe("плашка без счётчика", () => {
   });
 });
 
+describe("плашка с картой, но без счётчика", () => {
+  it("называет карту и говорит, что остаётся вместо неё", async () => {
+    await показать({ счётчик: false });
+
+    // Согласие на то, что человеку не назвали, согласием не является.
+    expect(screen.getByText(/карта Яндекса/)).toBeInTheDocument();
+    // «Только необходимые» не должно читаться как «остаться без адреса».
+    expect(screen.getByText(/Построить маршрут/)).toBeInTheDocument();
+  });
+
+  it("не обещает счётчик, которого нет", async () => {
+    await показать({ счётчик: false });
+
+    expect(screen.getByText(/Счётчики аналитики не подключены/)).toBeInTheDocument();
+  });
+
+  it("даёт обе кнопки: карту есть чем отклонить", async () => {
+    const user = await показать({ счётчик: false });
+
+    await user.click(screen.getByRole("button", { name: "Только необходимые" }));
+
+    expect(localStorage.getItem("vedal.analytics.v1")).toBe("denied");
+  });
+});
+
 describe("плашка со счётчиком", () => {
-  it("называет Метрику и передачу данных в Яндекс", async () => {
+  it("называет Метрику, карту и передачу данных в Яндекс", async () => {
     await показать({ счётчик: true });
 
     // Согласие на то, что человеку не назвали, согласием не является.
     expect(screen.getByText(/Яндекс Метрика/)).toBeInTheDocument();
+    expect(screen.getByText(/карта Яндекса/)).toBeInTheDocument();
     expect(screen.getByText(/уходят в Яндекс/)).toBeInTheDocument();
   });
 
