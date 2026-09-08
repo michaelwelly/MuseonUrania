@@ -96,6 +96,33 @@ Webvisor is off: it records page content, including what a person typed into
 a form. The consent banner promises anonymised statistics, and the promise
 has to be true.
 
+### The map on the contacts page
+
+`/contacts/` carries an embedded Yandex map, and it lives by the same rule as
+the counter: the frame is created only after “Accept” in the cookie banner.
+The banner asks one question for both — a person answers the same thing:
+whether data about the visit goes to Yandex.
+
+One difference from the counter: the map needs neither an id nor an
+environment variable. The `yandex.ru/map-widget/v1` widget requires no API
+key, the frame URL is built from `site.address`, and the map is identical on
+production, on the staging host and on a developer machine. It is removed by
+editing a single line — `mapEmbedded` in `frontend/lib/maps.ts`; the question
+disappears from the banner along with it.
+
+Without consent the frame's place keeps what was there before the map: the
+CSS route scheme and a working “Построить маршрут” link to Yandex Maps at the
+production address. That is not a “switch on cookies” stub but a full
+fallback, and it is the one that sits in the static markup — the crawler and
+a browser with JS off see it.
+
+In the security policy the map needs one source — `frame-src` with
+`https://yandex.ru` and `https://yandex.com` in
+[backend/proxy/Caddyfile](../../backend/proxy/Caddyfile). It is spelled out
+rather than kept in a variable: the map does not depend on the deployment.
+Forget it and you get an empty rectangle instead of a map — the page stays
+intact and the violation shows up only in the browser console.
+
 ## Safety QA
 
 - No invented prices.

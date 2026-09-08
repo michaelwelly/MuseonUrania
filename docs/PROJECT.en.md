@@ -935,6 +935,11 @@ Ten site routes: `/`, `/products`, `/products/[slug]`, `/production`,
 `/documents`, `/news`, `/news/[slug]`, `/service`, `/about`, `/contacts`, plus
 `/legal/privacy`. Thirteen product cards, five categories, animations,
 a preloader, an animated VEDAL mark, a map, tabs on the product page.
+On the contacts page the map is an embedded Yandex one, and its frame is
+created only after consent in the cookie banner — by the same rule as the
+Metrica counter. Without consent its place holds the CSS route scheme and the
+“Построить маршрут” link: a fallback, not a stub, and it is the one that sits
+in the static markup.
 Since 7 September — a sitemap and `robots.txt` built from the portal, and the
 site's own tab icon. Indexing is switched on by `NEXT_PUBLIC_SITE_URL`: while
 it is empty, crawling is closed entirely, so the stand with draft copy does not
