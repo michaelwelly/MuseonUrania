@@ -1426,6 +1426,63 @@ paths:
       summary: Поставить дежурного на день
       tags:
       - "Админка: дежурство"
+  /api/admin/v1/knowledge:
+    get:
+      description: |
+        Сколько материалов и фрагментов лежит в индексе и когда каждый
+        материал туда попал.
+
+        Если индексация выключена (`vedal.assistant.rag.enabled=false`),
+        приходит `enabled: false` и пустой список — это рабочее
+        состояние, а не ошибка: ассистент отвечает поиском по словам.
+      operationId: state
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/KnowledgeState"
+          description: Состояние индекса.
+      security:
+      - keycloak: []
+      summary: Состояние индекса Ведалины
+      tags:
+      - "Админка: индекс Ведалины"
+  /api/admin/v1/knowledge/reindex:
+    post:
+      description: |
+        Собирает индекс заново по тому, что портал показывает сегодня:
+        опубликованные изделия, новости и перечень документов.
+        Текст опубликованных PDF и DOCX извлекается из файлов.
+
+        Материал с неизменившимся текстом переиндексирован не будет:
+        отпечаток сверяется до того, как посчитан хоть один вектор.
+        Поэтому повторное нажатие ничего не стоит.
+
+        Закрытые материалы сюда не попадают: индекс собирается через те же
+        запросные интерфейсы, что и поиск по словам, и документы уровня
+        `internal` и `confidential` им недоступны.
+
+        Действие записывается в журнал на того, кто его запустил.
+      operationId: reindex
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/KnowledgeState"
+          description: Индекс собран; в ответе — его состояние.
+        "409":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/KnowledgeState"
+          description: Индексация выключена настройкой.
+      security:
+      - keycloak: []
+      summary: Переиндексировать опубликованное
+      tags:
+      - "Админка: индекс Ведалины"
   /api/admin/v1/leads:
     get:
       operationId: leads
@@ -3848,6 +3905,55 @@ components:
           type: string
           description: "Почему ответа нет: вопрос отклонён ограничениями (диагноз\
             , цена) или по опубликованному ничего не нашлось."
+    KnowledgeRow:
+      type: object
+      description: Материал в индексе.
+      properties:
+        chunks:
+          type: integer
+          format: int32
+          description: Сколько фрагментов нарезано из материала.
+        externalId:
+          type: string
+          description: Идентификатор материала у его модуля.
+          example: opisanie-izdeliya-vedal-r1-r2
+        indexedAt:
+          type: string
+          format: date-time
+          description: Когда материал попал в индекс.
+        kind:
+          type: string
+          description: Вид материала.
+          enum:
+          - product
+          - news
+          - document
+          - page
+          example: document
+        title:
+          type: string
+          description: "Название, которое показывается под ответом."
+    KnowledgeState:
+      type: object
+      description: Состояние индекса Ведалины.
+      properties:
+        chunks:
+          type: integer
+          format: int32
+          description: Сколько всего фрагментов.
+        enabled:
+          type: boolean
+          description: "Индексация включена (`vedal.assistant.rag.enabled`). Выклю\
+            чена — индекс пуст, а ассистент отвечает поиском по словам."
+        rows:
+          type: array
+          description: Что именно лежит в индексе.
+          items:
+            $ref: "#/components/schemas/KnowledgeRow"
+        sources:
+          type: integer
+          format: int32
+          description: Сколько материалов лежит в индексе.
     Line:
       type: object
       properties:

@@ -118,6 +118,15 @@ public class DocumentEditor implements DocumentAdmin {
         apply(document, form);
         documents.saveAndFlush(document);
 
+        // Событие идёт и на правку, а не только на публикацию: название
+        // и предмет документа показываются под ответом ассистента и лежат
+        // в индексе копией. Без этого переименованный документ остаётся
+        // в поиске под старым именем до следующей полной переиндексации.
+        events.record("document", document.getSlug(), DOCUMENT_EVENT,
+                Map.of("action", "edited",
+                        "slug", document.getSlug(),
+                        "group", document.getDocGroup()));
+
         audit.record(actor, "document.edit", "document", document.getSlug(),
                 Map.of("sensitivity", document.getSensitivity()));
         return row(document);
@@ -159,6 +168,14 @@ public class DocumentEditor implements DocumentAdmin {
             document.setFileSize(upload.size());
             document.setUpdatedAt(Instant.now());
             documents.save(document);
+
+            // Событие о новом файле. В индексе Ведалины лежит текст,
+            // извлечённый из прежнего, и без этой строки замена редакции
+            // оставила бы ассистента пересказывать старую.
+            events.record("document", document.getSlug(), DOCUMENT_EVENT,
+                    Map.of("action", "file-replaced",
+                            "slug", document.getSlug(),
+                            "group", document.getDocGroup()));
 
             audit.record(actor, "document.upload", "document", document.getSlug(),
                     Map.of("size", upload.size(), "published", document.isPublished()));

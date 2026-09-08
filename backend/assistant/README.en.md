@@ -130,14 +130,24 @@ becomes meaningful work once there is a corpus to measure it on.
 - similarity search with a threshold and the `PUBLIC` / `STAFF` scopes
   (`VectorSearch`);
 - reindexing of what the portal already shows — products, news and document
-  cards (`KnowledgeIndex.reindexPublished`).
+  cards (`KnowledgeIndex.reindexPublished`);
+- text extraction from PDF and DOCX (`FileText`): the text of a published file
+  is appended to the document card. PDF is parsed by PDFBox, DOCX by the portal
+  itself (it is a ZIP with a single XML part, and an office-format library is
+  not worth the image size for it). Scans, broken and encrypted files do not
+  break reindexing: such a document enters the index as a card, and the reason
+  goes to the log;
+- the indexing queue (`KnowledgeIndexer`): the `vedal.documents.v1` event
+  triggers reindexing of that one document. The event is written in the same
+  transaction as the edit, so "the document is published" and "it must be
+  reindexed" cannot drift apart. An unpublished document leaves the index the
+  same way it leaves the site;
+- the "reindex" button in the admin panel and the index state next to it:
+  `GET` and `POST /api/admin/v1/knowledge`. The entry point answers even with
+  indexing switched off — `enabled: false`, not a 500.
 
 **What is missing and waits for the corpus:**
 
-- text extraction from PDF and DOCX. Parsing files is verified with files, and
-  inventing the contents of VEDAL datasheets for a test is forbidden by the
-  project rules;
-- a "reindex" button in the admin panel and an indexing status per document;
 - calibration of the `vedal.assistant.rag.max-distance` threshold — it can only
   be measured against real documents and real questions;
 - a second indexing circuit for restricted material. Today only `public` goes

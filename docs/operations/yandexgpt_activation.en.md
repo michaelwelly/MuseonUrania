@@ -60,12 +60,14 @@ which is why it is off by default.
 
 ## MVP limits
 
-This is not yet full RAG over PDFs: there is no text extraction from files, so
-only what the portal already shows reaches the index — products, news and
-document cards. The model does not read closed files: `confidential` material
-never enters the index, and that level does not even exist as a value in the
-schema.
+The pipeline is complete: the text of published PDFs and DOCX files is
+extracted, a document edit event triggers reindexing, and the admin area has a
+button and the index state. Only one thing is missing — the corpus: for now the
+index holds what the portal already shows, products, news and document cards.
+The model does not read closed files: `confidential` material never enters the
+index, and that level does not even exist as a value in the schema.
 
-What remains for full RAG: text extraction from PDF and DOCX, an indexing queue
-triggered by document uploads, a reindex button in the admin area, and
-calibration of the proximity threshold against real documents.
+What remains: calibration of the proximity threshold. The 0.45 default is
+deliberately provisional and can only be measured against real documents and
+real questions — the procedure is described in
+[Vedalina's pipeline](vedalina_rag_pipeline.en.md#how-to-calibrate-the-threshold-once-the-corpus-exists).

@@ -219,7 +219,18 @@ public class SecurityConfig {
                                 "/api/admin/v1/categories/**", "/api/admin/v1/categories",
                                 "/api/admin/v1/news/**", "/api/admin/v1/news",
                                 "/api/admin/v1/documents/**", "/api/admin/v1/documents",
-                                "/api/admin/v1/media/**", "/api/admin/v1/media")
+                                "/api/admin/v1/media/**", "/api/admin/v1/media",
+                                // Индекс Ведалины: состояние и кнопка
+                                // «переиндексировать». Он собирается из того,
+                                // что уходит наружу, и собирает его тот же,
+                                // кто это наружу выпускает.
+                                //
+                                // Отдельно от /assistant/** намеренно: спросить
+                                // Ведалину имеет право любая роль портала,
+                                // а пересобирать индекс сайта — работа
+                                // содержимого. Кнопка стоит денег: каждый
+                                // новый фрагмент — вызов модели.
+                                "/api/admin/v1/knowledge/**", "/api/admin/v1/knowledge")
                         .hasAnyRole(ROLE_PRODUCTION, ROLE_ADMIN)
 
                         // Справочник сотрудников — любой роли портала.

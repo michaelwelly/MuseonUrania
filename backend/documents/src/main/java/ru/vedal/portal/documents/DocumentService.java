@@ -66,6 +66,34 @@ public class DocumentService implements DocumentQuery {
                 .toList();
     }
 
+    /**
+     * Файл документа из перечня — для индекса Ведалины.
+     *
+     * <p>Условия перечислены здесь целиком, а не сведены к вызову
+     * {@link #listedDocuments()}: перечень отдаёт карточки, а не файлы,
+     * и «взять карточку из перечня, а файл по slug» — это два разных
+     * отбора, которые однажды разъедутся.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Download> listedFile(String slug) {
+        var document = documents.findBySlug(slug).orElse(null);
+        if (document == null
+                || !document.isListed()
+                || !"public".equals(document.getSensitivity())
+                || !document.isPublished()
+                || document.getStorageKey() == null) {
+            return Optional.empty();
+        }
+
+        try {
+            return storage.open(FileStorage.Area.DOCUMENTS, document.getStorageKey())
+                    .map(stored -> new Download(filename(document), stored));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     @Override
     @Transactional(readOnly = true)
     public Optional<Ref> ref(UUID id) {
