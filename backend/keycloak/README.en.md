@@ -58,8 +58,9 @@ The first is what to verify, the second is where to fetch keys. `KC_HOSTNAME` in
 - Account: `editor` / `editor-local`.
 - Keycloak console: `http://localhost:8180/`, `admin` / `admin-local`.
 
-A token for curl — via the direct password grant, enabled on the client for
-local debugging:
+A token for curl — via the direct password grant, enabled on the client **in the
+local realm only**, for debugging (disabled in `stand/` and `prod/`, see "Second
+factor"):
 
 ```bash
 curl -s -d grant_type=password -d client_id=vedal-admin-ui -d username=editor -d password=editor-local http://localhost:8180/realms/vedal/protocol/openid-connect/token
@@ -67,11 +68,59 @@ curl -s -d grant_type=password -d client_id=vedal-admin-ui -d username=editor -d
 
 ## Second factor
 
-Not enabled: on a developer machine it gets in the way and protects nothing. The
-owner brief lists MFA as mandatory, and it is switched on by realm policy in a
-deployed environment — `Authentication → Required actions → Configure OTP`. This
-does not concern the portal at all: it verifies an issued token and does not know
-how many factors were presented at sign-in.
+**Not enabled on a developer machine** — here it gets in the way and protects
+nothing: `vedal-realm.json` sets neither a password policy, nor brute force
+detection, nor an OTP flow. The `editor` account with the `editor-local`
+password exists for exactly that reason.
+
+**In `stand/` and `prod/` it is enabled and tied to a role, not to a person.**
+The second factor is required from whoever has access to personal data, and it
+is the realm file that decides this, not the memory of whoever creates the
+account:
+
+| Role | Second factor |
+| --- | --- |
+| `portal-admin` | required |
+| `portal-sales` | required |
+| `portal-production` | not required |
+
+The mechanics are three objects in the realm file:
+
+1. The `portal-mfa-required` role. It grants nothing; `portal-admin` and
+   `portal-sales` include it as a composite, so the list of "who needs a second
+   factor" is edited in one place rather than account by account.
+2. The `vedal-browser` sign-in flow. A copy of the built-in `browser` with a
+   single substitution: in the `Browser - Conditional OTP` subflow the
+   `conditional-user-configured` condition ("the user has already set up TOTP")
+   is replaced with `conditional-user-role` configured as
+   `condUserRole=portal-mfa-required`. The built-in condition means "ask for a
+   code from whoever already has one", which requires nothing from anyone; the
+   role condition means "ask whoever is supposed to be asked".
+3. `browserFlow: vedal-browser` in the realm itself — otherwise the flow exists
+   but is never used.
+
+The OTP form inside the subflow is `REQUIRED`. That is what enforces it: anyone
+without an authenticator app bound lands, after a correct password, not in the
+admin panel but on the enrolment screen
+(`login-actions/required-action?execution=CONFIGURE_TOTP`).
+
+`CONFIGURE_TOTP` in `requiredActions` deliberately keeps `defaultAction: false`:
+`true` would force enrolment on **every** new account indiscriminately,
+including `portal-production`, which sees no personal data.
+
+**The direct password grant is disabled for `vedal-admin-ui` in `stand/` and
+`prod/`** (`directAccessGrantsEnabled: false`). It bypasses the browser flow —
+that is, the second factor — and would have been a one-curl-line way around
+everything described above. Neither the admin panel nor the portal uses it: the
+admin panel goes through authorization code with PKCE, the portal takes its
+service token via `client_credentials`. The local realm keeps it: there is no
+second factor there, so there is nothing to bypass.
+
+This still does not concern the portal: it verifies an issued token and does not
+know how many factors were presented at sign-in.
+
+The rollout order on a live Keycloak, the rollback, and the `/admin` decision —
+[docs/operations/mfa_rollout.en.md](../../docs/operations/mfa_rollout.en.md).
 
 ## Session lifetime
 
