@@ -710,6 +710,71 @@ export const staff = () => get<StaffMember[]>("/staff");
 export const assignRoles = (login: string, roles: string[]) =>
   put<StaffMember[]>(`/staff/${encodeURIComponent(login)}/roles`, { roles });
 
+// ————— портрет —————
+//
+// Портрет не приезжает ни в токене, ни в справочнике: это собственное
+// хранение портала, привязанное к логину. Почему в базе, а не в бакете,
+// разобрано в миграции V35 — коротко: `vedal-media` открыт наружу
+// (и ключа на него всё равно нет, issue #37), а `vedal-documents` —
+// сейф документов со своими правилами.
+//
+// Отдаётся картинкой, а не ссылкой. Ссылку браузер запрашивает сам,
+// без заголовка Authorization, — то есть закрытая дверь ответила бы
+// на неё отказом. Поэтому байты приезжают тем же запросом с токеном,
+// что и всё остальное, и превращаются в blob: — адрес, который живёт
+// в этой вкладке и никуда не уходит.
+
+/** Наибольший размер портрета. Тот же предел стоит на портале. */
+export const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
+
+/**
+ * Портрет сотрудника или `null`, если его нет.
+ *
+ * `null`, а не отказ: портрета нет у большинства, и на его месте
+ * рисуется кружок с первой буквой логина. Отличать «нет портрета»
+ * от «портал не ответил» всё равно надо — второе бросается, как везде.
+ */
+export async function avatarOf(login: string): Promise<Blob | null> {
+  if (!adminConfigured) return null;
+
+  const token = await accessToken();
+  if (!token) throw new AdminError(401, "Вход не выполнен.");
+
+  const path = `${ROOT}/staff/${encodeURIComponent(login)}/avatar`;
+
+  let response: Response;
+  try {
+    response = await fetch(`${BASE}${path}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch {
+    throw new AdminError(0, "Портал не отвечает.");
+  }
+
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    throw new AdminError(response.status, `Портал ответил ${response.status}`);
+  }
+  return await response.blob();
+}
+
+export type MyAvatar = { width: number; size: number; updatedAt: string };
+
+/**
+ * Поставить или заменить СВОЙ портрет.
+ *
+ * Логина в адресе нет, и это не сокращение: чей это портрет, решает токен.
+ * Параметра, в котором можно назвать чужой логин, у этой двери не существует.
+ */
+export function uploadMyAvatar(file: File) {
+  const body = new FormData();
+  body.append("file", file);
+  return request<MyAvatar>("/profile/avatar", { method: "POST", body });
+}
+
+/** Убрать свой портрет — вернуть кружок с буквой. */
+export const removeMyAvatar = () => del("/profile/avatar");
+
 // ————— дежурство —————
 //
 // Третий факт рядом с двумя прежними, и ни один из них не заменяет его.

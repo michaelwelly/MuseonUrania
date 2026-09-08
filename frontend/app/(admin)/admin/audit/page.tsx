@@ -135,7 +135,7 @@ function Journal() {
                 setPage(0);
               }}
             >
-              <Avatar name={p.name || p.login} size="s" />
+              <Avatar name={p.name || p.login} login={p.login} size="s" />
               {p.name || p.login}
             </button>
           </span>
@@ -293,7 +293,7 @@ function Who({ login, people }: { login: string; people: readonly StaffMember[] 
   const человек = people.find((p) => p.login === login);
   return (
     <span className="who">
-      <Avatar name={человек?.name || login} size="s" />
+      <Avatar name={человек?.name || login} login={login} size="s" />
       <span className="who__body">
         <span className="who__name">{человек?.name || login}</span>
         <span className="who__login mono">

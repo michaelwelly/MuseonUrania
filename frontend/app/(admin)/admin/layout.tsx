@@ -705,7 +705,7 @@ function Who({ who }: { who: Session }) {
           какой именно кружок означает «я». Точка присутствия серая — портал
           присутствия не хранит, и зелёная точка была бы утверждением, которое
           никто не проверял. */}
-      <Avatar name={who.actor} presence="unknown" />
+      <Avatar name={who.actor} login={who.actor} presence="unknown" />
       <span className="admin-who__lines">
         <span className="admin-who__name">{who.actor}</span>
         <span className="admin-who__meta">

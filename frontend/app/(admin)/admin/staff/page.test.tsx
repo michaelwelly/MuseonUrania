@@ -27,6 +27,9 @@ const mocks = vi.hoisted(() => ({
   chatsAll: vi.fn(),
   audit: vi.fn(),
   assignRoles: vi.fn(),
+  avatarOf: vi.fn(),
+  uploadMyAvatar: vi.fn(),
+  removeMyAvatar: vi.fn(),
 }));
 
 vi.mock("@/lib/admin", () => ({
@@ -36,6 +39,12 @@ vi.mock("@/lib/admin", () => ({
   chatsAll: mocks.chatsAll,
   audit: mocks.audit,
   assignRoles: mocks.assignRoles,
+  // Портрет. Кружок спрашивает его сам, по логину, — то есть эти двери
+  // дёргаются на обоих экранах, даже когда проверяется не портрет.
+  avatarOf: mocks.avatarOf,
+  uploadMyAvatar: mocks.uploadMyAvatar,
+  removeMyAvatar: mocks.removeMyAvatar,
+  AVATAR_MAX_BYTES: 2 * 1024 * 1024,
   staff: () =>
     Promise.resolve([
       // Роли разные намеренно: список, где у всех одно и то же, зеленел бы
@@ -51,8 +60,20 @@ vi.mock("@/lib/auth", () => ({ logout: vi.fn() }));
 import StaffPage from "./page";
 import ProfilePage from "../profile/page";
 import { WhoHost } from "../who";
+import { __resetPortraits } from "../portraits";
 
 beforeEach(() => {
+  // Кеш портретов живёт в модуле, а не в компоненте: без сброса портрет,
+  // положенный одним тестом, доезжал бы до следующего.
+  __resetPortraits();
+  mocks.avatarOf.mockReset().mockResolvedValue(null);
+  mocks.uploadMyAvatar.mockReset().mockResolvedValue({
+    width: 256,
+    size: 18_000,
+    updatedAt: "2026-09-09T10:00:00Z",
+  });
+  mocks.removeMyAvatar.mockReset().mockResolvedValue(undefined);
+
   mocks.leads.mockReset().mockResolvedValue({
     items: [],
     page: 0,
@@ -379,5 +400,71 @@ describe("профиль", () => {
 
     expect(mocks.audit).toHaveBeenCalledWith({ actor: "i.koltsova" }, 0, 8);
     expect(screen.getByText("Уничтожил персональные данные заявки")).toBeTruthy();
+  });
+});
+
+// Свой портрет — единственная правка на этом экране (issue #93).
+//
+// Проверяется то, что ломается тихо: что чужой портрет отсюда не тронуть,
+// что буква не исчезает, пока портрета нет, и что заведомо неподъёмный
+// файл не уезжает в портал впустую.
+describe("свой портрет", () => {
+  /** Поле выбора файла на карточке портрета. */
+  function поле(): HTMLInputElement {
+    return screen.getByLabelText("Свой портрет") as HTMLInputElement;
+  }
+
+  function файл(байт: number, имя = "me.jpg", тип = "image/jpeg") {
+    return new File([new Uint8Array(байт)], имя, { type: тип });
+  }
+
+  it("пока портрета нет — кружок с буквой и предложение загрузить", async () => {
+    await профиль();
+
+    expect(screen.getByText("загрузить портрет")).toBeTruthy();
+    // Кнопки «Убрать» быть не должно: убирать нечего, и кнопка, которая
+    // ничего не делает, читается как сломанная.
+    expect(screen.queryByRole("button", { name: "Убрать" })).toBeNull();
+  });
+
+  it("портрет уходит в портал без единого упоминания логина", async () => {
+    await профиль();
+
+    const снимок = файл(1024);
+    await userEvent.setup().upload(поле(), снимок);
+
+    await waitFor(() => expect(mocks.uploadMyAvatar).toHaveBeenCalledWith(снимок));
+    // Чей это портрет, решает токен. Появившийся здесь логин означал бы
+    // дверь, через которую можно поставить портрет кому-то другому.
+    expect(mocks.uploadMyAvatar.mock.calls[0]).toHaveLength(1);
+  });
+
+  it("заведомо большой файл не уезжает в портал", async () => {
+    await профиль();
+
+    await userEvent.setup().upload(поле(), файл(3 * 1024 * 1024));
+
+    await screen.findByText(/больше 2 МБ/);
+    // Портал отверг бы его и сам — но только приняв три мегабайта.
+    expect(mocks.uploadMyAvatar).not.toHaveBeenCalled();
+  });
+
+  it("портрет можно убрать, и тогда возвращается буква", async () => {
+    mocks.avatarOf.mockResolvedValue(new Blob(["jpeg"], { type: "image/jpeg" }));
+    await профиль();
+
+    const убрать = await screen.findByRole("button", { name: "Убрать" });
+    await userEvent.setup().click(убрать);
+
+    await waitFor(() => expect(mocks.removeMyAvatar).toHaveBeenCalled());
+  });
+
+  it("отказ портала показывается словами, а не пропадает", async () => {
+    mocks.uploadMyAvatar.mockRejectedValue(new Error("Это не JPEG и не PNG"));
+    await профиль();
+
+    await userEvent.setup().upload(поле(), файл(1024));
+
+    expect(await screen.findByText("Это не JPEG и не PNG")).toBeTruthy();
   });
 });

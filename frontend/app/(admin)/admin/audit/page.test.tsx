@@ -27,6 +27,9 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/lib/admin", () => ({
   AdminError: class AdminError extends Error {},
+  // Кружок сотрудника спрашивает портрет сам, по логину: без этой двери
+  // страница журнала падает на неопределённой функции, а не на разметке.
+  avatarOf: () => Promise.resolve(null),
   audit: mocks.audit,
   staff: () =>
     Promise.resolve([
