@@ -3,6 +3,7 @@ import { pageMetadata } from "@/lib/seo";
 import Image from "next/image";
 import Link from "next/link";
 import VedalMap from "@/components/VedalMap";
+import VedalMapEmbed from "@/components/VedalMapEmbed";
 import TranslationNotice from "@/components/TranslationNotice";
 import { site } from "@/content/site";
 import { productionHero, facility, gallery, address } from "@/content/production";
@@ -154,7 +155,18 @@ export default function ProductionScreen({ lang }: { lang: Lang }) {
           </Link>
         </div>
         <div className={styles.mapSlot} data-reveal="1">
-          <VedalMap />
+          {/* Та же карта, что на контактах, и по той же причине: страница
+              «Производство» заканчивается адресом площадки, и нарисованная
+              схема на его месте отвечает на вопрос «как выглядит район»,
+              а не «как сюда доехать».
+
+              Кадр поднимается только после согласия в плашке про cookie —
+              вместе с ним данные о визите уходят в Яндекс. Без согласия
+              остаётся прежняя схема на CSS, а адрес и кнопка маршрута
+              стоят в панели слева и работают всегда. */}
+          <VedalMapEmbed src={address.mapSrc} title={c.t(address.mapTitle)}>
+            <VedalMap />
+          </VedalMapEmbed>
         </div>
       </section>
     </main>
