@@ -168,15 +168,17 @@ MuseonVedalina/
 │  ├─ strategy/             business frame, requirements, Vedalina, SEO, competitors
 │  ├─ frontend/             sitemap, content models, page briefs, checklist
 │  ├─ legal/                compliance requirements: personal data, hosting, claims
-│  ├─ operations/           roadmap, team estimate, credentials handover,
-│  │                        vedal-med.ru domain cutover
-│  ├─ products/             VEDAL R1/R2, A-2000, Т-100 datasheets and the analysis
-│  ├─ requests/             the materials request to Nikolay Nikolaevich
+│  ├─ operations/           roadmap, autodeploy, vedal-med.ru domain cutover
+│  ├─ products/             public summary for VEDAL R1/R2, A-2000, Т-100
+│  ├─ security/             public repository cleanup checks
 │  └─ superpowers/          the backend spec, the catalog module plan
 ├─ assets/vedalina/           Vedalina avatars; MVP — vedalina-avatar-middle-v1.png
-├─ prototypes/              vedalina-web-interface.html — the source of the markup
-└─ outputs/                 presentations, pptx/pdf
+└─ assets/brand/              public brand assets
 ```
+
+Presentations, contracts, acts, credentials, commercial calculations and
+customer source materials are stored outside public git in the official project
+package.
 
 **Important about the backend layout.** The folders `backend/crm/`,
 `backend/iam/` and the rest are **real Maven modules**: their own `pom.xml`,
@@ -1132,9 +1134,15 @@ no separate port had to be introduced for that.
 **Technical, awaiting confirmation:**
 
 1. Acceptable data loss and time to recovery — 5 minutes and 1 hour proposed.
-2. Lead retention period — 3 years proposed. There is no auto-cleanup, and until
-   the period is confirmed it must not be introduced: deleting by a wrong period
-   is irreversible.
+2. Retention period for leads, conversations and mail — 3 years proposed.
+   **The auto-cleanup mechanism is written and off by default** (issue #47):
+   leads — `RetentionSweep` in `crm`, conversations —
+   `ConversationRetentionSweep` in `chat`, mail — `MailRetentionSweep` in
+   `notifications`. Until the period is confirmed it must not be switched on —
+   erasure is irreversible, and there is nowhere to restore from either, since
+   there are no backups. Each kind of data turns on with its own property
+   (`vedal.privacy.retention`, `.chat`, `.mail`), a period value such as `P3Y`;
+   without the property the bean is not created at all.
 3. Whether `/admin` is closed at the network level or left behind a password and
    MFA. The door is single, so either option is one rule in the `Caddyfile` plus
    a realm policy. The proxy rule now exists: `@admin` only lets private ranges
@@ -1142,11 +1150,19 @@ no separate port had to be introduced for that.
    **MFA is still off in the realm**, and until it is on the network restriction
    must stay — otherwise it is an editor's password against the internet.
    There is no Caddy on the stand at all, so the admin area is open there;
-   see issue #42.
+   see issue #42. Both options, the rollout order and the rollback are laid
+   out in [mfa_rollout.en.md](operations/mfa_rollout.en.md): the network stays
+   on by default, and MFA is a second, independent layer on top of it, not
+   a replacement.
 4. Which cloud. The storage runs on S3, and moving between S3-compatible
    stores changes the address and the keys, not the code.
 5. When MFA is switched on in the realm. This does not concern the portal: it
    verifies an issued token and does not know how many factors were presented.
+   The realm file and the rollout order are ready (issue #42,
+   [mfa_rollout.en.md](operations/mfa_rollout.en.md)): the second factor
+   (TOTP) is mandatory for `portal-admin` and `portal-sales`, optional for
+   `portal-production`. Switching it on on the live Keycloak is the owner's
+   decision and action, not an automatic consequence of the git change.
 6. Who runs Keycloak in a deployed environment and how employees are created in it.
 
 ---

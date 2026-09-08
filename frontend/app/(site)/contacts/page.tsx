@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { pageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import PageHero from "@/components/PageHero";
@@ -6,6 +7,7 @@ import LeadForm from "@/components/LeadForm";
 import VedalMap from "@/components/VedalMap";
 import { fetchProducts } from "@/lib/api";
 import { companyContact, STAFF_AWAITING } from "@/content/staff";
+import { vedalina } from "@/content/vedalina";
 import {
   contactsHero,
   topics,
@@ -75,9 +77,14 @@ export default async function ContactsPage() {
               </li>
             ))}
           </ul>
-          <Link className={styles.routeCta} href="/production/#map">
+          {/* GitHub issue #74: живую карту на страницу не ставим (см. комментарий
+              в components/VedalMap.tsx — нужен либо ключ API, которого нет,
+              либо сторонний скрипт до баннера согласия из #53), но кнопка
+              маршрута теперь рабочая: ведёт на Яндекс.Карты по адресу
+              производства, без ключа и без стороннего кода на этой странице. */}
+          <a className={styles.routeCta} href={route.ctaHref} target="_blank" rel="noopener">
             {route.cta}
-          </Link>
+          </a>
         </div>
         <div className={styles.mapSlot} data-reveal="1">
           <VedalMap />
@@ -129,7 +136,16 @@ export default async function ContactsPage() {
           </div>
 
           <div className={styles.vedalinaCard}>
-            <h2 className={styles.vedalinaTitle}>{vedalinaCard.title}</h2>
+            {/* Портрет добавлен по просьбе заказчика после показа стенда
+                (issue #84) — тот же файл, что у виджета чата и в блоке
+                запроса на /documents/ (content/vedalina.ts → avatar),
+                а не путь строкой: имя файла уже менялось однажды. */}
+            <div className={styles.vedalinaHead}>
+              <div className={styles.vedalinaAvatar}>
+                <Image src={vedalina.avatar} alt="" width={48} height={48} />
+              </div>
+              <h2 className={styles.vedalinaTitle}>{vedalinaCard.title}</h2>
+            </div>
             <p className={styles.vedalinaText}>{vedalinaCard.text}</p>
             <Link className={styles.vedalinaCta} href="#vedalina">
               {vedalinaCard.cta}

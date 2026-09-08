@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { chatQueue, chatThread, type ChatCard } from "@/lib/admin";
 import { plural } from "@/lib/plural";
 import { useCounts } from "./counts";
 import { useLive } from "./live";
 import { CloseIcon, CrossIcon } from "./icons";
+import Thread from "./Thread";
 import { waited as словами, where } from "./ui";
 
 // Виджет разговоров.
@@ -35,11 +36,15 @@ import { waited as словами, where } from "./ui";
 // панели дешевле, чем строка «—» на месте вопроса, ради которого сюда
 // и заходят.
 //
-// Ответ прямо из панели появится вместе с переделкой раздела «Разговоры»:
-// поле ответа — это лента, заготовки, отметка о прочтении и поток событий,
-// и делать им вторую реализацию в виджете значит завести два места, где
-// чинить одну ошибку. Пока карточка ведёт в раздел, открытый на этом
-// разговоре.
+// Ответить можно прямо отсюда: карточка открывает ленту в самой панели.
+// Лента при этом та же, что в разделе, — общий компонент `Thread`. Своей
+// реализации здесь нет намеренно: отметка о прочтении, оценка ответа
+// Ведалины, «печатает», заготовки и Enter как отправка разошлись бы в двух
+// копиях на первой же правке.
+//
+// «Развернуть» никуда не делось и ведёт в раздел, открытый на этом разговоре:
+// три колонки нужны, когда разбираешься, кто написал и откуда, — в панели
+// столько не показать.
 
 const В_ОЧЕРЕДИ = 5;
 
@@ -47,15 +52,44 @@ type Карточка = ChatCard & { first: string | null };
 
 export function Widget() {
   const [open, setOpen] = useState(false);
+  // Разговор, открытый прямо в панели. Раньше карточка уводила в раздел,
+  // и менеджер, правивший сделку, терял место, на котором работал, — ради
+  // двух строк ответа.
+  const [talking, setTalking] = useState<string | null>(null);
   const { counts } = useCounts();
   const ждут = counts.chats ?? 0;
+
+  // Закрытая панель забывает открытый разговор: вернувшись через час,
+  // человек ждёт очередь, а не переписку, которую он уже закрыл.
+  function toggle() {
+    setOpen((было) => {
+      if (было) setTalking(null);
+      return !было;
+    });
+  }
 
   return (
     <div className="widget">
       {/* Панель заводится открытием, а не прячется стилями: спрятанная она
           продолжала бы тикать часами и перечитывать очередь у человека,
           который её закрыл. */}
-      {open && <Queue ждут={ждут} onClose={() => setOpen(false)} />}
+      {open &&
+        (talking ? (
+          <Talk
+            id={talking}
+            onBack={() => setTalking(null)}
+            onClose={() => {
+              setTalking(null);
+              setOpen(false);
+            }}
+          />
+        ) : (
+          <Queue
+            ждут={ждут}
+            onOpen={setTalking}
+            onClose={() => setOpen(false)}
+          />
+        ))}
 
       {/* title — ради всплывающей подсказки: подпись «Разговоры» на кнопке
           скрыта с глаз (см. .widget__label в admin.css), и наведение —
@@ -65,7 +99,7 @@ export function Widget() {
         className="widget__button"
         title="Разговоры"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggle}
       >
         <span className="widget__disc" aria-hidden="true">
           <CrossIcon size={20} />
@@ -78,7 +112,15 @@ export function Widget() {
   );
 }
 
-function Queue({ ждут, onClose }: { ждут: number; onClose: () => void }) {
+function Queue({
+  ждут,
+  onOpen,
+  onClose,
+}: {
+  ждут: number;
+  onOpen: (id: string) => void;
+  onClose: () => void;
+}) {
   const [rows, setRows] = useState<Карточка[] | null>(null);
   // Открытая панель перечитывается на событие: без этого она показывала
   // очередь на момент открытия, и разговор, пришедший минуту назад,
@@ -168,11 +210,14 @@ function Queue({ ждут, onClose }: { ждут: number; onClose: () => void })
           const мин = waited(c.lastAt, now);
           const поздно = мин >= 5;
           return (
-            <Link
+            // Кнопка, а не ссылка: разговор открывается здесь же. Ссылкой
+            // он был, пока отвечать из панели было нечем, и каждый ответ
+            // стоил ухода с рабочего экрана.
+            <button
               key={c.id}
+              type="button"
               className="widget__row"
-              href={`/admin/chats/?id=${encodeURIComponent(c.id)}`}
-              onClick={onClose}
+              onClick={() => onOpen(c.id)}
             >
               <span
                 className={`widget__mark${поздно ? " widget__mark--late" : ""}`}
@@ -185,9 +230,73 @@ function Queue({ ждут, onClose }: { ждут: number; onClose: () => void })
               <span className={`widget__waited mono${поздно ? " widget__waited--late" : ""}`}>
                 {словами(мин)}
               </span>
-            </Link>
+            </button>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Разговор прямо в панели.
+ *
+ * Лента здесь та же самая, что в разделе «Разговоры», — один компонент
+ * на два места. Своя реализация означала бы две отметки о прочтении, две
+ * обработки Enter и два места, где чинить одну ошибку.
+ */
+function Talk({
+  id,
+  onBack,
+  onClose,
+}: {
+  id: string;
+  onBack: () => void;
+  onClose: () => void;
+}) {
+  // Событие из потока перечитывает ленту: ответ посетителя должен появиться
+  // сам, без обновления страницы.
+  const [beat, setBeat] = useState(0);
+  const [typing, setTyping] = useState(false);
+  const fade = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useLive({
+    changed: () => setBeat((b) => b + 1),
+    typing: (conversationId) => {
+      if (conversationId !== id) return;
+      setTyping(true);
+      if (fade.current) clearTimeout(fade.current);
+      // Надпись гаснет сама: события «перестал печатать» нет и быть не может,
+      // человек может просто закрыть вкладку.
+      fade.current = setTimeout(() => setTyping(false), 5000);
+    },
+  });
+
+  useEffect(() => () => {
+    if (fade.current) clearTimeout(fade.current);
+  }, []);
+
+  return (
+    <div className="widget__panel widget__panel--talk" role="dialog" aria-label="Разговор">
+      <div className="widget__head">
+        <button type="button" className="widget__back" onClick={onBack}>
+          ← К очереди
+        </button>
+        <Link className="widget__more" href={`/admin/chats/?id=${encodeURIComponent(id)}`}>
+          Развернуть
+        </Link>
+        <button
+          type="button"
+          className="widget__close"
+          onClick={onClose}
+          aria-label="Закрыть виджет"
+        >
+          <CloseIcon />
+        </button>
+      </div>
+
+      <div className="widget__talk">
+        <Thread id={id} beat={beat} typing={typing} onDone={() => setBeat((b) => b + 1)} />
       </div>
     </div>
   );

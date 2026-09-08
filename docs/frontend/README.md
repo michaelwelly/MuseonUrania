@@ -12,6 +12,7 @@
 - [Промпт для Claude по фронтенду](claude_frontend_prompt.md)
 - [Контекстный пакет для Claude](claude_context_bundle.md)
 - [Чек-лист реализации](implementation_checklist.md)
+- [Чек-лист проверки вёрстки на маке](mac_check.md)
 
 ## Связанные материалы
 

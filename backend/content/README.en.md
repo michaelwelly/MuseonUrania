@@ -19,11 +19,9 @@ constraint.
 
 ## Having no data is a normal state
 
-`frontend/content/news.ts` is empty: the Innoprom materials are still listed as
-"Awaiting NN" (see
-[nikolay_materials_request.en.md](../../docs/requests/nikolay_materials_request.en.md)),
-and the demo publications from the mockup are not carried into production — a
-direct instruction from [HANDOFF.en.md](../../HANDOFF.en.md). So the module has no
+`frontend/content/news.ts` is empty: the Innoprom materials are still awaiting
+approval, and the demo publications from the mockup are not carried into
+production — a direct instruction from [HANDOFF.en.md](../../HANDOFF.en.md). So the module has no
 seed: an empty feed returns `[]`, and the first record is added by an editor
 through the admin panel.
 

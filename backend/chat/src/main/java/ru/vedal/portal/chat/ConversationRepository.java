@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -47,4 +48,14 @@ public interface ConversationRepository extends JpaRepository<Conversation, UUID
     // закрыта, а обезличивание — не то место, где стоит падать на втором
     // совпадении вместо того, чтобы обработать оба.
     List<Conversation> findByLeadId(UUID leadId);
+
+    // Отбор для автоочистки: разговоры, начатые раньше срока и ещё
+    // не обезличенные. Под него заведён частичный индекс
+    // conversation_retention_idx — та же причина, что у lead_retention_idx:
+    // обезличенные из выборки уходят навсегда, и держать под них место
+    // в индексе незачем.
+    //
+    // Пачкой, а не всё сразу: см. RetentionSweep в crm — то же рассуждение
+    // применимо и здесь один в один.
+    List<Conversation> findByStartedAtBeforeAndErasedAtIsNull(Instant cutoff, Pageable page);
 }

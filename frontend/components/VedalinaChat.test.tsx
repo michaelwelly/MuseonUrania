@@ -50,8 +50,8 @@ const КНОПКИ = [
   { intent: "human", label: "Позвать специалиста", action: "handoff" },
 ];
 
-const НА_СВЯЗИ = { online: true, openNow: true, hours: "Пн–Пт 9:00–18:00 (Екатеринбург)" };
-const НИКОГО = { online: false, openNow: false, hours: "Пн–Пт 9:00–18:00 (Екатеринбург)" };
+const НА_СВЯЗИ = { online: true, openNow: true, hours: "Пн–Пт 9:00–17:30 (Екатеринбург)" };
+const НИКОГО = { online: false, openNow: false, hours: "Пн–Пт 9:00–17:30 (Екатеринбург)" };
 
 function лента(
   messages: unknown[],
@@ -622,7 +622,7 @@ describe("кто на связи", () => {
     const user = await открыть();
     await user.click(await screen.findByRole("button", { name: /Специалисты офлайн/ }));
 
-    expect(screen.getByText(/Пн–Пт 9:00–18:00/)).toBeTruthy();
+    expect(screen.getByText(/Пн–Пт 9:00–17:30/)).toBeTruthy();
     // И сказано, что делать: обращение переживёт закрытую вкладку.
     expect(screen.getByText(/оставить обращение/)).toBeTruthy();
   });

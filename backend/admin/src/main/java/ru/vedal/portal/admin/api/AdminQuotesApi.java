@@ -89,9 +89,9 @@ public class AdminQuotesApi {
 
     @Operation(summary = "Отметить КП отправленным",
             description = """
-                    Письмо портал пока не шлёт: `MailSender` пишет в лог, SMTP Яндекс 360 —
-                    следующий шаг. Отметка фиксирует, что предложение ушло, и с этого момента
-                    оно не правится.
+                    Письмо с самим предложением портал пока не шлёт — это следующий шаг.
+                    Отметка фиксирует, что предложение ушло, и с этого момента оно
+                    не правится.
                     """)
     @PostMapping("/quotes/{id}/send")
     public QuoteAdmin.QuoteView send(@PathVariable UUID id, Authentication who) {

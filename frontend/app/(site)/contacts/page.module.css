@@ -250,6 +250,31 @@
   color: #fff;
 }
 
+.vedalinaHead {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Тот же приём, что в блоке запроса на /documents/: белый диск под
+   портретом — на тёмной подложке карточки иначе не видно круглого края.
+   Размер картинки задан пропами, а не fill, чтобы кадр не растягивался. */
+.vedalinaAvatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.vedalinaAvatar img {
+  object-fit: cover;
+  object-position: 50% 22%;
+}
+
 .vedalinaTitle {
   font-size: 20px;
   letter-spacing: -0.02em;
