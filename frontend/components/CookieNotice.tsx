@@ -4,15 +4,24 @@ import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { cookies } from "@/content/legal";
 import { metrikaId } from "@/lib/analytics";
-import { acknowledge, answer, readConsent, readServerConsent, subscribe } from "@/lib/consent";
+import {
+  acknowledge,
+  answer,
+  asksThirdParty,
+  readConsent,
+  readServerConsent,
+  subscribe,
+} from "@/lib/consent";
 import styles from "./CookieNotice.module.css";
 
 /**
- * Плашка про cookie. §14.5 плана, issue #53.
+ * Плашка про cookie. §14.5 плана, issues #53 и #74.
  *
- * Пока счётчика нет — сообщает. Появился счётчик — спрашивает, и до ответа
- * `Analytics` его не поднимает. Ответ хранится в localStorage; почему именно
- * там и как устроено хранилище — в `lib/consent.ts`.
+ * Спрашивает, пока на площадке есть сторонний ресурс Яндекса: счётчик
+ * Метрики, карта на контактах или оба. До ответа `Analytics` не поднимает
+ * счётчик, а `VedalMapEmbed` не создаёт кадр карты. Нет ни того, ни другого —
+ * плашка сообщает, а не спрашивает. Ответ хранится в localStorage; почему
+ * именно там и как устроено хранилище — в `lib/consent.ts`.
  *
  * ————— почему useSyncExternalStore, а не useEffect —————
  *
@@ -30,11 +39,19 @@ export default function CookieNotice() {
 
   if (consent !== "unanswered") return null;
 
-  // Вопрос задаётся только там, где есть счётчик. Без него выбор «принять
-  // или только необходимые» — бутафория: отклонять нечего, а вид согласия
-  // при отсутствии передачи данных обесценивает согласие настоящее.
-  const asks = metrikaId !== null;
-  const copy = asks ? cookies.withAnalytics : cookies.necessaryOnly;
+  // Вопрос задаётся только там, где есть что разрешать: счётчик Метрики,
+  // карта на контактах или оба сразу. Нет ничего — выбор «принять или
+  // только необходимые» бутафория: отклонять нечего, а вид согласия при
+  // отсутствии передачи данных обесценивает согласие настоящее.
+  //
+  // Текст называет ровно то, что на площадке есть. Общая формулировка
+  // «сторонние сервисы» дешевле в поддержке и хуже по сути: человек должен
+  // видеть, кому и в связи с чем уходят данные, а не догадываться.
+  const copy = metrikaId
+    ? cookies.withAnalytics
+    : asksThirdParty
+      ? cookies.withMap
+      : cookies.necessaryOnly;
 
   return (
     <aside className={styles.notice} role="complementary" aria-label="Использование cookie">
@@ -45,19 +62,19 @@ export default function CookieNotice() {
         </Link>
       </p>
       <div className={styles.buttons}>
-        {asks && (
+        {copy.decline && (
           // «Только необходимые» стоит первой и оформлена ровно так же
           // заметно, как «Принять». Спрятанный отказ — это отказ, которого
           // нет: согласие, полученное тем, что второй кнопки не видно,
           // согласием не является.
           <button type="button" className={styles.decline} onClick={() => answer(false)}>
-            {cookies.withAnalytics.decline}
+            {copy.decline}
           </button>
         )}
         <button
           type="button"
           className={styles.accept}
-          onClick={() => (asks ? answer(true) : acknowledge())}
+          onClick={() => (asksThirdParty ? answer(true) : acknowledge())}
         >
           {copy.accept}
         </button>

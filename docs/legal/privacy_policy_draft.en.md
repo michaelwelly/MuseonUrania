@@ -160,6 +160,13 @@ Web analytics counters are **not connected** on public pages. If Yandex Metrica
 is connected, this section and the cookie banner text will be extended, and
 consent for analytics will be requested separately from consent for form data.
 
+The “Contacts” page carries an **embedded Yandex map**. Its frame loads only
+after consent in the cookie banner; before consent the frame is not created and
+no visit data is passed to Yandex from that page. On refusal the map's place
+keeps the production address and a link to the route in Yandex Maps, which
+opens on the visitor's own click. Consent for the map and for analytics is
+asked as one question: both mean passing visit data to the same party.
+
 ## 10. Data protection
 
 - enquiries are accessible only to employees after login, by role;
