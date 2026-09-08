@@ -4,6 +4,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -37,8 +38,23 @@ public abstract class PostgresTestBase {
     public static final String RUNTIME_ROLE = "vedal_app";
     public static final String RUNTIME_PASSWORD = "vedal-app-test";
 
+    /**
+     * Образ базы: тот же PostgreSQL 16, что в стеке, плюс расширение pgvector.
+     *
+     * <p>Расширение — требование миграции V34 (хранилище векторов Ведалины):
+     * на голом {@code postgres:16} она падает с «extension "vector" is not
+     * available», то есть тесты не поднимаются вовсе.
+     *
+     * <p>{@code asCompatibleSubstituteFor} нужен потому, что Testcontainers
+     * узнаёт базу по имени образа: незнакомое имя он не свяжет с
+     * {@link PostgreSQLContainer} и не подставит ни драйвер, ни строку
+     * подключения. Здесь мы утверждаем то, что и есть на самом деле —
+     * это тот же postgres, собранный с ещё одной библиотекой.
+     */
     @ServiceConnection
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16");
+    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(
+            DockerImageName.parse("pgvector/pgvector:pg16")
+                    .asCompatibleSubstituteFor("postgres"));
 
     static {
         POSTGRES.start();

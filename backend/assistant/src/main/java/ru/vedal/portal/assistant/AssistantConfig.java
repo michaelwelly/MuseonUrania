@@ -2,11 +2,18 @@ package ru.vedal.portal.assistant;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.transaction.support.TransactionTemplate;
+import ru.vedal.portal.catalog.CatalogQuery;
 import ru.vedal.portal.common.RateLimit;
+import ru.vedal.portal.content.ContentQuery;
+import ru.vedal.portal.documents.DocumentQuery;
 import tools.jackson.databind.ObjectMapper;
 
 import java.net.URI;
@@ -48,6 +55,7 @@ public class AssistantConfig {
     @Primary
     LlmEngine llmEngine(
             DeterministicSearch search,
+            ObjectProvider<VectorSearch> vectors,
             ObjectMapper json,
             @Value("${vedal.assistant.engine:search}") String engine,
             @Value("${vedal.assistant.yandex.api-key:}") String apiKey,
@@ -101,10 +109,90 @@ public class AssistantConfig {
                             + "похоже, при копировании прихватилось лишнее.");
         }
 
+        // Векторный поиск подключается перед словесным, а не вместо него:
+        // пока корпуса документов нет, индекс пуст, и RagRetrieval честно
+        // передаёт слово прежнему поиску. Бина VectorSearch нет вовсе, пока
+        // не задан ключ эмбеддингов, — тогда retrieval остаётся прежним.
+        Retrieval retrieval = vectors.<Retrieval>stream()
+                .findFirst()
+                .map(vector -> {
+                    log.info("Ведалина ищет по индексу pgvector, "
+                            + "не нашлось — поиском по словам");
+                    return (Retrieval) new RagRetrieval(vector, search);
+                })
+                .orElse(search);
+
         log.info("Ведалина отвечает моделью {}", modelUri);
-        return new YandexGptEngine(search,
+        return new YandexGptEngine(retrieval,
                 new YandexGptHttp(URI.create(endpoint), json, apiKey, modelUri,
                         temperature, maxTokens, timeout),
                 fallback);
+    }
+
+    /**
+     * Модель эмбеддингов. Заводится только вместе с ключом.
+     *
+     * <p>Причина та же, по которой режим ассистента объявляется явно:
+     * половинчато настроенный RAG хуже выключенного. Нет ключа — нет бина
+     * {@link Embeddings}, нет {@link VectorSearch}, нет {@link KnowledgeIndex},
+     * и ассистент работает ровно как до pgvector. Есть ключ — работает всё,
+     * и пустой индекс этому не мешает.
+     *
+     * <p>Ключ тот же, что у YandexGPT: эмбеддинги живут в том же Foundation
+     * Models и оплачиваются тем же сервисным аккаунтом. Второй переменной
+     * под тот же ключ здесь нет — это был бы второй способ ошибиться.
+     */
+    @Bean
+    @ConditionalOnProperty(name = "vedal.assistant.rag.enabled", havingValue = "true")
+    Embeddings embeddings(
+            ObjectMapper json,
+            @Value("${vedal.assistant.yandex.api-key:}") String apiKey,
+            @Value("${vedal.assistant.rag.document-model-uri:}") String documentModelUri,
+            @Value("${vedal.assistant.rag.query-model-uri:}") String queryModelUri,
+            @Value("${vedal.assistant.rag.endpoint:" + YandexEmbeddings.CLOUD_URL + "}") String endpoint,
+            @Value("${vedal.assistant.rag.timeout:PT15S}") Duration timeout) {
+
+        if (apiKey.isBlank() || documentModelUri.isBlank() || queryModelUri.isBlank()) {
+            throw new IllegalStateException("""
+                    vedal.assistant.rag.enabled=true, но доступ к эмбеддингам не задан.
+                    Нужны VEDAL_YANDEXGPT_API_KEY и пара адресов моделей поиска: \
+                    VEDAL_RAG_DOCUMENT_MODEL_URI (emb://<каталог>/text-search-doc/latest) \
+                    и VEDAL_RAG_QUERY_MODEL_URI (emb://<каталог>/text-search-query/latest). \
+                    Модели именно две: документы и вопросы кодируются разными, \
+                    и векторы попадают в одно пространство ровно поэтому. \
+                    Чтобы работать без векторного поиска, поставьте \
+                    vedal.assistant.rag.enabled=false.""");
+        }
+
+        // Проверка схемы — та же, что у адреса модели генерации, и по той же
+        // причине: с чужой схемой дверь отвечает 404, и по коду это
+        // неотличимо от «нет такой модели».
+        for (var uri : new String[] {documentModelUri, queryModelUri}) {
+            if (!uri.startsWith("emb://")) {
+                throw new IllegalStateException(
+                        "Адрес модели эмбеддингов должен начинаться с emb:// и выглядеть как "
+                                + "emb://<идентификатор каталога>/text-search-doc/latest, "
+                                + "а задано: " + uri);
+            }
+        }
+
+        log.info("Индекс Ведалины считается моделью {}", documentModelUri);
+        return new YandexEmbeddings(URI.create(endpoint), json, apiKey,
+                documentModelUri, queryModelUri, timeout);
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "vedal.assistant.rag.enabled", havingValue = "true")
+    VectorSearch vectorSearch(JdbcClient jdbc, Embeddings embeddings,
+                              @Value("${vedal.assistant.rag.max-distance:0.45}") double maxDistance) {
+        return new VectorSearch(jdbc, embeddings, maxDistance);
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "vedal.assistant.rag.enabled", havingValue = "true")
+    KnowledgeIndex knowledgeIndex(JdbcClient jdbc, TransactionTemplate transactions,
+                                  Embeddings embeddings, CatalogQuery catalog,
+                                  ContentQuery content, DocumentQuery documents) {
+        return new KnowledgeIndex(jdbc, transactions, embeddings, catalog, content, documents);
     }
 }

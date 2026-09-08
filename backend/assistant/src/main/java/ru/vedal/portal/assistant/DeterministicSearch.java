@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 import ru.vedal.portal.catalog.CatalogQuery;
 import ru.vedal.portal.content.ContentQuery;
 import ru.vedal.portal.documents.DocumentQuery;
+import ru.vedal.portal.assistant.Retrieval.Passage;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,7 +20,7 @@ import java.util.stream.Collectors;
 // Неопубликованное изделие, черновик новости и confidential-документ сюда
 // физически не попадут ни в одной из областей.
 @Component
-public class DeterministicSearch implements LlmEngine {
+public class DeterministicSearch implements LlmEngine, Retrieval {
 
     private static final int MAX_SOURCES = 4;
 
@@ -82,8 +83,7 @@ public class DeterministicSearch implements LlmEngine {
         var found = find(question, scope);
         if (found.isEmpty()) return Optional.empty();
 
-        var sources = found.stream().map(Passage::source).toList();
-        return Optional.of(new Grounded(compose(sources), sources));
+        return Optional.of(Listing.of(found));
     }
 
     /**
@@ -105,6 +105,7 @@ public class DeterministicSearch implements LlmEngine {
      * Модель в этом случае не спрашивается вовсе; придумывать ей нечего,
      * а просить её сказать «не знаю» — лишний вызов за деньги.
      */
+    @Override
     public List<Passage> find(String question, Scope scope) {
         var tokens = tokens(question);
         if (tokens.isEmpty()) return List.of();
@@ -163,38 +164,12 @@ public class DeterministicSearch implements LlmEngine {
                 .toList();
     }
 
-    /**
-     * Найденный материал: ссылка на него и то, что о нём написано.
-     *
-     * @param source куда вести читателя — это и есть ссылка в ответе;
-     * @param text   опубликованный текст материала. Ровно он и попадает
-     *               в контекст модели: всё, чего здесь нет, для неё
-     *               не существует.
-     */
-    public record Passage(Source source, String text) {}
-
     private static String join(String... parts) {
         return Arrays.stream(parts)
                 .filter(part -> part != null && !part.isBlank())
                 .collect(Collectors.joining(". "));
     }
 
-    // Текст только перечисляет найденное и ведёт по ссылкам. Никаких выводов
-    // о пригодности изделия и никаких характеристик по памяти.
-    private static String compose(List<Source> sources) {
-        var products = sources.stream().filter(s -> s.kind().equals("product")).count();
-        var head = products > 0
-                ? "Вот что подходит по вашему запросу из каталога VEDAL:"
-                : "Вот что нашлось по вашему запросу:";
-
-        var body = new StringBuilder(head);
-        for (var s : sources) {
-            body.append("\n— ").append(s.title());
-        }
-        body.append("\n\nПодробности — на страницах по ссылкам. "
-                + "Подбор комплектации и коммерческие условия уточняет специалист.");
-        return body.toString();
-    }
 
     /**
      * Подпись документа в ответе ассистента.

@@ -88,11 +88,65 @@ the portal will not start without them — deliberately: otherwise it would
 quietly answer with a list of links, and the substitution would only be
 noticeable by the answers becoming drier.
 
-What comes next: pgvector and the pipeline from the spec (text extraction →
-chunks with metadata → embeddings). That changes the **search**, not the
-generation: `YandexGptEngine` receives materials through
-`DeterministicSearch.find`, so it can be swapped for a vector search without
-touching the prompt or the conversation.
+## Similarity search: pgvector
+
+The portal searches, the model phrases — two different jobs. The search now
+sits behind its own `Retrieval` port, with two implementations:
+
+| Implementation | How it searches |
+| --- | --- |
+| `DeterministicSearch` | by words in names and descriptions |
+| `VectorSearch` | by vector proximity in the pgvector index |
+
+Swapping the implementation touches neither the prompt, nor the numbering of
+sources, nor the conversation: `YandexGptEngine` receives a list of passages
+and does not ask where they came from.
+
+**An empty index is a working state, not a placeholder.** VEDAL has no
+document corpus yet ([issue #38](https://github.com/michaelwelly/MuseonUrania/issues/38)),
+and `RagRetrieval` is built as a handover rather than a replacement: nothing
+found in the index means the previous word search answers. That is why the
+vector search can be switched on before the corpus exists without the
+assistant falling silent.
+
+An empty index also costs nothing: before turning the question into a vector —
+which is a model call, that is, a bill — the portal asks the database whether
+there is anything to search at all.
+
+**The two result sets are not merged.** Distance and word-match weight are
+numbers from different scales; adding them requires an invented coefficient,
+and an invented coefficient is a ranking nobody has verified. Hybrid retrieval
+becomes meaningful work once there is a corpus to measure it on.
+
+**What is already there:**
+
+- the `knowledge_source` / `knowledge_chunk` schema and the `vector` extension
+  (migration `V34`); the database image is `pgvector/pgvector:pg16`;
+- chunking with overlap (`Chunks`);
+- the `Embeddings` port and its `YandexEmbeddings` implementation — the
+  `text-search-doc` / `text-search-query` pair, a vector of 256 numbers;
+- indexing with a checksum: unchanged material costs not a single model call
+  (`KnowledgeIndex`);
+- similarity search with a threshold and the `PUBLIC` / `STAFF` scopes
+  (`VectorSearch`);
+- reindexing of what the portal already shows — products, news and document
+  cards (`KnowledgeIndex.reindexPublished`).
+
+**What is missing and waits for the corpus:**
+
+- text extraction from PDF and DOCX. Parsing files is verified with files, and
+  inventing the contents of VEDAL datasheets for a test is forbidden by the
+  project rules;
+- a "reindex" button in the admin panel and an indexing status per document;
+- calibration of the `vedal.assistant.rag.max-distance` threshold — it can only
+  be measured against real documents and real questions;
+- a second indexing circuit for restricted material. Today only `public` goes
+  into the index; `confidential` never will — it does not even exist as a value
+  in the schema.
+
+It is switched on by `vedal.assistant.rag.enabled` together with the pair of
+embedding model addresses. A half-configured setup fails the startup with a
+readable message — for the same reason `engine=yandexgpt` without a key does.
 
 The scripted replies stay as the fast path for buttons: «Запросить КП» has a
 known answer and does not need a model call.
