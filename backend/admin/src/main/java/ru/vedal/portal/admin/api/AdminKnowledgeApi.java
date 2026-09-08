@@ -149,7 +149,14 @@ public class AdminKnowledgeApi {
         // Переиндексация стоит денег — каждый новый фрагмент это вызов
         // модели. След в журнале обязателен: иначе счёт за эмбеддинги
         // не с кем сопоставить.
-        audit.record(Actor.of(authentication), "assistant.reindex", "knowledge", "published",
+        //
+        // Своей транзакцией по той же причине, что и в AdminStaffApi:
+        // `record` объявлен MANDATORY, а обработчик не в транзакции —
+        // сборка индекса закрывает свои собственные и возвращается
+        // наружу ни в какой. Общая транзакция здесь и не нужна: индекс
+        // уже собран и оплачен, откатывать нечего, а потерянная запись
+        // означала бы неоплаченный счёт без хозяина (issue #95).
+        audit.recordIndependently(Actor.of(authentication), "assistant.reindex", "knowledge", "published",
                 Map.of("sources", stats.sources(), "chunks", stats.chunks()));
 
         return new State(true, stats.sources(), stats.chunks(), rows(knowledge));
