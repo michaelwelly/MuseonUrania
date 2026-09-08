@@ -334,7 +334,7 @@ configuration.
 | `EventPublisher` | log, Kafka or Debezium — via `vedal.events.publisher` | Managed Kafka |
 | `MailSender` | writes to the log | Yandex 360 SMTP |
 | `FileStorage` | local directory or S3 — via `vedal.storage.kind`; a directory in the stack by default, the real Object Storage once keys are set | Yandex Object Storage |
-| `LlmEngine` | deterministic word search | YandexGPT + pgvector |
+| `LlmEngine` | YandexGPT over the portal search: by words, and with `VEDAL_RAG_ENABLED=true` by proximity in pgvector | PDF indexing once the corpus arrives |
 
 ### Buckets are created by hand, once
 
@@ -518,6 +518,9 @@ quote_item        id, quote_id, position, product_slug, name, quantity,
 interaction       id, deal_id, client_id, lead_id, kind, direction, at,
                   subject, body, actor, created_at
 deal_document     deal_id, document_id, attached_by, attached_at
+knowledge_source  id, kind, external_id, title, url, visibility, language,
+                  checksum, indexed_at
+knowledge_chunk   id, source_id, position, text, model, embedding, created_at
 ```
 
 `language` and `campaign` on a lead are not decoration: without them two of the

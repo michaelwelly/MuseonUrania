@@ -315,7 +315,7 @@ ambient authority, на котором стоит межсайтовая под�
 | `EventPublisher` | лог, Kafka или Debezium — по `vedal.events.publisher` | Managed Kafka |
 | `MailSender` | запись в лог | SMTP Яндекс 360 |
 | `FileStorage` | локальный каталог или S3 — по `vedal.storage.kind`; в стеке по умолчанию каталог, с ключами — настоящий Object Storage | Yandex Object Storage |
-| `LlmEngine` | детерминированный поиск по словам | YandexGPT + pgvector |
+| `LlmEngine` | YandexGPT поверх поиска портала: по словам, а с `VEDAL_RAG_ENABLED=true` — по близости в pgvector | индексация PDF после корпуса |
 
 ### Бакеты заводятся руками, один раз
 
@@ -489,6 +489,9 @@ quote_item        id, quote_id, position, product_slug, name, quantity,
 interaction       id, deal_id, client_id, lead_id, kind, direction, at,
                   subject, body, actor, created_at
 deal_document     deal_id, document_id, attached_by, attached_at
+knowledge_source  id, kind, external_id, title, url, visibility, language,
+                  checksum, indexed_at
+knowledge_chunk   id, source_id, position, text, model, embedding, created_at
 ```
 
 `language` и `campaign` у заявки — не украшение: без них два из четырёх

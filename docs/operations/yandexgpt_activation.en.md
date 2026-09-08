@@ -41,9 +41,31 @@ The response must contain:
 - a non-empty `sources`;
 - no `handoff`, provided a published source was found.
 
+## Similarity search (pgvector)
+
+The schema, the indexing and the similarity search are already written and sit
+alongside — details in
+[vedalina_rag_pipeline.en.md](vedalina_rag_pipeline.en.md). They are switched on
+by a separate pair of variables, using the same key:
+
+```env
+VEDAL_RAG_ENABLED=true
+VEDAL_RAG_DOCUMENT_MODEL_URI=emb://<folder_id>/text-search-doc/latest
+VEDAL_RAG_QUERY_MODEL_URI=emb://<folder_id>/text-search-query/latest
+```
+
+It can be switched on before the corpus exists: an empty index finds nothing and
+the assistant answers with the previous word search. There is little point yet,
+which is why it is off by default.
+
 ## MVP limits
 
-This is not yet full RAG over PDFs. The model neither reads closed files nor
-indexes document chunks. Full RAG comes as the next layer: text extraction,
-`public/internal/confidential` classification, pgvector, indexing and access
-rights.
+This is not yet full RAG over PDFs: there is no text extraction from files, so
+only what the portal already shows reaches the index — products, news and
+document cards. The model does not read closed files: `confidential` material
+never enters the index, and that level does not even exist as a value in the
+schema.
+
+What remains for full RAG: text extraction from PDF and DOCX, an indexing queue
+triggered by document uploads, a reindex button in the admin area, and
+calibration of the proximity threshold against real documents.
