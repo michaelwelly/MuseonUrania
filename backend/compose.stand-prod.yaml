@@ -58,6 +58,19 @@ services:
       VEDAL_YANDEXGPT_MAX_TOKENS: ${VEDAL_YANDEXGPT_MAX_TOKENS:-600}
       VEDAL_YANDEXGPT_FALLBACK: ${VEDAL_YANDEXGPT_FALLBACK:-true}
 
+      # Поиск по близости (RAG, pgvector). Выключен, пока у VEDAL нет корпуса
+      # документов (issue #38): индексировать нечего, и каждый вопрос стоил бы
+      # вызова эмбеддингов ради заведомо пустой выдачи.
+      #
+      # Включённый RAG не заменяет поиск по словам, а встаёт перед ним, поэтому
+      # включать его можно и до корпуса: пустой индекс ничего не находит,
+      # и отвечает прежний поиск. Ключ — тот же VEDAL_YANDEXGPT_API_KEY,
+      # моделей две: документная и вопросная.
+      VEDAL_RAG_ENABLED: ${VEDAL_RAG_ENABLED:-false}
+      VEDAL_RAG_DOCUMENT_MODEL_URI: ${VEDAL_RAG_DOCUMENT_MODEL_URI:-}
+      VEDAL_RAG_QUERY_MODEL_URI: ${VEDAL_RAG_QUERY_MODEL_URI:-}
+      VEDAL_RAG_MAX_DISTANCE: ${VEDAL_RAG_MAX_DISTANCE:-0.45}
+
   # ————— вход сотрудников —————
   #
   # На машине 80 и 443 держит чужой боевой сайт, домена vedal-med.ru ещё

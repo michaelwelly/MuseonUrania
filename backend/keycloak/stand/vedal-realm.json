@@ -16,15 +16,31 @@
     "realm": [
       {
         "name": "portal-admin",
-        "description": "Всё без ограничений: содержимое сайта, закрытый контур продаж, журнал, справочник сотрудников и уничтожение персональных данных."
+        "description": "Всё без ограничений: содержимое сайта, закрытый контур продаж, журнал, справочник сотрудников и уничтожение персональных данных.",
+        "composite": true,
+        "composites": {
+          "realm": [
+            "portal-mfa-required"
+          ]
+        }
       },
       {
         "name": "portal-sales",
-        "description": "Закрытый контур продаж: заявки, клиенты, сделки, КП, разговоры и аналитика. Содержимое сайта не правит."
+        "description": "Закрытый контур продаж: заявки, клиенты, сделки, КП, разговоры и аналитика. Содержимое сайта не правит.",
+        "composite": true,
+        "composites": {
+          "realm": [
+            "portal-mfa-required"
+          ]
+        }
       },
       {
         "name": "portal-production",
         "description": "Содержимое сайта: продукция, категории, новости, документы и снимки. Клиентскую базу не видит."
+      },
+      {
+        "name": "portal-mfa-required",
+        "description": "Признак «есть доступ к персональным данным — нужен второй фактор». Прав не даёт: её носителя поток vedal-browser заставляет предъявить TOTP. Выдаётся не человеку, а роли — portal-admin и portal-sales включают её композитом."
       }
     ]
   },
@@ -37,7 +53,7 @@
       "publicClient": true,
       "standardFlowEnabled": true,
       "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": true,
+      "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false,
       "redirectUris": [
         "http://51.250.31.97:18080/*",
@@ -122,7 +138,7 @@
       "name": "Configure OTP",
       "providerId": "CONFIGURE_TOTP",
       "enabled": true,
-      "defaultAction": true,
+      "defaultAction": false,
       "priority": 10,
       "config": {}
     },
@@ -216,5 +232,159 @@
       "priority": 1000,
       "config": {}
     }
-  ]
+  ],
+  "authenticationFlows": [
+    {
+      "alias": "vedal-browser",
+      "description": "Вход в браузере. Отличается от встроенного browser ровно одним: условие второго фактора — не «пользователь уже настроил TOTP», а «у пользователя есть роль portal-mfa-required».",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-cookie",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "auth-spnego",
+          "authenticatorFlow": false,
+          "requirement": "DISABLED",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "identity-provider-redirector",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 25,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "ALTERNATIVE",
+          "priority": 26,
+          "autheticatorFlow": true,
+          "flowAlias": "vedal-browser Organization",
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "ALTERNATIVE",
+          "priority": 30,
+          "autheticatorFlow": true,
+          "flowAlias": "vedal-browser forms",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "vedal-browser forms",
+      "description": "Формы входа: пароль, затем второй фактор, если он положен по роли.",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-username-password-form",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "CONDITIONAL",
+          "priority": 20,
+          "autheticatorFlow": true,
+          "flowAlias": "vedal-browser Browser - Conditional OTP",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "vedal-browser Browser - Conditional OTP",
+      "description": "Второй фактор обязателен тому, у кого есть роль portal-mfa-required. Форма OTP стоит REQUIRED: у кого приложение ещё не привязано, тот получит экран привязки, а не пропуск шага.",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticatorConfig": "vedal-mfa-role",
+          "authenticator": "conditional-user-role",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "auth-otp-form",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "vedal-browser Organization",
+      "description": "Ветка организаций встроенного потока. Оставлена как есть: организации не включены, ветка не срабатывает, а расхождение со встроенным потоком дороже неиспользуемой ветки.",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticatorFlow": true,
+          "requirement": "CONDITIONAL",
+          "priority": 10,
+          "autheticatorFlow": true,
+          "flowAlias": "vedal-browser Browser - Conditional Organization",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "vedal-browser Browser - Conditional Organization",
+      "description": "Ветка организаций встроенного потока.",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-user-configured",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "organization",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        }
+      ]
+    }
+  ],
+  "authenticatorConfig": [
+    {
+      "alias": "vedal-mfa-role",
+      "config": {
+        "condUserRole": "portal-mfa-required",
+        "negate": "false"
+      }
+    }
+  ],
+  "browserFlow": "vedal-browser"
 }
