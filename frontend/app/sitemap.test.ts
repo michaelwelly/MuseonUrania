@@ -90,6 +90,41 @@ describe("карта сайта", () => {
     expect(urls).not.toContain("https://vedal-med.ru/news//");
   });
 
+  it("называет все три языковые версии каждой страницы", async () => {
+    process.env.NEXT_PUBLIC_SITE_URL = "https://vedal-med.ru";
+    const sitemap = (await import("./sitemap")).default;
+
+    const urls = (await sitemap()).map((e) => e.url);
+
+    expect(urls).toContain("https://vedal-med.ru/en/products/");
+    expect(urls).toContain("https://vedal-med.ru/zh/products/");
+    // Карточки изделий и новостей тоже: они существуют на всех трёх языках.
+    expect(urls).toContain("https://vedal-med.ru/en/products/vedal-r1/");
+    expect(urls).toContain("https://vedal-med.ru/zh/news/innoprom-2026/");
+    // Русская версия остаётся без префикса — `/ru/` не существует.
+    expect(urls).not.toContain("https://vedal-med.ru/ru/products/");
+  });
+
+  // Без hreflang три адреса с одинаковым смыслом читаются как дубли,
+  // и переведённые версии выпадают из выдачи.
+  it("у каждой записи стоят ссылки на остальные языки", async () => {
+    process.env.NEXT_PUBLIC_SITE_URL = "https://vedal-med.ru";
+    const sitemap = (await import("./sitemap")).default;
+
+    const entries = await sitemap();
+    for (const entry of entries) {
+      expect(entry.alternates?.languages, entry.url).toBeDefined();
+    }
+
+    const home = entries.find((e) => e.url === "https://vedal-med.ru/en/");
+    expect(home?.alternates?.languages).toEqual({
+      ru: "https://vedal-med.ru/",
+      en: "https://vedal-med.ru/en/",
+      "zh-Hans": "https://vedal-med.ru/zh/",
+      "x-default": "https://vedal-med.ru/",
+    });
+  });
+
   // Портал недоступен на сборке — карта обязана остаться: девять страниц
   // без каталога лучше, чем пустой файл, который читается как «сайта нет».
   it("переживает отказ портала и оставляет статические страницы", async () => {

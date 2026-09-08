@@ -39,19 +39,25 @@ export const siteSeo = {
 };
 
 // CTA шапки по макету заказчика. В hero остаётся «Запросить КП».
-export const headerCta = { label: "Связаться с нами", href: "/contacts/" };
+// Подпись живёт в content/ui.ts (`header.cta`): она переводится вместе
+// с остальным интерфейсом, а адрес одинаков на всех языках.
+export const headerCta = { href: "/contacts/" };
 
 // Семь пунктов редизайна. «Разработка и технологии» удалён вместе с разделом —
 // прямое требование заказчика из хендоффа.
+//
+// Здесь состав и порядок — решение заказчика. Подписи здесь не лежат:
+// они в `content/ui.ts` под теми же ключами и переводятся на три языка.
+// Адрес — без языкового префикса, префикс дописывает `localePath`.
 export const nav = [
-  { label: "О компании", href: "/about/" },
-  { label: "Продукция", href: "/products/" },
-  { label: "Сервис", href: "/service/" },
-  { label: "Производство", href: "/production/" },
-  { label: "Документы", href: "/documents/" },
-  { label: "Новости", href: "/news/" },
-  { label: "Контакты", href: "/contacts/" },
-];
+  { key: "about", href: "/about/" },
+  { key: "products", href: "/products/" },
+  { key: "service", href: "/service/" },
+  { key: "production", href: "/production/" },
+  { key: "documents", href: "/documents/" },
+  { key: "news", href: "/news/" },
+  { key: "contacts", href: "/contacts/" },
+] as const;
 
 // Верхняя утилитарная полоса шапки
 export const topbar = {
@@ -69,13 +75,13 @@ export const footer = {
     "Производим оборудование для неонатологии, реанимации, анестезиологии и интенсивной терапии. Разработка, сборка и сервис — внутри одной компании.",
   columns: [
     {
-      title: "Компания",
+      key: "company",
       links: [
-        { label: "О компании", href: "/about/" },
-        { label: "Производство", href: "/production/" },
-        { label: "Документы и лицензии", href: "/documents/" },
-        { label: "Новости", href: "/news/" },
-        { label: "Контакты", href: "/contacts/" },
+        { key: "about", href: "/about/" },
+        { key: "production", href: "/production/" },
+        { key: "documentsLicences", href: "/documents/" },
+        { key: "news", href: "/news/" },
+        { key: "contacts", href: "/contacts/" },
       ],
     },
     // «Анестезиология» и «Мониторинг» убраны 19 августа: после сокращения
@@ -95,13 +101,13 @@ export const footer = {
     // изделие. Вопрос о судьбе самих направлений задан НН (пункт 10
     // в рабочем реестре материалов заказчика).
     {
-      title: "Оборудование",
+      key: "equipment",
       links: [
-        { label: "Неонатология", href: "/products/" },
-        { label: "Сервис и поддержка", href: "/service/" },
+        { key: "neonatology", href: "/products/" },
+        { key: "serviceSupport", href: "/service/" },
       ],
     },
-  ],
+  ] as const,
   // Ссылки на аккаунты заказчик не передавал. Раньше кнопки-«пилюли»
   // оставались на экране в неактивном виде; по итогам просмотра стенда
   // заказчиком 8 сентября (GitHub issue #69) решение другое — до передачи

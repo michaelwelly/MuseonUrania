@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import VedalinaWidget from "@/components/VedalinaWidget";
-import CookieNotice from "@/components/CookieNotice";
-import Analytics from "@/components/Analytics";
-import ImageGuard from "@/components/ImageGuard";
-import LogoPreloader from "@/components/LogoPreloader";
-import Motion from "@/components/Motion";
-import { siteSeo } from "@/content/site";
+import SiteShell from "@/components/SiteShell";
+import { ui } from "@/content/ui";
+import { DEFAULT_LANG } from "@/lib/i18n";
 import { siteUrl } from "@/lib/seo";
-import { fontVariables } from "../fonts";
 import "../globals.css";
 import "../motion.css";
+
+// Русская версия сайта: корень без языкового префикса.
+//
+// Русский ведущий (правило 3 в CLAUDE.md) и потому стоит в корне: адреса
+// `/products/`, `/about/` уже разошлись по письмам и презентациям, и переезд
+// на `/ru/` сделал бы редирект из каждой такой ссылки. Английская и
+// китайская версии живут в `app/(intl)/[lang]` со своим корневым layout'ом —
+// почему так, написано в `components/SiteShell.tsx`.
 
 // Метаданные слоя: только то, что общее для всех страниц. Заголовок
 // и описание здесь запасные — свои есть у каждой страницы, включая главную.
@@ -20,32 +21,10 @@ export const metadata: Metadata = {
   // относительными, а мессенджер и поисковик разбирают такой адрес каждый
   // по-своему — обычно относительно собственного домена.
   ...(siteUrl ? { metadataBase: new URL(siteUrl) } : {}),
-  title: siteSeo.title,
-  description: siteSeo.description,
+  title: ui(DEFAULT_LANG).meta.siteTitle,
+  description: ui(DEFAULT_LANG).meta.siteDescription,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
-  return (
-    // Та же причина, что и в админке: расширения браузера дописывают свои
-    // атрибуты в <html> и <body> раньше, чем отрисуется React. Подавление
-    // действует только на атрибуты этих узлов и не распространяется на детей —
-    // расхождение внутри страницы отловится как обычно.
-    <html lang="ru" className={fontVariables} suppressHydrationWarning>
-      <body suppressHydrationWarning>
-        <LogoPreloader />
-        <Motion />
-        <div className="frame">
-          <Header />
-          {children}
-        </div>
-        <Footer />
-        {/* Плавающий чат — на всех страницах */}
-        <VedalinaWidget />
-        <CookieNotice />
-        {/* Счётчик Метрики: молчит, пока не задан номер и не дано согласие. */}
-        <Analytics />
-        <ImageGuard />
-      </body>
-    </html>
-  );
+  return <SiteShell lang={DEFAULT_LANG}>{children}</SiteShell>;
 }

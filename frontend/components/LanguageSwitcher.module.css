@@ -1,0 +1,57 @@
+/* Переключатель языка в шапке. Три коротких ярлыка через тонкие
+   разделители — не выпадающий список: языков три, и список ради трёх
+   пунктов прячет их за лишним нажатием. */
+
+.switcher {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: 2px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.item {
+  padding: 4px 7px;
+  color: var(--text-2);
+  border-radius: 4px;
+  white-space: nowrap;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.item + .item {
+  /* Разделитель рисуется рамкой соседа, а не отдельным узлом: лишний
+     span между ссылками читается скринридером как пустой пункт. */
+  border-left: 1px solid var(--line);
+  border-radius: 0 4px 4px 0;
+}
+
+.item:hover {
+  color: var(--green-dark);
+  background: var(--surface-soft, rgba(0, 0, 0, 0.04));
+}
+
+.item:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+/* Выбранный язык не ссылка по смыслу, но остаётся ссылкой по разметке:
+   нажатие на него перезагружает ту же страницу и — важное — записывает
+   выбор. Человек, у которого сработало автоопределение, именно так
+   возвращается на русский насовсем. */
+.active {
+  color: var(--ink);
+  background: var(--surface-soft, rgba(0, 0, 0, 0.06));
+}
+
+@media (max-width: 1100px) {
+  .switcher {
+    font-size: 12px;
+  }
+
+  .item {
+    padding: 4px 5px;
+  }
+}

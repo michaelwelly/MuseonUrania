@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { alternateLanguages, DEFAULT_LANG, localePath, ogLocale, type Lang } from "@/lib/i18n";
+
 // Метаданные для поисковиков и мессенджеров.
 //
 // Зачем это отдельным модулем, а не полем в каждой странице. Canonical и
@@ -53,15 +55,31 @@ const defaultImage = { url: "/brand/vedal-tree.png", width: 512, height: 512, al
 type PageSeo = {
   title: string;
   description: string;
-  /** Путь со слэшем на конце: в next.config стоит trailingSlash, и адрес без него отдаёт 308. */
+  /**
+   * Путь БЕЗ языкового префикса и со слэшем на конце: `/products/`.
+   *
+   * В next.config стоит trailingSlash, и адрес без слеша отдаёт 308.
+   * Префикс языка дописывает `localePath` — здесь и в ссылках: страница
+   * знает свой раздел, а язык приходит сверху, из маршрута.
+   */
   path: string;
+  /** Язык страницы. По умолчанию русский — он в корне и без префикса. */
+  lang?: Lang;
   /** Своя картинка страницы — снимок изделия или новости. */
   image?: { url: string; alt: string };
   type?: "website" | "article";
   publishedTime?: string;
 };
 
-export function pageMetadata({ title, description, path, image, type = "website", publishedTime }: PageSeo): Metadata {
+export function pageMetadata({
+  title,
+  description,
+  path,
+  lang = DEFAULT_LANG,
+  image,
+  type = "website",
+  publishedTime,
+}: PageSeo): Metadata {
   const picture = image ? [{ url: image.url, alt: image.alt }] : [defaultImage];
   return {
     title,
@@ -69,14 +87,22 @@ export function pageMetadata({ title, description, path, image, type = "website"
     // Сайт доступен по нескольким адресам сразу: локально, по адресу стенда
     // и, позже, по домену. Без canonical это для поисковика три разных сайта
     // с одинаковым содержимым.
-    alternates: { canonical: path },
+    //
+    // `languages` — это hreflang. Он говорит поисковику, что три адреса
+    // с одинаковым смыслом не дубли, а версии одной страницы на разных
+    // языках, и какую кому показывать. Без него английская версия либо
+    // соперничает с русской за ту же выдачу, либо выпадает из неё как копия.
+    alternates: {
+      canonical: localePath(lang, path),
+      languages: alternateLanguages(path),
+    },
     openGraph: {
       type,
       title,
       description,
-      url: path,
+      url: localePath(lang, path),
       siteName: "VEDAL",
-      locale: "ru_RU",
+      locale: ogLocale[lang],
       images: picture,
       ...(publishedTime ? { publishedTime } : {}),
     },

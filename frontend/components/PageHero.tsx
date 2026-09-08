@@ -12,11 +12,23 @@ type Props = {
   crumbs: Crumb[];
   title: string;
   lead?: string;
+  /**
+   * Язык заголовка и лида, если он не совпадает с языком страницы.
+   *
+   * Заголовок раздела — содержательный текст, и на переведённых версиях он
+   * показывается русским оригиналом, пока перевод не согласован. Помечать его
+   * обязан тот, кто знает про откат, — экран: `c.mark(hero.title, hero.lead)`.
+   * Без пометки браузер, скринридер и встроенный переводчик считают русский
+   * заголовок английским.
+   *
+   * Крошки этой пометкой не задеты: они интерфейс и переведены всегда.
+   */
+  textLang?: "ru";
   /** Произвольный блок справа — например кнопка на экране «Документы». */
   aside?: React.ReactNode;
 };
 
-export default function PageHero({ crumbs, title, lead, aside }: Props) {
+export default function PageHero({ crumbs, title, lead, textLang, aside }: Props) {
   return (
     <section className={`${styles.hero} patternHost`}>
       <LivePattern />
@@ -31,11 +43,11 @@ export default function PageHero({ crumbs, title, lead, aside }: Props) {
         </p>
         {/* Первый экран проявляется по словам, а не блоком: data-words —
             шаг между словами, data-wdelay — старт. */}
-        <h1 className={styles.title} data-words="34" data-wdelay="110">
+        <h1 className={styles.title} data-words="34" data-wdelay="110" lang={textLang}>
           {title}
         </h1>
         {lead && (
-          <p className={styles.lead} data-words="13" data-wdelay="400">
+          <p className={styles.lead} data-words="13" data-wdelay="400" lang={textLang}>
             {lead}
           </p>
         )}

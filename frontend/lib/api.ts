@@ -59,6 +59,15 @@ export type Doc = {
   title: string;
   group: string;
   product: string;
+  /**
+   * Адрес изделия, к которому привязан документ. null — документ не про
+   * конкретное изделие (лицензия компании, каталог, декларация на всё).
+   *
+   * Поле нужно карточке изделия: только по нему она понимает, какие строки
+   * перечня относятся к ней. Разбирать `product` — человекочитаемый предмет
+   * вроде «VEDAL R1, R2» — значит угадывать, а угадывать про документы нельзя.
+   */
+  productSlug: string | null;
   access: string;
   published: boolean;
   file?: string;
@@ -294,7 +303,9 @@ type ApiDoc = {
 // Бэкенд хранит код доступа, сайт показывает подпись. Перевод здесь:
 // подпись — это интерфейс, её меняют без миграции.
 const ACCESS_LABEL: Record<string, string> = {
-  pdf: "PDF",
+  // «Файл», а не «PDF»: тип файла перечень не отдаёт, и обещать формат
+  // сайт не вправе. Подписи заведены в content/documents.ts (тип Access).
+  pdf: "Файл",
   on_request: "По запросу",
   pending: "Уточняется",
 };
@@ -306,6 +317,16 @@ export async function fetchDocuments(): Promise<Doc[]> {
       title: d.title,
       group: d.group,
       product: d.product,
+      // Привязки к изделию в запасном перечне нет и не заводится: массив
+      // в content/documents.ts — замороженный слепок миграции V11, а база
+      // с тех пор ушла вперёд (V24, V27 — там же и переезд product_slug
+      // с «vedal-r1-r2» на «vedal-r1»). Проставить связь здесь значило бы
+      // держать вторую, расходящуюся версию перечня.
+      //
+      // Следствие: в режиме вёрстки без бэкенда вкладка «Документы»
+      // на карточке изделия показывает пустое состояние. Это честно —
+      // документов у фронтенда в этом режиме действительно нет.
+      productSlug: null,
       access: d.access,
       published: d.published,
       file: d.file,
@@ -318,6 +339,7 @@ export async function fetchDocuments(): Promise<Doc[]> {
     title: c.title,
     group: c.group,
     product: c.subject,
+    productSlug: c.productSlug,
     access: ACCESS_LABEL[c.access] ?? c.access,
     published: c.published,
     // Ссылку на файл строит бэкенд и только у опубликованных: собирать её

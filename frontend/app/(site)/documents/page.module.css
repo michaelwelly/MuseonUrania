@@ -122,8 +122,29 @@
   background: var(--soft);
 }
 
+/* Первая колонка держит две строки: название и то, что произойдёт
+   по нажатию. Обёртка нужна, чтобы сетка строки осталась четырёхколоночной —
+   два соседних span заняли бы две колонки и сдвинули раздел с изделием. */
+.cell {
+  min-width: 0;
+}
+
 .docTitle {
+  display: block;
   font-weight: 500;
+}
+
+.action {
+  display: block;
+  margin-top: 3px;
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.row:hover .action {
+  color: var(--green-dark);
 }
 
 .dim {
