@@ -980,6 +980,19 @@ The wire between the halves exists:
   version, `VedalinaChat` asks the assistant;
 - the admin UI edits content through the Admin API under a Keycloak token.
 
+The lead form stands in three places, and it is one form rather than three:
+a short one in the hero of the home page, the full one with a topic selector
+on `/contacts/`, and the full one with the product pinned on the product card
+(`/products/<slug>/#quote`). On the card the product is filled in and not
+asked for: the visitor chose it by reaching the page, and choosing the same
+thing a second time is a choice that can be made wrong. The slug travels as
+`productSlug`, so the manager sees in the admin UI and in the email which
+product the lead is about.
+
+The `Запросить КП` button on the card used to lead to `/contacts/`, where the
+visitor looked for the form again, picked the topic again and had to recall
+the product again.
+
 The frontend has two API addresses, and that is not duplication: the catalog is
 read at build time from inside the container (`VEDAL_API_INTERNAL_URL`), while
 forms and the admin UI are called from the browser (`NEXT_PUBLIC_API_URL`). One
