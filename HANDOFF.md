@@ -34,10 +34,8 @@
 
 ## Презентация
 
-Последняя версия:
-
-- `outputs/vedal_frontend_design_pipeline_v3_urania_visuals.pptx`
-- `outputs/vedal_frontend_design_pipeline_v3_urania_visuals.pdf`
+Презентации и клиентские артефакты хранятся вне публичного репозитория в
+официальном пакете проекта.
 
 ## Рамки первого релиза
 

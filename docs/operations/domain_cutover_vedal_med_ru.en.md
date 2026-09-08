@@ -7,11 +7,9 @@
 This document closes the third part of item §1.5 of the customer plan dated
 18 August 2026 — access to `vedal-med.ru` — and turns §13.3 into a procedure.
 
-The target host map is already described in
-[outputs/server/vedal_vm_deploy_plan_2026-08-18.md](../../outputs/server/vedal_vm_deploy_plan_2026-08-18.md)
-(section 2) and is not repeated here: that document answers "where should the
-domain point", this one answers "how do we move it there, and how do we move it
-back".
+The target host map is stored outside the public repository in the official
+project package. This document explains how to move the domain and how to roll
+back without publishing closed-service addresses or credentials.
 
 The first two thirds of §1.5 live in
 [docs/strategy/content_protection_requirements.en.md](../strategy/content_protection_requirements.en.md).
@@ -99,9 +97,8 @@ switch rather than next to it.
 
 §13.4 of the plan requires a separate registry: domain variants and defensive
 spellings, a single handle across social networks and messengers, plus owner,
-administrator, recovery mail and 2FA per account. The registry is kept outside
-the repository — the handover procedure is described in
-[docs/operations/credentials_handover.en.md](credentials_handover.en.md).
+administrator, recovery mail and 2FA per account. The registry is kept and
+handed over outside the public repository.
 
 The site footer links only to confirmed official channels (§13.5). It currently
 shows `awaiting clarification`, which is the correct state until confirmation
@@ -109,7 +106,6 @@ arrives, not an omission.
 
 ## Related documents
 
-- [VM deploy plan](../../outputs/server/vedal_vm_deploy_plan_2026-08-18.md) —
-  host map, placement, SSH.
 - [Content protection requirements](../strategy/content_protection_requirements.en.md).
-- [Credentials handover](credentials_handover.en.md).
+- The host map and credentials handover act are part of the official project
+  package outside public git.

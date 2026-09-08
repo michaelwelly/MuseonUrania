@@ -109,6 +109,6 @@ which switching branches by hand on the machine does not.
 
 ## Related documents
 
-- [VM deploy plan](../../outputs/server/vedal_vm_deploy_plan_2026-08-18.md) —
-  host map, placement, SSH.
 - [vedal-med.ru domain cutover](domain_cutover_vedal_med_ru.en.md).
+- The detailed host map, SSH settings and credentials are stored outside the
+  public repository in the official project package.

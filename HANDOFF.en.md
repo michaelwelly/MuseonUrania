@@ -34,10 +34,8 @@ Recommended MVP avatar:
 
 ## Presentation
 
-Latest deck:
-
-- `outputs/vedal_frontend_design_pipeline_v3_urania_visuals.pptx`
-- `outputs/vedal_frontend_design_pipeline_v3_urania_visuals.pdf`
+Presentations and customer-facing artifacts are stored outside the public
+repository in the official project package.
 
 ## Current Scope
 

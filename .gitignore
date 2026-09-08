@@ -24,32 +24,18 @@ node_modules/
 .next/
 coverage/
 
-# Presentation generator diagnostics and superseded drafts
-outputs/*.inspect.ndjson
-outputs/*_v0.*
-outputs/*_v1_*
-outputs/*_v2_*
 tmp/
 output/
 work/
-outputs/**/tmp*/
-outputs/**/rendered_*/
-outputs/**/owner_deck_tmp/
-outputs/**/tmp_edit/
-outputs/**/*.inspect.ndjson
-outputs/contracts/
-outputs/email/
-outputs/logo_extract/
-outputs/server/enable_c3ag_https.py
-outputs/server/fix_c3ag_nginx.py
-outputs/server/prepare_c3ag_acme.py
-outputs/server/renew_c3ag_cert.sh
-outputs/vedal_architecture/MW-2026-08-04-1415*
-outputs/vedal_architecture/VEDAL_owner_closed_contour_and_CRM_v1*
-outputs/vedal_architecture/vedal-open-closed-contour*
-outputs/vedal_architecture/vedal-site-crm-contours-normal-package*
-outputs/vedal_architecture/vedal_owner_presentation_structure.md
-outputs/vedal_architecture/v2_update/vedal_portal_architecture_and_stages_v2_source.pptx
+
+# Private/customer artifacts kept outside the public portfolio repository.
+outputs/
+docs/commercial/
+docs/communications/
+docs/requests/
+docs/products/*.pdf
+docs/operations/credentials_handover*.md
+prototypes/urania-web-interface.html
 docs/legal/compliance_requirements_ru.md
 
 # IDE
@@ -66,9 +52,3 @@ next-env.d.ts
 
 # Временные файлы Office, живут пока документ открыт
 ~$*
-
-# Сборка страницы с вариантами типографики. Шаблон и скрипт в репозитории,
-# результат весит мегабайт вшитыми шрифтами и пересобирается за секунду:
-#   node outputs/typography_variants/build.mjs
-outputs/typography_variants/typography_variants.html
-outputs/typography_variants/Onest.ttf

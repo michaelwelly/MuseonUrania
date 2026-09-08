@@ -251,7 +251,7 @@ const collection = {
     { key: "gateway", value: "http://localhost:8080", type: "string" },
     { key: "keycloak", value: "http://localhost:8180", type: "string" },
     { key: "username", value: "editor", type: "string" },
-    { key: "password", value: "editor-local", type: "string" },
+    { key: "password", value: "", type: "string" },
     { key: "token", value: "", type: "string" },
     { key: "tokenExpiresAt", value: "0", type: "string" },
     { key: "slug", value: "vedal-r1-r2", type: "string" },
