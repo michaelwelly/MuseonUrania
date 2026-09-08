@@ -2489,6 +2489,7 @@ th.tight input[type="checkbox"] {
 .widget__panel {
   width: min(392px, calc(100vw - 80px));
   max-height: min(560px, calc(100vh - 200px));
+  /* см. .widget__panel--talk ниже: с открытым разговором панель шире */
   display: flex;
   flex-direction: column;
   background: var(--surface);
@@ -2556,6 +2557,50 @@ th.tight input[type="checkbox"] {
 
 .widget__list {
   overflow-y: auto;
+}
+
+/* Открытый разговор шире и выше очереди: в ленте читают переписку и пишут
+   ответ, а не выбирают из пяти строк. Уже — и каждая реплика ломается
+   на четыре строки, ниже — и поле ответа выталкивает переписку за край. */
+.widget__panel--talk {
+  width: min(560px, calc(100vw - 80px));
+  max-height: min(660px, calc(100vh - 140px));
+}
+
+/* Лента внутри панели прокручивается сама: прокручивать всю панель значит
+   уводить из виду поле ответа, ради которого разговор и открыли. */
+.widget__talk {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--s4);
+  gap: var(--s3);
+}
+
+/* Внутри панели лента живёт в своей высоте, а не в высоте раздела, где
+   она занимает колонку целиком. */
+.widget__talk .thread {
+  max-height: none;
+  flex: 1;
+  min-height: 0;
+}
+
+.widget__back {
+  flex: 1;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--t-small);
+  font-weight: 600;
+  color: var(--green-dark);
+  text-align: left;
+  cursor: pointer;
+}
+
+.widget__back:hover {
+  text-decoration: underline;
 }
 
 .widget__row {

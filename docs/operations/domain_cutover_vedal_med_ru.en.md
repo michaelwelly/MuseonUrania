@@ -7,11 +7,9 @@
 This document closes the third part of item §1.5 of the customer plan dated
 18 August 2026 — access to `vedal-med.ru` — and turns §13.3 into a procedure.
 
-The target host map is already described in
-[outputs/server/vedal_vm_deploy_plan_2026-08-18.md](../../outputs/server/vedal_vm_deploy_plan_2026-08-18.md)
-(section 2) and is not repeated here: that document answers "where should the
-domain point", this one answers "how do we move it there, and how do we move it
-back".
+The target host map is stored outside the public repository in the official
+project package. This document explains how to move the domain and how to roll
+back without publishing closed-service addresses or credentials.
 
 The first two thirds of §1.5 live in
 [docs/strategy/content_protection_requirements.en.md](../strategy/content_protection_requirements.en.md).
@@ -21,15 +19,49 @@ The first two thirds of §1.5 live in
 The cutover does not start until all three rows are closed. This is not
 paperwork: each one alone makes rollback impossible.
 
-| What | From whom | Why |
-| --- | --- | --- |
-| Access to the `vedal-med.ru` DNS registrar | customer, §13.1 | without it the zone cannot be edited |
-| Who administers the current site and hosting | customer, §13.2 | otherwise nobody can restore the old records |
-| Access to the current site | customer, §13.3 | rollback is impossible without it |
+| What | From whom | Why | State on 8 September |
+| --- | --- | --- | --- |
+| Access to the `vedal-med.ru` DNS registrar | customer, §13.1 | without it the zone cannot be edited | missing |
+| Who administers the current site and hosting | customer, §13.2 | otherwise nobody can restore the old records | missing |
+| Access to the current site | customer, §13.3 | rollback is impossible without it | received 8 September |
 
 Until access exists, the stand is shown by IP — which is what we do today. The
 one other acceptable option before the cutover is a technical subdomain, if DNS
 allows it. The production domain stays untouched meanwhile.
+
+## What the zone shows from outside on 8 September 2026
+
+This is a snapshot of public records taken with ordinary DNS queries, not an
+export from the control panel: we have no access to the panel, and it cannot
+forge this snapshot.
+
+| Record | Value | What follows |
+| --- | --- | --- |
+| NS | `nic.ru` name servers | the zone sits at the registrar, edited in its panel |
+| A `vedal-med.ru` | our VM's address | the domain already points at the stand machine |
+| MX | `mail.vedal-med.ru` | the domain's mail lives **not** on the VM, on a separate host |
+| TXT SPF | `v=spf1 mx -all` | only the MX host may send on the domain's behalf |
+| TXT DKIM | `dkim` selector, 2048-bit | the mail server signs the message itself |
+| TXT DMARC | `v=DMARC1; p=none` | an observe-only policy that rejects nothing |
+
+The A row carries the important part, and it deserves to be said plainly:
+**step 3 of this document has already been half-done by someone else** — DNS
+was pointed at the VM before a proxy for that name existed on it. The
+"proxy first, DNS second" order described below was broken, and not by us.
+
+So exactly one thing is needed before the cutover window: find out on the
+machine itself what currently answers on 80/443 for the name `vedal-med.ru` —
+the `c3ag` proxy, a separate virtual host with the customer's current site, or
+nothing at all. The answer decides what step 3 actually is: a cutover, or the
+replacement of an already-working host, which has a different rollback and a
+different window.
+
+The check runs from the VM itself (from outside, the channel to it is unstable
+and a timeout misleads — see [demo_script.en.md](demo_script.en.md)):
+
+```bash
+curl -sI -H 'Host: vedal-med.ru' http://127.0.0.1/ | head -5
+```
 
 ## The constraint that must not be forgotten
 
@@ -99,9 +131,8 @@ switch rather than next to it.
 
 §13.4 of the plan requires a separate registry: domain variants and defensive
 spellings, a single handle across social networks and messengers, plus owner,
-administrator, recovery mail and 2FA per account. The registry is kept outside
-the repository — the handover procedure is described in
-[docs/operations/credentials_handover.en.md](credentials_handover.en.md).
+administrator, recovery mail and 2FA per account. The registry is kept and
+handed over outside the public repository.
 
 The site footer links only to confirmed official channels (§13.5). It currently
 shows `awaiting clarification`, which is the correct state until confirmation
@@ -109,7 +140,6 @@ arrives, not an omission.
 
 ## Related documents
 
-- [VM deploy plan](../../outputs/server/vedal_vm_deploy_plan_2026-08-18.md) —
-  host map, placement, SSH.
 - [Content protection requirements](../strategy/content_protection_requirements.en.md).
-- [Credentials handover](credentials_handover.en.md).
+- The host map and credentials handover act are part of the official project
+  package outside public git.

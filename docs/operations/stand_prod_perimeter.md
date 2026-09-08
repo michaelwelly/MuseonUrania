@@ -1,5 +1,7 @@
 # VEDAL stand-prod: периметр и точки входа
 
+**Русский** · [English](stand_prod_perimeter.en.md)
+
 Дата фиксации: 2026-08-27.
 
 Стенд живёт на общей ВМ `smart_soultion_mvp` с публичным IP `51.250.31.97`.

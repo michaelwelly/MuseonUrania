@@ -39,12 +39,21 @@ class RateLimitTest {
     }
 
     @Test
-    void forgetPrunesEntriesOutsideTheWindowButKeepsFreshOnes() {
-        // Окно длиной в ничто: первый же вызов allow() успевает устареть
-        // немедленно — тест не ждёт реальное время, а сводит окно к нулю.
-        var limit = new RateLimit(1, Duration.ZERO);
+    void forgetPrunesEntriesOutsideTheWindowButKeepsFreshOnes() throws InterruptedException {
+        // Окно короткое, но не нулевое, и тест честно его пережидает.
+        //
+        // Сначала здесь стояло Duration.ZERO в расчёте, что запись устареет
+        // немедленно и ждать не придётся. Не устаревала: отметка сравнивается
+        // строго (`isBefore`), а два вызова Instant.now() подряд на Windows
+        // возвращают одно и то же значение — разрешение системного таймера
+        // грубее, чем расстояние между ними. Тест падал не всегда, а когда
+        // повезёт с моментом.
+        var limit = new RateLimit(1, Duration.ofMillis(20));
 
         assertThat(limit.allow("1.2.3.4")).isTrue();
+        assertThat(limit.allow("1.2.3.4")).as("лимит исчерпан").isFalse();
+
+        Thread.sleep(40);
         limit.forget();
 
         // Место освободилось: без очистки карта росла бы по одному ключу

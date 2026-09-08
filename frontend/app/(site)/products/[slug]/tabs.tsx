@@ -5,8 +5,17 @@ import Link from "next/link";
 import type { Product } from "@/lib/api";
 import styles from "./page.module.css";
 
-const TABS = ["Характеристики", "Комплектация", "Документы", "Сервис и обучение"] as const;
-type Tab = (typeof TABS)[number];
+const ALL_TABS = ["Характеристики", "Комплектация", "Документы", "Сервис и обучение"] as const;
+type Tab = (typeof ALL_TABS)[number];
+
+// Вкладка «Комплектация» снята по просьбе заказчика после показа стенда
+// (issue #83) — на всех четырёх карточках изделий набор вкладок общий,
+// поэтому одна правка здесь убирает её везде. Панель ниже (JSX-ветка
+// tab === "Комплектация") нарочно оставлена в файле: заказчик может
+// попросить вернуть вкладку, и тогда это одна строка — убрать её из
+// HIDDEN_TABS, — а не восстановление текста заново.
+const HIDDEN_TABS: readonly Tab[] = ["Комплектация"];
+const TABS = ALL_TABS.filter((t) => !HIDDEN_TABS.includes(t));
 
 // Документы у всех позиций пока published:false — правило из content/documents.ts.
 // Поэтому ссылок на скачивание нет, вместо них запрос через форму.
@@ -15,6 +24,11 @@ const docs = [
   { kind: "РУ", title: "Регистрационное удостоверение", note: "Лицензирование · выдаётся по запросу" },
   { kind: "PDF", title: "Каталог продукции 2026", note: "Коммерческие материалы · выдаётся по запросу" },
 ];
+
+// Индекс, а не сам текст таба: id должен остаться стабильным символом
+// (латиница/цифры), а названия табов — кириллица с пробелами.
+const tabId = (t: Tab) => `product-tab-${TABS.indexOf(t)}`;
+const panelId = "product-tabpanel";
 
 export default function ProductTabs({ product }: { product: Product }) {
   const [tab, setTab] = useState<Tab>("Характеристики");
@@ -25,9 +39,11 @@ export default function ProductTabs({ product }: { product: Product }) {
         {TABS.map((t) => (
           <button
             key={t}
+            id={tabId(t)}
             type="button"
             role="tab"
             aria-selected={tab === t}
+            aria-controls={panelId}
             className={`${styles.tab} ${tab === t ? styles.tabActive : ""}`}
             onClick={() => setTab(t)}
           >
@@ -36,7 +52,12 @@ export default function ProductTabs({ product }: { product: Product }) {
         ))}
       </div>
 
-      <section className={styles.panel}>
+      <section
+        id={panelId}
+        role="tabpanel"
+        aria-labelledby={tabId(tab)}
+        className={styles.panel}
+      >
         {tab === "Характеристики" &&
           (product.specs ? (
             <>

@@ -12,6 +12,7 @@ This package is ready to pass to Claude, a UI designer, or a frontend team.
 - [Claude frontend prompt](claude_frontend_prompt.md)
 - [Claude context bundle](claude_context_bundle.md)
 - [Implementation checklist](implementation_checklist.md)
+- [Mac layout check checklist](mac_check.en.md)
 
 ## Related Assets
 

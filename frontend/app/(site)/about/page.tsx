@@ -86,20 +86,18 @@ export default function AboutPage() {
             {membership.linkLabel}
           </a>
         </div>
-        <a
-          className={styles.membershipMark}
-          href={membership.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          data-reveal="1"
-        >
+        {/* Знак — не кнопка: ссылка на палату уже стоит текстом выше
+            (membershipLink), а сам знак раньше тоже вёл по тому же адресу,
+            из-за чего на нём был неочевидный переход без явного признака
+            ссылки. GitHub issue #67: знак остаётся, переход убран. */}
+        <div className={styles.membershipMark} data-reveal="1">
           <Image
             src={membership.mark.src}
             alt={membership.mark.alt}
             width={membership.mark.width}
             height={membership.mark.height}
           />
-        </a>
+        </div>
       </section>
 
       <section className={styles.legal}>
