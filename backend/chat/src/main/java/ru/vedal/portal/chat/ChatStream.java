@@ -106,6 +106,18 @@ public class ChatStream {
     private final Map<String, List<SseEmitter>> byVisitor = new ConcurrentHashMap<>();
     private final List<SseEmitter> desks = new CopyOnWriteArrayList<>();
 
+    // Чьё это рабочее место.
+    //
+    // Указатель рядом со списком, а не поле в его элементе, и это вынужденно:
+    // тот же список рассылается наравне со списками посетителей (см. typing
+    // и onChange), и смена типа элемента раздвоила бы каждый путь рассылки
+    // на «для посетителей» и «для рабочих мест».
+    //
+    // Разойтись со списком он не может: снимаются обе записи одной и той же
+    // лямбдой в forget. Заведён ради вопроса, на который список не отвечает:
+    // открыл ли рабочее место КОНКРЕТНЫЙ человек — тот, кто сегодня дежурит.
+    private final Map<SseEmitter, String> deskOwner = new ConcurrentHashMap<>();
+
     // Разговоры, в которых Ведалина сейчас думает над ответом.
     //
     // Держится в памяти, а не в базе, по той же причине, что и «печатает»:
@@ -180,7 +192,7 @@ public class ChatStream {
      * событие «печатает» рассылается всем рабочим местам сразу, и число
      * подписок — это множитель у каждого нажатия клавиши посетителем.
      */
-    public SseEmitter watchAll() {
+    public SseEmitter watchAll(String login) {
         if (desks.size() >= deskLimit) {
             throw new TooManyRequestsException(
                     "Слишком много открытых рабочих мест. Закройте лишние вкладки.");
@@ -189,8 +201,10 @@ public class ChatStream {
         var emitter = new SseEmitter(timeoutMillis);
         var first = desks.isEmpty();
         desks.add(emitter);
+        if (login != null && !login.isBlank()) deskOwner.put(emitter, login);
         forget(emitter, () -> {
             desks.remove(emitter);
+            deskOwner.remove(emitter);
             // Ушёл последний — на связи больше никого.
             if (desks.isEmpty()) announcePresence(false);
         });
@@ -217,6 +231,28 @@ public class ChatStream {
      */
     public boolean staffOnline() {
         return !desks.isEmpty();
+    }
+
+    /**
+     * Открыто ли рабочее место у ЭТОГО человека.
+     *
+     * <p>Нужно графику дежурств, и только ему. {@link #staffOnline()}
+     * отвечает на вопрос посетителя — «ответит ли мне кто-нибудь»,
+     * и множество там уместно. Вопрос дежурства другой: назначенный
+     * человек на месте или нет, — и «кто-то другой сидит» на него
+     * не отвечает.
+     *
+     * <p>Обход, а не счётчик по логину: список рабочих мест ограничен
+     * сверху ({@code vedal.chat.stream.desks}), спрашивают это раз
+     * в несколько секунд с одного экрана, а счётчик рядом с картой —
+     * это второе место, где хранится одно и то же.
+     *
+     * <p>Обратное по-прежнему неверно: закрытая вкладка не означает,
+     * что дежурный ушёл. Поэтому расхождение — повод оповестить,
+     * а не повод объявить прогул.
+     */
+    public boolean atDesk(String login) {
+        return login != null && !login.isBlank() && deskOwner.containsValue(login);
     }
 
     /**

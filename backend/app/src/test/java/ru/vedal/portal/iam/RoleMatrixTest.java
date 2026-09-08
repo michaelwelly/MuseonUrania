@@ -50,6 +50,8 @@ class RoleMatrixTest extends PostgresTestBase {
             "/api/admin/v1/deals",
             "/api/admin/v1/quotes",
             "/api/admin/v1/chats",
+            "/api/admin/v1/duty",
+            "/api/admin/v1/duty/today",
             "/api/admin/v1/analytics",
             "/api/admin/v1/analytics/dimensions",
     };

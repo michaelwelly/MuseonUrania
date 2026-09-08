@@ -67,7 +67,7 @@ class SupportPresenceTest extends ChatTestBase {
         var ownStream = ownStream();
         assertThat(ownStream.staffOnline()).isFalse();
 
-        ownStream.watchAll();
+        ownStream.watchAll("editor");
         assertThat(ownStream.staffOnline())
                 .as("Открытое рабочее место и значит «человек на связи»")
                 .isTrue();
@@ -96,7 +96,7 @@ class SupportPresenceTest extends ChatTestBase {
                         + "как «здесь никого не бывает»")
                 .isNotBlank();
 
-        var open = ownStream.watchAll();
+        var open = ownStream.watchAll("editor");
         try {
             assertThat(quiet.threadFor(visitor()).support().online()).isTrue();
         } finally {
@@ -128,7 +128,7 @@ class SupportPresenceTest extends ChatTestBase {
     void withSomeoneAroundTheOldWordingStands() {
         var ownStream = ownStream();
         var busy = deskWith(ownStream);
-        var open = ownStream.watchAll();
+        var open = ownStream.watchAll("editor");
 
         try {
             var thread = busy.callHuman(visitor(), FROM_SITE);
@@ -145,7 +145,7 @@ class SupportPresenceTest extends ChatTestBase {
     // лента спрашивает именно её, а не выдумывает состояние.
     @Test
     void theRealThreadAsksTheRealStream() {
-        var open = stream.watchAll();
+        var open = stream.watchAll("editor");
         try {
             assertThat(desk.threadFor(visitor()).support().online()).isTrue();
         } finally {

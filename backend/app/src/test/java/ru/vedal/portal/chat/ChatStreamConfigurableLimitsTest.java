@@ -48,9 +48,9 @@ class ChatStreamConfigurableLimitsTest {
     void deskLimitComesFromTheConstructorNotAConstant() {
         var stream = new ChatStream(Duration.ofMinutes(30), 4, 500, 1);
 
-        stream.watchAll();
+        stream.watchAll("editor");
 
-        assertThatThrownBy(stream::watchAll)
+        assertThatThrownBy(() -> stream.watchAll("sales"))
                 .isInstanceOf(TooManyRequestsException.class);
     }
 }

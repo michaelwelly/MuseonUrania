@@ -198,6 +198,15 @@ public class SecurityConfig {
                                 "/api/admin/v1/deals/**", "/api/admin/v1/deals",
                                 "/api/admin/v1/quotes/**", "/api/admin/v1/quotes",
                                 "/api/admin/v1/chats/**", "/api/admin/v1/chats",
+                                // Дежурство лежит здесь, а не в административных
+                                // дверях: смену передают между собой те, кто
+                                // отвечает посетителям, и спрашивать на это
+                                // администратора значит остановить передачу
+                                // до понедельника. Персональных данных
+                                // посетителей график не несёт — только логины
+                                // сотрудников, которые продавцу и так видны
+                                // в справочнике.
+                                "/api/admin/v1/duty/**", "/api/admin/v1/duty",
                                 "/api/admin/v1/analytics/**", "/api/admin/v1/analytics")
                         .hasAnyRole(ROLE_SALES, ROLE_ADMIN)
 
