@@ -272,15 +272,6 @@
 }
 
 /* Пометка про демо-данные */
-.demoNote {
-  padding: 14px 18px;
-  border-left: 3px solid #a08422;
-  background: #fff;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--muted);
-}
-
 @media (max-width: 1100px) {
   .hero,
   .body {

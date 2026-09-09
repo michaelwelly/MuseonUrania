@@ -7,7 +7,7 @@ import TranslationNotice from "@/components/TranslationNotice";
 import { fetchProducts } from "@/lib/api";
 import { site } from "@/content/site";
 import { serviceHero, steps, serviceForm, serviceNotice, urgent } from "@/content/service";
-import { companyContact, STAFF_AWAITING } from "@/content/staff";
+import { companyContact } from "@/content/staff";
 import { ui } from "@/content/ui";
 import { vedalina } from "@/content/vedalina";
 import LivePattern from "@/components/LivePattern";
@@ -142,11 +142,6 @@ export default async function ServiceScreen({ lang }: { lang: Lang }) {
               </a>
             </address>
           </div>
-
-          {/* Именной инженер вернётся, когда заказчик подтвердит контакты. */}
-          <p className={styles.demoNote} lang={c.mark(STAFF_AWAITING)}>
-            {c.t(STAFF_AWAITING)}
-          </p>
 
           <div className={styles.notice} lang={c.mark(serviceNotice.title, serviceNotice.text)}>
             <h2 className={styles.noticeTitle}>{c.t(serviceNotice.title)}</h2>

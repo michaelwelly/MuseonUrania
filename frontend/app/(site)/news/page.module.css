@@ -254,13 +254,6 @@
   color: var(--green-on-dark);
 }
 
-.demoNote {
-  margin-top: 14px;
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: var(--on-dark-3);
-}
-
 .subscribe {
   padding: 32px 34px;
   background: rgba(255, 255, 255, 0.05);

@@ -5,7 +5,7 @@ import Link from "next/link";
 import PageHero from "@/components/PageHero";
 import TranslationNotice from "@/components/TranslationNotice";
 import { documentsHero, order, request } from "@/content/documents";
-import { companyContact, STAFF_AWAITING } from "@/content/staff";
+import { companyContact } from "@/content/staff";
 import { ui } from "@/content/ui";
 import { vedalina } from "@/content/vedalina";
 import { fetchDocuments } from "@/lib/api";
@@ -144,10 +144,6 @@ export default async function DocumentsScreen({ lang }: { lang: Lang }) {
               </p>
             </div>
           </div>
-          {/* Контакт — заглушка из макета, см. content/staff.ts */}
-          <p className={styles.demoNote} lang={c.mark(STAFF_AWAITING)}>
-            {c.t(STAFF_AWAITING)}
-          </p>
         </div>
       </section>
     </main>

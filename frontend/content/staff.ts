@@ -17,7 +17,7 @@
 // «пресс-служба» звучат безобидно, но это утверждение о структуре компании,
 // а её нам никто не подтверждал.
 
-import { AWAITING, site } from "./site";
+import { site } from "./site";
 
 export type Contact = {
   title: string;
@@ -25,8 +25,6 @@ export type Contact = {
   phone: string;
   email: string;
 };
-
-export const STAFF_AWAITING = `Прямые контакты ответственных сотрудников — ${AWAITING}. Обращение по общему номеру попадёт в нужный отдел.`;
 
 export const companyContact: Contact = {
   title: site.legalName,
