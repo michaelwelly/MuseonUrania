@@ -8,6 +8,7 @@ import { site } from "@/content/site";
 import { serviceHero, steps, serviceForm, serviceNotice, urgent } from "@/content/service";
 import { companyContact } from "@/content/staff";
 import { ui as strings } from "@/content/ui";
+import { LEAD_ANCHOR } from "@/lib/lead-link";
 import { vedalina } from "@/content/vedalina";
 import LivePattern from "@/components/LivePattern";
 import styles from "./page.module.css";
@@ -82,7 +83,10 @@ export default async function ServiceScreen() {
         ))}
       </ul>
 
-      <section className={styles.body}>
+      {/* id — цель кнопки «Сервисная заявка» с карточки изделия
+          (lib/lead-link.ts). Тему этой формы задаёт страница, выбирать
+          нечего — привести человека к форме и есть вся задача. */}
+      <section className={styles.body} id={LEAD_ANCHOR}>
         <div className={styles.card} data-reveal="0">
           <h2 className={styles.formTitle} data-words="30">
             {serviceForm.title}

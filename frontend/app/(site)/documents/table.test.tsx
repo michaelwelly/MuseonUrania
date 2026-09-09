@@ -21,6 +21,12 @@ const doc = (over: Partial<Doc> = {}): Doc => ({
 
 const ФАЙЛ = "http://portal/api/public/v1/documents/sertifikat-iso-13485/file";
 
+/**
+ * Адрес строки разобранным. Сравнивать его целой строкой значит зависеть
+ * от порядка параметров, а он к делу не относится.
+ */
+const адрес = (a: HTMLElement) => new URL(a.getAttribute("href")!, "http://vedal.test");
+
 describe("перечень документов", () => {
   it("строка с файлом ведёт на файл и подписана «Открыть»", () => {
     render(
@@ -38,15 +44,42 @@ describe("перечень документов", () => {
     expect(строка).toHaveTextContent("Файл");
   });
 
-  it("строка без файла ведёт на форму и подписана «Запросить»", () => {
+  it("строка без файла ведёт в форму с выбранной темой", () => {
     render(<DocumentsTable documents={[doc()]} />);
 
     const строка = screen.getByRole("link", { name: /Каталог продукции 2026/ });
     // next/link в jsdom отдаёт адрес без хвостового слэша — его дописывает
     // сборка (trailingSlash). Проверяем маршрут, а не форму записи.
-    expect(строка.getAttribute("href")).toMatch(/^\/contacts\/?$/);
+    expect(адрес(строка).pathname).toMatch(/^\/contacts\/?$/);
+    // Тема выбрана за человека: раньше он попадал на верх страницы контактов
+    // и разбирал список тем сам — нажав кнопку ровно затем, чтобы этого
+    // не делать. Якорь доводит до самой формы.
+    expect(адрес(строка).searchParams.get("topic")).toBe("catalog");
+    expect(адрес(строка).hash).toBe("#lead");
     expect(строка).not.toHaveAttribute("target");
     expect(строка).toHaveTextContent("Запросить");
+  });
+
+  // Документ компании к изделию не привязан, и подставить в заявку изделие
+  // по человекочитаемому «Все изделия» значит его угадать.
+  it("изделие подставляется только там, где документ к нему привязан", () => {
+    render(
+      <DocumentsTable
+        documents={[
+          doc(),
+          doc({
+            slug: "ru-vedal-r1",
+            title: "Регистрационное удостоверение",
+            productSlug: "vedal-r1",
+          }),
+        ]}
+      />,
+    );
+
+    const общий = адрес(screen.getByRole("link", { name: /Каталог продукции 2026/ }));
+    const изделия = адрес(screen.getByRole("link", { name: /Регистрационное удостоверение/ }));
+    expect(общий.searchParams.has("product")).toBe(false);
+    expect(изделия.searchParams.get("product")).toBe("vedal-r1");
   });
 
   // Ровно тот случай, из-за которого заведён issue: намерение выложить файл

@@ -319,6 +319,17 @@
   letter-spacing: -0.03em;
 }
 
+.noticeLink {
+  display: inline-block;
+  margin-top: 12px;
+  font-weight: 600;
+  color: var(--green-dark);
+  border-bottom: 1px solid currentColor;
+}
+
+.noticeLink:hover {
+  color: var(--green-ink-hover);
+}
 .noticeText {
   margin-top: 16px;
   max-width: 78ch;

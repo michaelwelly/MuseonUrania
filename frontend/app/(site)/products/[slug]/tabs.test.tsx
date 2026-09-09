@@ -32,6 +32,9 @@ const doc = (over: Partial<Doc> = {}): Doc => ({
 
 const ФАЙЛ = "http://portal/api/public/v1/documents/opisanie-izdeliya-vedal-r1-r2/file";
 
+/** Адрес ссылки разобранным: порядок параметров к делу не относится. */
+const адрес = (a: HTMLElement) => new URL(a.getAttribute("href")!, "http://vedal.test");
+
 async function открытьВкладку(documents: Doc[]) {
   render(<ProductTabs product={product} documents={documents} />);
   await userEvent.click(screen.getByRole("tab", { name: "Документы" }));
@@ -47,15 +50,29 @@ describe("документы к изделию", () => {
     expect(ссылка).toHaveAttribute("rel", expect.stringContaining("noopener"));
   });
 
-  it("документ без файла ведёт на форму запроса и говорит об этом", async () => {
+  it("документ без файла ведёт в форму с темой и изделием", async () => {
     await открытьВкладку([doc()]);
 
     const ссылка = screen.getByRole("link", { name: /Описание изделия/ });
     // next/link в jsdom отдаёт адрес без хвостового слэша — его дописывает
     // сборка (trailingSlash). Проверяем маршрут, а не форму записи.
-    expect(ссылка.getAttribute("href")).toMatch(/^\/contacts\/?$/);
+    expect(адрес(ссылка).pathname).toMatch(/^\/contacts\/?$/);
+    // Человек стоит на карточке изделия: спрашивать у него и тему,
+    // и изделие заново — это два выбора, которые можно сделать неверно.
+    expect(адрес(ссылка).searchParams.get("topic")).toBe("catalog");
+    expect(адрес(ссылка).searchParams.get("product")).toBe("vedal-r1");
     expect(ссылка).not.toHaveAttribute("target");
     expect(ссылка).toHaveTextContent("выдаётся по запросу");
+  });
+
+  // Подвал вкладки: «не найденное в перечне — запрашивается у специалиста».
+  // Изделие карточке известно и здесь.
+  it("запрос ненайденного документа тоже уносит изделие", async () => {
+    await открытьВкладку([doc()]);
+
+    const ссылка = screen.getByRole("link", { name: "запрашивается у специалиста" });
+    expect(адрес(ссылка).searchParams.get("topic")).toBe("catalog");
+    expect(адрес(ссылка).searchParams.get("product")).toBe("vedal-r1");
   });
 
   // Главное свойство: карточка больше ничего не придумывает. Раньше здесь

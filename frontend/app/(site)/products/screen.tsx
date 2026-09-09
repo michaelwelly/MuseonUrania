@@ -3,6 +3,7 @@ import { pageMetadata } from "@/lib/seo";
 import PageHero from "@/components/PageHero";
 import { DarkCta } from "@/components/Blocks";
 import { fetchProducts } from "@/lib/api";
+import { leadHref } from "@/lib/lead-link";
 import { ui as strings } from "@/content/ui";
 import Catalog from "./catalog";
 import styles from "./page.module.css";
@@ -44,9 +45,12 @@ export default async function ProductsScreen() {
         tone="deep"
         title={strings.products.ctaTitle}
         text={strings.products.ctaText}
+        // «Запросить подбор» — это и есть тема «Консультация по подбору»:
+        // кнопка приводит в форму с ней, а не на общие контакты, где список
+        // тем человек разбирает заново.
         primary={{
           label: strings.actions.requestSelection,
-          href: "/contacts/",
+          href: leadHref("consultation"),
           analytics: "product_quote_click",
         }}
         // Якорь Ведалины — на текущей странице: виджет открывается прокруткой

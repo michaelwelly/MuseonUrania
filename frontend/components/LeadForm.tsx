@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { consent as consentCopy } from "@/content/legal";
 import { site } from "@/content/site";
@@ -12,6 +12,7 @@ import {
   type LeadForm as FormType,
 } from "@/lib/submit";
 import { reachGoal } from "@/lib/analytics";
+import { readProduct, readTopic } from "@/lib/lead-link";
 import styles from "./LeadForm.module.css";
 
 /**
@@ -47,6 +48,18 @@ const FIELDS = ["name", "phone", "email", "product", "serialNumber", "message", 
 const BACKEND_FIELDS: Record<string, string> = { productSlug: "product" };
 
 type Field = (typeof FIELDS)[number];
+
+/**
+ * Строка запроса как внешнее хранилище для `useSyncExternalStore`.
+ *
+ * Функции объявлены снаружи компонента намеренно: у них обязана быть
+ * постоянная ссылка, иначе React считает хранилище другим на каждом рендере
+ * и подписывается заново.
+ */
+const NO_UPDATES = () => () => {};
+const readSearch = () => window.location.search;
+/** На сервере адреса нет — и это не пустой адрес, а его отсутствие. */
+const readNoSearch = () => "";
 
 type Errors = Partial<Record<Field, string>>;
 
@@ -150,12 +163,59 @@ export default function LeadForm({
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "failed">("idle");
   const [notice, setNotice] = useState("");
 
-  // Тема обращения держится в состоянии, а не только в значении селектора:
-  // от неё зависит, показывать ли серийный номер. Неуправляемый select
-  // о смене выбора не сообщает, и поле не появлялось бы вовсе.
+  // Что человек выбрал руками. `null` — ещё не выбирал.
   //
-  // Тем нет — тему задаёт страница, и она не меняется.
-  const [topic, setTopic] = useState<FormType>(topics ? topics[0].code : form);
+  // Выбор держится отдельно от действующей темы, а не поверх неё: тема
+  // приходит ещё и из адреса, и в одном состоянии они спорили бы за то,
+  // чья запись случится последней. Здесь спор решён правилом ниже,
+  // и правило видно глазами.
+  const [chosen, setChosen] = useState<FormType | null>(null);
+  const [chosenProduct, setChosenProduct] = useState<string | null>(null);
+
+  // Что попросили в адресе: `/contacts/?topic=quote&product=vedal-r1`.
+  // Кнопки «Запросить КП» и «Запросить документ» ведут сюда именно так;
+  // сборка такой ссылки и её разбор живут в одном месте — lib/lead-link.ts.
+  //
+  // `useSearchParams` брать нельзя: он переводит всю страницу на отрисовку
+  // по запросу, а страницы сайта уезжают в статику на сборке — сайт обязан
+  // открываться при упавшем бэкенде. Та же причина у components/Analytics.tsx.
+  //
+  // Отсюда и `useSyncExternalStore`, а не эффект с setState: адрес — это
+  // внешнее по отношению к React значение, и читать его надо тем способом,
+  // который знает про две картинки мира. На сервере строки запроса нет
+  // (третий аргумент), поэтому первый клиентский рендер совпадает с
+  // серверной разметкой и гидратация не расходится, а настоящий адрес
+  // приезжает следом. Подписки нет: адрес страницы за её жизнь не меняется —
+  // переход по ссылке размонтирует форму и смонтирует новую.
+  const search = useSyncExternalStore(NO_UPDATES, readSearch, readNoSearch);
+  const asked = {
+    topic: readTopic(search),
+    product: readProduct(search),
+  };
+
+  // Действующая тема. От неё зависит, показывать ли серийный номер, поэтому
+  // она держится в состоянии, а не только в значении селектора: неуправляемый
+  // select о смене выбора не сообщает, и поле не появлялось бы вовсе.
+  //
+  // Порядок один: выбор человека → тема из адреса → умолчание страницы.
+  // Адрес задаёт начальное значение, а не запрет: человек по-прежнему
+  // меняет тему руками, и его выбор старше ссылки, по которой он пришёл.
+  //
+  // Тема из адреса берётся только там, где тему вообще выбирают. На форме
+  // сервиса и на карточке изделия её задаёт страница, и `?topic=partner`,
+  // дописанный в такой адрес, не имеет права переспорить заголовок,
+  // который человек читает над формой.
+  const askedTopic =
+    topics && asked.topic && topics.some((t) => t.code === asked.topic) ? asked.topic : null;
+  const topic: FormType = chosen ?? askedTopic ?? (topics ? topics[0].code : form);
+
+  // Изделие из адреса — только то, что есть в каталоге. Слаг приходит
+  // снаружи, и подставленный не глядя он дал бы селектор с пустым значением
+  // при заполненном на вид адресе: заявка уехала бы без изделия, а человек
+  // видел бы, что изделие выбрано.
+  const askedProduct =
+    asked.product && products.some((p) => p.slug === asked.product) ? asked.product : "";
+  const productValue = chosenProduct ?? askedProduct;
 
   // Серийный номер спрашивается только в сервисном обращении: в запросе цены,
   // каталога или партнёрства изделия у человека ещё нет, и поле там — шум.
@@ -292,7 +352,7 @@ export default function LeadForm({
             name="topic"
             className={styles.select}
             value={topic}
-            onChange={(event) => setTopic(event.target.value as FormType)}
+            onChange={(event) => setChosen(event.target.value as FormType)}
           >
             {/* Названия тем приходят из content/contacts.ts — это содержание,
                 а не подпись поля: тема определяет, куда уедет заявка. */}
@@ -396,7 +456,11 @@ export default function LeadForm({
             id="product"
             name="product"
             className={`${styles.select} ${errors.product ? styles.invalid : ""}`}
-            defaultValue=""
+            /* Управляемый, потому что изделие тоже приходит из адреса:
+               defaultValue учитывает только первый рендер, а адрес прочитан
+               эффектом уже после него. */
+            value={productValue}
+            onChange={(event) => setChosenProduct(event.target.value)}
             aria-invalid={!!errors.product}
             aria-required={asksSerial ? "true" : undefined}
             aria-describedby={errors.product ? "product-error" : undefined}

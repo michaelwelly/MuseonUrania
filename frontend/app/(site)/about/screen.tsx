@@ -12,6 +12,7 @@ import {
   aboutCta,
 } from "@/content/about";
 import { ui as strings } from "@/content/ui";
+import { leadHref } from "@/lib/lead-link";
 import styles from "./page.module.css";
 import { mediaSrc } from "@/lib/media";
 
@@ -149,9 +150,11 @@ export default function AboutScreen() {
       <DarkCta
         title={aboutCta.title}
         text={aboutCta.text}
+        // Ближайшей формы на этой странице нет — значит, контакты; но
+        // с выбранной темой запроса КП, а не с чистым списком.
         primary={{
           label: strings.actions.requestQuote,
-          href: "/contacts/",
+          href: leadHref("quote"),
           analytics: "hero_quote_click",
         }}
         secondary={{ label: strings.actions.contacts, href: "/contacts/" }}
