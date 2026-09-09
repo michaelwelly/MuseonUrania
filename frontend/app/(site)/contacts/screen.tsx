@@ -20,6 +20,7 @@ import {
   vedalinaCard,
 } from "@/content/contacts";
 import { ui as strings } from "@/content/ui";
+import { LEAD_ANCHOR } from "@/lib/lead-link";
 import styles from "./page.module.css";
 
 // Контакты. Тело страницы вынесено из `page.tsx` сюда, потому что
@@ -145,7 +146,11 @@ export default async function ContactsScreen() {
         </address>
       </section>
 
-      <section className={styles.bottom}>
+      {/* id — цель кнопок «Запросить КП», «Запросить документ» и «Запросить
+          подбор» с других страниц (lib/lead-link.ts). Стоит на секции, а не
+          на форме: человека надо привести к заголовку «Оставить обращение»,
+          а не к первому полю — так же, как на главной с #quote. */}
+      <section className={styles.bottom} id={LEAD_ANCHOR}>
         <div className={styles.card} data-reveal="0">
           <h2 className={styles.cardTitle} data-words="30">
             {strings.contacts.formTitle}

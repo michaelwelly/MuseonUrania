@@ -8,7 +8,7 @@ import { companyContact } from "@/content/staff";
 import { ui as strings } from "@/content/ui";
 import { vedalina } from "@/content/vedalina";
 import { fetchDocuments } from "@/lib/api";
-import { isOpen } from "@/lib/documents";
+import { REQUEST_HREF, isOpen } from "@/lib/documents";
 import DocumentsTable from "./table";
 import styles from "./page.module.css";
 
@@ -40,12 +40,15 @@ export default async function DocumentsScreen() {
 
   return (
     <main className={styles.page}>
+      {/* Кнопка в первом экране приводит в форму с уже выбранной темой
+          запроса документа, а не на верх страницы контактов: адрес собран
+          в lib/documents вместе с правилом для строк перечня ниже. */}
       <PageHero
         crumbs={[{ label: strings.crumbs.home, href: "/" }, { label: strings.crumbs.documents }]}
         title={documentsHero.title}
         lead={documentsHero.lead}
         aside={
-          <Link className={styles.heroBtn} href="/contacts/">
+          <Link className={styles.heroBtn} href={REQUEST_HREF}>
             {strings.actions.requestDocument}
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path

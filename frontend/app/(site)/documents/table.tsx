@@ -5,7 +5,7 @@ import Link from "next/link";
 import { groups } from "@/content/documents";
 import { ui as strings } from "@/content/ui";
 import type { Doc } from "@/lib/api";
-import { REQUEST_HREF, accessBadge, actionLabel, badgeIsOk, docHref, linkTarget } from "@/lib/documents";
+import { accessBadge, actionLabel, badgeIsOk, docHref, linkTarget, requestHref } from "@/lib/documents";
 import styles from "./page.module.css";
 
 // Перечень приходит сверху: его читает серверный компонент на сборке.
@@ -68,7 +68,7 @@ export default function DocumentsTable({ documents }: { documents: Doc[] }) {
             <Link
               key={d.slug || `${d.title}-${d.product}`}
               className={styles.row}
-              href={docHref(d, REQUEST_HREF)}
+              href={docHref(d, requestHref(d))}
               {...linkTarget(d)}
               data-analytics="document_download_click"
             >

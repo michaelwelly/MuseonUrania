@@ -4,7 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { ui as strings } from "@/content/ui";
 import type { Doc, Product } from "@/lib/api";
-import { REQUEST_HREF, accessBadge, docHref, docNote, isOpen, linkTarget } from "@/lib/documents";
+import { accessBadge, docHref, docNote, isOpen, linkTarget, requestHref } from "@/lib/documents";
+import { DOCUMENT_TOPIC, SERVICE_HREF, leadHref } from "@/lib/lead-link";
 import styles from "./page.module.css";
 
 // Вкладка — ключ, а не её подпись: подпись правится в словаре интерфейса,
@@ -172,7 +173,7 @@ export default function ProductTabs({
                         на /documents/. */}
                     <Link
                       className={styles.doc}
-                      href={docHref(d, REQUEST_HREF)}
+                      href={docHref(d, requestHref(d))}
                       {...linkTarget(d)}
                     >
                       <span
@@ -202,7 +203,12 @@ export default function ProductTabs({
               <Link href="/documents/">{strings.product.allDocuments}</Link>
               {" · "}
               {strings.product.notInListing}{" "}
-              <Link href={REQUEST_HREF}>{strings.product.requestIt}</Link>
+              {/* Изделие известно — уходим в форму вместе с ним и с темой
+                  запроса документа. Спрашивать изделие второй раз у того,
+                  кто стоит на его карточке, незачем. */}
+              <Link href={leadHref(DOCUMENT_TOPIC, product.slug)}>
+                {strings.product.requestIt}
+              </Link>
             </p>
           </>
         )}
@@ -220,7 +226,9 @@ export default function ProductTabs({
               <p className={styles.serviceText}>
                 {SERVICE_TEXT}
               </p>
-              <Link className={styles.serviceBtn} href="/service/">
+              {/* Якорь ведёт к самой форме сервиса, а не на верх страницы:
+                  человек нажал «Сервисная заявка», а не «Сервис». */}
+              <Link className={styles.serviceBtn} href={SERVICE_HREF}>
                 {strings.actions.serviceRequest}
               </Link>
             </div>
