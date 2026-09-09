@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import { pageMetadata } from "@/lib/seo";
 import PageHero from "@/components/PageHero";
 import LeadForm from "@/components/LeadForm";
@@ -197,16 +198,24 @@ export default async function ContactsScreen() {
         </div>
       </section>
 
-      {/* Что именно форма делает с данными и в каком состоянии политика —
-          юридическое утверждение о самих себе, и правит его заказчик:
-          текст лежит в content/contacts.ts, а не собирается здесь. */}
+      {/* Что именно форма делает с данными — юридическое утверждение
+          о самих себе, и правит его заказчик: текст лежит
+          в content/contacts.ts, а не собирается здесь.
+
+          Ссылка стоит отдельной строкой, а не словами внутри абзаца:
+          человек читает эту врезку ровно в тот момент, когда решает,
+          отдавать ли свои данные, и путь к полному документу должен быть
+          виден, а не найден. */}
       <section className={styles.notice} data-reveal="0">
         <h2 className={styles.noticeTitle} data-words="30">
           {contactsNotice.title}
         </h2>
-        <p className={styles.noticeText}>
-          {contactsNotice.text}
-        </p>
+        <div className={styles.noticeText}>
+          <p>{contactsNotice.text}</p>
+          <Link className={styles.noticeLink} href={contactsNotice.link.href}>
+            {contactsNotice.link.label}
+          </Link>
+        </div>
       </section>
     </main>
   );
