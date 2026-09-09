@@ -35,6 +35,7 @@ describe("кнопки тёмной полосы призыва", () => {
       <DarkCta
         title="Не нашли нужную конфигурацию?"
         text="Опишите задачу отделения."
+        pattern={7}
         primary={{ label: "Запросить подбор", href: "/contacts/" }}
         secondary={{ label: "Спросить Ведалину", href: "#vedalina" }}
       />,
@@ -50,6 +51,7 @@ describe("кнопки тёмной полосы призыва", () => {
       <DarkCta
         title="Не нашли нужную конфигурацию?"
         text="Опишите задачу отделения."
+        pattern={7}
         primary={{ label: "Запросить подбор", href: "/contacts/" }}
       />,
     );

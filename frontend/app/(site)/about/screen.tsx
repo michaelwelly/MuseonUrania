@@ -40,6 +40,7 @@ export default function AboutScreen() {
         crumbs={[{ label: strings.crumbs.home, href: "/" }, { label: strings.crumbs.about }]}
         title={aboutHero.title}
         lead={aboutHero.lead}
+        pattern={101}
       />
 
       <div className={styles.banner} data-reveal="0">
@@ -148,6 +149,7 @@ export default function AboutScreen() {
       </section>
 
       <DarkCta
+        pattern={137}
         title={aboutCta.title}
         text={aboutCta.text}
         // Ближайшей формы на этой странице нет — значит, контакты; но

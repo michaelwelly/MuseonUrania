@@ -47,6 +47,7 @@ export default async function DocumentsScreen() {
         crumbs={[{ label: strings.crumbs.home, href: "/" }, { label: strings.crumbs.documents }]}
         title={documentsHero.title}
         lead={documentsHero.lead}
+        pattern={163}
         aside={
           <Link className={styles.heroBtn} href={REQUEST_HREF}>
             {strings.actions.requestDocument}

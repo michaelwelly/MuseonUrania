@@ -8,6 +8,7 @@ import { site } from "@/content/site";
 import { productionHero, facility, gallery, address } from "@/content/production";
 import { ui as strings } from "@/content/ui";
 import TreeMark from "@/components/TreeMark";
+import BrandPattern from "@/components/BrandPattern";
 import LivePattern from "@/components/LivePattern";
 import styles from "./page.module.css";
 import { mediaSrc } from "@/lib/media";
@@ -30,10 +31,28 @@ export function productionMetadata(): Metadata {
 export default function ProductionScreen() {
   return (
     <main className={styles.page}>
-      {/* Паттерна нет по той же причине, что на главной: правая половина
-          полосы занята фото во всю высоту. */}
+      {/* Узор стоит полем за текстом, а не полосой в стыке: правую половину
+          занимает фотография во всю высоту, и на полосу оставалось бы
+          слишком мало, чтобы композиция читалась.
+
+          Зона снята замером на ширине 1440. В координатах поля (820 × 520)
+          заголовок кончается на 577, лид на 350, кнопка «Схема проезда»
+          на 449 — коридор закрывает все три и на двадцать пикселей шире
+          самой длинной строки. Шире делать нельзя: на 620 мелкий акцент
+          оказывался заперт между коридором и крупной веткой справа
+          и не находил места вовсе — в поле выходило шестнадцать форм
+          вместо семнадцати. */}
       <section className={`${styles.hero} patternHost`}>
         <LivePattern variant={1} placement="seam" />
+        <div className={styles.heroPattern}>
+          <BrandPattern
+            seed={239}
+            boldness={3}
+            width={820}
+            height={520}
+            keepClear={[{ x2: 600, y1: 85, y2: 465 }]}
+          />
+        </div>
         <div className={styles.heroCopy}>
           <p className={styles.crumbs}>
             <Link href="/">{strings.crumbs.home}</Link> / {strings.crumbs.production}

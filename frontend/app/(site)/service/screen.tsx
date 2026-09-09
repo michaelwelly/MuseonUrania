@@ -10,6 +10,7 @@ import { companyContact } from "@/content/staff";
 import { ui as strings } from "@/content/ui";
 import { LEAD_ANCHOR } from "@/lib/lead-link";
 import { vedalina } from "@/content/vedalina";
+import BrandPattern from "@/components/BrandPattern";
 import LivePattern from "@/components/LivePattern";
 import styles from "./page.module.css";
 import { mediaSrc } from "@/lib/media";
@@ -38,11 +39,23 @@ export default async function ServiceScreen() {
 
   return (
     <main className={styles.page}>
-      {/* Паттерна нет по той же причине, что на главной: правая половина
-          полосы занята фото во всю высоту, и класть композицию за него
-          или под текст одинаково плохо. */}
+      {/* Узор стоит полем за текстом, а не полосой в стыке: правую половину
+          занимает фотография во всю высоту.
+
+          Зона снята замером на ширине 1440. В координатах поля (820 × 400)
+          заголовок кончается на 690, лид на 307; коридор шире заголовка,
+          и акцентам остаётся правый край полосы да поля сверху и снизу. */}
       <section className={`${styles.hero} patternHost`}>
         <LivePattern variant={2} placement="seam" />
+        <div className={styles.heroPattern}>
+          <BrandPattern
+            seed={251}
+            boldness={3}
+            width={820}
+            height={400}
+            keepClear={[{ x2: 715, y1: 90, y2: 320 }]}
+          />
+        </div>
         <div className={styles.heroCopy}>
           <p className={styles.crumbs}>
             <Link href="/">{strings.crumbs.home}</Link> / {strings.crumbs.service}

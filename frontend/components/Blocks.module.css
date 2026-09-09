@@ -12,6 +12,17 @@
   color: #fff;
 }
 
+/* Коробка фирменного узора: полоса целиком. Опору — position и обрезку —
+   даёт утилита .patternHost на секции; z-index кладёт поле между заливкой
+   полосы и её содержимым, иначе абсолютная коробка встала бы поверх строк. */
+.ctaPattern {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .ctaDeep {
   background: var(--deep);
 }
