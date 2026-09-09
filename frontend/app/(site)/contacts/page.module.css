@@ -308,20 +308,29 @@
 }
 
 /* ---------- персональные данные ---------- */
-.notice {
-  padding: 48px;
+.noticeCard {
+  padding: 28px 30px;
   background: #fff;
-  border-top: 1px solid var(--line);
+  border: 1px solid var(--line);
+  border-radius: 3px;
 }
 
 .noticeTitle {
-  font-size: 24px;
-  letter-spacing: -0.03em;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+
+.noticeText {
+  margin-top: 12px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--muted);
 }
 
 .noticeLink {
   display: inline-block;
-  margin-top: 12px;
+  margin-top: 14px;
+  font-size: 14.5px;
   font-weight: 600;
   color: var(--green-dark);
   border-bottom: 1px solid currentColor;
@@ -329,16 +338,6 @@
 
 .noticeLink:hover {
   color: var(--green-ink-hover);
-}
-.noticeText {
-  margin-top: 16px;
-  max-width: 78ch;
-  padding: 18px 20px;
-  border-left: 3px solid #a08422;
-  background: var(--soft);
-  font-size: 15px;
-  line-height: 1.6;
-  color: var(--muted);
 }
 
 @media (max-width: 1100px) {
@@ -363,10 +362,6 @@
 
   .routePanel,
   .bottom,
-  .notice {
-    padding: 48px 24px;
-  }
-
   .mapSlot {
     min-height: 360px;
   }
@@ -379,8 +374,7 @@
 @media (max-width: 640px) {
   .block,
   .routePanel,
-  .bottom,
-  .notice {
+  .bottom {
     padding-left: 18px;
     padding-right: 18px;
   }

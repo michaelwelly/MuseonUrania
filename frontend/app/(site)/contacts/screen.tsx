@@ -200,28 +200,29 @@ export default async function ContactsScreen() {
               {vedalinaCard.cta}
             </a>
           </div>
+
+          {/* Что именно форма делает с данными — юридическое утверждение
+              о самих себе, и правит его заказчик: текст лежит
+              в content/contacts.ts, а не собирается здесь.
+
+              Врезка стоит третьей карточкой правой колонки, а не полосой
+              под всей страницей. Полосой её приходилось искать: человек
+              решает, отдавать ли данные, глядя на форму, а объяснение
+              лежало ниже подвала формы, за краем экрана. Здесь оно
+              на виду рядом с полями и не отнимает у формы ширину.
+
+              Ссылка отдельной строкой, а не словами внутри абзаца:
+              путь к полному документу должен быть виден, а не найден. */}
+          <div className={styles.noticeCard}>
+            <h2 className={styles.noticeTitle}>{contactsNotice.title}</h2>
+            <p className={styles.noticeText}>{contactsNotice.text}</p>
+            <Link className={styles.noticeLink} href={contactsNotice.link.href}>
+              {contactsNotice.link.label}
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* Что именно форма делает с данными — юридическое утверждение
-          о самих себе, и правит его заказчик: текст лежит
-          в content/contacts.ts, а не собирается здесь.
-
-          Ссылка стоит отдельной строкой, а не словами внутри абзаца:
-          человек читает эту врезку ровно в тот момент, когда решает,
-          отдавать ли свои данные, и путь к полному документу должен быть
-          виден, а не найден. */}
-      <section className={styles.notice} data-reveal="0">
-        <h2 className={styles.noticeTitle} data-words="30">
-          {contactsNotice.title}
-        </h2>
-        <div className={styles.noticeText}>
-          <p>{contactsNotice.text}</p>
-          <Link className={styles.noticeLink} href={contactsNotice.link.href}>
-            {contactsNotice.link.label}
-          </Link>
-        </div>
-      </section>
     </main>
   );
 }
