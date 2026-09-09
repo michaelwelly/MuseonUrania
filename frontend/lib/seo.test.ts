@@ -39,15 +39,17 @@ describe("метаданные страницы", () => {
     expect(og.title).toBe("Сервис — VEDAL");
   });
 
-  it("без своей картинки берёт фирменное дерево и карточку под квадрат", async () => {
+  it("без своей картинки берёт карточку сайта и широкий формат", async () => {
     const { pageMetadata } = await import("./seo");
 
     const meta = pageMetadata({ title: "т", description: "о", path: "/" });
 
+    // Раньше здесь стояло квадратное дерево 512×512 и тип `summary`:
+    // своей карточки у сайта не было. Теперь есть, и она широкая —
+    // 1200×630, как и ждут мессенджеры.
     expect((meta.openGraph as { images: { url: string }[] }).images[0].url)
-      .toBe("/brand/vedal-tree.png");
-    // Картинка квадратная: summary_large_image показал бы её обрезанной.
-    expect((meta.twitter as { card: string }).card).toBe("summary");
+      .toBe("/brand/og-cover.png");
+    expect((meta.twitter as { card: string }).card).toBe("summary_large_image");
   });
 
   it("со своей картинкой берёт широкую карточку", async () => {
