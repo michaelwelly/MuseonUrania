@@ -59,7 +59,7 @@ export default function HomeScreen() {
       <section className={styles.hero}>
         <div className={styles.heroPattern}>
           <BrandPattern
-            seed={61}
+            seed={0}
             boldness={3.2}
             width={830}
             height={648}
