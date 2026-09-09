@@ -130,7 +130,20 @@
 		# Разрешение здесь — не разрешение на загрузку. Кадр создаётся
 		# только после согласия в плашке про cookie (frontend/lib/consent.ts),
 		# и до согласия браузеру нечего проверять этой строкой.
-		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' {$VEDAL_ANALYTICS_ORIGINS:}; object-src 'none'; img-src 'self' data: https://{$VEDAL_MEDIA_DOMAIN} {$VEDAL_ANALYTICS_ORIGINS:}; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' https://{$VEDAL_KEYCLOAK_DOMAIN} {$VEDAL_ANALYTICS_ORIGINS:}; frame-src 'self' https://yandex.ru https://yandex.com {$VEDAL_ANALYTICS_ORIGINS:}; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://{$VEDAL_KEYCLOAK_DOMAIN}"
+		#
+		# ————— blob: в img-src —————
+		#
+		# Портреты сотрудников в админке. Дверь портрета закрыта токеном,
+		# а браузер, идя по адресу в src, токена не прикладывает, — поэтому
+		# байты приезжают запросом с Authorization и превращаются в blob:.
+		# Под 'self' такой адрес не подпадает: это отдельная схема, и её надо
+		# назвать. Без неё портрет загружается, сохраняется, попадает в журнал
+		# и не показывается — молча, без ошибки на экране (9 сентября).
+		#
+		# Та же строка живёт в frontend/lib/security-headers.ts, и разойтись
+		# им нельзя: политики складываются в пересечение, то есть в более
+		# строгую из двух.
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' {$VEDAL_ANALYTICS_ORIGINS:}; object-src 'none'; img-src 'self' data: blob: https://{$VEDAL_MEDIA_DOMAIN} {$VEDAL_ANALYTICS_ORIGINS:}; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' https://{$VEDAL_KEYCLOAK_DOMAIN} {$VEDAL_ANALYTICS_ORIGINS:}; frame-src 'self' https://yandex.ru https://yandex.com {$VEDAL_ANALYTICS_ORIGINS:}; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://{$VEDAL_KEYCLOAK_DOMAIN}"
 
 		# Заголовок сервера ничего не защищает, но и сообщать версию незачем.
 		-Server
