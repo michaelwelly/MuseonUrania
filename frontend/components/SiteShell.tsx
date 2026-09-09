@@ -6,7 +6,6 @@ import Analytics from "@/components/Analytics";
 import ImageGuard from "@/components/ImageGuard";
 import LogoPreloader from "@/components/LogoPreloader";
 import Motion from "@/components/Motion";
-import LangPreference from "@/components/LangPreference";
 import { fontVariables } from "@/app/fonts";
 import { htmlLang, type Lang } from "@/lib/i18n";
 
@@ -40,10 +39,6 @@ export default function SiteShell({ lang, children }: { lang: Lang; children: Re
     // расхождение внутри страницы отловится как обычно.
     <html lang={htmlLang[lang]} className={fontVariables} suppressHydrationWarning>
       <body suppressHydrationWarning>
-        {/* Ничего не рисует: помнит выбор языка и уводит на него с русских
-            адресов. Стоит первым, чтобы решение принималось до того, как
-            посетитель начал читать не тот язык. */}
-        <LangPreference lang={lang} />
         <LogoPreloader />
         <Motion />
         <div className="frame">

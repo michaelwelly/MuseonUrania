@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import AnimatedLogo from "@/components/AnimatedLogo";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { nav, headerCta, site } from "@/content/site";
 import { ui } from "@/content/ui";
 import { localePath, stripLocale, type Lang } from "@/lib/i18n";
@@ -99,7 +98,6 @@ export default function Header({ lang }: { lang: Lang }) {
         </nav>
 
         <div className={styles.tools}>
-          <LanguageSwitcher lang={lang} />
 
           <a className={styles.phone} href={telHref}>
             <span className={styles.phoneNumber}>{site.phone}</span>
