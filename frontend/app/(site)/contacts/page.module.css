@@ -159,14 +159,6 @@
   border-top: 1px solid var(--line);
 }
 
-.staffNote {
-  max-width: 52ch;
-  margin-top: 18px;
-  font-size: 14px;
-  line-height: 1.55;
-  color: var(--muted);
-}
-
 .staffFallback {
   display: flex;
   flex-wrap: wrap;

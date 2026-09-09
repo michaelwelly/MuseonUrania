@@ -7,7 +7,7 @@ import TranslationNotice from "@/components/TranslationNotice";
 import VedalMap from "@/components/VedalMap";
 import VedalMapEmbed from "@/components/VedalMapEmbed";
 import { fetchProducts } from "@/lib/api";
-import { companyContact, STAFF_AWAITING } from "@/content/staff";
+import { companyContact } from "@/content/staff";
 import { vedalina } from "@/content/vedalina";
 import {
   contactsHero,
@@ -173,12 +173,6 @@ export default async function ContactsScreen({ lang }: { lang: Lang }) {
         <h2 className={styles.h2} data-words="30" lang={c.mark(staffSection.title)}>
           {c.t(staffSection.title)}
         </h2>
-        {/* «Ожидает уточнения» — статус, а не состояние интерфейса: он
-            говорит, чего заказчик ещё не передал. Машинный перевод такого
-            статуса читается как обещание, поэтому только откат на русский. */}
-        <p className={styles.staffNote} lang={c.mark(STAFF_AWAITING)}>
-          {c.t(STAFF_AWAITING)}
-        </p>
         <address className={styles.staffFallback}>
           <a href={`tel:${companyContact.phone.replace(/\s/g, "")}`}>{companyContact.phone}</a>
           <a href={`mailto:${companyContact.email}`}>{companyContact.email}</a>
