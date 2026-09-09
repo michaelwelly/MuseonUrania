@@ -37,11 +37,13 @@ export default async function ProductsScreen() {
         crumbs={[{ label: strings.crumbs.home, href: "/" }, { label: strings.crumbs.products }]}
         title={strings.products.heroTitle}
         lead={strings.meta.productsLead}
+        pattern={211}
       />
 
       <Catalog products={products} />
 
       <DarkCta
+        pattern={223}
         tone="deep"
         title={strings.products.ctaTitle}
         text={strings.products.ctaText}

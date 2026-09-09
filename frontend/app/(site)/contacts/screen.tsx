@@ -57,6 +57,7 @@ export default async function ContactsScreen() {
         ]}
         title={contactsHero.title}
         lead={contactsHero.lead}
+        pattern={149}
       />
 
       <ul className={styles.blocks}>

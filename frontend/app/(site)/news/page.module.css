@@ -176,6 +176,17 @@
 }
 
 /* ---------- для СМИ и подписка ---------- */
+
+/* Коробка узора тёмной полосы: полоса целиком. Опору и обрезку даёт
+   .patternHost на секции, z-index кладёт поле под текст и форму. */
+.pressPattern {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .press {
   display: grid;
   grid-template-columns: 1fr 1fr;

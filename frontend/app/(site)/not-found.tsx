@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import BrandPattern from "@/components/BrandPattern";
+
 import { site } from "@/content/site";
 import { ui as strings } from "@/content/ui";
 import styles from "./not-found.module.css";
@@ -59,7 +61,28 @@ export default function NotFound() {
   };
 
   return (
-    <main className={styles.page}>
+    <main className={`${styles.page} patternHost`}>
+      {/* Узор здесь работает больше, чем где-либо ещё: колонка текста
+          занимает верхнюю треть экрана, а всё остальное — пустое белое
+          поле. Без узора страница ошибки выглядит недогруженной, и это
+          ровно то впечатление, которого ей нельзя производить.
+
+          Коробка не тянется на всю высоту `main`: та растягивается
+          до низа окна, и на высоком экране поле вышло бы вытянутым,
+          а композиция — обрезанной по бокам. Высота задана в стилях
+          и совпадает с системой координат поля.
+
+          Зона снята замером на ширине 1440: заголовок кончается на 634,
+          перечень ссылок на 647, последняя строка на 466 по высоте. */}
+      <div className={styles.pattern}>
+        <BrandPattern
+          seed={269}
+          boldness={3}
+          width={1400}
+          height={620}
+          keepClear={[{ x2: 690, y1: 70, y2: 490 }]}
+        />
+      </div>
       <p className={styles.code}>404</p>
       <h1 className={styles.title}>{strings.notFound.title}</h1>
       <p className={styles.text}>{strings.notFound.text}</p>

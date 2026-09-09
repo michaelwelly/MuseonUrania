@@ -36,7 +36,26 @@
   --pattern-seam: 42%;
 }
 
+/* Коробка узора первого экрана: только текстовая половина. Правую занимает
+   фотография, и поле под ней было бы работой впустую — его не видно. */
+.heroPattern {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 58%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* На тёмной полосе узор занимает её целиком: там нет фотографии. */
+.ctaPattern {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .heroCopy {
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -494,6 +513,8 @@
 
 /* ---------- CTA + форма ---------- */
 .cta {
+  position: relative;
+  overflow: hidden;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 60px;

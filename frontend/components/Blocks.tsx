@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BrandPattern from "./BrandPattern";
 import LivePattern from "./LivePattern";
 import styles from "./Blocks.module.css";
 
@@ -47,19 +48,34 @@ function CtaLink({
   );
 }
 
-/** Тёмная полоса-призыв с двумя кнопками. Экраны 02, 04 и далее. */
+/**
+ * Тёмная полоса-призыв с двумя кнопками. Экраны 02, 04 и далее.
+ *
+ * Узор на ней в другой краске: светлые формы уходят в белый на 7 и 13
+ * процентов, акцент, наоборот, светлеет — фирменный зелёный на почти чёрном
+ * сливается с фоном. Так же он покрашен на тёмной полосе главной.
+ *
+ * Зоны сняты замером на ширине 1440. В системе координат поля (1400 × 210)
+ * заголовок и текст занимают левую половину до 730, кнопки стоят справа
+ * от 1067. Обе зоны нестрогие: бледные формы на 7% белого читаются фактурой
+ * подложки и текст не трогают, а запрет на них оставил бы полосу пустой —
+ * свободного места на ней всего триста пикселей в середине.
+ */
 export function DarkCta({
   title,
   text,
   primary,
   secondary,
   tone = "deep-2",
+  pattern,
 }: {
   title: string;
   text: string;
   primary: Action;
   secondary?: Action;
   tone?: "deep" | "deep-2";
+  /** Зерно узора; `null` — полоса без узора. Обязателен: см. PageHero. */
+  pattern: number | null;
 }) {
   return (
     <section
@@ -69,6 +85,23 @@ export function DarkCta({
           насыщенный зелёный квадрат на почти чёрном превращается в световое
           пятно и тянет взгляд сильнее, чем заголовок рядом. */}
       <LivePattern variant={2} tone="dark" />
+      {pattern !== null && (
+        <div className={styles.ctaPattern}>
+          <BrandPattern
+            seed={pattern}
+            boldness={3}
+            width={1400}
+            height={210}
+            tone="dark"
+            keepClear={[
+              // Заголовок и абзац под ним.
+              { x2: 760, y1: 45, y2: 165 },
+              // Кнопки.
+              { x1: 1050, x2: 1400, y1: 65, y2: 145 },
+            ]}
+          />
+        </div>
+      )}
       <div data-reveal="0">
         <h2 className={styles.ctaTitle} data-words="30">
           {title}

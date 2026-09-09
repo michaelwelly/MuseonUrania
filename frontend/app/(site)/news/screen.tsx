@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo";
 import Image from "next/image";
+import BrandPattern from "@/components/BrandPattern";
 import PageHero from "@/components/PageHero";
 import { newsHero, press } from "@/content/news";
 import { companyContact } from "@/content/staff";
@@ -35,11 +36,34 @@ export default async function NewsScreen() {
         crumbs={[{ label: strings.crumbs.home, href: "/" }, { label: strings.crumbs.news }]}
         title={newsHero.title}
         lead={newsHero.lead}
+        pattern={181}
       />
 
       <NewsFeed news={news} />
 
-      <section className={styles.press}>
+      {/* Тёмная полоса «для СМИ» — единственный крупный однотонный блок
+          на этой странице: выше идёт лента карточек, узор в ней спорил бы
+          с обложками новостей.
+
+          Зоны две, по колонкам. Левая — текст и подпись (до 673 по ширине
+          и до 320 по высоте в координатах поля 1400 × 380), правая — форма
+          подписки (от 728 до 1354, до 276). Свободными остаются полоса
+          сверху, полоса снизу и промежуток между колонками — туда и встают
+          акценты; бледные формы обе зоны пропускают. */}
+      <section className={`${styles.press} patternHost`}>
+        <div className={styles.pressPattern}>
+          <BrandPattern
+            seed={193}
+            boldness={3}
+            width={1400}
+            height={380}
+            tone="dark"
+            keepClear={[
+              { x2: 700, y1: 50, y2: 335 },
+              { x1: 715, x2: 1370, y1: 50, y2: 290 },
+            ]}
+          />
+        </div>
         <div data-reveal="0">
           <p className={styles.eyebrow}>
             {press.eyebrow}
