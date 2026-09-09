@@ -95,15 +95,18 @@ public class KnowledgeIndex {
     private final CatalogQuery catalog;
     private final ContentQuery content;
     private final DocumentQuery documents;
+    private final SitePages pages;
 
     public KnowledgeIndex(JdbcClient jdbc, TransactionTemplate transactions, Embeddings embeddings,
-                          CatalogQuery catalog, ContentQuery content, DocumentQuery documents) {
+                          CatalogQuery catalog, ContentQuery content, DocumentQuery documents,
+                          SitePages pages) {
         this.jdbc = jdbc;
         this.transactions = transactions;
         this.embeddings = embeddings;
         this.catalog = catalog;
         this.content = content;
         this.documents = documents;
+        this.pages = pages;
     }
 
     /**
@@ -242,6 +245,20 @@ public class KnowledgeIndex {
      * от них — не обязан ничем.
      */
     public Stats reindexPublished() {
+        // Страницы сайта идут в индекс наравне с карточками и документами.
+        // Без них у ассистента не было материалов ни про компанию, ни про
+        // состав каталога, ни про разделы сайта — то есть про всё, о чём
+        // посетитель спрашивает первым делом. Ничего нового они не вносят:
+        // это уже опубликованные и согласованные тексты страниц.
+        var catalogLines = catalog.publishedProducts().stream()
+                .map(product -> product.name() + " — " + product.kind())
+                .toList();
+
+        for (var page : pages.published(catalogLines)) {
+            index(new Material("page", page.slug(), page.title(), page.url(), "ru", "public",
+                    page.text()));
+        }
+
         for (var product : catalog.publishedProducts()) {
             index(new Material("product", product.slug(),
                     product.name() + " — " + product.kind(),

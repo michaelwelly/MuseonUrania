@@ -55,12 +55,15 @@ class DocumentIndexingTest extends PostgresTestBase {
     DocumentQuery documents;
 
     @Autowired
+    SitePages pages;
+
+    @Autowired
     DocumentAdmin editor;
 
     private final SyntheticEmbeddings embeddings = new SyntheticEmbeddings();
 
     private KnowledgeIndex index() {
-        return new KnowledgeIndex(jdbc, transactions, embeddings, catalog, content, documents);
+        return new KnowledgeIndex(jdbc, transactions, embeddings, catalog, content, documents, pages);
     }
 
     // ————— текст файла —————

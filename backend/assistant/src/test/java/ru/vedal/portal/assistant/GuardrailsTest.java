@@ -12,6 +12,17 @@ class GuardrailsTest {
 
     private final Guardrails guardrails = new Guardrails();
 
+    /**
+     * Текст отказа без флага очереди — им проверяются формулировки.
+     *
+     * <p>Флаг проверяется отдельно, {@link #onlyQuestionsWhereASpecialistCanHelpQueue()}:
+     * «что ответили» и «позвали ли человека» — разные решения, и сваливать
+     * их в одну проверку значит однажды не заметить, что второе поменялось.
+     */
+    private java.util.Optional<String> refusalText(String question) {
+        return guardrails.refuse(question).map(Guardrails.Refusal::answer);
+    }
+
     // Правила не срабатывали вообще: в Pattern.compile стоял флаг (?iu), где
     // строчная u — это UNICODE_CASE. Границу слова \b определяет
     // UNICODE_CHARACTER_CLASS, то есть (?U), и без неё \b вокруг кириллицы
@@ -26,7 +37,7 @@ class GuardrailsTest {
             "есть ли симптомы у пациента",
     })
     void clinicalQuestionsAreRefused(String question) {
-        assertThat(guardrails.refuse(question))
+        assertThat(refusalText(question))
                 .as("клинический вопрос: %s", question)
                 .isPresent()
                 .get().asString().contains("не даю медицинских заключений");
@@ -41,7 +52,7 @@ class GuardrailsTest {
             "какая стоимость обслуживания",
     })
     void priceQuestionsAreRefused(String question) {
-        assertThat(guardrails.refuse(question))
+        assertThat(refusalText(question))
                 .as("вопрос про цену: %s", question)
                 .isPresent()
                 .get().asString().contains("Цены не публикуются");
@@ -54,7 +65,7 @@ class GuardrailsTest {
             "есть в наличии инкубатор",
     })
     void deliveryQuestionsAreRefused(String question) {
-        assertThat(guardrails.refuse(question))
+        assertThat(refusalText(question))
                 .as("вопрос про сроки: %s", question)
                 .isPresent()
                 .get().asString().contains("не выдумываю");
@@ -63,12 +74,12 @@ class GuardrailsTest {
     @ParameterizedTest
     @ValueSource(strings = {
             "нужен инкубатор для новорождённых",
-            "где регистрационное удостоверение на A-2000",
+            "какие документы есть по A-2000",
             "какие изделия есть для реанимации",
             "как оставить сервисный запрос",
     })
     void legitimateQuestionsPass(String question) {
-        assertThat(guardrails.refuse(question))
+        assertThat(refusalText(question))
                 .as("обычный вопрос: %s", question)
                 .isEmpty();
     }
@@ -92,7 +103,7 @@ class GuardrailsTest {
             "как реанимировать младенца",
     })
     void clinicalSituationsAreRefused(String question) {
-        assertThat(guardrails.refuse(question))
+        assertThat(refusalText(question))
                 .as("описание состояния человека: %s", question)
                 .isPresent()
                 .get().asString().contains("не даю медицинских заключений");
@@ -112,7 +123,7 @@ class GuardrailsTest {
             "нужен сервис для VEDAL R2, что делать",
     })
     void productQuestionsAboutTemperatureStillPass(String question) {
-        assertThat(guardrails.refuse(question))
+        assertThat(refusalText(question))
                 .as("вопрос про изделие: %s", question)
                 .isEmpty();
     }
@@ -133,7 +144,7 @@ class GuardrailsTest {
             "any discount for two units?",
     })
     void priceQuestionsAreRefusedInEnglishToo(String question) {
-        assertThat(guardrails.refuse(question))
+        assertThat(refusalText(question))
                 .as("цена по-английски: %s", question)
                 .isPresent()
                 .get().asString().contains("Prices are not published");
@@ -146,7 +157,7 @@ class GuardrailsTest {
             "when can you ship the incubator",
     })
     void deliveryQuestionsAreRefusedInEnglishToo(String question) {
-        assertThat(guardrails.refuse(question))
+        assertThat(refusalText(question))
                 .as("сроки по-английски: %s", question)
                 .isPresent()
                 .get().asString().contains("do not invent");
@@ -159,7 +170,7 @@ class GuardrailsTest {
             "my baby is not breathing, what do I do",
     })
     void clinicalQuestionsAreRefusedInEnglishToo(String question) {
-        assertThat(guardrails.refuse(question))
+        assertThat(refusalText(question))
                 .as("клиника по-английски: %s", question)
                 .isPresent()
                 .get().asString().contains("do not give medical conclusions");
@@ -169,11 +180,11 @@ class GuardrailsTest {
     // поэтому иероглифы ищутся подстрокой.
     @Test
     void chineseQuestionsAreRefusedAndAnsweredInChinese() {
-        assertThat(guardrails.refuse("VEDAL A-2000 价格是多少？"))
+        assertThat(refusalText("VEDAL A-2000 价格是多少？"))
                 .isPresent()
                 .get().asString().contains("我们不公开价格");
 
-        assertThat(guardrails.refuse("交货时间是多久？"))
+        assertThat(refusalText("交货时间是多久？"))
                 .isPresent()
                 .get().asString().contains("交货时间");
     }
@@ -182,7 +193,7 @@ class GuardrailsTest {
     // вопросе не должна переключать ответ на английский.
     @Test
     void aRussianQuestionWithLatinModelNameStaysRussian() {
-        assertThat(guardrails.refuse("Сколько стоит VEDAL A-2000?"))
+        assertThat(refusalText("Сколько стоит VEDAL A-2000?"))
                 .isPresent()
                 .get().asString().contains("Цены не публикуются");
     }
@@ -193,18 +204,18 @@ class GuardrailsTest {
     @ValueSource(strings = {
             "what monitoring channels does the A-2000 have",
             "which products do you have for resuscitation",
-            "where is the registration certificate",
+            "which documents do you have for the A-2000",
     })
     void legitimateEnglishQuestionsPass(String question) {
-        assertThat(guardrails.refuse(question))
+        assertThat(refusalText(question))
                 .as("обычный вопрос по-английски: %s", question)
                 .isEmpty();
     }
 
     @Test
     void emptyQuestionAsksToRephrase() {
-        assertThat(guardrails.refuse("  ")).isPresent();
-        assertThat(guardrails.refuse(null)).isPresent();
+        assertThat(refusalText("  ")).isPresent();
+        assertThat(refusalText(null)).isPresent();
     }
 
     // «Материалов нет» — самый частый ответ иностранному посетителю, и это
@@ -219,16 +230,16 @@ class GuardrailsTest {
     void notFoundSpeaksTheLanguageOfTheQuestion() {
         assertThat(guardrails.notFound("Есть ли у вас инкубаторы?"))
                 .as("русский вопрос")
-                .contains("нет согласованных материалов");
+                .contains("нет, а придумывать ответ я не буду");
 
         assertThat(guardrails.notFound("Do you have neonatal incubators?"))
                 .as("английский вопрос")
-                .contains("no approved materials")
+                .contains("nothing published on this")
                 .doesNotContain("согласованных");
 
         assertThat(guardrails.notFound("你们有婴儿培养箱吗？"))
                 .as("китайский вопрос")
-                .contains("核准的资料")
+                .contains("没有已公开的资料")
                 .doesNotContain("согласованных");
     }
 
@@ -237,6 +248,95 @@ class GuardrailsTest {
     @Test
     void latinModelNameDoesNotSwitchTheLanguage() {
         assertThat(guardrails.notFound("Что скажете про VEDAL A-2000 и R1?"))
-                .contains("нет согласованных материалов");
+                .contains("придумывать ответ я не буду");
+    }
+
+    // ————— статус разрешительных документов —————
+    //
+    // Правило проекта «не выдумывать сертификаты и статус регистрации»
+    // обходилось не выдумкой, а пересказом: строка перечня «Регистрационное
+    // удостоверение — VEDAL R1, R2» на вопрос «есть ли у вас регистрационное
+    // удостоверение» читается как «да, есть», хотя рядом с ней стоит статус
+    // «наличие уточняется».
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "есть ли регистрационное удостоверение",
+            "у вас есть регистрационное удостоверение на A-2000",
+            "изделие сертифицировано?",
+            "оборудование зарегистрировано в Росздравнадзоре",
+            "какой статус регистрации у R2",
+    })
+    void registrationStatusIsNeverConfirmedByTheAssistant(String question) {
+        assertThat(refusalText(question))
+                .as("вопрос о разрешительных документах: %s", question)
+                .isPresent()
+                .get().asString()
+                .contains("Наличие и статус разрешительных документов я не подтверждаю")
+                .as("отказ говорит, что делать дальше, а не только чего нельзя")
+                .contains("Назовите модель");
+    }
+
+    @Test
+    void registrationStatusIsNotConfirmedInEnglishEither() {
+        assertThat(refusalText("do you have a registration certificate for the A-2000"))
+                .isPresent()
+                .get().asString().contains("I do not confirm");
+    }
+
+    // ————— человека просят словами —————
+    //
+    // Кнопка «Позвать специалиста» в виджете есть, но половина посетителей
+    // пишет просьбу в поле ввода. До правила такая просьба уходила в поиск
+    // по опубликованному, ничего не находила и попадала к человеку случайно —
+    // тем же путём, что вопрос про погоду.
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "позовите специалиста",
+            "хочу поговорить с человеком",
+            "соедините с менеджером",
+            "нужен живой человек",
+            "у меня жалоба на поставку",
+            "I want to talk to a human",
+            "let me speak to a manager",
+    })
+    void askingForAPersonCallsAPerson(String question) {
+        assertThat(guardrails.refuse(question))
+                .as("просьба о человеке: %s", question)
+                .isPresent();
+        assertThat(guardrails.refuse(question).orElseThrow().human())
+                .as("просьбу о человеке обязана исполнить очередь: %s", question)
+                .isTrue();
+    }
+
+    // Клиника сильнее просьбы о человеке: «позовите врача, ребёнок не дышит» —
+    // прежде всего описание состояния ребёнка, и ответ на него должен быть
+    // тот же, что на любое другое описание состояния.
+    @Test
+    void aDescribedConditionOutweighsTheRequestForAPerson() {
+        assertThat(refusalText("позовите человека, ребёнок не дышит"))
+                .isPresent()
+                .get().asString().contains("не даю медицинских заключений");
+    }
+
+    // ————— кого зовут, а кого нет —————
+    //
+    // На стенде 9 сентября в очереди лежало почти всё: «привет», «про что
+    // этот сайт», пустые сообщения. Очередь, куда падает всё, равна
+    // отсутствию очереди — дежурный перестаёт её читать.
+    @Test
+    void onlyQuestionsWhereASpecialistCanHelpQueue() {
+        assertThat(guardrails.refuse("сколько стоит инкубатор").orElseThrow().human())
+                .as("цену считает специалист — ему есть что продолжить")
+                .isTrue();
+        assertThat(guardrails.refuse("когда поставите R2").orElseThrow().human())
+                .as("сроки подтверждает специалист")
+                .isTrue();
+        assertThat(guardrails.refuse("у ребёнка температура 35").orElseThrow().human())
+                .as("клиническую ситуацию человек обязан увидеть")
+                .isTrue();
+
+        assertThat(guardrails.refuse("   ").orElseThrow().human())
+                .as("пустое сообщение специалиста не требует: продолжать нечего")
+                .isFalse();
     }
 }

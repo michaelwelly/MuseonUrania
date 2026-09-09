@@ -24,8 +24,10 @@ public interface LlmEngine {
             @Schema(description = "Адрес материала на сайте.", example = "/products/vedal-a-2000/")
             String url,
 
-            @Schema(description = "Откуда материал взят.",
-                    allowableValues = {"product", "news", "document"}, example = "product")
+            @Schema(description = "Откуда материал взят. `page` — текст страницы сайта: "
+                    + "им ассистент отвечает на вопросы о компании, каталоге и разделах, "
+                    + "на которые не отвечает ни одна карточка изделия.",
+                    allowableValues = {"product", "news", "document", "page"}, example = "product")
             String kind) {}
 
     record Grounded(String text, List<Source> sources) {}
