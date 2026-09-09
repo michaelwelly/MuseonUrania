@@ -2068,17 +2068,62 @@ th.tight input[type="checkbox"] {
   flex-wrap: wrap;
 }
 
+/* Столбик справа от кружка: кнопки и одна строка условий под ними.
+   min-width: 0 — иначе строка условий не переносится и распирает карточку. */
+.portrait__side {
+  flex: 1 1 240px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
 .portrait__actions {
   display: flex;
   align-items: center;
   gap: var(--s3);
+  flex-wrap: wrap;
 }
 
-/* Внутри карточки ссылка «загрузить» стоит рядом с кнопкой, а не под
-   строкой таблицы, откуда .file приехал: отступ сверху здесь сдвигал бы
-   её относительно кнопки. */
-.portrait__actions .file {
-  margin-top: 0;
+/* Поле файла спрятано целиком: его открывает кнопка рядом.
+
+   display: none, а не «уехало за край», и это тот редкий случай, когда так
+   правильно. Обычно так прячут то, что должен прочитать скринридер, — здесь
+   наоборот: у поля есть кнопка-заместитель с подписью, и второе объявление
+   того же действия читалось бы дважды. Имя у поля при этом остаётся —
+   см. aria-label в profile/page.tsx. */
+.portrait__file {
+  display: none;
+}
+
+/* Условия к файлу — подпись у кнопки, а не абзац: формат и предел нужны
+   ровно в момент выбора файла и занимают одну строку. */
+.portrait__note {
+  margin: 0;
+  font-size: var(--t-micro);
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* Остальное про хранение — под раскрытием. Свёрнутое оно занимает строку;
+   развёрнутое читается один раз и больше не мешает. */
+.portrait__more {
+  margin-top: var(--s3);
+}
+
+.portrait__more > summary {
+  font-size: var(--t-micro);
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.portrait__more > summary:hover {
+  color: var(--ink);
+}
+
+.portrait__more .admin-hint {
+  margin: var(--s2) 0 0;
 }
 
 /* ————— счётчик на вкладке ————— */
@@ -3415,6 +3460,23 @@ th.tight input[type="checkbox"] {
   font-size: var(--t-small);
   text-align: right;
   overflow-wrap: anywhere;
+}
+
+/* Строка под таблицей: чего портал не знает и почему — один раз на все
+   такие поля сразу. Четыре строки «ожидает уточнения» подряд читались как
+   анкета, которую забыли дозаполнить. */
+.pairs__none {
+  margin: 0 0 var(--s5);
+  font-size: var(--t-micro);
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+/* Сразу под своей таблицей — вплотную: это её подпись, а не следующий блок.
+   Отступ снимается только у соседа, чтобы .pairs не потерял его там, где
+   после списка идёт что-то другое. */
+.pairs + .pairs__none {
+  margin-top: calc(var(--s5) * -1 + var(--s2));
 }
 
 .triage__field {
