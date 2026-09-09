@@ -119,8 +119,14 @@ public class AdminChatApi {
 
     @Operation(summary = "Закрыть разговор",
             description = "Посетитель, написав снова, заведёт новый.")
+    // Пустое тело обязано приезжать с 204, а не с 200. Метод без возвращаемого
+    // значения отдаёт у Spring именно 200 с пустым телом, и снаружи это
+    // «успех, вот вам ответ» без ответа: клиент разбирал пустоту как JSON
+    // и показывал сотруднику ошибку поверх закрытого разговора.
+    @ApiResponse(responseCode = "204", description = "Разговор закрыт.")
     @ApiResponse(responseCode = "404", description = "Разговора нет.")
     @PostMapping("/{id}/close")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void close(@PathVariable UUID id, Authentication authentication) {
         desk.close(id, Actor.of(authentication));
     }

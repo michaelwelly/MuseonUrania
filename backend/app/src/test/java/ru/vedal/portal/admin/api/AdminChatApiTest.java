@@ -11,6 +11,8 @@ import ru.vedal.portal.chat.ChatDesk;
 import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -123,6 +125,31 @@ class AdminChatApiTest extends PostgresTestBase {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.size").value(200))
                 .andExpect(jsonPath("$.page").value(0));
+    }
+
+    // Тоже написан после поломки. Закрытие разговора возвращает пустоту, но
+    // приезжала она с кодом 200: метод без возвращаемого значения отдаёт
+    // у Spring именно 200 с пустым телом. Снаружи это «успех, вот вам ответ»
+    // без ответа — админка разбирала пустоту как JSON и показывала сотруднику
+    // «Unexpected end of JSON input» поверх разговора, который на самом деле
+    // закрылся.
+    //
+    // Проверяется и код, и тело: одного кода мало — он пропустил бы 204
+    // с телом, одного тела мало — оно пропустило бы нынешнюю поломку.
+    @Test
+    @WithMockUser(username = "manager", roles = "PORTAL_ADMIN")
+    void closingAConversationAnswersWithNoBodyAndSaysSoInTheStatus() throws Exception {
+        var id = desk.say(UUID.randomUUID().toString(), "Сколько стоит инкубатор?",
+                new ChatDesk.Context("ru", null, "/products/")).id();
+
+        mvc.perform(post("/api/admin/v1/chats/" + id + "/close"))
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+
+        // Пустой ответ — это «сделано», а не «ничего не произошло».
+        mvc.perform(get("/api/admin/v1/chats/" + id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("closed"));
     }
 
     @Test
