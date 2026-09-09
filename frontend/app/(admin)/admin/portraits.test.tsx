@@ -22,6 +22,8 @@ vi.mock("@/lib/admin", () => ({
 }));
 
 import { Avatar } from "./Avatar";
+import { contentSecurityPolicy } from "@/lib/security-headers";
+
 import { forgetPortrait, __resetPortraits } from "./portraits";
 
 /** Blob подделывать не нужно: кеш кладёт его в URL.createObjectURL как есть. */
@@ -123,5 +125,77 @@ describe("кружок сотрудника", () => {
 
     expect(mocks.avatarOf).toHaveBeenCalledTimes(1);
     expect(screen.getAllByText("И")).toHaveLength(2);
+  });
+});
+
+// ———————————————————————————————————————————————————————————————————————————
+// Портрет и политика содержимого — одна цепочка, а не два файла
+//
+// Так он и потерялся 9 сентября. Файл доехал, портал собрал из него квадрат
+// 256×256, сохранил, записал в журнал «поставил себе портрет» — и в кружке
+// остался серый круг. Ни ошибки на экране, ни отказа в запросе: последний
+// шаг, показ, гасил заголовок ответа СТРАНИЦЫ, где `img-src` перечислял
+// `'self' data:` и не перечислял `blob:`.
+//
+// Ни один тест этого не ловил, потому что каждый из двух файлов был прав
+// по отдельности: кружок честно ставил адрес в `src`, политика честно
+// перечисляла разрешённые источники. Ошибка жила в шве между ними.
+//
+// Поэтому проверка идёт от разметки к политике, а не от строки к строке:
+// берётся адрес, который кружок ДЕЙСТВИТЕЛЬНО поставил, и спрашивается,
+// пустит ли его та политика, которую сайт ДЕЙСТВИТЕЛЬНО отдаёт.
+describe("портрет против политики содержимого", () => {
+  /** Источники из директивы `img-src`. */
+  function откуда_картинки(csp: string): string[] {
+    const директива = csp
+      .split(";")
+      .map((кусок) => кусок.trim())
+      .find((кусок) => кусок.startsWith("img-src "));
+    expect(директива, "в политике нет директивы img-src").toBeTruthy();
+    return директива!.slice("img-src ".length).split(/\s+/);
+  }
+
+  it("политика пускает тот адрес, который кружок ставит в src", async () => {
+    render(<Avatar name="Ирина Кольцова" login="i.koltsova" />);
+
+    const адрес = await waitFor(() => {
+      const img = document.querySelector("img.avatar__photo") as HTMLImageElement;
+      expect(img).toBeTruthy();
+      return img.src;
+    });
+
+    // Схема, а не весь адрес: `blob:` и `data:` разрешаются в политике
+    // целиком схемой, и `'self'` их НЕ покрывает — оно про источник
+    // (протокол + хост + порт), которого у такого адреса нет.
+    const схема = new URL(адрес).protocol;
+    const источники = откуда_картинки(
+      contentSecurityPolicy({
+        NEXT_PUBLIC_MEDIA_URL: "",
+        NEXT_PUBLIC_API_URL: "",
+        NEXT_PUBLIC_OIDC_ISSUER: "",
+        NEXT_PUBLIC_YANDEX_METRIKA_ID: "",
+      }),
+    );
+
+    expect(источники, `политика не пускает ${схема} — портрет будет невидим`)
+      .toContain(схема);
+  });
+
+  // Разрешение не должно быть куплено дырой: `*` или голое `https:` пустили бы
+  // заодно картинку с любого чужого адреса, а картинка — это ещё и запрос
+  // наружу с адресом страницы в Referer.
+  it("не пускает картинку откуда угодно", () => {
+    const источники = откуда_картинки(
+      contentSecurityPolicy({
+        NEXT_PUBLIC_MEDIA_URL: "",
+        NEXT_PUBLIC_API_URL: "",
+        NEXT_PUBLIC_OIDC_ISSUER: "",
+        NEXT_PUBLIC_YANDEX_METRIKA_ID: "",
+      }),
+    );
+
+    expect(источники).not.toContain("*");
+    expect(источники).not.toContain("https:");
+    expect(источники).not.toContain("http:");
   });
 });
