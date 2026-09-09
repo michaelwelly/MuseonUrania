@@ -16,10 +16,25 @@ async function admin(token: string | null = "token-1") {
 }
 
 function json(body: unknown, status = 200) {
+  return raw(status, JSON.stringify(body));
+}
+
+/** Ответ без тела: так отвечают двери, которым нечего вернуть. */
+function empty(status = 204) {
+  return raw(status, "");
+}
+
+// Заглушка ведёт себя как настоящий Response: `json()` разбирает то же тело,
+// что отдаёт `text()`, и на пустом бросает «Unexpected end of JSON input».
+// Заглушка, у которой `json()` всегда отдаёт готовый объект, не отличит
+// разбор тела от разбора пустоты — и пропустит ровно тот дефект, из-за
+// которого этот набор дописан.
+function raw(status: number, body: string) {
   return {
     ok: status >= 200 && status < 300,
     status,
-    json: async () => body,
+    text: async () => body,
+    json: async () => JSON.parse(body) as unknown,
   } as Response;
 }
 
@@ -97,15 +112,10 @@ describe("клиент админского API", () => {
 
   it("ответ не в problem+json не роняет разбор", async () => {
     const { products } = await admin();
+    // Это html от прокси, а не json.
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({
-        ok: false,
-        status: 502,
-        json: async () => {
-          throw new Error("это html от прокси, а не json");
-        },
-      } as unknown as Response),
+      vi.fn().mockResolvedValue(raw(502, "<html><body>502 Bad Gateway</body></html>")),
     );
 
     const failure = (await products().catch((e: unknown) => e)) as Refusal;
@@ -127,18 +137,23 @@ describe("клиент админского API", () => {
 
   it("204 при удалении не пытается разобрать пустое тело", async () => {
     const { deleteCategory } = await admin();
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        status: 204,
-        json: async () => {
-          throw new Error("тела нет");
-        },
-      } as unknown as Response),
-    );
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(empty()));
 
     await expect(deleteCategory("id-1")).resolves.toBeUndefined();
+  });
+
+  // Дефект с живого стенда. Закрытие разговора отвечало пустым телом, но
+  // с кодом 200, а не 204, и клиент, смотревший на код, разбирал пустоту
+  // как JSON. Сотрудник видел «Unexpected end of JSON input» поверх
+  // разговора, который на самом деле закрылся.
+  //
+  // Проверяется тело, а не код: дверь могла бы вернуть пустоту с любым
+  // успешным кодом, и ни один из них не повод падать.
+  it("пустое тело с успешным кодом не разбирается как JSON", async () => {
+    const { closeChat } = await admin();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(empty(200)));
+
+    await expect(closeChat("c-1")).resolves.toBeUndefined();
   });
 
   // Потолок размера страницы стоит на портале, но клиент не должен просить

@@ -53,12 +53,18 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new AdminError(0, "Портал не отвечает.");
   }
 
-  if (response.status === 204) return undefined as T;
+  // Тело читается текстом, а не сразу разбором. Пустой ответ — законный
+  // ответ двери, которая ничего не возвращает, и приходит он не только
+  // с 204: дверь, отдающая пустоту с 200, снаружи выглядит так же.
+  // Безусловный разбор превращал такой ответ в «Unexpected end of JSON
+  // input» — сообщение о том, что действие не удалось, поверх удавшегося
+  // действия. Проверять надо тело, а не код ответа.
+  const body = await response.text();
 
   if (!response.ok) {
     let problem: Problem = {};
     try {
-      problem = (await response.json()) as Problem;
+      problem = JSON.parse(body) as Problem;
     } catch {
       // Не problem+json — значит, отвечал не портал, а что-то перед ним.
     }
@@ -69,7 +75,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     );
   }
 
-  return (await response.json()) as T;
+  return (body ? JSON.parse(body) : undefined) as T;
 }
 
 const get = <T>(path: string) => request<T>(path);
