@@ -4,45 +4,37 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { statusLabel } from "@/content/products";
 import LeadForm from "@/components/LeadForm";
-import TranslationNotice from "@/components/TranslationNotice";
-import { ui } from "@/content/ui";
+import { ui as strings } from "@/content/ui";
 import { fetchDocuments, fetchProduct, fetchProducts } from "@/lib/api";
 import { forProduct } from "@/lib/documents";
-import { contentText } from "@/lib/content-i18n";
-import { localePath, type Lang } from "@/lib/i18n";
 import ProductTabs from "./tabs";
 import styles from "./page.module.css";
 import { mediaSrc } from "@/lib/media";
 import { pageMetadata } from "@/lib/seo";
 
 // Карточка изделия. Тело вынесено из `page.tsx` в `screen.tsx`, потому что
-// его рисуют два маршрута: `/products/[slug]/` (русский, `app/(site)`) и
-// `/[lang]/products/[slug]/` (переведённый, `app/(intl)`). Файл `screen.tsx`
-// маршрутом не является, поэтому здесь можно держать любые экспорты.
+// `screen.tsx` маршрутом не является: здесь можно держать любые экспорты
+// и рисовать экран из тестов, чего `page.tsx` не позволяет.
 //
-// Слаг приходит уже разобранным: `params` — это дело маршрута, а не экрана,
-// и в двух маршрутах он разобран по-разному (`/products/[slug]` против
-// `/[lang]/products/[slug]`).
+// Слаг приходит уже разобранным: `params` — это дело маршрута, а не экрана.
 //
 // Почти всё на этой странице — тексты заказчика: описание, назначение,
-// характеристики, статус документации. Переводим их не мы, поэтому они идут
-// через `contentText` и до согласования показываются по-русски с пометкой
-// `lang="ru"`. Наше здесь — только подписи разделов и кнопок.
+// характеристики, статус документации. Они приходят из портала
+// и из `content/products.ts`; экрану принадлежат только подписи
+// разделов и кнопок.
 
-export async function productMetadata(slug: string, lang: Lang): Promise<Metadata> {
+export async function productMetadata(slug: string): Promise<Metadata> {
   const product = await fetchProduct(slug);
   if (!product) return {};
-  const c = contentText(lang);
   // Адрес берётся из ответа API, а не из сегмента маршрута: canonical обязан
   // указывать на один адрес страницы, а прийти на неё можно и по кодировке,
   // отличной от каноничной.
   return pageMetadata({
-    title: `${product.name} — ${c.t(product.kind)} — VEDAL`,
-    description: c.t(product.detail ?? product.summary),
+    title: `${product.name} — ${product.kind} — VEDAL`,
+    description: product.detail ?? product.summary,
     path: `/products/${product.slug}/`,
-    lang,
     image: product.image
-      ? { url: mediaSrc(product.image.src), alt: c.t(product.image.alt) }
+      ? { url: mediaSrc(product.image.src), alt: product.image.alt }
       : undefined,
   });
 }
@@ -55,7 +47,7 @@ function Arrow() {
   );
 }
 
-export default async function ProductScreen({ slug, lang }: { slug: string; lang: Lang }) {
+export default async function ProductScreen({ slug }: { slug: string }) {
   // Перечень документов читается тем же запросом, что и страница /documents/,
   // и с тем же сроком обновления: вкладка «Документы» карточки обязана
   // показывать то же самое, а не собственный список.
@@ -68,17 +60,14 @@ export default async function ProductScreen({ slug, lang }: { slug: string; lang
   if (!product) notFound();
 
   const related = products.filter((p) => p.slug !== product.slug).slice(0, 3);
-  const strings = ui(lang);
-  const c = contentText(lang);
-  const at = (path: string) => localePath(lang, path);
 
   return (
     <main className={styles.page}>
       <p className={styles.crumbs}>
-        <Link href={at("/")}>{strings.crumbs.home}</Link> /{" "}
-        <Link href={at("/products/")}>{strings.crumbs.products}</Link> /{" "}
+        <Link href="/">{strings.crumbs.home}</Link> /{" "}
+        <Link href="/products/">{strings.crumbs.products}</Link> /{" "}
         {/* Направление и название — из каталога заказчика, а не наши подписи. */}
-        <span lang={c.mark(product.categories[0])}>{c.t(product.categories[0])}</span> /{" "}
+        <span>{product.categories[0]}</span> /{" "}
         {product.name}
       </p>
 
@@ -90,7 +79,7 @@ export default async function ProductScreen({ slug, lang }: { slug: string; lang
           {product.image ? (
             <Image
               src={mediaSrc(product.image.src)}
-              alt={c.t(product.image.alt)}
+              alt={product.image.alt}
               fill
               sizes="(max-width: 1100px) 100vw, 50vw"
               priority
@@ -102,38 +91,34 @@ export default async function ProductScreen({ slug, lang }: { slug: string; lang
 
         <div className={styles.info}>
           <div className={styles.infoTop}>
-            {/* Статус документации и направления — утверждения о разрешительных
-                документах и области применения. Правила контента запрещают
-                придумывать им перевод, поэтому только откат на оригинал. */}
             <span
               className={`${styles.badge} ${
                 product.status === "confirmed" ? styles.badgeOk : styles.badgeMuted
               }`}
-              lang={c.mark(statusLabel[product.status])}
             >
-              {c.t(statusLabel[product.status])}
+              {statusLabel[product.status]}
             </span>
-            <span className={styles.cats} lang={c.mark(...product.categories)}>
-              {product.categories.map((cat) => c.t(cat)).join(" · ")}
+            <span className={styles.cats}>
+              {product.categories.map((cat) => cat).join(" · ")}
             </span>
           </div>
 
           <h1 className={styles.title} data-words="34" data-wdelay="110">
             {product.name}
           </h1>
-          <p className={styles.kind} lang={c.mark(product.kind)}>
-            {c.t(product.kind)}
+          <p className={styles.kind}>
+            {product.kind}
           </p>
-          <p className={styles.detail} lang={c.mark(product.detail ?? product.summary)}>
-            {c.t(product.detail ?? product.summary)}
+          <p className={styles.detail}>
+            {product.detail ?? product.summary}
           </p>
 
           {product.keyParams && (
             <ul className={styles.params}>
               {product.keyParams.map((p) => (
-                <li key={p.label} className={styles.param} lang={c.mark(p.label, p.value)}>
-                  <span className={styles.paramLabel}>{c.t(p.label)}</span>
-                  <span>{c.t(p.value)}</span>
+                <li key={p.label} className={styles.param}>
+                  <span className={styles.paramLabel}>{p.label}</span>
+                  <span>{p.value}</span>
                 </li>
               ))}
             </ul>
@@ -174,16 +159,11 @@ export default async function ProductScreen({ slug, lang }: { slug: string; lang
               Перевод абзаца согласовывает заказчик, а не мы: «регистрационное
               удостоверение» и «registration certificate» юридически не одно
               и то же. */}
-          <p className={styles.note} lang={c.mark(PRODUCT_DOCS_NOTE)}>
-            {c.t(PRODUCT_DOCS_NOTE)}
+          <p className={styles.note}>
+            {PRODUCT_DOCS_NOTE}
           </p>
         </div>
       </section>
-
-      {/* Примечание о непереведённом — сразу после первого экрана: ниже идут
-          назначение, особенности и характеристики, а их перевод согласовывает
-          заказчик. Для русской версии не рисуется. */}
-      <TranslationNotice lang={lang} />
 
       {/* §4.5 плана: места под назначение и ключевые особенности. Оба блока
           стоят до вкладок намеренно — это ответ на вопрос «что это и зачем»,
@@ -199,15 +179,15 @@ export default async function ProductScreen({ slug, lang }: { slug: string; lang
         <div>
           <h2 className={styles.aboutTitle}>{strings.product.purpose}</h2>
           {product.purpose ? (
-            <p className={styles.aboutText} lang={c.mark(product.purpose)}>
-              {c.t(product.purpose)}
+            <p className={styles.aboutText}>
+              {product.purpose}
             </p>
           ) : (
             // «Ожидает уточнения» — тоже утверждение о состоянии документов,
             // а не подпись интерфейса: оно называет, кто готовит текст и на
             // каком условии он появится.
-            <p className={styles.awaiting} lang={c.mark(PURPOSE_AWAITING)}>
-              {c.t(PURPOSE_AWAITING)}
+            <p className={styles.awaiting}>
+              {PURPOSE_AWAITING}
             </p>
           )}
         </div>
@@ -217,20 +197,20 @@ export default async function ProductScreen({ slug, lang }: { slug: string; lang
           {product.features ? (
             <ul className={styles.features}>
               {product.features.map((f) => (
-                <li key={f} lang={c.mark(f)}>
-                  {c.t(f)}
+                <li key={f}>
+                  {f}
                 </li>
               ))}
             </ul>
           ) : (
-            <p className={styles.awaiting} lang={c.mark(FEATURES_AWAITING)}>
-              {c.t(FEATURES_AWAITING)}
+            <p className={styles.awaiting}>
+              {FEATURES_AWAITING}
             </p>
           )}
         </div>
       </section>
 
-      <ProductTabs product={product} documents={forProduct(documents, product.slug)} lang={lang} />
+      <ProductTabs product={product} documents={forProduct(documents, product.slug)} />
 
       {/* Запрос КП — на самой карточке, сразу после характеристик и до
           «других продуктов»: человек дочитал, чем это изделие отличается,
@@ -255,7 +235,6 @@ export default async function ProductScreen({ slug, lang }: { slug: string; lang
             form="quote"
             product={{ slug: product.slug, name: product.name, kind: product.kind }}
             analytics="quote_form_submit"
-            lang={lang}
             submitLabel={strings.actions.requestQuote}
           />
         </div>
@@ -268,19 +247,19 @@ export default async function ProductScreen({ slug, lang }: { slug: string; lang
         <ul className={styles.relatedGrid}>
           {related.map((p, i) => (
             <li key={p.slug} data-reveal={i}>
-              <Link className={styles.card} href={at(`/products/${p.slug}/`)}>
+              <Link className={styles.card} href={`/products/${p.slug}/`}>
                 <div className={styles.cardPhoto}>
                   {p.image && (
                     <Image
                       src={mediaSrc(p.image.src)}
-                      alt={c.t(p.image.alt)}
+                      alt={p.image.alt}
                       fill
                       sizes="(max-width: 1100px) 50vw, 33vw"
                     />
                   )}
                 </div>
-                <div className={styles.cardBody} lang={c.mark(p.categories[0])}>
-                  <p className={styles.cardCat}>{c.t(p.categories[0])}</p>
+                <div className={styles.cardBody}>
+                  <p className={styles.cardCat}>{p.categories[0]}</p>
                   <h3 className={styles.cardName}>{p.name}</h3>
                 </div>
               </Link>
@@ -292,9 +271,8 @@ export default async function ProductScreen({ slug, lang }: { slug: string; lang
   );
 }
 
-// Три абзаца ниже вынесены в константы не ради краткости разметки, а ради
-// словаря переводов: его ключ — сам русский оригинал (см. lib/content-i18n.ts),
-// и текст, размазанный по JSX, пришлось бы переносить в словарь посимвольно.
+// Три абзаца ниже вынесены в константы, чтобы текст не был размазан по JSX
+// переносами строк: так его видно целиком и правится он в одном месте.
 
 /** Условия выдачи документации и статус регистрации. */
 const PRODUCT_DOCS_NOTE =

@@ -3,45 +3,37 @@ import { pageMetadata } from "@/lib/seo";
 import Image from "next/image";
 import Link from "next/link";
 import LeadForm from "@/components/LeadForm";
-import TranslationNotice from "@/components/TranslationNotice";
 import { fetchProducts } from "@/lib/api";
 import { site } from "@/content/site";
 import { serviceHero, steps, serviceForm, serviceNotice, urgent } from "@/content/service";
 import { companyContact } from "@/content/staff";
-import { ui } from "@/content/ui";
+import { ui as strings } from "@/content/ui";
 import { vedalina } from "@/content/vedalina";
 import LivePattern from "@/components/LivePattern";
 import styles from "./page.module.css";
-import { contentText } from "@/lib/content-i18n";
-import { localePath, type Lang } from "@/lib/i18n";
 import { mediaSrc } from "@/lib/media";
 
-// «Сервис». Тело вынесено из `page.tsx` в `screen.tsx`, потому что его рисуют
-// два маршрута: `/service/` (русский) и `/[lang]/service/` (переведённый).
+// «Сервис». Тело вынесено из `page.tsx` в `screen.tsx`, потому что
+// `screen.tsx` маршрутом не является: здесь можно держать любые экспорты
+// и рисовать экран из тестов, чего `page.tsx` не позволяет.
 //
 // Экран остаётся асинхронным: список изделий для селектора формы приходит
-// с бэкенда, и оба маршрута ждут его одинаково.
+// с бэкенда.
 //
-// Предупреждение о технической документации переводу не подлежит вовсе:
-// page_briefs.md → Service → Safety требует не смягчать формулировку,
-// а перевод — это и есть её новая редакция.
+// Предупреждение о технической документации экран не сочиняет и не смягчает:
+// page_briefs.md → Service → Safety требует именно ту формулировку, что лежит
+// в content/service.ts.
 
-export function serviceMetadata(lang: Lang): Metadata {
-  const strings = ui(lang);
-  const c = contentText(lang);
+export function serviceMetadata(): Metadata {
   return pageMetadata({
     title: strings.meta.service,
-    description: c.t(serviceHero.lead),
+    description: serviceHero.lead,
     path: "/service/",
-    lang,
   });
 }
 
-export default async function ServiceScreen({ lang }: { lang: Lang }) {
+export default async function ServiceScreen() {
   const products = await fetchProducts();
-  const strings = ui(lang);
-  const c = contentText(lang);
-  const at = (path: string) => localePath(lang, path);
 
   return (
     <main className={styles.page}>
@@ -52,29 +44,27 @@ export default async function ServiceScreen({ lang }: { lang: Lang }) {
         <LivePattern variant={2} placement="seam" />
         <div className={styles.heroCopy}>
           <p className={styles.crumbs}>
-            <Link href={at("/")}>{strings.crumbs.home}</Link> / {strings.crumbs.service}
+            <Link href="/">{strings.crumbs.home}</Link> / {strings.crumbs.service}
           </p>
           <h1
             className={styles.h1}
             data-words="34"
             data-wdelay="110"
-            lang={c.mark(serviceHero.title)}
           >
-            {c.t(serviceHero.title)}
+            {serviceHero.title}
           </h1>
           <p
             className={styles.lead}
             data-words="13"
             data-wdelay="400"
-            lang={c.mark(serviceHero.lead)}
           >
-            {c.t(serviceHero.lead)}
+            {serviceHero.lead}
           </p>
         </div>
         <div className={styles.photo} data-anim="clip">
           <Image
             src={mediaSrc(serviceHero.image.src)}
-            alt={c.t(serviceHero.image.alt)}
+            alt={serviceHero.image.alt}
             fill
             sizes="(max-width: 1100px) 100vw, 50vw"
             priority
@@ -82,37 +72,30 @@ export default async function ServiceScreen({ lang }: { lang: Lang }) {
         </div>
       </section>
 
-      {/* Примечание о непереведённом стоит сразу после первого экрана:
-          ниже идут порядок работы с обращением и предупреждение о
-          технической документации — их перевод согласовывает заказчик.
-          Для русской версии не рисуется. */}
-      <TranslationNotice lang={lang} />
-
       <ul className={styles.steps}>
         {steps.map((s, i) => (
-          <li key={s.n} className={styles.step} data-reveal={i} lang={c.mark(s.title, s.text)}>
+          <li key={s.n} className={styles.step} data-reveal={i}>
             <p className={styles.num}>{s.n}</p>
-            <h2 className={styles.stepTitle}>{c.t(s.title)}</h2>
-            <p className={styles.stepText}>{c.t(s.text)}</p>
+            <h2 className={styles.stepTitle}>{s.title}</h2>
+            <p className={styles.stepText}>{s.text}</p>
           </li>
         ))}
       </ul>
 
       <section className={styles.body}>
         <div className={styles.card} data-reveal="0">
-          <h2 className={styles.formTitle} data-words="30" lang={c.mark(serviceForm.title)}>
-            {c.t(serviceForm.title)}
+          <h2 className={styles.formTitle} data-words="30">
+            {serviceForm.title}
           </h2>
           {/* Подписи полей, кнопка и тексты ошибок формы берутся из словаря
-              интерфейса внутри самого LeadForm — ему довольно языка.
-              Подсказка про часы ответа приходит отсюда: она лежит
-              в content/service.ts вместе с остальным обещанием компании. */}
+              интерфейса внутри самого LeadForm. Подсказка про часы ответа
+              приходит отсюда: она лежит в content/service.ts вместе
+              с остальным обещанием компании. */}
           <LeadForm
             form="service"
             products={products}
             analytics="service_form_submit"
-            hint={c.t(serviceForm.hint)}
-            lang={lang}
+            hint={serviceForm.hint}
           />
         </div>
 
@@ -125,9 +108,9 @@ export default async function ServiceScreen({ lang }: { lang: Lang }) {
               </div>
               {/* Наименование юрлица и круг вопросов, по которым отвечают, —
                   утверждение о компании, а не подпись интерфейса. */}
-              <div lang={c.mark(companyContact.title, companyContact.scope)}>
-                <p className={styles.personName}>{c.t(companyContact.title)}</p>
-                <p className={styles.personRole}>{c.t(companyContact.scope)}</p>
+              <div>
+                <p className={styles.personName}>{companyContact.title}</p>
+                <p className={styles.personRole}>{companyContact.scope}</p>
               </div>
             </div>
             <address className={styles.personContacts}>
@@ -143,17 +126,17 @@ export default async function ServiceScreen({ lang }: { lang: Lang }) {
             </address>
           </div>
 
-          <div className={styles.notice} lang={c.mark(serviceNotice.title, serviceNotice.text)}>
-            <h2 className={styles.noticeTitle}>{c.t(serviceNotice.title)}</h2>
-            <p className={styles.noticeText}>{c.t(serviceNotice.text)}</p>
+          <div className={styles.notice}>
+            <h2 className={styles.noticeTitle}>{serviceNotice.title}</h2>
+            <p className={styles.noticeText}>{serviceNotice.text}</p>
           </div>
 
           <div className={styles.urgent}>
-            <h2 className={styles.urgentTitle} lang={c.mark(urgent.title)}>
-              {c.t(urgent.title)}
+            <h2 className={styles.urgentTitle}>
+              {urgent.title}
             </h2>
-            <p className={styles.urgentText} lang={c.mark(urgent.text)}>
-              {c.t(urgent.text)}
+            <p className={styles.urgentText}>
+              {urgent.text}
             </p>
             <a className={styles.urgentPhone} href={`tel:${site.phone.replace(/\s/g, "")}`}>
               {site.phone}

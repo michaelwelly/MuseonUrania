@@ -1,8 +1,7 @@
 import Link from "next/link";
 
 import { site } from "@/content/site";
-import { ui } from "@/content/ui";
-import { DEFAULT_LANG, localePath } from "@/lib/i18n";
+import { ui as strings } from "@/content/ui";
 import styles from "./not-found.module.css";
 
 // Страница «не найдено» для публичного сайта. GitHub issue #104.
@@ -52,13 +51,6 @@ import styles from "./not-found.module.css";
 const DESTINATIONS = ["/products/", "/documents/", "/service/", "/contacts/"] as const;
 
 export default function NotFound() {
-  // Язык всегда русский: группа `(site)` — русская версия сайта, а
-  // переведённые живут в своей группе со своим корневым layout'ом
-  // (см. components/SiteShell.tsx). Появятся — у них будет свой not-found.
-  const lang = DEFAULT_LANG;
-  const strings = ui(lang);
-  const at = (path: string) => localePath(lang, path);
-
   const label: Record<(typeof DESTINATIONS)[number], string> = {
     "/products/": strings.crumbs.products,
     "/documents/": strings.crumbs.documents,
@@ -75,13 +67,13 @@ export default function NotFound() {
       <p className={styles.linksTitle}>{strings.notFound.linksTitle}</p>
       <ul className={styles.links}>
         <li>
-          <Link className={styles.link} href={at("/")}>
+          <Link className={styles.link} href="/">
             {strings.crumbs.home}
           </Link>
         </li>
         {DESTINATIONS.map((path) => (
           <li key={path}>
-            <Link className={styles.link} href={at(path)}>
+            <Link className={styles.link} href={path}>
               {label[path]}
             </Link>
           </li>

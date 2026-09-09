@@ -1,4 +1,3 @@
-import type { Lang } from "@/lib/i18n";
 import { plural } from "@/lib/plural";
 import { site } from "@/content/site";
 
@@ -6,44 +5,29 @@ import { site } from "@/content/site";
 // ярлыки для скринридера.
 //
 // ───────────────────────────────────────────────────────────────────────────
-// Где проходит граница с `content/translations.ts`
+// Что здесь лежит, а что в `content/*.ts`
 //
 // Здесь — то, что пишем мы: навигация, кнопки, подписи полей, состояния
 // («отправляем…», «публикаций пока нет»), заголовки разделов, ярлыки
-// доступности. Их перевод не требует ничьего согласования: они ничего
-// не утверждают об изделии.
+// доступности.
 //
-// Там — то, что утверждает: описания изделий, характеристики, статусы
-// регистрации, сроки, юридические формулировки. Их переводит заказчик,
-// и до перевода страница показывает русский оригинал.
-//
-// Разделение прямо задано issue #54: «интерфейс переводим мы, контент —
-// заказчик». Практическое следствие: правка кнопки не ждёт согласования,
-// правка описания изделия — ждёт.
+// Там — то, что утверждает об изделии: описания, характеристики, статусы
+// регистрации, сроки, юридические формулировки. Правка кнопки не ждёт
+// ничьего согласования, правка описания изделия — ждёт заказчика.
 //
 // ───────────────────────────────────────────────────────────────────────────
-// Почему один файл, а не три
+// Почему словарь один
 //
-// Тип `UiStrings` описан один раз, а `Record<Lang, UiStrings>` требует все
-// три языка целиком: забытый ключ — ошибка компиляции, а не пустая кнопка
-// на китайской версии. Разложенные по файлам словари этого не дают —
-// расходятся молча и обнаруживаются глазами.
+// Сайт одноязычный: русский и только он. Английская и китайская версии
+// сняты 9 сентября по решению владельца портала — на них уходила
+// навигация с непереведённым текстом под ней, а англоязычный браузер
+// автоопределение уводило на `/en/…`, где страниц нет, то есть в 404.
+// Адреса с префиксом остались редиректом на корень (`next.config.ts`).
+//
+// Тип `UiStrings` описан отдельно от значения намеренно: он держит форму
+// словаря и не даёт забыть ключ при правке.
 
 export type UiStrings = {
-  /** Переключатель языка. */
-  language: {
-    label: string;
-    /** Подпись выбранного языка для скринридера. */
-    current: string;
-  };
-
-  /** Примечание о непереведённом. Для русского — пустая строка. */
-  fallback: {
-    page: string;
-    legal: string;
-    assistant: string;
-  };
-
   meta: {
     siteTitle: string;
     siteDescription: string;
@@ -236,8 +220,6 @@ export type UiStrings = {
     formTitle: string;
     messageLabel: string;
     legalTitle: string;
-    /** Подписи карточек контактов: ключ — русский оригинал из content/contacts.ts. */
-    blockTitles: Record<string, string>;
   };
 
   /**
@@ -256,13 +238,7 @@ export type UiStrings = {
   };
 };
 
-const ru: UiStrings = {
-  language: { label: "Язык сайта", current: "Текущий язык" },
-  fallback: {
-    page: "",
-    legal: "",
-    assistant: "",
-  },
+export const ui: UiStrings = {
   meta: {
     siteTitle: "VEDAL — российское медицинское оборудование",
     siteDescription:
@@ -294,8 +270,8 @@ const ru: UiStrings = {
     call: "Позвонить",
     menu: "Меню",
     // Не строкой: часы уже правились однажды (issue #76, было 9:00–18:00),
-    // и вторая копия разошлась бы с первой молча. Русский вариант берётся
-    // из content/site.ts, перевод стоит рядом в en.
+    // и вторая копия разошлась бы с первой молча. Значение берётся
+    // из content/site.ts — там же, откуда его берёт страница контактов.
     hours: site.phoneHours,
   },
   footer: {
@@ -447,7 +423,6 @@ const ru: UiStrings = {
     formTitle: "Оставить обращение",
     messageLabel: "Сообщение",
     legalTitle: "Реквизиты",
-    blockTitles: {},
   },
   notFound: {
     title: "Страница не найдена",
@@ -461,212 +436,3 @@ const ru: UiStrings = {
   },
 };
 
-const en: UiStrings = {
-  language: { label: "Site language", current: "Current language" },
-  fallback: {
-    page:
-      "Product descriptions, specifications and document statuses on this page are shown in Russian: VEDAL has not approved a translation for them yet.",
-    legal:
-      "Legal texts are published in Russian only. A translation carries no legal force until VEDAL approves it.",
-    assistant: "Vedalina answers in the language of your question. Her interface is still in Russian.",
-  },
-  meta: {
-    siteTitle: "VEDAL — medical equipment made in Russia",
-    siteDescription:
-      "In-house manufacturing and modern solutions for neonatology, resuscitation, anaesthesiology and intensive care.",
-    about: "About the company — VEDAL",
-    products: "Equipment catalogue — VEDAL",
-    productsLead:
-      "Devices for neonatology, resuscitation, anaesthesiology, monitoring and intensive care. Every item carries its documentation status.",
-    production: "Manufacturing — VEDAL",
-    service: "Service — VEDAL",
-    documents: "Documents and licensing — VEDAL",
-    news: "News and press centre — VEDAL",
-    contacts: "Contacts — VEDAL",
-  },
-  nav: {
-    about: "About",
-    products: "Products",
-    service: "Service",
-    production: "Manufacturing",
-    documents: "Documents",
-    news: "News",
-    contacts: "Contacts",
-  },
-  header: {
-    cta: "Contact us",
-    brandHome: "VEDAL, to the home page",
-    mainNav: "Main navigation",
-    mobileNav: "Mobile navigation",
-    call: "Call",
-    menu: "Menu",
-    hours: "Mon–Fri 9:00–17:30",
-  },
-  footer: {
-    company: "Company",
-    equipment: "Equipment",
-    neonatology: "Neonatology",
-    serviceSupport: "Service and support",
-    documentsLicences: "Documents and licences",
-    contacts: "Contacts",
-    productionSuffix: "— manufacturing site",
-    privacy: "Personal data policy",
-    staffLogin: "Staff login",
-    subscribeTitle: "News and releases",
-    subscribePlaceholder: "Work email",
-    subscribeSubmit: "Subscribe",
-  },
-  crumbs: {
-    home: "Home",
-    about: "About",
-    products: "Products",
-    production: "Manufacturing",
-    service: "Service",
-    documents: "Documents",
-    news: "News",
-    contacts: "Contacts",
-    privacy: "Personal data",
-  },
-  actions: {
-    requestQuote: "Request a quote",
-    catalogue: "Catalogue",
-    equipmentCatalogue: "Equipment catalogue",
-    fullCatalogue: "Full catalogue",
-    allNews: "All news",
-    backToNews: "← All news",
-    allDocuments: "All documents",
-    seeProduction: "See the manufacturing site",
-    requestDocument: "Request a document",
-    howToGet: "How to get here",
-    getDirections: "Get directions",
-    contacts: "Contacts",
-    askVedalina: "Ask Vedalina",
-    requestSelection: "Ask for a selection",
-    serviceRequest: "Service request",
-    sendEnquiry: "Send the enquiry",
-  },
-  form: {
-    topic: "Subject",
-    name: "Contact person",
-    company: "Organisation",
-    phone: "Phone",
-    email: "Email",
-    product: "Product",
-    productOther: "Other or not sure",
-    productChoose: "Choose the product",
-    serialNumber: "Serial number",
-    serialHint: "Required: it identifies the exact unit for the engineer",
-    message: "Your enquiry",
-    submit: "Send the request",
-    sending: "Sending…",
-    again: "Send another enquiry",
-    errors: {
-      name: "Tell us who to address",
-      phone: "Enter a phone number with the country or area code",
-      email: "Check the email address",
-      product: "Choose the product from the list",
-      serialNumber: "The serial number must be 100 characters or fewer",
-      serialRequired: "Enter the serial number — the engineer identifies the unit by it",
-      message: "Describe your enquiry in at least one sentence",
-      consent: "We cannot send the request without your consent",
-    },
-    fallbackCall: "Call",
-    fallbackWrite: "or write to",
-    fallbackEnd: ".",
-  },
-  homeForm: {
-    name: "Name",
-    company: "Organisation",
-    phone: "Phone",
-    email: "Work email",
-    messagePlaceholder: "Your department's task, a model or a question",
-    messageLabel: "Message",
-    submit: "Send the request",
-    errors: {
-      name: "How should we address you?",
-      message: "Describe the task in at least one sentence",
-    },
-  },
-  home: {
-    catalogueEyebrow: "Catalogue",
-    catalogueTitle: "VEDAL equipment",
-    docHeadName: "Document",
-    docHeadType: "Type",
-    docHeadAccess: "Access",
-    newsTitle: "News",
-    noPublications: "No publications yet",
-  },
-  products: {
-    heroTitle: "Equipment catalogue",
-    listHeading: "Product list",
-    photoPending: "Photo pending",
-    ctaTitle: "Didn't find the configuration you need?",
-    ctaText:
-      "Describe what your department needs — Vedalina will suggest models straight away, and a specialist will prepare an offer with specifications and documents.",
-  },
-  product: {
-    purpose: "Intended use",
-    features: "Key features",
-    other: "Other products",
-    tabs: {
-      specs: "Specifications",
-      kit: "Configuration",
-      documents: "Documents",
-      service: "Service and training",
-    },
-    documentsTitle: "Documents for this product",
-    allDocuments: "All documents and licensing",
-    notInListing: "anything not in the listing can be",
-    requestIt: "requested from a specialist",
-    quoteTitle: "Request a quote for this product",
-    quoteText:
-      "The product is already filled in — no need to pick it again. Configuration and pricing are worked out by a specialist: no prices are published on the site.",
-  },
-  documents: {
-    all: "All documents",
-    headName: "Document",
-    headGroup: "Section",
-    headProduct: "Product",
-    headAccess: "Access",
-    empty: "There are no documents in this section yet.",
-    open: "Open",
-    request: "Request",
-    count: (n) => `${n} ${n === 1 ? "document" : "documents"}`,
-  },
-  news: {
-    all: "All",
-    emptyTitle: "No publications yet",
-    subscribeTitle: "Subscribe to releases",
-    subscribeInvalid: "Check the email address.",
-    subscribePending: (email) =>
-      `The mailing list is not running yet. Write to ${email} and we will add you.`,
-  },
-  service: {
-    enquiryLabel: "Service enquiry",
-  },
-  contacts: {
-    formTitle: "Send an enquiry",
-    messageLabel: "Message",
-    legalTitle: "Company details",
-    blockTitles: {
-      Телефон: "Phone",
-      Почта: "Email",
-      Адрес: "Address",
-      "Адрес производства": "Manufacturing address",
-    },
-  },
-  notFound: {
-    title: "Page not found",
-    text: "There is nothing at this address. The link may contain a typo, or the page has moved.",
-    linksTitle: "Where to go next",
-    reportText:
-      "If a link on this site brought you here, please tell us and we will fix it: call or write to the general address.",
-  },
-};
-
-
-export const UI: Record<Lang, UiStrings> = { ru, en };
-
-export function ui(lang: Lang): UiStrings {
-  return UI[lang];
-}

@@ -4,39 +4,30 @@ import Image from "next/image";
 import Link from "next/link";
 import VedalMap from "@/components/VedalMap";
 import VedalMapEmbed from "@/components/VedalMapEmbed";
-import TranslationNotice from "@/components/TranslationNotice";
 import { site } from "@/content/site";
 import { productionHero, facility, gallery, address } from "@/content/production";
-import { ui } from "@/content/ui";
+import { ui as strings } from "@/content/ui";
 import TreeMark from "@/components/TreeMark";
 import LivePattern from "@/components/LivePattern";
 import styles from "./page.module.css";
-import { contentText } from "@/lib/content-i18n";
-import { localePath, type Lang } from "@/lib/i18n";
 import { mediaSrc } from "@/lib/media";
 
-// «Производство». Тело вынесено из `page.tsx` в `screen.tsx`, потому что его
-// рисуют два маршрута: `/production/` (русский) и `/[lang]/production/`.
+// «Производство». Тело вынесено из `page.tsx` в `screen.tsx`, потому что
+// `screen.tsx` маршрутом не является: здесь можно держать любые экспорты
+// и рисовать экран из тестов, чего `page.tsx` не позволяет.
 //
-// Тексты страницы описывают площадку — это утверждения о компании, их
-// переводит заказчик. Через словарь интерфейса идут только крошки и кнопки.
+// Тексты страницы описывают площадку — это утверждения о компании, и правит
+// их заказчик. Через словарь интерфейса идут только крошки и кнопки.
 
-export function productionMetadata(lang: Lang): Metadata {
-  const strings = ui(lang);
-  const c = contentText(lang);
+export function productionMetadata(): Metadata {
   return pageMetadata({
     title: strings.meta.production,
-    description: c.t(productionHero.lead),
+    description: productionHero.lead,
     path: "/production/",
-    lang,
   });
 }
 
-export default function ProductionScreen({ lang }: { lang: Lang }) {
-  const strings = ui(lang);
-  const c = contentText(lang);
-  const at = (path: string) => localePath(lang, path);
-
+export default function ProductionScreen() {
   return (
     <main className={styles.page}>
       {/* Паттерна нет по той же причине, что на главной: правая половина
@@ -45,23 +36,21 @@ export default function ProductionScreen({ lang }: { lang: Lang }) {
         <LivePattern variant={1} placement="seam" />
         <div className={styles.heroCopy}>
           <p className={styles.crumbs}>
-            <Link href={at("/")}>{strings.crumbs.home}</Link> / {strings.crumbs.production}
+            <Link href="/">{strings.crumbs.home}</Link> / {strings.crumbs.production}
           </p>
           <h1
             className={styles.h1}
             data-words="34"
             data-wdelay="110"
-            lang={c.mark(productionHero.title)}
           >
-            {c.t(productionHero.title)}
+            {productionHero.title}
           </h1>
           <p
             className={styles.lead}
             data-words="13"
             data-wdelay="400"
-            lang={c.mark(productionHero.lead)}
           >
-            {c.t(productionHero.lead)}
+            {productionHero.lead}
           </p>
           {/* «Записаться на визит» убрано по §6.1 плана: приём посетителей
               никто не подтверждал, а кнопка его обещала. */}
@@ -74,7 +63,7 @@ export default function ProductionScreen({ lang }: { lang: Lang }) {
         <div className={styles.photo} data-anim="clip ken">
           <Image
             src={mediaSrc(productionHero.image.src)}
-            alt={c.t(productionHero.image.alt)}
+            alt={productionHero.image.alt}
             fill
             sizes="(max-width: 1100px) 100vw, 50vw"
             priority
@@ -82,24 +71,19 @@ export default function ProductionScreen({ lang }: { lang: Lang }) {
         </div>
       </section>
 
-      {/* Примечание о непереведённом стоит сразу после первого экрана:
-          ниже идёт рассказ о площадке и её адрес, их перевод согласовывает
-          заказчик. Для русской версии не рисуется. */}
-      <TranslationNotice lang={lang} />
-
       <section className={styles.facility}>
         <div data-reveal="0">
-          <p className={styles.eyebrow} lang={c.mark(facility.eyebrow)}>
-            {c.t(facility.eyebrow)}
+          <p className={styles.eyebrow}>
+            {facility.eyebrow}
           </p>
-          <h2 className={styles.h2} data-words="30" lang={c.mark(facility.title)}>
-            {c.t(facility.title)}
+          <h2 className={styles.h2} data-words="30">
+            {facility.title}
           </h2>
         </div>
         <div data-reveal="1">
           {facility.paragraphs.map((p) => (
-            <p key={p} className={styles.paragraph} lang={c.mark(p)}>
-              {c.t(p)}
+            <p key={p} className={styles.paragraph}>
+              {p}
             </p>
           ))}
           {/* §11.2: место маркировочного знака. Рисуется, когда заказчик
@@ -114,7 +98,7 @@ export default function ProductionScreen({ lang }: { lang: Lang }) {
             <div className={styles.shot}>
               <Image
                 src={mediaSrc(shot.src)}
-                alt={c.t(shot.alt)}
+                alt={shot.alt}
                 fill
                 sizes="(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 33vw"
               />
@@ -125,24 +109,23 @@ export default function ProductionScreen({ lang }: { lang: Lang }) {
 
       <section className={styles.address} id="map">
         <div className={styles.addressCopy} data-reveal="0">
-          <p className={styles.eyebrow} lang={c.mark(address.eyebrow)}>
-            {c.t(address.eyebrow)}
+          <p className={styles.eyebrow}>
+            {address.eyebrow}
           </p>
-          <h2 className={styles.addressTitle} data-words="30" lang={c.mark(address.title)}>
-            {c.t(address.title)}
+          <h2 className={styles.addressTitle} data-words="30">
+            {address.title}
           </h2>
           <address className={styles.addressLines}>
             {address.lines.map((line) => (
-              <span key={line} lang={c.mark(line)}>
-                {c.t(line)}
+              <span key={line}>
+                {line}
               </span>
             ))}
             <span>
-              {/* Часы берутся из словаря интерфейса, а не из `address.hours`:
-                  тот же самый режим работы уже переведён для шапки
-                  (`content/ui.ts` → `header.hours`), и второй источник
-                  разошёлся бы с первым молча — на английской странице шапка
-                  говорила бы «Mon–Fri», а адрес производства «Пн–Пт». */}
+              {/* Часы берутся оттуда же, откуда их берёт шапка
+                  (`content/ui.ts` → `header.hours` → `content/site.ts`):
+                  второй источник разошёлся бы с первым молча, а часы уже
+                  правились однажды — issue #76. */}
               {strings.header.hours} ·{" "}
               <a href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a>
             </span>
@@ -174,7 +157,7 @@ export default function ProductionScreen({ lang }: { lang: Lang }) {
               вместе с ним данные о визите уходят в Яндекс. Без согласия
               остаётся прежняя схема на CSS, а адрес и кнопка маршрута
               стоят в панели слева и работают всегда. */}
-          <VedalMapEmbed src={address.mapSrc} title={c.t(address.mapTitle)}>
+          <VedalMapEmbed src={address.mapSrc} title={address.mapTitle}>
             <VedalMap />
           </VedalMapEmbed>
         </div>

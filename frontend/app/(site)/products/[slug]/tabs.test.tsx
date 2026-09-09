@@ -33,7 +33,7 @@ const doc = (over: Partial<Doc> = {}): Doc => ({
 const ФАЙЛ = "http://portal/api/public/v1/documents/opisanie-izdeliya-vedal-r1-r2/file";
 
 async function открытьВкладку(documents: Doc[]) {
-  render(<ProductTabs product={product} documents={documents} lang="ru" />);
+  render(<ProductTabs product={product} documents={documents} />);
   await userEvent.click(screen.getByRole("tab", { name: "Документы" }));
 }
 
@@ -95,7 +95,7 @@ describe("вкладки с клавиатуры", () => {
   const вкладки = () => screen.getAllByRole("tab");
 
   function отрисовать() {
-    render(<ProductTabs product={product} documents={[]} lang="ru" />);
+    render(<ProductTabs product={product} documents={[]} />);
   }
 
   it("в порядок обхода Tab попадает одна вкладка — выбранная", () => {

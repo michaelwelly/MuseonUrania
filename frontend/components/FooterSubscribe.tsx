@@ -2,19 +2,15 @@
 
 import { useState } from "react";
 import { footer, site } from "@/content/site";
-import { ui } from "@/content/ui";
-import { contentText } from "@/lib/content-i18n";
-import type { Lang } from "@/lib/i18n";
+import { ui as strings } from "@/content/ui";
 import styles from "./Footer.module.css";
 
 // Подписка на релизы. Рассылки и бэкенда ещё нет, поэтому после валидного
 // адреса честно говорим, что подписка не подключена, и даём рабочую почту.
 // Ложное «вы подписаны» показывать нельзя. Заменить на POST в API.
-export default function FooterSubscribe({ lang }: { lang: Lang }) {
+export default function FooterSubscribe() {
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "invalid" | "pending">("idle");
-  const strings = ui(lang);
-  const c = contentText(lang);
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -63,10 +59,8 @@ export default function FooterSubscribe({ lang }: { lang: Lang }) {
         </p>
       )}
 
-      {/* Примечание про политику персональных данных — юридический текст,
-          и переводит его заказчик, а не мы. */}
-      <p className={styles.subscribeNote} lang={c.mark(footer.subscribe.note)}>
-        {c.t(footer.subscribe.note)}
+      <p className={styles.subscribeNote}>
+        {footer.subscribe.note}
       </p>
     </form>
   );

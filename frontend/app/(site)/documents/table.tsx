@@ -3,25 +3,19 @@
 import { useState } from "react";
 import Link from "next/link";
 import { groups } from "@/content/documents";
-import { ui } from "@/content/ui";
+import { ui as strings } from "@/content/ui";
 import type { Doc } from "@/lib/api";
 import { REQUEST_HREF, accessBadge, actionLabel, badgeIsOk, docHref, linkTarget } from "@/lib/documents";
-import { contentText } from "@/lib/content-i18n";
-import { localePath, type Lang } from "@/lib/i18n";
 import styles from "./page.module.css";
 
 // Перечень приходит сверху: его читает серверный компонент на сборке.
 // Ссылка на файл есть только у опубликованных — её ставит бэкенд.
 //
-// Язык тоже приходит сверху: клиентский компонент не разбирает адрес сам,
-// иначе про языки знали бы два места — маршрут и этот файл.
-export default function DocumentsTable({ documents, lang }: { documents: Doc[]; lang: Lang }) {
-  // Фильтр держит русский оригинал группы, а не показанный текст: сравнение
-  // идёт с полем `group` из API, и после перевода чипа оно бы не совпало.
+export default function DocumentsTable({ documents }: { documents: Doc[] }) {
+  // Фильтр сравнивает с полем `group` из API — тем же значением, что стоит
+  // на чипе.
   const [active, setActive] = useState<string | null>(null);
   const shown = active ? documents.filter((d) => d.group === active) : documents;
-  const strings = ui(lang);
-  const c = contentText(lang);
 
   return (
     <>
@@ -41,9 +35,8 @@ export default function DocumentsTable({ documents, lang }: { documents: Doc[]; 
             className={`${styles.chip} ${active === g ? styles.chipActive : ""}`}
             onClick={() => setActive(g)}
             aria-pressed={active === g}
-            lang={c.mark(g)}
           >
-            {c.t(g)}
+            {g}
           </button>
         ))}
         {/* Склонение «документ / документа / документов» живёт в словаре:
@@ -75,28 +68,24 @@ export default function DocumentsTable({ documents, lang }: { documents: Doc[]; 
             <Link
               key={d.slug || `${d.title}-${d.product}`}
               className={styles.row}
-              href={docHref(d, localePath(lang, REQUEST_HREF))}
+              href={docHref(d, REQUEST_HREF)}
               {...linkTarget(d)}
               data-analytics="document_download_click"
-              // Название документа, раздел, изделие и статус доступа — всё
-              // это утверждения о разрешительных документах. Строка
-              // помечается русской, если хоть одно из них не переведено.
-              lang={c.mark(d.title, d.group, d.product, accessBadge(d))}
             >
               <span className={styles.cell}>
-                <span className={styles.docTitle}>{c.t(d.title)}</span>
+                <span className={styles.docTitle}>{d.title}</span>
                 {/* Что произойдёт по нажатию — словами. Без этой строки
                     «Запросить» отличается от «Открыть» только адресом
                     в статусной строке браузера. Это подпись интерфейса,
                     поэтому она приходит из словаря, а не из содержания. */}
                 <span className={styles.action}>{actionLabel(d, strings.documents)}</span>
               </span>
-              <span className={styles.dim}>{c.t(d.group)}</span>
-              <span className={`${styles.dim} ${styles.product}`}>{c.t(d.product)}</span>
+              <span className={styles.dim}>{d.group}</span>
+              <span className={`${styles.dim} ${styles.product}`}>{d.product}</span>
               <span
                 className={`${styles.badge} ${badgeIsOk(d) ? styles.badgeOk : styles.badgeMuted}`}
               >
-                {c.t(accessBadge(d))}
+                {accessBadge(d)}
               </span>
             </Link>
           ))}

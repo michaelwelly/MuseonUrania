@@ -4,10 +4,8 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { tags, expected } from "@/content/news";
-import { ui } from "@/content/ui";
+import { ui as strings } from "@/content/ui";
 import type { NewsItem } from "@/lib/api";
-import { contentText } from "@/lib/content-i18n";
-import { localePath, type Lang } from "@/lib/i18n";
 import styles from "./page.module.css";
 import { mediaSrc } from "@/lib/media";
 
@@ -17,20 +15,15 @@ import { mediaSrc } from "@/lib/media";
 // Ссылка или неподвижная карточка — решает наличие slug. Обёртка вынесена,
 // чтобы разметка карточки не дублировалась в двух ветках условия: разъехались
 // бы при первой же правке.
-//
-// Язык доезжает сюда пропом, потому что ссылка на материал живёт внутри
-// обёртки: `/news/x/` для русского и `/en/news/x/` для английского.
 function CardShell({
   slug,
-  lang,
   children,
 }: {
   slug: string;
-  lang: Lang;
   children: React.ReactNode;
 }) {
   return slug ? (
-    <Link className={styles.card} href={localePath(lang, `/news/${slug}/`)}>
+    <Link className={styles.card} href={`/news/${slug}/`}>
       {children}
     </Link>
   ) : (
@@ -38,13 +31,9 @@ function CardShell({
   );
 }
 
-export default function NewsFeed({ news, lang }: { news: NewsItem[]; lang: Lang }) {
-  // Фильтр держит русский оригинал рубрики: сравнение идёт с полем `tag`
-  // из API, и после перевода чипа оно бы не совпало ни с одной записью.
+export default function NewsFeed({ news }: { news: NewsItem[] }) {
   const [active, setActive] = useState<string | null>(null);
   const shown = active ? news.filter((n) => n.tag === active) : news;
-  const strings = ui(lang);
-  const c = contentText(lang);
 
   return (
     <>
@@ -64,9 +53,8 @@ export default function NewsFeed({ news, lang }: { news: NewsItem[]; lang: Lang 
             className={`${styles.chip} ${active === t ? styles.chipActive : ""}`}
             onClick={() => setActive(t)}
             aria-pressed={active === t}
-            lang={c.mark(t)}
           >
-            {c.t(t)}
+            {t}
           </button>
         ))}
       </div>
@@ -74,13 +62,13 @@ export default function NewsFeed({ news, lang }: { news: NewsItem[]; lang: Lang 
       {shown.length === 0 ? (
         <div className={styles.empty} data-reveal="0">
           <p className={styles.emptyTitle}>{strings.news.emptyTitle}</p>
-          <p className={styles.emptyText} lang={c.mark(NEWS_PLAN)}>
-            {c.t(NEWS_PLAN)}
+          <p className={styles.emptyText}>
+            {NEWS_PLAN}
           </p>
           <ul className={styles.expected}>
             {expected.map((item) => (
-              <li key={item} lang={c.mark(item)}>
-                {c.t(item)}
+              <li key={item}>
+                {item}
               </li>
             ))}
           </ul>
@@ -92,28 +80,24 @@ export default function NewsFeed({ news, lang }: { news: NewsItem[]; lang: Lang 
               {/* Карточка ведёт на материал целиком. Без slug ссылки нет:
                   локальная заглушка из content/news.ts отдаёт пустой slug,
                   и ссылка на /news// вела бы в 404. */}
-              <CardShell slug={item.slug} lang={lang}>
+              <CardShell slug={item.slug}>
                 <div className={styles.cardPhoto}>
                   {item.image && (
                     <Image
                       src={mediaSrc(item.image.src)}
-                      alt={c.t(item.image.alt)}
+                      alt={item.image.alt}
                       fill
                       sizes="(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 33vw"
                     />
                   )}
                 </div>
-                {/* Рубрика, заголовок и анонс — текст материала. Помечаем
-                    карточку разом: если хоть одна строка осталась
-                    оригиналом, читается она по-русски. Дата не переводится:
-                    её собирает портал. */}
-                <div className={styles.cardBody} lang={c.mark(item.tag, item.title, item.excerpt)}>
+                <div className={styles.cardBody}>
                   <div className={styles.cardMeta}>
-                    <span className={styles.tag}>{c.t(item.tag)}</span>
+                    <span className={styles.tag}>{item.tag}</span>
                     <span className={styles.date}>{item.date}</span>
                   </div>
-                  <h2 className={styles.cardTitle}>{c.t(item.title)}</h2>
-                  <p className={styles.cardExcerpt}>{c.t(item.excerpt)}</p>
+                  <h2 className={styles.cardTitle}>{item.title}</h2>
+                  <p className={styles.cardExcerpt}>{item.excerpt}</p>
                 </div>
               </CardShell>
             </li>

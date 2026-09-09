@@ -1,7 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { LANGS, localePath, PUBLISHED_LANGS } from "@/lib/i18n";
-
 // Карта сайта и robots.txt — две вещи, которые никто не открывает руками,
 // а последствия у них недельные: закрытый от обхода боевой сайт и открытый
 // для обхода стенд одинаково незаметны в тот день, когда их выкатили.
@@ -92,51 +90,25 @@ describe("карта сайта", () => {
     expect(urls).not.toContain("https://vedal-med.ru/news//");
   });
 
-  // Карта называет опубликованные версии — и только их. Проверка написана
-  // от списка, а не от «трёх языков»: когда переводы придут и язык вернётся
-  // в PUBLISHED_LANGS, она продолжит стеречь то же правило без правок.
-  it("называет каждую опубликованную версию и не обещает остальных", async () => {
-    process.env.NEXT_PUBLIC_SITE_URL = "https://vedal-med.ru";
-    const sitemap = (await import("./sitemap")).default;
-
-    const urls = (await sitemap()).map((e) => e.url);
-
-    for (const lang of PUBLISHED_LANGS) {
-      expect(urls, lang).toContain(`https://vedal-med.ru${localePath(lang, "/products/")}`);
-      expect(urls, lang).toContain(`https://vedal-med.ru${localePath(lang, "/products/vedal-r1/")}`);
-    }
-
-    // Неопубликованный язык в карте — приглашение обходчику на страницу,
-    // которой нет: он приносит человеку 404 из выдачи.
-    for (const lang of LANGS) {
-      if (PUBLISHED_LANGS.includes(lang)) continue;
-      expect(urls, lang).not.toContain(`https://vedal-med.ru/${lang}/products/`);
-    }
-
-    // Русская версия остаётся без префикса — `/ru/` не существует.
-    expect(urls).not.toContain("https://vedal-med.ru/ru/products/");
-  });
-
-  // Без hreflang адреса с одинаковым смыслом читаются как дубли,
-  // и переведённые версии выпадают из выдачи.
-  it("у каждой записи стоят ссылки на языковые версии", async () => {
+  // Сайт одноязычный, и адреса `/en/…`, `/zh/…`, `/ru/…` отвечают
+  // редиректом на корень (`next.config.ts`). Такой адрес в карте —
+  // приглашение обходчику ходить через 301 за каждой страницей, а то
+  // и вовсе объявление версии, которой не существует.
+  it("не называет адресов с языковым префиксом", async () => {
     process.env.NEXT_PUBLIC_SITE_URL = "https://vedal-med.ru";
     const sitemap = (await import("./sitemap")).default;
 
     const entries = await sitemap();
+    const urls = entries.map((e) => e.url);
+
+    for (const lang of ["ru", "en", "zh"]) {
+      expect(urls.filter((url) => url.startsWith(`https://vedal-med.ru/${lang}/`)), lang).toEqual([]);
+    }
+
+    // И ни одного hreflang: объявлять версии одной страницы не на чем.
     for (const entry of entries) {
-      expect(entry.alternates?.languages, entry.url).toBeDefined();
+      expect(entry.alternates?.languages, entry.url).toBeUndefined();
     }
-
-    // Главная на языке по умолчанию есть всегда, сколько бы языков
-    // ни публиковалось, — на неё и смотрим.
-    const ожидаемое: Record<string, string> = { "x-default": "https://vedal-med.ru/" };
-    for (const lang of PUBLISHED_LANGS) {
-      ожидаемое[lang === "ru" ? "ru" : lang] = `https://vedal-med.ru${localePath(lang, "/")}`;
-    }
-
-    const home = entries.find((e) => e.url === "https://vedal-med.ru/");
-    expect(home?.alternates?.languages).toEqual(ожидаемое);
   });
 
   // Портал недоступен на сборке — карта обязана остаться: девять страниц

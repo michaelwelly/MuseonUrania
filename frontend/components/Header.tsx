@@ -5,17 +5,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import AnimatedLogo from "@/components/AnimatedLogo";
 import { nav, headerCta, site } from "@/content/site";
-import { ui } from "@/content/ui";
-import { localePath, stripLocale, type Lang } from "@/lib/i18n";
+import { ui as strings } from "@/content/ui";
 import styles from "./Header.module.css";
 
 // Клиентский компонент: нужен активный пункт по текущему маршруту и состояние
 // мобильного меню. Разметка и размеры — design/VedalHeader.dc.html
 // и design/VedalHeaderMobile.dc.html.
-//
-// Язык приходит пропом из оболочки, а не выводится из адреса: у русской
-// версии префикса нет, и по одному только `usePathname` она неотличима от
-// адреса с неизвестным первым сегментом.
 
 function Arrow() {
   return (
@@ -25,12 +20,11 @@ function Arrow() {
   );
 }
 
-export default function Header({ lang }: { lang: Lang }) {
+export default function Header() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const telHref = `tel:${site.phone.replace(/\s/g, "")}`;
   const bar = useRef<HTMLElement>(null);
-  const strings = ui(lang);
 
   // Шапка сама сообщает свою высоту в `--header-h`.
   //
@@ -59,12 +53,8 @@ export default function Header({ lang }: { lang: Lang }) {
     return () => watch.disconnect();
   }, []);
 
-  // Сравниваем путь БЕЗ языкового префикса: на `/en/about/` активным должен
-  // быть тот же пункт, что на `/about/`. Сравнение с полным адресом
-  // не находило бы активным ничего ни на одной переведённой странице.
-  //
   // «/about» и «/about/» — один и тот же пункт: маршруты со слешем на конце.
-  const { path } = stripLocale(pathname ?? "/");
+  const path = pathname ?? "/";
   const isActive = (href: string) => {
     const a = path.replace(/\/+$/, "");
     const b = href.replace(/\/+$/, "");
@@ -75,7 +65,7 @@ export default function Header({ lang }: { lang: Lang }) {
     <header className={styles.header} ref={bar}>
       <div className={styles.bar}>
         <Link
-          href={localePath(lang, "/")}
+          href="/"
           className={styles.brand}
           aria-label={strings.header.brandHome}
         >
@@ -88,7 +78,7 @@ export default function Header({ lang }: { lang: Lang }) {
           {nav.map((item) => (
             <Link
               key={item.href}
-              href={localePath(lang, item.href)}
+              href={item.href}
               className={`${styles.navLink} ${isActive(item.href) ? styles.navActive : ""}`}
               aria-current={isActive(item.href) ? "page" : undefined}
             >
@@ -112,7 +102,7 @@ export default function Header({ lang }: { lang: Lang }) {
 
           <Link
             className={styles.cta}
-            href={localePath(lang, headerCta.href)}
+            href={headerCta.href}
             data-analytics="header_contact_click"
           >
             {strings.header.cta}
@@ -140,7 +130,7 @@ export default function Header({ lang }: { lang: Lang }) {
           {nav.map((item) => (
             <Link
               key={item.href}
-              href={localePath(lang, item.href)}
+              href={item.href}
               className={isActive(item.href) ? styles.menuActive : undefined}
               onClick={() => setOpen(false)}
             >
@@ -149,7 +139,7 @@ export default function Header({ lang }: { lang: Lang }) {
           ))}
           <Link
             className={`${styles.cta} ${styles.menuCta}`}
-            href={localePath(lang, headerCta.href)}
+            href={headerCta.href}
             onClick={() => setOpen(false)}
           >
             {strings.header.cta}

@@ -3,9 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import HomeLeadForm from "@/components/HomeLeadForm";
 import LivePattern from "@/components/LivePattern";
-import TranslationNotice from "@/components/TranslationNotice";
 import { site } from "@/content/site";
-import { ui } from "@/content/ui";
+import { ui as strings } from "@/content/ui";
 import { news } from "@/content/news";
 import {
   homeHero,
@@ -15,28 +14,23 @@ import {
   homeCta,
 } from "@/content/home";
 import styles from "./page.module.css";
-import { contentText } from "@/lib/content-i18n";
-import { localePath, type Lang } from "@/lib/i18n";
 import { mediaSrc } from "@/lib/media";
 import { pageMetadata } from "@/lib/seo";
 
 // Главная. Тело страницы вынесено из `page.tsx` в `screen.tsx`, потому что
-// его рисуют два маршрута: `/` (русский, `app/(site)`) и `/[lang]/`
-// (переведённый, `app/(intl)`). Файл `screen.tsx` маршрутом не является —
-// Next знает только `page`, `layout`, `route` и ещё несколько имён, —
-// поэтому здесь можно держать любые экспорты, чего `page.tsx` не позволяет.
+// `screen.tsx` маршрутом не является — Next знает только `page`, `layout`,
+// `route` и ещё несколько имён. Здесь можно держать любые экспорты и рисовать
+// экран из тестов, чего `page.tsx` не позволяет.
 //
-// Язык приходит пропом. Интерфейс берётся из `content/ui.ts`, содержательный
-// текст — через `contentText`: перевод, если он согласован, иначе русский
-// оригинал с пометкой `lang="ru"`.
+// Подписи интерфейса берутся из `content/ui.ts`, содержательный текст —
+// из `content/home.ts`: то, что утверждает об изделии или о компании,
+// правит заказчик.
 
-export function homeMetadata(lang: Lang): Metadata {
-  const strings = ui(lang);
+export function homeMetadata(): Metadata {
   return pageMetadata({
     title: strings.meta.siteTitle,
     description: strings.meta.siteDescription,
     path: "/",
-    lang,
   });
 }
 
@@ -48,11 +42,7 @@ function Arrow({ size = 16 }: { size?: number }) {
   );
 }
 
-export default function HomeScreen({ lang }: { lang: Lang }) {
-  const strings = ui(lang);
-  const c = contentText(lang);
-  const at = (path: string) => localePath(lang, path);
-
+export default function HomeScreen() {
   return (
     <main className={styles.page}>
       {/* 01. Hero */}
@@ -69,9 +59,8 @@ export default function HomeScreen({ lang }: { lang: Lang }) {
           <p
             className={`${styles.eyebrow} ${styles.eyebrowLight}`}
             data-anim="rise-sm"
-            lang={c.mark(homeHero.eyebrow)}
           >
-            {c.t(homeHero.eyebrow)}
+            {homeHero.eyebrow}
           </p>
           {/* Первый экран проявляется по словам: data-words — шаг между
               словами, data-wdelay — старт. Остальное поднимает CSS. */}
@@ -79,23 +68,20 @@ export default function HomeScreen({ lang }: { lang: Lang }) {
             className={styles.h1}
             data-words="34"
             data-wdelay="90"
-            lang={c.mark(homeHero.headline)}
           >
-            {c.t(homeHero.headline)}
+            {homeHero.headline}
           </h1>
           <p
             className={styles.heroLead}
             data-words="13"
             data-wdelay="400"
-            lang={c.mark(homeHero.lead)}
           >
-            {c.t(homeHero.lead)}
+            {homeHero.lead}
           </p>
           <div className={styles.heroActions} data-anim="cascade">
-            {/* Обычный `<a>` и без localePath: это якорь на форму внизу
-                этой же страницы (issue #103). `Link` здесь был бы вреден
-                вдвойне — он приписал бы языковой префикс к хешу и менял бы
-                адрес своим `pushState`, см. components/Blocks.tsx. */}
+            {/* Обычный `<a>`: это якорь на форму внизу этой же страницы
+                (issue #103). `Link` менял бы адрес своим `pushState`
+                и не порождал бы hashchange — см. components/Blocks.tsx. */}
             <a
               className={`${styles.btn} ${styles.btnPrimary}`}
               href={homeHero.primary.href}
@@ -106,7 +92,7 @@ export default function HomeScreen({ lang }: { lang: Lang }) {
             </a>
             <Link
               className={`${styles.btn} ${styles.btnOutline}`}
-              href={at(homeHero.secondary.href)}
+              href={homeHero.secondary.href}
               data-analytics="hero_catalog_click"
             >
               {strings.actions.equipmentCatalogue}
@@ -117,18 +103,13 @@ export default function HomeScreen({ lang }: { lang: Lang }) {
         <div className={styles.heroVisual} data-anim="clip ken">
           <Image
             src={mediaSrc(homeHero.image.src)}
-            alt={c.t(homeHero.image.alt)}
+            alt={homeHero.image.alt}
             fill
             sizes="(max-width: 1100px) 100vw, 588px"
             priority
           />
         </div>
       </section>
-
-      {/* Примечание о непереведённом стоит сразу после первого экрана:
-          дальше начинаются описания изделий и статусы документов, а их
-          перевод согласовывает заказчик. Для русской версии не рисуется. */}
-      <TranslationNotice lang={lang} />
 
       {/* Полоса цифр и блок «Направления» убраны с главной 19 августа по
           прямому решению заказчика. Те же два блока §2.1 и §2.4 сняли
@@ -154,7 +135,7 @@ export default function HomeScreen({ lang }: { lang: Lang }) {
               {strings.home.catalogueTitle}
             </h2>
           </div>
-          <Link className={styles.linkArrow} href={at("/products/")}>
+          <Link className={styles.linkArrow} href="/products/">
             {strings.actions.fullCatalogue}
             <Arrow />
           </Link>
@@ -165,24 +146,21 @@ export default function HomeScreen({ lang }: { lang: Lang }) {
             <li key={p.slug} data-reveal={i}>
               <Link
                 className={styles.card}
-                href={at(`/products/${p.slug}/`)}
+                href={`/products/${p.slug}/`}
                 data-analytics="product_card_open"
               >
                 <div className={styles.cardPhoto}>
                   <Image
                     src={mediaSrc(p.image.src)}
-                    alt={c.t(p.image.alt)}
+                    alt={p.image.alt}
                     fill
                     sizes="(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 25vw"
                   />
                 </div>
-                {/* Название изделия, направление и краткое описание —
-                    содержательный текст. Помечаем весь блок разом: если
-                    хоть одна строка осталась оригиналом, блок русский. */}
-                <div className={styles.cardBody} lang={c.mark(p.category, p.text)}>
-                  <p className={styles.cardCat}>{c.t(p.category)}</p>
+                <div className={styles.cardBody}>
+                  <p className={styles.cardCat}>{p.category}</p>
                   <h3 className={styles.cardName}>{p.name}</h3>
-                  <p className={styles.cardText}>{c.t(p.text)}</p>
+                  <p className={styles.cardText}>{p.text}</p>
                 </div>
               </Link>
             </li>
@@ -195,29 +173,26 @@ export default function HomeScreen({ lang }: { lang: Lang }) {
         <div className={styles.splitPhoto} data-reveal="0">
           <Image
             src={mediaSrc(productionBlock.image.src)}
-            alt={c.t(productionBlock.image.alt)}
+            alt={productionBlock.image.alt}
             fill
             sizes="(max-width: 1100px) 100vw, 50vw"
           />
         </div>
         <div className={styles.splitCopy} data-reveal="1">
-          <p
-            className={`${styles.eyebrow} ${styles.eyebrowLight}`}
-            lang={c.mark(productionBlock.eyebrow)}
-          >
-            {c.t(productionBlock.eyebrow)}
+          <p className={`${styles.eyebrow} ${styles.eyebrowLight}`}>
+            {productionBlock.eyebrow}
           </p>
-          <h2 className={styles.splitTitle} data-words="30" lang={c.mark(productionBlock.title)}>
-            {c.t(productionBlock.title)}
+          <h2 className={styles.splitTitle} data-words="30">
+            {productionBlock.title}
           </h2>
-          <p className={styles.splitText} lang={c.mark(productionBlock.text)}>
-            {c.t(productionBlock.text)}
+          <p className={styles.splitText}>
+            {productionBlock.text}
           </p>
           <ul className={styles.facts}>
             {productionBlock.facts.map((f) => (
-              <li key={f.label} className={styles.fact} lang={c.mark(f.label, f.value)}>
-                <span>{c.t(f.label)}</span>
-                <span className={styles.factValue}>{c.t(f.value)}</span>
+              <li key={f.label} className={styles.fact}>
+                <span>{f.label}</span>
+                <span className={styles.factValue}>{f.value}</span>
               </li>
             ))}
           </ul>
@@ -226,7 +201,7 @@ export default function HomeScreen({ lang }: { lang: Lang }) {
               документов ниже, — соседние светлые полосы держат один приём. */}
           <Link
             className={`${styles.btn} ${styles.btnDark} ${styles.ghostWide}`}
-            href={at(productionBlock.cta.href)}
+            href={productionBlock.cta.href}
           >
             {strings.actions.seeProduction}
             <Arrow />
@@ -237,21 +212,18 @@ export default function HomeScreen({ lang }: { lang: Lang }) {
       {/* 06. Документы */}
       <section className={styles.docs}>
         <div data-reveal="0">
-          <p
-            className={`${styles.eyebrow} ${styles.eyebrowLight}`}
-            lang={c.mark(documentsBlock.eyebrow)}
-          >
-            {c.t(documentsBlock.eyebrow)}
+          <p className={`${styles.eyebrow} ${styles.eyebrowLight}`}>
+            {documentsBlock.eyebrow}
           </p>
-          <h2 className={styles.docsTitle} data-words="30" lang={c.mark(documentsBlock.title)}>
-            {c.t(documentsBlock.title)}
+          <h2 className={styles.docsTitle} data-words="30">
+            {documentsBlock.title}
           </h2>
-          <p className={styles.docsText} lang={c.mark(documentsBlock.text)}>
-            {c.t(documentsBlock.text)}
+          <p className={styles.docsText}>
+            {documentsBlock.text}
           </p>
           <Link
             className={`${styles.btn} ${styles.btnDark} ${styles.docsCta}`}
-            href={at(documentsBlock.cta.href)}
+            href={documentsBlock.cta.href}
           >
             {strings.actions.allDocuments}
             <Arrow />
@@ -265,22 +237,18 @@ export default function HomeScreen({ lang }: { lang: Lang }) {
             <span>{strings.home.docHeadAccess}</span>
           </div>
           {documentsBlock.rows.map((row) => (
-            // Названия документов, их тип и способ получения — утверждения
-            // о разрешительных документах. Ровно тот случай, где машинный
-            // перевод запрещён правилами контента.
             <div
               key={row.name}
               className={styles.tableRow}
-              lang={c.mark(row.name, row.type, row.access)}
             >
-              <span>{c.t(row.name)}</span>
-              <span className={styles.tableType}>{c.t(row.type)}</span>
+              <span>{row.name}</span>
+              <span className={styles.tableType}>{row.type}</span>
               <span
                 className={`${styles.badge} ${
                   row.access === "Уточняется" ? styles.badgeMuted : styles.badgeOk
                 }`}
               >
-                {c.t(row.access)}
+                {row.access}
               </span>
             </div>
           ))}
@@ -293,7 +261,7 @@ export default function HomeScreen({ lang }: { lang: Lang }) {
           <h2 className={`${styles.h2} ${styles.h2News}`} data-words="34">
             {strings.home.newsTitle}
           </h2>
-          <Link className={styles.linkArrow} href={at("/news/")}>
+          <Link className={styles.linkArrow} href="/news/">
             {strings.actions.allNews}
             <Arrow />
           </Link>
@@ -305,17 +273,17 @@ export default function HomeScreen({ lang }: { lang: Lang }) {
             {". "}
             {/* Вторая фраза называет конкретное событие и обещание компании —
                 это содержательный текст, а не состояние интерфейса. */}
-            <span lang={c.mark(HOME_NEWS_PLAN)}>{c.t(HOME_NEWS_PLAN)}</span>
+            <span>{HOME_NEWS_PLAN}</span>
           </p>
         ) : (
           <ul className={styles.newsGrid}>
             {news.slice(0, 3).map((item, i) => (
               <li key={item.title} data-reveal={i}>
-                <Link className={styles.card} href={at("/news/")}>
+                <Link className={styles.card} href="/news/">
                   <div className={styles.newsPhoto} />
-                  <div className={styles.newsBody} lang={c.mark(item.title)}>
+                  <div className={styles.newsBody}>
                     <span className={styles.newsDate}>{item.date}</span>
-                    <h3 className={styles.newsTitle}>{c.t(item.title)}</h3>
+                    <h3 className={styles.newsTitle}>{item.title}</h3>
                   </div>
                 </Link>
               </li>
@@ -335,11 +303,11 @@ export default function HomeScreen({ lang }: { lang: Lang }) {
       <section className={`${styles.cta} patternHost`} id="quote">
         <LivePattern variant={1} tone="dark" />
         <div data-reveal="0">
-          <h2 className={styles.ctaTitle} data-words="30" lang={c.mark(homeCta.title)}>
-            {c.t(homeCta.title)}
+          <h2 className={styles.ctaTitle} data-words="30">
+            {homeCta.title}
           </h2>
-          <p className={styles.ctaText} lang={c.mark(homeCta.text)}>
-            {c.t(homeCta.text)}
+          <p className={styles.ctaText}>
+            {homeCta.text}
           </p>
           <address className={styles.ctaContacts}>
             <a className={styles.ctaPhone} href={`tel:${site.phone.replace(/\s/g, "")}`}>
@@ -352,7 +320,7 @@ export default function HomeScreen({ lang }: { lang: Lang }) {
         </div>
 
         {/* Форма — отдельный клиентский компонент, страница остаётся серверной. */}
-        <HomeLeadForm lang={lang} />
+        <HomeLeadForm />
       </section>
     </main>
   );
