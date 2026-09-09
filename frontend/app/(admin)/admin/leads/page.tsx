@@ -173,6 +173,21 @@ function Leads() {
     counts.refresh();
   }, [reload, counts]);
 
+  // Куда вернуть фокус, когда панель закроется. Без этого фокус остаётся
+  // на исчезнувшем узле, браузер отдаёт его body, и следующий Tab начинает
+  // обход страницы заново — от поиска в шапке. Заявки разбирают подряд,
+  // и «вернуться к той же строке» здесь — движение по списку, а не любезность.
+  const откуда = useRef<string | null>(null);
+  useEffect(() => {
+    if (open) {
+      откуда.current = open;
+      return;
+    }
+    const id = откуда.current;
+    откуда.current = null;
+    if (id) document.getElementById(`lead-open-${id}`)?.focus();
+  }, [open]);
+
   return (
     <>
       <div className="admin-head">
@@ -248,81 +263,94 @@ function Leads() {
         </Empty>
       )}
 
-      {rows.length > 0 && (
-        <>
-          <Table
-            rows={rows}
-            shown={shown}
-            selection={selection}
-            cursor={cursor}
-            onCursor={setCursor}
-            open={open}
-            onOpen={(id) => {
+      {/* Список и панель разбора делят рабочую область, а не лежат друг
+          на друге. Сетка появляется вместе с панелью и распускается, когда
+          её закрыли: иначе список без всякой причины жил бы в узкой колонке,
+          а справа от него стояла бы пустота. */}
+      <div className={open ? "with-side with-side--triage" : undefined}>
+        <div>
+          {rows.length > 0 && (
+            <>
+              <Table
+                rows={rows}
+                shown={shown}
+                selection={selection}
+                cursor={cursor}
+                onCursor={setCursor}
+                open={open}
+                onOpen={(id) => {
+                  setQueue(null);
+                  setOpen(id);
+                }}
+              />
+
+              <div className="under">
+                <span className="under__count mono">
+                  Показаны {data!.page * data!.size + 1}–
+                  {data!.page * data!.size + rows.length} из {data!.total}
+                </span>
+
+                <span className="under__keys mono">
+                  J K — по строкам · ПРОБЕЛ — выделить · SHIFT+КЛИК — до этой строки · ⏎ —
+                  разобрать
+                </span>
+
+                {data!.pages > 1 && (
+                  <span className="under__pager">
+                    <button
+                      className="btn btn--small"
+                      disabled={page === 0}
+                      onClick={() => setPage(page - 1)}
+                    >
+                      Назад
+                    </button>
+                    <button
+                      className="btn btn--small"
+                      disabled={page + 1 >= data!.pages}
+                      onClick={() => setPage(page + 1)}
+                    >
+                      Дальше
+                    </button>
+                  </span>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
+        {open && (
+          <Triage
+            key={open}
+            id={open}
+            statuses={statuses ?? []}
+            queue={
+              queue
+                ? {
+                    list: queue,
+                    at: Math.max(0, queue.indexOf(open)),
+                    onGo: (at) => setOpen(queue[at] ?? null),
+                  }
+                : undefined
+            }
+            onClose={() => {
+              setOpen(null);
               setQueue(null);
-              setOpen(id);
             }}
+            onSaved={обновить}
           />
-
-          <div className="under">
-            <span className="under__count mono">
-              Показаны {data!.page * data!.size + 1}–{data!.page * data!.size + rows.length} из{" "}
-              {data!.total}
-            </span>
-
-            <span className="under__keys mono">
-              J K — по строкам · ПРОБЕЛ — выделить · SHIFT+КЛИК — до этой строки · ⏎ — разобрать
-            </span>
-
-            {data!.pages > 1 && (
-              <span className="under__pager">
-                <button
-                  className="btn btn--small"
-                  disabled={page === 0}
-                  onClick={() => setPage(page - 1)}
-                >
-                  Назад
-                </button>
-                <button
-                  className="btn btn--small"
-                  disabled={page + 1 >= data!.pages}
-                  onClick={() => setPage(page + 1)}
-                >
-                  Дальше
-                </button>
-              </span>
-            )}
-          </div>
-        </>
-      )}
-
-      {open && (
-        <Triage
-          key={open}
-          id={open}
-          statuses={statuses ?? []}
-          queue={
-            queue
-              ? {
-                  list: queue,
-                  at: Math.max(0, queue.indexOf(open)),
-                  onGo: (at) => setOpen(queue[at] ?? null),
-                }
-              : undefined
-          }
-          onClose={() => {
-            setOpen(null);
-            setQueue(null);
-          }}
-          onSaved={обновить}
-        />
-      )}
+        )}
+      </div>
 
       <Keys
         rows={ids}
         onCursor={setCursor}
         selection={selection}
-        // Пока панель разбора открыта, список клавиш молчит: под затемнением
-        // J и K двигали бы строку, которую не видно.
+        // Пока панель разбора открыта, список клавиш молчит. Список теперь
+        // виден рядом с панелью, и соблазн оставить J и K живыми есть,
+        // но ⏎ у них общий: в панели он нажимает кнопку под фокусом,
+        // а слушатель списка тем же нажатием открыл бы строку под курсором.
+        // Два действия на одну клавишу — и одно из них не то, которого ждали.
+        // Esc возвращает фокус на строку, и клавиши оживают вместе с ним.
         off={open !== null}
         onOpen={(id) => {
           setQueue(null);
@@ -646,11 +674,13 @@ function Table({
                 key={row.id}
                 className={[
                   выбрана || open === row.id ? "row--on" : "",
+                  open === row.id ? "row--open" : "",
                   ничей ? "row--wait" : "",
                   i === cursor ? "row--cursor" : "",
                 ]
                   .filter(Boolean)
                   .join(" ")}
+                aria-current={open === row.id ? "true" : undefined}
                 onClick={(e) => {
                   onCursor(i);
                   // SHIFT+КЛИК выделяет диапазон, обычный щелчок открывает
@@ -715,6 +745,10 @@ function Table({
                   <button
                     type="button"
                     className="row__go"
+                    // Сюда возвращается фокус, когда панель разбора закрыли:
+                    // это единственный узел строки, на который фокус можно
+                    // поставить и который переживает перерисовку списка.
+                    id={`lead-open-${row.id}`}
                     aria-label={`Разобрать заявку: ${row.name}, ${when(row.createdAt)}`}
                     onClick={(e) => {
                       e.stopPropagation();

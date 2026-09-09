@@ -30,6 +30,20 @@ import { useWho } from "../who";
 // разобрал. Панель оставляет список на месте — видно, откуда пришли и что
 // будет следующим.
 //
+// Панель пристыкована к рабочей области, а не всплывает над страницей.
+// Всплывающее окно здесь было и отменено по замечанию владельца портала,
+// сделанному на живом стенде: затемнение накрывало шапку портала и правую
+// половину таблицы, и разбираемой заявки в списке было не видно. Разбор —
+// работа сверки: в панели читают обращение, в списке смотрят, чем оно
+// отличается от соседних, и переходят к следующей строке. Всё это требует
+// обеих половин на экране разом, а модальное окно тем и модально, что
+// второй половины не оставляет.
+//
+// Ниже 1320 пикселей панель по-прежнему занимает экран целиком: делить
+// ширину планшета между таблицей на девять колонок и формой разбора нечем.
+// Это тот же порог, на котором админка складывает `.with-side` в одну
+// колонку, — своего здесь не заведено.
+//
 // ───────────────────────────────────────────────────────────────────────────
 // Ответственный здесь один
 //
@@ -70,8 +84,8 @@ export function Triage({
   const panel = useRef<HTMLDivElement>(null);
   const { data, error, loading, setError } = useLoad<Lead>(() => loadLead(id), id);
 
-  // Escape закрывает панель отовсюду, включая поля ввода: она перекрывает
-  // список целиком, и «уйти» — первое, что человек пробует.
+  // Escape закрывает панель отовсюду, включая поля ввода: на узком экране
+  // она занимает его целиком, и «уйти» — первое, что человек пробует.
   useEffect(() => {
     const escape = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -83,79 +97,75 @@ export function Triage({
     return () => document.removeEventListener("keydown", escape);
   }, [onClose]);
 
-  // Фокус уводится в панель: без этого Tab продолжает ходить по таблице
-  // под затемнением, и с клавиатуры панель просто не существует.
+  // Фокус уводится в панель: она открывается щелчком по строке, и без этого
+  // следующий Tab продолжал бы обход с той же строки — мимо всего, что
+  // человек только что вызвал на экран.
   useEffect(() => {
     panel.current?.focus();
   }, [id]);
 
+  // `aria-modal` здесь нет намеренно: на рабочем мониторе панель не модальна,
+  // список рядом с ней остаётся живым и с клавиатуры тоже. Атрибут сказал бы
+  // читалке обратное — что всё вне панели скрыто, — и это была бы неправда.
   return (
-    <div
-      className="veil veil--right"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+    <aside
+      className="sheet-right"
+      role="dialog"
+      aria-label="Разбор заявки"
+      tabIndex={-1}
+      ref={panel}
     >
-      <div
-        className="sheet-right"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Разбор заявки"
-        tabIndex={-1}
-        ref={panel}
-      >
-        <div className="sheet-right__head">
-          <div className="sheet-right__eyebrow mono">
-            {/* Номер, а не идентификатор: «З-2026-0013» стоит в списке,
-                в письме и в трубке у клиента, а «f14fc239» не значит ничего
-                и совпадать ему не с чем. Обрывок идентификатора остаётся
-                только на те полсекунды, пока заявка едет. */}
-            Заявка {data?.number ?? id.slice(0, 8)}
-            {data && <> · {when(data.createdAt)}</>}
-            {queue && queue.list.length > 1 && (
-              <>
-                {" · "}
-                {queue.at + 1} из {queue.list.length}
-              </>
-            )}
-          </div>
-          <h2 className="sheet-right__title">{data?.name ?? "Читаем заявку…"}</h2>
-          {data && (
-            <p className="sheet-right__sub">
-              {[data.company, label(FORM, data.form), label(LEAD_SOURCE, data.source)]
-                .filter(Boolean)
-                .join(" · ")}
-            </p>
-          )}
-
-          <button
-            type="button"
-            className="sheet-right__close"
-            onClick={onClose}
-            aria-label="Закрыть разбор"
-          >
-            <CloseIcon size={18} />
-          </button>
-        </div>
-
-        <div className="sheet-right__body">
-          <Note kind="error">{error}</Note>
-          {loading && !data && <p className="muted">Загружаем…</p>}
-
-          {data && (
-            <Form
-              key={data.id}
-              lead={data}
-              statuses={statuses}
-              queue={queue}
-              onError={setError}
-              onSaved={onSaved}
-              onClose={onClose}
-            />
+      <div className="sheet-right__head">
+        <div className="sheet-right__eyebrow mono">
+          {/* Номер, а не идентификатор: «З-2026-0013» стоит в списке,
+              в письме и в трубке у клиента, а «f14fc239» не значит ничего
+              и совпадать ему не с чем. Обрывок идентификатора остаётся
+              только на те полсекунды, пока заявка едет. */}
+          Заявка {data?.number ?? id.slice(0, 8)}
+          {data && <> · {when(data.createdAt)}</>}
+          {queue && queue.list.length > 1 && (
+            <>
+              {" · "}
+              {queue.at + 1} из {queue.list.length}
+            </>
           )}
         </div>
+        <h2 className="sheet-right__title">{data?.name ?? "Читаем заявку…"}</h2>
+        {data && (
+          <p className="sheet-right__sub">
+            {[data.company, label(FORM, data.form), label(LEAD_SOURCE, data.source)]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+        )}
+
+        <button
+          type="button"
+          className="sheet-right__close"
+          onClick={onClose}
+          aria-label="Закрыть разбор"
+        >
+          <CloseIcon size={18} />
+        </button>
       </div>
-    </div>
+
+      <div className="sheet-right__body">
+        <Note kind="error">{error}</Note>
+        {loading && !data && <p className="muted">Загружаем…</p>}
+
+        {data && (
+          <Form
+            key={data.id}
+            lead={data}
+            statuses={statuses}
+            queue={queue}
+            onError={setError}
+            onSaved={onSaved}
+            onClose={onClose}
+          />
+        )}
+      </div>
+    </aside>
   );
 }
 

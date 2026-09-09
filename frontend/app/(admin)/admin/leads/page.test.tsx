@@ -375,6 +375,98 @@ describe("клавиши списка", () => {
   });
 });
 
+// Панель разбора.
+//
+// Она была всплывающим окном и стала пристыкованной панелью, потому что
+// окно перекрывало шапку портала и половину таблицы. Обратный ход — вернуть
+// панель в затемнение поверх страницы — не сломает ни одного действия: разбор
+// откроется, сохранится и закроется ровно как сейчас. Сломается только то,
+// ради чего правку и делали, и увидеть это можно лишь глазами на стенде.
+// Отсюда проверки разметки: где панель стоит в дереве и чем не окружена.
+describe("панель разбора", () => {
+  it("стоит рядом со списком, а не поверх страницы", async () => {
+    const user = await экран();
+
+    await user.click(screen.getByText("Иван Петров"));
+    const панель = await screen.findByRole("dialog", { name: "Разбор заявки" });
+
+    // Затемнения нет ни над панелью, ни где-либо на экране: оно и накрывало
+    // шапку портала с вкладками разделов.
+    expect(панель.closest(".veil")).toBeNull();
+    expect(document.querySelector(".veil")).toBeNull();
+
+    // Панель и таблица — соседи по одной сетке, а не слои друг над другом.
+    const сетка = панель.parentElement!;
+    expect(сетка.classList.contains("with-side")).toBe(true);
+    expect(сетка.querySelector("table")).toBeTruthy();
+  });
+
+  it("список остаётся на экране, и следующую заявку открывают не закрывая панель", async () => {
+    const user = await экран();
+
+    await user.click(screen.getByText("Иван Петров"));
+    await screen.findByRole("dialog", { name: "Разбор заявки" });
+
+    // Таблица никуда не делась — в этом весь смысл замены окна панелью.
+    expect(screen.getByText("Мария Соколова")).toBeTruthy();
+
+    await user.click(screen.getByText("Мария Соколова"));
+
+    // Панель одна, и она перешла к следующей заявке: закрывать её незачем.
+    expect(screen.getAllByRole("dialog", { name: "Разбор заявки" })).toHaveLength(1);
+  });
+
+  it("разбираемая строка помечена в таблице", async () => {
+    const user = await экран();
+
+    await user.click(screen.getByText("Мария Соколова"));
+    await screen.findByRole("dialog", { name: "Разбор заявки" });
+
+    // Поиск по таблице, а не по экрану: имя разбираемой заявки стоит
+    // и в панели тоже — теперь они видны одновременно.
+    const таблица = document.querySelector("tbody") as HTMLElement;
+    const строка = within(таблица).getByText("Мария Соколова").closest("tr")!;
+    expect(строка.className).toContain("row--open");
+    // И соседняя — нет: иначе метка ничего не различает.
+    const соседняя = within(таблица).getByText("Иван Петров").closest("tr")!;
+    expect(соседняя.className).not.toContain("row--open");
+  });
+
+  it("Escape закрывает панель", async () => {
+    const user = await экран();
+
+    await user.click(screen.getByText("Иван Петров"));
+    await screen.findByRole("dialog", { name: "Разбор заявки" });
+
+    await user.keyboard("{Escape}");
+
+    await vi.waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Разбор заявки" })).toBeNull(),
+    );
+  });
+
+  it("после закрытия фокус возвращается на строку, из которой открыли", async () => {
+    const user = await экран();
+
+    const строка = screen.getByText("Пётр Иванов").closest("tr")!;
+    const кнопка = within(строка).getByRole("button", { name: /^Разобрать заявку/ });
+
+    await user.click(screen.getByText("Пётр Иванов"));
+    await screen.findByRole("dialog", { name: "Разбор заявки" });
+    await user.keyboard("{Escape}");
+
+    // Не body: иначе следующий Tab начинает обход страницы заново,
+    // и разобрать вторую заявку подряд с клавиатуры невозможно.
+    // Сравнивается имя, а не узел: список перерисовывается после закрытия,
+    // и та же строка — это уже другой элемент дерева.
+    await vi.waitFor(() =>
+      expect(document.activeElement?.getAttribute("aria-label")).toBe(
+        кнопка.getAttribute("aria-label"),
+      ),
+    );
+  });
+});
+
 describe("что видно в строке", () => {
   it("заявка без ответственного помечена словом, а не пустотой", async () => {
     await экран();
