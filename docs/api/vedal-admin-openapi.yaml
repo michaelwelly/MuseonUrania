@@ -2098,6 +2098,58 @@ paths:
       summary: Снять изделие с публикации
       tags:
       - "Админка: каталог"
+  /api/admin/v1/profile/avatar:
+    delete:
+      description: |
+        Возвращает кружок с первой буквой логина. Портрета не было —
+        ответ тот же: убирать нечего, и отказ здесь означал бы,
+        что кнопка иногда ломается без причины.
+      operationId: clear
+      responses:
+        "200":
+          description: OK
+      security:
+      - keycloak: []
+      summary: Убрать свой портрет
+      tags:
+      - "Админка: портрет"
+    post:
+      description: |
+        Принимает JPEG или PNG до 2 МБ, стороной от 64 до 4096 точек.
+        Хранится не присланный файл, а собранный из его точек
+        JPEG 256×256: всё, что ехало рядом с картинкой, включая EXIF
+        с координатами съёмки, до хранилища не доезжает.
+
+        Формат определяется по содержимому файла. Расширение и
+        заголовок `Content-Type` пишет тот, кто грузит, и в проверке
+        они не участвуют.
+
+        Чей это портрет, решает токен: логина в адресе нет, и назвать
+        чужой негде.
+      operationId: replace
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+              - file
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminMyAvatar"
+          description: OK
+      security:
+      - keycloak: []
+      summary: Поставить или заменить свой портрет
+      tags:
+      - "Админка: портрет"
   /api/admin/v1/quotes:
     get:
       operationId: quotes
@@ -2325,6 +2377,36 @@ paths:
       summary: Сотрудники для выбора ответственного
       tags:
       - "Админка: сотрудники"
+  /api/admin/v1/staff/{login}/avatar:
+    get:
+      description: |
+        Отдаёт JPEG 256×256 или 404, если портрета нет. 404 здесь —
+        не поломка: у большинства сотрудников портрета нет, и админка
+        рисует на его месте кружок с первой буквой логина.
+
+        Открыто любой портальной роли: кружок с портретом помечает
+        автора записи в журнале и ответственного у сделки, а не
+        только вас самих.
+      operationId: portrait
+      parameters:
+      - in: path
+        name: login
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: byte
+          description: OK
+      security:
+      - keycloak: []
+      summary: Портрет сотрудника
+      tags:
+      - "Админка: портрет"
   /api/admin/v1/staff/{login}/roles:
     put:
       description: |
@@ -2978,6 +3060,22 @@ components:
           minLength: 1
       required:
       - status
+    AdminMyAvatar:
+      type: object
+      description: Что стало с портретом после правки.
+      properties:
+        size:
+          type: integer
+          format: int32
+          description: Размер хранимого JPEG в байтах.
+        updatedAt:
+          type: string
+          format: date-time
+          description: Когда портрет заменили.
+        width:
+          type: integer
+          format: int32
+          description: Сторона хранимого портрета в точках.
     AdminNewDeal:
       type: object
       description: Новая сделка по уже заведённому клиенту.
