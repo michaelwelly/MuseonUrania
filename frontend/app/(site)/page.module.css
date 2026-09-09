@@ -30,10 +30,10 @@
 .hero {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(440px, 46%);
+  grid-template-columns: minmax(0, 1fr) minmax(440px, 42%);
   min-height: 648px;
   background: var(--page);
-  --pattern-seam: 46%;
+  --pattern-seam: 42%;
 }
 
 .heroCopy {
