@@ -2,15 +2,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { membership } from "@/content/about";
 import { footer, site } from "@/content/site";
-import { ui } from "@/content/ui";
-import { contentText } from "@/lib/content-i18n";
-import { localePath, type Lang } from "@/lib/i18n";
+import { ui as strings } from "@/content/ui";
 import FooterSubscribe from "./FooterSubscribe";
 import styles from "./Footer.module.css";
 
-export default function Footer({ lang }: { lang: Lang }) {
-  const strings = ui(lang);
-  const c = contentText(lang);
+export default function Footer() {
   // Подписи ссылок подвала берутся из двух наборов: часть повторяет пункты
   // меню («О компании», «Производство», «Новости»), часть есть только здесь
   // («Документы и лицензии», «Неонатология»). Держать вторую копию первых
@@ -41,16 +37,13 @@ export default function Footer({ lang }: { lang: Lang }) {
           <div className={styles.membership}>
             <Image
               src={membership.markWide.src}
-              alt={c.t(membership.markWide.alt)}
+              alt={membership.markWide.alt}
               width={membership.markWide.width}
               height={membership.markWide.height}
             />
           </div>
-          {/* Описание компании — содержательный текст: что и для кого
-              производим. Переводит заказчик; до перевода стоит русский
-              оригинал, помеченный lang. */}
-          <p className={styles.about} lang={c.mark(footer.about)}>
-            {c.t(footer.about)}
+          <p className={styles.about}>
+            {footer.about}
           </p>
           {/* Кнопки соцсетей скрыты из вёрстки целиком, а не только сделаны
               некликабельными: по итогам просмотра стенда заказчиком
@@ -65,7 +58,7 @@ export default function Footer({ lang }: { lang: Lang }) {
             <p className={styles.colTitle}>{label[column.key]}</p>
             <div className={styles.links}>
               {column.links.map((link) => (
-                <Link key={`${column.key}-${link.key}`} href={localePath(lang, link.href)}>
+                <Link key={`${column.key}-${link.key}`} href={link.href}>
                   {label[link.key]}
                 </Link>
               ))}
@@ -84,21 +77,19 @@ export default function Footer({ lang }: { lang: Lang }) {
               <a className={styles.contactLine} href={`mailto:${site.email}`}>
                 {site.email}
               </a>
-              {/* Адрес не переводится: это почтовый адрес, по нему ездят.
-                  Переведена только подпись «производство». */}
-              <span className={styles.address} lang={c.mark(site.address)}>
+              <span className={styles.address}>
                 {site.address} {strings.footer.productionSuffix}
               </span>
             </address>
           </div>
 
-          <FooterSubscribe lang={lang} />
+          <FooterSubscribe />
         </div>
       </div>
 
       <div className={styles.bottom}>
-        <span lang={c.mark(site.legalName)}>
-          © {new Date().getFullYear()} {c.t(site.legalName)}
+        <span>
+          © {new Date().getFullYear()} {site.legalName}
         </span>
         <span>ИНН {site.inn}</span>
         <span>КПП {site.kpp}</span>
@@ -107,27 +98,21 @@ export default function Footer({ lang }: { lang: Lang }) {
             по адресу ниже не содержит текста политики: он готовится и до
             проверки юристом не публикуется (§14.7). Она показывает статус,
             реквизиты оператора и контакт для обращений. */}
-        <Link className={styles.contactLine} href={localePath(lang, "/legal/privacy/")}>
+        <Link className={styles.contactLine} href="/legal/privacy/">
           {strings.footer.privacy}
         </Link>
         {/* Дверь сотрудника. prefetch={false} обязателен: у сайта и админки
             разные корневые layout'ы, переход всё равно перезагружает страницу
             целиком, а предзагрузка тянула бы бандл админки каждому посетителю
-            сайта — ради ссылки, которой воспользуются несколько человек.
-
-            Адрес без языкового префикса: админка одноязычная, у неё свой
-            корневой layout и своя навигация. */}
+            сайта — ради ссылки, которой воспользуются несколько человек. */}
         <Link className={styles.staff} href="/admin/" prefetch={false}>
           {strings.footer.staffLogin}
         </Link>
-        {/* Оговорка про оферту и регистрационные удостоверения — юридический
-            текст. Машинный перевод такого недопустим: «регистрационное
-            удостоверение» и «registration certificate» — не одно и то же. */}
-        <span className={styles.disclaimer} lang={c.mark(footer.disclaimer)}>
-          {c.t(footer.disclaimer)}
+        <span className={styles.disclaimer}>
+          {footer.disclaimer}
         </span>
-        <span className={styles.disclaimer} lang={c.mark(footer.copyright)}>
-          {c.t(footer.copyright)}
+        <span className={styles.disclaimer}>
+          {footer.copyright}
         </span>
       </div>
     </footer>

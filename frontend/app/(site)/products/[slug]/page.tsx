@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import ProductScreen, { productMetadata } from "./screen";
 import { fetchProducts } from "@/lib/api";
-import { DEFAULT_LANG } from "@/lib/i18n";
 
-// Русская карточка изделия. Тело — в `screen.tsx`: его же рисуют
-// `/en/products/[slug]/` и `/zh/products/[slug]/`.
+// Карточка изделия. Тело — в `screen.tsx`; здесь остаётся разбор `params`:
+// адрес читает маршрут, а экран получает уже разобранный slug.
 
 export async function generateStaticParams() {
   const products = await fetchProducts();
@@ -13,10 +12,10 @@ export async function generateStaticParams() {
 
 export async function generateMetadata(props: PageProps<"/products/[slug]">): Promise<Metadata> {
   const { slug } = await props.params;
-  return productMetadata(slug, DEFAULT_LANG);
+  return productMetadata(slug);
 }
 
 export default async function ProductPage(props: PageProps<"/products/[slug]">) {
   const { slug } = await props.params;
-  return <ProductScreen slug={slug} lang={DEFAULT_LANG} />;
+  return <ProductScreen slug={slug} />;
 }

@@ -44,7 +44,7 @@ describe("политика содержимого", () => {
       NEXT_PUBLIC_OIDC_ISSUER: "https://auth.example.test/realms/vedal",
     });
 
-    expect(csp).toContain("img-src 'self' data: https://media.example.test");
+    expect(csp).toContain("img-src 'self' data: blob: https://media.example.test");
     expect(csp).toContain("connect-src 'self' https://api.example.test https://auth.example.test");
     expect(csp).toContain("form-action 'self' https://auth.example.test");
   });
@@ -73,7 +73,7 @@ describe("политика содержимого", () => {
     const csp = contentSecurityPolicy({ ...ПУСТО, NEXT_PUBLIC_YANDEX_METRIKA_ID: "12345678" });
 
     expect(csp).toContain("script-src 'self' 'unsafe-inline' https://mc.yandex.ru");
-    expect(csp).toContain("img-src 'self' data: https://mc.yandex.ru");
+    expect(csp).toContain("img-src 'self' data: blob: https://mc.yandex.ru");
     expect(csp).toContain("connect-src 'self' https://mc.yandex.ru");
   });
 
@@ -91,7 +91,7 @@ describe("политика содержимого", () => {
   it("переживает кривой адрес в окружении", () => {
     const csp = contentSecurityPolicy({ ...ПУСТО, NEXT_PUBLIC_MEDIA_URL: "не адрес" });
 
-    expect(csp).toContain("img-src 'self' data:;");
+    expect(csp).toContain("img-src 'self' data: blob:;");
   });
 });
 

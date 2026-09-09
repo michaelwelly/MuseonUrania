@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
 import ServiceScreen, { serviceMetadata } from "./screen";
-import { DEFAULT_LANG } from "@/lib/i18n";
 
-// Русская страница «Сервис». Тело — в `screen.tsx`: его же рисуют
-// `/en/service/` и `/zh/service/`.
+// Сервис. Тело — в `screen.tsx`: там его рисуют и тесты, без маршрута.
 
-export const metadata: Metadata = serviceMetadata(DEFAULT_LANG);
+export const metadata: Metadata = serviceMetadata();
 
 export default function Service() {
-  return <ServiceScreen lang={DEFAULT_LANG} />;
+  return <ServiceScreen />;
 }

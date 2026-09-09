@@ -140,6 +140,58 @@ describe("путь заявки", () => {
   });
 });
 
+// Фильтры.
+//
+// Они стояли тремя этажами и сведены в ряд. Само по себе это вопрос вёрстки,
+// но сводят такое обычно двумя способами: честным — одной строкой сетки —
+// и коротким, когда лишние поля прячут за кнопку «ещё» или срезают им
+// подписи. Второй способ выглядит на снимке так же, а с клавиатуры даёт
+// экран, где до дат не добраться. Отсюда две проверки: все три фильтра
+// в одном ряду и все три доступны обходом.
+describe("фильтры", () => {
+  it("разрез и обе даты — в одном ряду", async () => {
+    await экран();
+
+    const ряд = document.querySelector(".admin-head .row--filters")!;
+    expect(ряд.querySelector(".segments")).toBeTruthy();
+    expect(within(ряд as HTMLElement).getByLabelText("Начало периода")).toBeTruthy();
+    expect(within(ряд as HTMLElement).getByLabelText("Конец периода")).toBeTruthy();
+  });
+
+  it("до каждого фильтра доходят с клавиатуры", async () => {
+    const user = await экран();
+
+    // Обход с начала страницы: куда фокус встаёт по очереди. Порядок Tab
+    // проверяется целиком, а не по одному шагу, — переключатель разреза
+    // отдаёт по остановке на каждый вариант, и их число меняется вместе
+    // с набором разрезов, который приходит из портала.
+    const порядок: Element[] = [];
+    for (let i = 0; i < 12; i++) {
+      await user.tab();
+      if (document.activeElement) порядок.push(document.activeElement);
+    }
+
+    const где = (el: Element) => порядок.indexOf(el);
+    const разрез = где(screen.getByRole("radio", { name: "Источник" }));
+    const начало = где(screen.getByLabelText("Начало периода"));
+    const конец = где(screen.getByLabelText("Конец периода"));
+
+    // Все три встречаются в обходе — и в том же порядке, в каком стоят
+    // в ряду: иначе с клавиатуры экран читается не так, как выглядит.
+    expect(разрез).toBeGreaterThanOrEqual(0);
+    expect(начало).toBeGreaterThan(разрез);
+    expect(конец).toBeGreaterThan(начало);
+  });
+
+  it("выбранная дата уходит в запрос, а не остаётся в поле", async () => {
+    const user = await экран();
+
+    await user.type(screen.getByLabelText("Начало периода"), "2026-08-01");
+
+    await waitFor(() => expect(mocks.analytics).toHaveBeenCalledWith("source", "2026-08-01", ""));
+  });
+});
+
 describe("таблица разреза", () => {
   it("итоговая строка помечена, а не теряется среди одинаковых", async () => {
     await экран();

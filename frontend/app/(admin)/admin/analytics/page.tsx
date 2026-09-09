@@ -74,7 +74,11 @@ export default function AnalyticsPage() {
     <>
       <div className="admin-head">
         <h1>Аналитика</h1>
-        <div className="row">
+        {/* Разрез и обе границы периода — один ряд, а не три этажа.
+            Это один вопрос, заданный тремя полями: «что с чем сравниваем
+            и за какие дни». Разнесённый по трём строкам, он отжимал
+            заголовок и отбирал у отчёта высоту, ради которой сюда и пришли. */}
+        <div className="row row--filters">
           <Segments
             label="Разрез"
             value={by}
@@ -82,7 +86,7 @@ export default function AnalyticsPage() {
             dict={РАЗРЕЗ}
             onChange={setBy}
           />
-          <label className="find">
+          <label className="find find--date">
             <span className="slug__prefix mono">с</span>
             <input
               className="mono"
@@ -92,7 +96,7 @@ export default function AnalyticsPage() {
               onChange={(e) => setFrom(e.target.value)}
             />
           </label>
-          <label className="find">
+          <label className="find find--date">
             <span className="slug__prefix mono">по</span>
             <input
               className="mono"

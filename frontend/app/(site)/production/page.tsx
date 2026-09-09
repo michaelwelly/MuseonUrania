@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
 import ProductionScreen, { productionMetadata } from "./screen";
-import { DEFAULT_LANG } from "@/lib/i18n";
 
-// Русская страница «Производство». Тело — в `screen.tsx`: его же рисуют
-// `/en/production/` и `/zh/production/`.
+// Производство. Тело — в `screen.tsx`: там его рисуют и тесты, без маршрута.
 
-export const metadata: Metadata = productionMetadata(DEFAULT_LANG);
+export const metadata: Metadata = productionMetadata();
 
 export default function Production() {
-  return <ProductionScreen lang={DEFAULT_LANG} />;
+  return <ProductionScreen />;
 }

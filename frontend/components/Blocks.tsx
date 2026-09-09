@@ -53,21 +53,12 @@ export function DarkCta({
   text,
   primary,
   secondary,
-  textLang,
   tone = "deep-2",
 }: {
   title: string;
   text: string;
   primary: Action;
   secondary?: Action;
-  /**
-   * Язык заголовка и текста полосы, если он не совпадает с языком страницы.
-   *
-   * Полоса-призыв несёт содержательный текст, и на переведённых версиях он
-   * показывается русским оригиналом, пока перевод не согласован. Подписи
-   * кнопок сюда не входят: они интерфейс и переведены всегда.
-   */
-  textLang?: "ru";
   tone?: "deep" | "deep-2";
 }) {
   return (
@@ -78,7 +69,7 @@ export function DarkCta({
           насыщенный зелёный квадрат на почти чёрном превращается в световое
           пятно и тянет взгляд сильнее, чем заголовок рядом. */}
       <LivePattern variant={2} tone="dark" />
-      <div data-reveal="0" lang={textLang}>
+      <div data-reveal="0">
         <h2 className={styles.ctaTitle} data-words="30">
           {title}
         </h2>

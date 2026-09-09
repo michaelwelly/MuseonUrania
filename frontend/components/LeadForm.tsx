@@ -4,9 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { consent as consentCopy } from "@/content/legal";
 import { site } from "@/content/site";
-import { ui, type UiStrings } from "@/content/ui";
-import { contentText } from "@/lib/content-i18n";
-import { DEFAULT_LANG, localePath, type Lang } from "@/lib/i18n";
+import { ui as strings, type UiStrings } from "@/content/ui";
 import {
   attribution,
   newIdempotencyKey,
@@ -58,9 +56,8 @@ type Errors = Partial<Record<Field, string>>;
 // сразу, не гоняя запрос.
 //
 // Тексты ошибок приходят вторым аргументом, а не берутся из словаря внутри:
-// проверка не должна знать про язык страницы, она знает про поля. Умолчание
-// русское — так функция остаётся вызываемой одним аргументом и из тестов,
-// и из мест, где языка нет.
+// проверка знает про поля, а не про подписи. Умолчание стоит на месте — так
+// функция остаётся вызываемой одним аргументом, в том числе из тестов.
 /**
  * Что именно требуется от этой формы.
  *
@@ -85,7 +82,7 @@ export type Requirements = {
 
 export function validate(
   data: FormData,
-  messages: UiStrings["form"]["errors"] = ui(DEFAULT_LANG).form.errors,
+  messages: UiStrings["form"]["errors"] = strings.form.errors,
   need: Requirements = {},
 ): Errors {
   const errors: Errors = {};
@@ -134,8 +131,6 @@ type Props = {
   /** Позиции каталога для селектора изделия. Приходят с бэкенда через страницу. */
   products?: readonly ProductRef[];
   analytics: string;
-  /** Язык страницы. Русский по умолчанию — форму строят и тесты без пропа. */
-  lang?: Lang;
   submitLabel?: string;
   hint?: string;
   messageLabel?: string;
@@ -147,16 +142,10 @@ export default function LeadForm({
   product,
   products = [],
   analytics,
-  lang = DEFAULT_LANG,
   submitLabel,
   hint,
   messageLabel,
 }: Props) {
-  const strings = ui(lang);
-  const c = contentText(lang);
-  // Ответ портала всегда по-русски: тексты живут на бэкенде. Помечаем их
-  // языком, а не выдаём за язык страницы.
-  const noticeLang = lang === DEFAULT_LANG ? undefined : "ru";
   const [errors, setErrors] = useState<Errors>({});
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "failed">("idle");
   const [notice, setNotice] = useState("");
@@ -272,7 +261,7 @@ export default function LeadForm({
   if (status === "sent") {
     return (
       <div className={styles.form}>
-        <p className={styles.pending} role="status" data-anim="rise" lang={noticeLang}>
+        <p className={styles.pending} role="status" data-anim="rise">
           {notice}
         </p>
         <div className={styles.actions}>
@@ -308,8 +297,8 @@ export default function LeadForm({
             {/* Названия тем приходят из content/contacts.ts — это содержание,
                 а не подпись поля: тема определяет, куда уедет заявка. */}
             {topics.map((t) => (
-              <option key={t.code} value={t.code} lang={c.mark(t.label)}>
-                {c.t(t.label)}
+              <option key={t.code} value={t.code}>
+                {t.label}
               </option>
             ))}
           </select>
@@ -385,14 +374,13 @@ export default function LeadForm({
           `product` из FormData и про разницу между «выбрали» и «пришли
           с карточки» знать не обязана.
 
-          Название изделия не переводится ни на одном языке — это имя
-          позиции каталога, а не подпись интерфейса; направление (`kind`)
-          идёт через `c.t`, как и везде. */}
+          Название изделия и его направление приходят из каталога, а не
+          из словаря интерфейса. */}
       {product ? (
         <div className={`${styles.field} ${styles.fieldWide}`}>
           <p className={styles.label}>{strings.form.product}</p>
-          <p className={styles.fixed} lang={c.mark(product.kind)}>
-            {product.name} — {c.t(product.kind)}
+          <p className={styles.fixed}>
+            {product.name} — {product.kind}
           </p>
           <input type="hidden" name="product" value={product.slug} />
         </div>
@@ -503,19 +491,19 @@ export default function LeadForm({
         {/* Звёздочка вплотную к тексту, разделитель с воздухом. Раньше между
             ними стояли два пробела подряд, и строка читалась как «данных * ·
             Политика» — набор знаков, а не подпись со ссылкой. */}
-        {/* Текст согласия мы не переводим: бэкенд хранит версию формулировки,
-            под которой человек подписался, и перевод — это другая
-            формулировка. До согласования показываем русскую и помечаем её. */}
-        <span lang={c.mark(consentCopy.label, consentCopy.linkLabel)}>
-          {c.t(consentCopy.label)}
+        {/* Формулировку согласия экран не сочиняет: бэкенд хранит её версию,
+            под которой человек подписался, и текст обязан совпасть с той,
+            что лежит в content/legal.ts. */}
+        <span>
+          {consentCopy.label}
           <span className={styles.required}>*</span>
           <span className={styles.consentSep}>·</span>
-          <Link href={localePath(lang, consentCopy.href)}>{c.t(consentCopy.linkLabel)}</Link>
+          <Link href={consentCopy.href}>{consentCopy.linkLabel}</Link>
         </span>
       </label>
       {errors.consent && <span id="consent-error" className={styles.error}>{errors.consent}</span>}
-      <p className={styles.consentNote} lang={c.mark(consentCopy.note)}>
-        {c.t(consentCopy.note)}
+      <p className={styles.consentNote}>
+        {consentCopy.note}
       </p>
 
       <div className={styles.actions}>
@@ -531,7 +519,7 @@ export default function LeadForm({
 
       {status === "failed" && (
         <p className={styles.pending} role="alert" data-anim="rise">
-          <span lang={noticeLang}>{notice}</span> {strings.form.fallbackCall}{" "}
+          {notice} {strings.form.fallbackCall}{" "}
           <a href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a>{" "}
           {strings.form.fallbackWrite} <a href={`mailto:${site.email}`}>{site.email}</a>
           {strings.form.fallbackEnd}

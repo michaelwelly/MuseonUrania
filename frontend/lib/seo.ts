@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 
-import { alternateLanguages, DEFAULT_LANG, localePath, ogLocale, type Lang } from "@/lib/i18n";
-
 // Метаданные для поисковиков и мессенджеров.
 //
 // Зачем это отдельным модулем, а не полем в каждой странице. Canonical и
@@ -56,15 +54,11 @@ type PageSeo = {
   title: string;
   description: string;
   /**
-   * Путь БЕЗ языкового префикса и со слэшем на конце: `/products/`.
+   * Путь страницы со слэшем на конце: `/products/`.
    *
    * В next.config стоит trailingSlash, и адрес без слеша отдаёт 308.
-   * Префикс языка дописывает `localePath` — здесь и в ссылках: страница
-   * знает свой раздел, а язык приходит сверху, из маршрута.
    */
   path: string;
-  /** Язык страницы. По умолчанию русский — он в корне и без префикса. */
-  lang?: Lang;
   /** Своя картинка страницы — снимок изделия или новости. */
   image?: { url: string; alt: string };
   type?: "website" | "article";
@@ -75,7 +69,6 @@ export function pageMetadata({
   title,
   description,
   path,
-  lang = DEFAULT_LANG,
   image,
   type = "website",
   publishedTime,
@@ -88,21 +81,17 @@ export function pageMetadata({
     // и, позже, по домену. Без canonical это для поисковика три разных сайта
     // с одинаковым содержимым.
     //
-    // `languages` — это hreflang. Он говорит поисковику, что три адреса
-    // с одинаковым смыслом не дубли, а версии одной страницы на разных
-    // языках, и какую кому показывать. Без него английская версия либо
-    // соперничает с русской за ту же выдачу, либо выпадает из неё как копия.
-    alternates: {
-      canonical: localePath(lang, path),
-      languages: alternateLanguages(path),
-    },
+    // `languages` (hreflang) здесь нет: сайт одноязычный, версий одной
+    // страницы на разных языках не существует, и объявлять их поисковику
+    // значило бы обещать адреса, которые отвечают редиректом на корень.
+    alternates: { canonical: path },
     openGraph: {
       type,
       title,
       description,
-      url: localePath(lang, path),
+      url: path,
       siteName: "VEDAL",
-      locale: ogLocale[lang],
+      locale: "ru_RU",
       images: picture,
       ...(publishedTime ? { publishedTime } : {}),
     },

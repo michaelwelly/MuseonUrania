@@ -3,7 +3,6 @@ import Image from "next/image";
 import { pageMetadata } from "@/lib/seo";
 import PageHero from "@/components/PageHero";
 import LeadForm from "@/components/LeadForm";
-import TranslationNotice from "@/components/TranslationNotice";
 import VedalMap from "@/components/VedalMap";
 import VedalMapEmbed from "@/components/VedalMapEmbed";
 import { fetchProducts } from "@/lib/api";
@@ -19,95 +18,65 @@ import {
   contactsNotice,
   vedalinaCard,
 } from "@/content/contacts";
-import { ui } from "@/content/ui";
-import { contentText } from "@/lib/content-i18n";
-import { localePath, type Lang } from "@/lib/i18n";
+import { ui as strings } from "@/content/ui";
 import styles from "./page.module.css";
 
-// Контакты. Тело страницы вынесено из `page.tsx` сюда, потому что его рисуют
-// два маршрута: `/contacts/` (русский, `app/(site)`) и `/[lang]/contacts/`
-// (переведённый, `app/(intl)`). Файл `screen.tsx` маршрутом не является,
-// поэтому здесь можно держать любые экспорты, чего `page.tsx` не позволяет.
+// Контакты. Тело страницы вынесено из `page.tsx` сюда, потому что
+// `screen.tsx` маршрутом не является: здесь можно держать любые экспорты
+// и рисовать экран из тестов, чего `page.tsx` не позволяет.
 //
-// Язык приходит пропом. Интерфейс берётся из `content/ui.ts`, содержательный
-// текст — через `contentText`: перевод, если он согласован, иначе русский
-// оригинал с пометкой `lang="ru"`.
+// Подписи интерфейса берутся из `content/ui.ts`, всё остальное —
+// из `content/contacts.ts`: это утверждения о компании, и правит их заказчик.
 
-export function contactsMetadata(lang: Lang): Metadata {
-  const strings = ui(lang);
-  const c = contentText(lang);
+export function contactsMetadata(): Metadata {
   return pageMetadata({
     title: strings.meta.contacts,
-    // Подзаголовок первого экрана — содержательный текст: он обещает,
-    // что запрос попадёт в нужный отдел. Переводится только вместе
-    // с остальным контентом, до этого едет в описание по-русски.
-    description: c.t(contactsHero.lead),
+    description: contactsHero.lead,
     path: "/contacts/",
-    lang,
   });
 }
 
-// Стиль главной строки карточки выбирается по РУССКОМУ оригиналу подписи,
-// а не по переведённой: на английской и китайской версиях сравнение
-// с «Телефон» и «Почта» не совпало бы ни разу, и все три карточки получили бы
-// стиль адреса. Подпись переводится отдельно, ниже, через `blockTitles`.
+// Стиль главной строки карточки выбирается по её подписи: телефон, почта
+// и адрес набраны по-разному. Отдельного поля под это в content/contacts.ts
+// нет — карточек три, и заводить его ради трёх значений дороже сравнения.
 const mainClass = (title: string) =>
   title === "Телефон" ? styles.mainPhone : title === "Почта" ? styles.mainMail : styles.mainAddress;
 
-export default async function ContactsScreen({ lang }: { lang: Lang }) {
-  const strings = ui(lang);
-  const c = contentText(lang);
-  const at = (path: string) => localePath(lang, path);
-
+export default async function ContactsScreen() {
   // Селектор изделия в форме — тот же каталог, что на /products/.
   const products = await fetchProducts();
 
   return (
     <main className={styles.page}>
-      {/* Заголовок и подзаголовок первого экрана — содержательный текст,
-          но пометить его `lang="ru"` здесь нечем: `PageHero` принимает
-          строки, а не разметку, и своего атрибута языка не выставляет.
-          Про непереведённое говорит примечание сразу под ним. */}
       <PageHero
         crumbs={[
-          { label: strings.crumbs.home, href: at("/") },
+          { label: strings.crumbs.home, href: "/" },
           { label: strings.crumbs.contacts },
         ]}
-        title={c.t(contactsHero.title)}
-        lead={c.t(contactsHero.lead)}
-        textLang={c.mark(contactsHero.title, contactsHero.lead)}
+        title={contactsHero.title}
+        lead={contactsHero.lead}
       />
-
-      {/* Примечание о непереведённом стоит сразу после первого экрана:
-          дальше идут реквизиты, схема проезда и текст про персональные
-          данные — их перевод согласовывает заказчик. Для русской версии
-          не рисуется. */}
-      <TranslationNotice lang={lang} />
 
       <ul className={styles.blocks}>
         {contactBlocks.map((b, i) => (
           <li key={b.title} className={styles.block} data-reveal={i}>
-            {/* Подписи карточек — интерфейс: они ничего не утверждают об
-                изделии, поэтому переводятся нами. Ключ словаря — русский
-                оригинал; нет перевода — остаётся он же. */}
-            <p className={styles.blockTitle}>{strings.contacts.blockTitles[b.title] ?? b.title}</p>
+            <p className={styles.blockTitle}>{b.title}</p>
             <address className={styles.contacts}>
               {b.main.href ? (
-                <a className={mainClass(b.title)} href={b.main.href} lang={c.mark(b.main.text)}>
-                  {c.t(b.main.text)}
+                <a className={mainClass(b.title)} href={b.main.href}>
+                  {b.main.text}
                 </a>
               ) : (
-                <span className={mainClass(b.title)} lang={c.mark(b.main.text)}>
-                  {c.t(b.main.text)}
+                <span className={mainClass(b.title)}>
+                  {b.main.text}
                 </span>
               )}
               {b.lines.map((l) => (
                 <span
                   key={l.text}
                   className={l.href ? styles.line : styles.lineDim}
-                  lang={c.mark(l.text)}
                 >
-                  {l.href ? <a href={l.href}>{c.t(l.text)}</a> : c.t(l.text)}
+                  {l.href ? <a href={l.href}>{l.text}</a> : l.text}
                 </span>
               ))}
             </address>
@@ -117,19 +86,17 @@ export default async function ContactsScreen({ lang }: { lang: Lang }) {
 
       <section className={styles.route}>
         <div className={styles.routePanel} data-reveal="0">
-          <p className={styles.eyebrow} lang={c.mark(route.eyebrow)}>
-            {c.t(route.eyebrow)}
+          <p className={styles.eyebrow}>
+            {route.eyebrow}
           </p>
-          <h2 className={styles.routeTitle} data-words="30" lang={c.mark(route.title)}>
-            {c.t(route.title)}
+          <h2 className={styles.routeTitle} data-words="30">
+            {route.title}
           </h2>
           <ul className={styles.routeRows}>
-            {/* Ориентир и порядок въезда — утверждения о площадке: их
-                переводит заказчик, а не мы. */}
             {route.rows.map((r) => (
-              <li key={r.label} className={styles.routeRow} lang={c.mark(r.label, r.value)}>
-                <p className={styles.routeLabel}>{c.t(r.label)}</p>
-                <p className={styles.routeValue}>{c.t(r.value)}</p>
+              <li key={r.label} className={styles.routeRow}>
+                <p className={styles.routeLabel}>{r.label}</p>
+                <p className={styles.routeValue}>{r.value}</p>
               </li>
             ))}
           </ul>
@@ -142,9 +109,8 @@ export default async function ContactsScreen({ lang }: { lang: Lang }) {
             href={route.ctaHref}
             target="_blank"
             rel="noopener"
-            lang={c.mark(route.cta)}
           >
-            {c.t(route.cta)}
+            {route.cta}
           </a>
         </div>
         <div className={styles.mapSlot} data-reveal="1">
@@ -152,7 +118,7 @@ export default async function ContactsScreen({ lang }: { lang: Lang }) {
               по тому же признаку, что поднимает счётчик Метрики (issue #53).
               Без согласия остаётся схема проезда на CSS, а адрес и маршрут
               стоят в панели слева. */}
-          <VedalMapEmbed src={route.mapSrc} title={c.t(route.mapTitle)}>
+          <VedalMapEmbed src={route.mapSrc} title={route.mapTitle}>
             <VedalMap />
           </VedalMapEmbed>
         </div>
@@ -166,12 +132,11 @@ export default async function ContactsScreen({ lang }: { lang: Lang }) {
         <p
           className={styles.eyebrow}
           style={{ color: "var(--green-dark)" }}
-          lang={c.mark(staffSection.eyebrow)}
         >
-          {c.t(staffSection.eyebrow)}
+          {staffSection.eyebrow}
         </p>
-        <h2 className={styles.h2} data-words="30" lang={c.mark(staffSection.title)}>
-          {c.t(staffSection.title)}
+        <h2 className={styles.h2} data-words="30">
+          {staffSection.title}
         </h2>
         <address className={styles.staffFallback}>
           <a href={`tel:${companyContact.phone.replace(/\s/g, "")}`}>{companyContact.phone}</a>
@@ -189,7 +154,6 @@ export default async function ContactsScreen({ lang }: { lang: Lang }) {
             topics={topics}
             products={products}
             analytics="quote_form_submit"
-            lang={lang}
             submitLabel={strings.actions.sendEnquiry}
             messageLabel={strings.contacts.messageLabel}
           />
@@ -198,13 +162,10 @@ export default async function ContactsScreen({ lang }: { lang: Lang }) {
         <div className={styles.aside} data-reveal="1">
           <div className={styles.legalCard}>
             <h2 className={styles.legalTitle}>{strings.contacts.legalTitle}</h2>
-            {/* Реквизиты оператора — юридический текст: наименование
-                общества, ИНН, КПП и адрес. Ни одной строки не переводим
-                сами, только откат на русский. */}
             {legalRows.map((row) => (
-              <div key={row.label} className={styles.legalRow} lang={c.mark(row.label, row.value)}>
-                <span className={styles.legalLabel}>{c.t(row.label)}</span>
-                <span>{c.t(row.value)}</span>
+              <div key={row.label} className={styles.legalRow}>
+                <span className={styles.legalLabel}>{row.label}</span>
+                <span>{row.value}</span>
               </div>
             ))}
           </div>
@@ -218,36 +179,33 @@ export default async function ContactsScreen({ lang }: { lang: Lang }) {
               <div className={styles.vedalinaAvatar}>
                 <Image src={vedalina.avatar} alt="" width={48} height={48} />
               </div>
-              <h2 className={styles.vedalinaTitle} lang={c.mark(vedalinaCard.title)}>
-                {c.t(vedalinaCard.title)}
+              <h2 className={styles.vedalinaTitle}>
+                {vedalinaCard.title}
               </h2>
             </div>
-            {/* Карточка обещает от имени компании, что ассистент подберёт
-                модель и передаст запрос специалисту, — это утверждение,
-                а не подпись кнопки. Поэтому вся карточка идёт через `c.t`. */}
-            <p className={styles.vedalinaText} lang={c.mark(vedalinaCard.text)}>
-              {c.t(vedalinaCard.text)}
+            <p className={styles.vedalinaText}>
+              {vedalinaCard.text}
             </p>
             {/* Обычный `<a>`, а не `Link`: виджет Ведалины открывается
                 по `hashchange`, а `Link` меняет адрес своим `pushState`
                 и события не порождает — кнопка дописывала `#vedalina`
                 в адрес, не открывая окна (issue #101). */}
-            <a className={styles.vedalinaCta} href="#vedalina" lang={c.mark(vedalinaCard.cta)}>
-              {c.t(vedalinaCard.cta)}
+            <a className={styles.vedalinaCta} href="#vedalina">
+              {vedalinaCard.cta}
             </a>
           </div>
         </div>
       </section>
 
       {/* Что именно форма делает с данными и в каком состоянии политика —
-          юридическое утверждение о самих себе. Такой абзац в переводе
-          требует согласования ровно так же, как и сама политика. */}
+          юридическое утверждение о самих себе, и правит его заказчик:
+          текст лежит в content/contacts.ts, а не собирается здесь. */}
       <section className={styles.notice} data-reveal="0">
-        <h2 className={styles.noticeTitle} data-words="30" lang={c.mark(contactsNotice.title)}>
-          {c.t(contactsNotice.title)}
+        <h2 className={styles.noticeTitle} data-words="30">
+          {contactsNotice.title}
         </h2>
-        <p className={styles.noticeText} lang={c.mark(contactsNotice.text)}>
-          {c.t(contactsNotice.text)}
+        <p className={styles.noticeText}>
+          {contactsNotice.text}
         </p>
       </section>
     </main>

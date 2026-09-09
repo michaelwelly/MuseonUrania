@@ -3,9 +3,7 @@
 import { useState } from "react";
 import { subscribe } from "@/content/news";
 import { site } from "@/content/site";
-import { ui } from "@/content/ui";
-import { contentText } from "@/lib/content-i18n";
-import type { Lang } from "@/lib/i18n";
+import { ui as strings } from "@/content/ui";
 import styles from "./page.module.css";
 
 // Рассылки ещё нет. После валидного адреса честно говорим, что подписка не
@@ -15,11 +13,9 @@ import styles from "./page.module.css";
 // подписки в подвале: две формы одного действия, и расходиться подписям
 // незачем. Поясняющий абзац остаётся содержательным — он обещает, что
 // именно придёт и чего не придёт, а это обещание компании.
-export default function NewsSubscribe({ lang }: { lang: Lang }) {
+export default function NewsSubscribe() {
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "invalid" | "pending">("idle");
-  const strings = ui(lang);
-  const c = contentText(lang);
 
   return (
     <form
@@ -32,8 +28,8 @@ export default function NewsSubscribe({ lang }: { lang: Lang }) {
       }}
     >
       <h2 className={styles.subscribeTitle}>{strings.news.subscribeTitle}</h2>
-      <p className={styles.subscribeText} lang={c.mark(subscribe.text)}>
-        {c.t(subscribe.text)}
+      <p className={styles.subscribeText}>
+        {subscribe.text}
       </p>
 
       <div className={styles.subscribeRow}>
@@ -57,7 +53,7 @@ export default function NewsSubscribe({ lang }: { lang: Lang }) {
       {state === "invalid" && <p className={styles.result}>{strings.news.subscribeInvalid}</p>}
       {state === "pending" && (
         // Почта подставляется в строку словаря, а не приклеивается к ней
-        // в разметке: в китайском адрес стоит в середине фразы.
+        // в разметке: фраза собирается в одном месте, а не в двух.
         <p className={styles.result} role="status">
           {strings.news.subscribePending(site.email)}
         </p>

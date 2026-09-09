@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
 import DocumentsScreen, { documentsMetadata } from "./screen";
-import { DEFAULT_LANG } from "@/lib/i18n";
 
-// Русские документы. Тело — в `screen.tsx`: его же рисуют `/en/documents/`
-// и `/zh/documents/`.
+// Документы. Тело — в `screen.tsx`: там его рисуют и тесты, без маршрута.
 
-export const metadata: Metadata = documentsMetadata(DEFAULT_LANG);
+export const metadata: Metadata = documentsMetadata();
 
 export default function DocumentsPage() {
-  return <DocumentsScreen lang={DEFAULT_LANG} />;
+  return <DocumentsScreen />;
 }

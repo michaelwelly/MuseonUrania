@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
 import ProductsScreen, { productsMetadata } from "./screen";
-import { DEFAULT_LANG } from "@/lib/i18n";
 
-// Русский каталог. Тело — в `screen.tsx`: его же рисуют `/en/products/`
-// и `/zh/products/`.
+// Каталог. Тело — в `screen.tsx`: там его рисуют и тесты, без маршрута.
 
-export const metadata: Metadata = productsMetadata(DEFAULT_LANG);
+export const metadata: Metadata = productsMetadata();
 
 export default function ProductsPage() {
-  return <ProductsScreen lang={DEFAULT_LANG} />;
+  return <ProductsScreen />;
 }

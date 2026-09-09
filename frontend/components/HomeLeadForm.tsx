@@ -4,9 +4,7 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { site } from "@/content/site";
 import { consent as consentCopy } from "@/content/legal";
-import { ui } from "@/content/ui";
-import { contentText } from "@/lib/content-i18n";
-import { DEFAULT_LANG, localePath, type Lang } from "@/lib/i18n";
+import { ui as strings } from "@/content/ui";
 import { newIdempotencyKey, submitLead } from "@/lib/submit";
 import { reachGoal } from "@/lib/analytics";
 import styles from "./HomeLeadForm.module.css";
@@ -23,16 +21,11 @@ type Errors = Partial<Record<"name" | "phone" | "email" | "message" | "consent",
 // кнопкой стояла подпись «нажимая кнопку, вы соглашаетесь». §14.6 плана
 // требует явную галочку: подпись под кнопкой не даёт человеку выбора,
 // а бэкенд при этом сохраняет согласие так, будто выбор был.
-//
-// Язык по умолчанию русский: форму рисует и русская главная, и переведённая,
-// а тесты создают её без пропов.
-export default function HomeLeadForm({ lang = DEFAULT_LANG }: { lang?: Lang }) {
+export default function HomeLeadForm() {
   const [errors, setErrors] = useState<Errors>({});
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "failed">("idle");
   const [notice, setNotice] = useState("");
   const idempotencyKey = useRef(newIdempotencyKey());
-  const strings = ui(lang);
-  const c = contentText(lang);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -85,14 +78,10 @@ export default function HomeLeadForm({ lang = DEFAULT_LANG }: { lang?: Lang }) {
     }
   }
 
-  // Ответ приходит от портала и всегда по-русски: тексты живут на бэкенде.
-  // Помечаем их языком, а не притворяемся, что они на языке страницы.
-  const noticeLang = lang === DEFAULT_LANG ? undefined : "ru";
-
   if (status === "sent") {
     return (
       <div className={styles.card}>
-        <p className={styles.pending} role="status" data-anim="rise" lang={noticeLang}>
+        <p className={styles.pending} role="status" data-anim="rise">
           {notice}
         </p>
       </div>
@@ -190,14 +179,14 @@ export default function HomeLeadForm({ lang = DEFAULT_LANG }: { lang?: Lang }) {
             разделитель с воздухом. Формулировка согласия одна на обе формы,
             и вид у неё тоже должен быть один.
 
-            Сам текст согласия не переводится нами: бэкенд хранит версию
-            формулировки, под которой человек подписался, и перевод — это
-            другая формулировка. До согласования показываем русскую. */}
-        <span lang={c.mark(consentCopy.label, consentCopy.linkLabel)}>
-          {c.t(consentCopy.label)}
+            Формулировку согласия экран не сочиняет: бэкенд хранит её версию,
+            под которой человек подписался, и текст обязан совпасть с той,
+            что лежит в content/legal.ts. */}
+        <span>
+          {consentCopy.label}
           <span className={styles.required}>*</span>
           <span className={styles.consentSep}>·</span>
-          <Link href={localePath(lang, consentCopy.href)}>{c.t(consentCopy.linkLabel)}</Link>
+          <Link href={consentCopy.href}>{consentCopy.linkLabel}</Link>
         </span>
       </label>
       {errors.consent && <span id="home-consent-error" className={styles.error}>{errors.consent}</span>}
@@ -210,14 +199,14 @@ export default function HomeLeadForm({ lang = DEFAULT_LANG }: { lang?: Lang }) {
         >
           {status === "sending" ? strings.form.sending : strings.homeForm.submit}
         </button>
-        <span className={styles.note} lang={c.mark(consentCopy.note)}>
-          {c.t(consentCopy.note)}
+        <span className={styles.note}>
+          {consentCopy.note}
         </span>
       </div>
 
       {status === "failed" && (
         <p className={styles.pending} role="alert" data-anim="rise">
-          <span lang={noticeLang}>{notice}</span> {strings.form.fallbackCall}{" "}
+          {notice} {strings.form.fallbackCall}{" "}
           <a href={`tel:${site.phone.replace(/\s/g, "")}`}>{site.phone}</a>{" "}
           {strings.form.fallbackWrite}{" "}
           <a href={`mailto:${site.email}`}>{site.email}</a>

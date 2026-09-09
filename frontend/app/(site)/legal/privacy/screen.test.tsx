@@ -48,7 +48,7 @@ const разделПро = (
 
 describe("политика обработки персональных данных", () => {
   it("показывает реквизиты оператора из content/site.ts", () => {
-    render(<PrivacyScreen lang="ru" />);
+    render(<PrivacyScreen />);
 
     // Именно из site.ts, а не «такие же строки»: 8 сентября заказчик нашёл
     // на сайте ИНН, переписанный в графу КПП. Вторая копия реквизитов
@@ -62,7 +62,7 @@ describe("политика обработки персональных данн�
   });
 
   it("даёт позвонить и написать по контактам компании", () => {
-    render(<PrivacyScreen lang="ru" />);
+    render(<PrivacyScreen />);
 
     expect(screen.getByRole("link", { name: site.phone })).toHaveAttribute(
       "href",
@@ -75,7 +75,7 @@ describe("политика обработки персональных данн�
   });
 
   it("не сообщает, что документ готовится", () => {
-    const { container } = render(<PrivacyScreen lang="ru" />);
+    const { container } = render(<PrivacyScreen />);
     const текст = container.textContent ?? "";
 
     // Страница и есть документ. Служебная отметка о нашем внутреннем процессе
@@ -86,14 +86,14 @@ describe("политика обработки персональных данн�
   });
 
   it("называет редакцию документа", () => {
-    render(<PrivacyScreen lang="ru" />);
+    render(<PrivacyScreen />);
 
     // Без даты нельзя ответить на вопрос «под какой редакцией я подписался».
     expect(screen.getByText(/^Редакция от /)).toBeInTheDocument();
   });
 
   it("предлагает файл и называет его размер", () => {
-    render(<PrivacyScreen lang="ru" />);
+    render(<PrivacyScreen />);
 
     const ссылка = screen.getByRole("link", { name: /Скачать PDF/ });
     expect(ссылка).toHaveAttribute("href", "/documents/vedal-privacy-policy.pdf");
@@ -104,7 +104,7 @@ describe("политика обработки персональных данн�
   });
 
   it("каждый пункт оглавления ведёт на существующий раздел", () => {
-    const { container } = render(<PrivacyScreen lang="ru" />);
+    const { container } = render(<PrivacyScreen />);
 
     const пункты = Array.from(
       container.querySelectorAll<HTMLAnchorElement>("nav a[href^='#']"),
