@@ -30,6 +30,14 @@ class FormsApiTest extends PostgresTestBase {
              "message":"Прошу коммерческое предложение на две системы.","consent":true}
             """;
 
+    /** Сервисное обращение целиком: здесь изделие и серийный номер обязательны. */
+    private static final String SERVICE = """
+            {"form":"service","name":"Ольга Кузнецова","company":"Роддом №2",
+             "phone":"+7 343 200-10-10","email":"olga@rd2.ru",
+             "productSlug":"vedal-r1","serialNumber":"R2-2026-00417",
+             "message":"Аппарат не выходит на режим после включения.","consent":true}
+            """;
+
     @Autowired
     MockMvc mvc;
 
@@ -138,17 +146,61 @@ class FormsApiTest extends PostgresTestBase {
         mvc.perform(post("/api/forms/v1/leads")
                         .with(свой(адрес))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"form":"service","name":"Ольга Кузнецова","company":"Роддом №2",
-                                 "phone":"+7 343 200-10-10","email":"olga@rd2.ru",
-                                 "productSlug":"vedal-r1","serialNumber":"R2-2026-00417",
-                                 "message":"Аппарат не выходит на режим после включения.",
-                                 "consent":true}
-                                """))
+                        .content(SERVICE))
                 .andExpect(status().isAccepted());
 
         assertThat(leads.findAll()).singleElement()
                 .satisfies(l -> assertThat(l.getSerialNumber()).isEqualTo("R2-2026-00417"));
+    }
+
+    // Сервис едет к конкретному аппарату, а не к модели. Обращение без номера
+    // и без изделия — это «что-то сломалось»: инженеру нечего взять в работу,
+    // и он всё равно перезвонит с теми же двумя вопросами, только сутками позже.
+    // Ошибка обязана прийти под именем поля формы, иначе форма её не покажет.
+    @Test
+    void serviceLeadWithoutSerialNumberNamesTheField() throws Exception {
+        leads.deleteAll();
+
+        mvc.perform(post("/api/forms/v1/leads")
+                        .with(свой(адрес))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(SERVICE.replace("\"serialNumber\":\"R2-2026-00417\",", "")))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(jsonPath("$.fields.serialNumber")
+                        .value("Укажите серийный номер — по нему инженер определит изделие"));
+
+        assertThat(leads.findAll()).as("отказ не заводит заявку").isEmpty();
+    }
+
+    @Test
+    void serviceLeadWithoutProductNamesTheField() throws Exception {
+        leads.deleteAll();
+
+        mvc.perform(post("/api/forms/v1/leads")
+                        .with(свой(адрес))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(SERVICE.replace("\"productSlug\":\"vedal-r1\",", "")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fields.productSlug").value("Выберите изделие из списка"));
+
+        assertThat(leads.findAll()).as("отказ не заводит заявку").isEmpty();
+    }
+
+    // Правило привязано к сервисной форме и растекаться на остальные не должно:
+    // в запросе цены изделия у человека ещё нет, и требовать серийный номер там
+    // значит не пустить к нам того, кто пришёл покупать.
+    @Test
+    void quoteWithoutProductAndSerialNumberIsStillAccepted() throws Exception {
+        leads.deleteAll();
+
+        mvc.perform(post("/api/forms/v1/leads")
+                        .with(свой(адрес))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID.replace("\"productSlug\":\"vedal-r1\",", "")))
+                .andExpect(status().isAccepted());
+
+        assertThat(leads.findAll()).hasSize(1);
     }
 
     @Test
