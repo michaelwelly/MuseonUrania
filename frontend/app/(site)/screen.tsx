@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import HomeLeadForm from "@/components/HomeLeadForm";
-import LivePattern from "@/components/LivePattern";
+import BrandPattern from "@/components/BrandPattern";
 import { site } from "@/content/site";
 import { ui as strings } from "@/content/ui";
 import { news } from "@/content/news";
@@ -46,14 +46,32 @@ export default function HomeScreen() {
   return (
     <main className={styles.page}>
       {/* 01. Hero */}
-      {/* Живого паттерна на этом первом экране нет намеренно. Правая
-          половина полосы — фото во всю высоту, и композиция уходила бы
-          под него на 62%, а видимой частью наезжала на текст: между
-          концом строки и краем фото всего 244 пикселя, а паттерну нужно
-          465. Паттерн стоит там, где для него есть место, — на первых
-          экранах внутренних страниц и на тёмной полосе призыва ниже. */}
-      <section className={`${styles.hero} patternHost`}>
-        <LivePattern variant={2} placement="seam" />
+      {/* Узор стоит фоном текстовой половины, а не полосой в стыке.
+
+          Полосой он тут не помещался: справа фотография во всю высоту,
+          и на композицию оставалось 244 пикселя при нужных 465 — она
+          наезжала на строки. Полем за текстом места хватает, а коридор
+          в раскладке держит заголовок, лид и кнопки чистыми: фигура,
+          попавшая в их прямоугольник, не рисуется вовсе.
+
+          Зерно у каждого места сайта своё — иначе два поля на одной
+          странице показали бы один и тот же рисунок дважды. */}
+      <section className={styles.hero}>
+        <div className={styles.heroPattern}>
+          <BrandPattern
+            seed={61}
+            boldness={3.2}
+            width={830}
+            height={648}
+            keepClear={[
+              // Шапка прозрачна во всю ширину — без этой полосы узор
+              // просвечивает сквозь неё и садится на логотип.
+              { x2: 830, y1: 0, y2: 92, strict: true },
+              // Заголовок, лид и кнопки.
+              { x2: 600, y1: 104, y2: 580 },
+            ]}
+          />
+        </div>
         <div className={styles.heroCopy}>
           {/* data-anim — крючки появления первого экрана, правила в app/motion.css */}
           <p
@@ -293,15 +311,16 @@ export default function HomeScreen() {
       </section>
 
       {/* 08. CTA + форма */}
-      {/* Тёмная полоса — единственное место на главной, где паттерну есть
-          куда лечь: остальные полосы заняты фото и карточками во всю ширину.
-          Без квадратов и на 9%: насыщенный зелёный на почти чёрном тянул бы
-          взгляд сильнее заголовка. */}
+      {/* На тёмной полосе тот же узор в другой краске: светлые формы
+          уходят в белый на 7 и 13 процентов, акцент, наоборот, светлеет —
+          фирменный зелёный на почти чёрном сливается с фоном. */}
       {/* id — цель кнопки «Запросить КП» с первого экрана (issue #103).
           Стоит на секции, а не на самой форме: человека надо привести
           к заголовку «Подберём конфигурацию», а не к первому полю. */}
-      <section className={`${styles.cta} patternHost`} id="quote">
-        <LivePattern variant={1} tone="dark" />
+      <section className={styles.cta} id="quote">
+        <div className={styles.ctaPattern}>
+          <BrandPattern seed={17} width={1400} height={520} boldness={3} tone="dark" />
+        </div>
         <div data-reveal="0">
           <h2 className={styles.ctaTitle} data-words="30">
             {homeCta.title}
