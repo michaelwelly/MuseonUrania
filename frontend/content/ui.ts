@@ -131,6 +131,7 @@ export type UiStrings = {
     email: string;
     product: string;
     productOther: string;
+    productChoose: string;
     serialNumber: string;
     serialHint: string;
     message: string;
@@ -141,7 +142,9 @@ export type UiStrings = {
       name: string;
       phone: string;
       email: string;
+      product: string;
       serialNumber: string;
+      serialRequired: string;
       message: string;
       consent: string;
     };
@@ -346,8 +349,9 @@ const ru: UiStrings = {
     email: "Электронная почта",
     product: "Изделие",
     productOther: "Другое или не знаю",
+    productChoose: "Выберите изделие",
     serialNumber: "Серийный номер",
-    serialHint: "Если знаете — ускорит разбор обращения",
+    serialHint: "Обязателен: по нему инженер определит конкретный аппарат",
     message: "Суть обращения",
     submit: "Отправить запрос",
     sending: "Отправляем…",
@@ -356,7 +360,9 @@ const ru: UiStrings = {
       name: "Укажите, к кому обращаться",
       phone: "Укажите телефон с кодом",
       email: "Проверьте адрес почты",
+      product: "Выберите изделие из списка",
       serialNumber: "Серийный номер не длиннее 100 символов",
+      serialRequired: "Укажите серийный номер — по нему инженер определит изделие",
       message: "Опишите обращение хотя бы одной фразой",
       consent: "Без согласия отправить запрос нельзя",
     },
@@ -547,8 +553,9 @@ const en: UiStrings = {
     email: "Email",
     product: "Product",
     productOther: "Other or not sure",
+    productChoose: "Choose the product",
     serialNumber: "Serial number",
-    serialHint: "If you know it, this speeds up the response",
+    serialHint: "Required: it identifies the exact unit for the engineer",
     message: "Your enquiry",
     submit: "Send the request",
     sending: "Sending…",
@@ -557,7 +564,9 @@ const en: UiStrings = {
       name: "Tell us who to address",
       phone: "Enter a phone number with the country or area code",
       email: "Check the email address",
+      product: "Choose the product from the list",
       serialNumber: "The serial number must be 100 characters or fewer",
+      serialRequired: "Enter the serial number — the engineer identifies the unit by it",
       message: "Describe your enquiry in at least one sentence",
       consent: "We cannot send the request without your consent",
     },

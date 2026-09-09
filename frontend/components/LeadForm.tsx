@@ -30,11 +30,23 @@ import styles from "./LeadForm.module.css";
  * Порядок здесь обязан совпадать с порядком полей в разметке: человек
  * должен попасть на первую ошибку сверху, а не на случайную.
  *
- * Организации и изделия здесь нет намеренно: ярлыка ошибки у них не
- * нарисовано, и ошибка по ним молча пропала бы. Такие ответы бэкенда
- * показывает общее сообщение под кнопкой.
+ * Организации здесь нет намеренно: ярлыка ошибки у неё не нарисовано,
+ * и ошибка по ней молча пропала бы. Такие ответы бэкенда показывает
+ * общее сообщение под кнопкой.
  */
-const FIELDS = ["name", "phone", "email", "serialNumber", "message", "consent"] as const;
+const FIELDS = ["name", "phone", "email", "product", "serialNumber", "message", "consent"] as const;
+
+/**
+ * Поля, которые бэкенд называет иначе, чем форма.
+ *
+ * Селектор изделия в разметке зовётся `product`, а в теле запроса —
+ * `productSlug`: форма отправляет slug позиции каталога, и на сервере поле
+ * названо по содержимому. Пока имя совпадало у всех полей, разбор ошибок
+ * работал прямым сравнением — и на первом же расхождении ошибка по изделию
+ * пропала бы молча: сервер отказал, форма показала общее «проверьте поля»,
+ * а какое именно поле не так — не показала.
+ */
+const BACKEND_FIELDS: Record<string, string> = { productSlug: "product" };
 
 type Field = (typeof FIELDS)[number];
 
@@ -49,17 +61,48 @@ type Errors = Partial<Record<Field, string>>;
 // проверка не должна знать про язык страницы, она знает про поля. Умолчание
 // русское — так функция остаётся вызываемой одним аргументом и из тестов,
 // и из мест, где языка нет.
-export function validate(data: FormData, messages: UiStrings["form"]["errors"] = ui(DEFAULT_LANG).form.errors): Errors {
+/**
+ * Что именно требуется от этой формы.
+ *
+ * Сервисное обращение — единственное, где изделие и его серийный номер
+ * обязательны: инженер едет к конкретному аппарату, а «другое или не знаю»
+ * не аппарат. В запросе цены, каталога или партнёрства изделия у человека
+ * ещё нет, и требовать его там значит не пускать в форму того, кто как раз
+ * и пришёл выбирать.
+ *
+ * `productAsked` — не то же самое, что `service`. Список изделий приходит
+ * с бэкенда, и когда каталог не ответил, селектора на форме нет вовсе.
+ * Требовать в этот момент выбор изделия значит запереть сервисное
+ * обращение целиком: поля нет, ошибка есть, отправить нельзя. Падение
+ * каталога не должно отбирать у человека возможность позвать сервис.
+ */
+export type Requirements = {
+  /** Форма сервиса: спрашиваем изделие и серийный номер строго. */
+  service?: boolean;
+  /** Есть ли на форме, из чего выбрать изделие. */
+  productAsked?: boolean;
+};
+
+export function validate(
+  data: FormData,
+  messages: UiStrings["form"]["errors"] = ui(DEFAULT_LANG).form.errors,
+  need: Requirements = {},
+): Errors {
   const errors: Errors = {};
   const get = (k: string) => String(data.get(k) ?? "").trim();
 
   if (!get("name")) errors.name = messages.name;
   if (get("phone").replace(/\D/g, "").length < 10) errors.phone = messages.phone;
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(get("email"))) errors.email = messages.email;
-  // Единственная проверка серийного номера — длина, и та же стоит на бэкенде.
-  // Формат не проверяется: вид номера VEDAL в согласованных материалах
-  // не описан, а маска, придуманная здесь, отклоняла бы настоящие номера.
-  if (get("serialNumber").length > 100) {
+  if (need.service && need.productAsked && !get("product")) {
+    errors.product = messages.product;
+  }
+  // Формат серийного номера не проверяется: вид номера VEDAL в согласованных
+  // материалах не описан, а маска, придуманная здесь, отклоняла бы настоящие
+  // номера. Проверяем только наличие и длину — то же самое стоит на бэкенде.
+  if (need.service && !get("serialNumber")) {
+    errors.serialNumber = messages.serialRequired;
+  } else if (get("serialNumber").length > 100) {
     errors.serialNumber = messages.serialNumber;
   }
   if (get("message").length < 10) errors.message = messages.message;
@@ -148,7 +191,10 @@ export default function LeadForm({
     const formEl = event.currentTarget;
     const data = new FormData(formEl);
 
-    const found = validate(data, strings.form.errors);
+    const found = validate(data, strings.form.errors, {
+      service: asksSerial,
+      productAsked: !!product || products.length > 0,
+    });
     setErrors(found);
     if (Object.keys(found).length > 0) {
       // Фокус на первое поле с ошибкой. Без этого для незрячего посетителя
@@ -211,7 +257,8 @@ export default function LeadForm({
     if (result.fields) {
       const mapped: Errors = {};
       for (const [field, message] of Object.entries(result.fields)) {
-        if ((FIELDS as readonly string[]).includes(field)) mapped[field as Field] = message;
+        const own = BACKEND_FIELDS[field] ?? field;
+        if ((FIELDS as readonly string[]).includes(own)) mapped[own as Field] = message;
       }
       setErrors(mapped);
     }
@@ -353,24 +400,45 @@ export default function LeadForm({
         <div className={`${styles.field} ${styles.fieldWide}`}>
           <label className={styles.label} htmlFor="product">
             {strings.form.product}
+            {asksSerial && <> <span className={styles.required}>*</span></>}
           </label>
           {/* Значение — slug, а не название: бэкенд связывает заявку с позицией
               каталога по нему. Название в базе может смениться, slug — нет. */}
-          <select id="product" name="product" className={styles.select} defaultValue="">
-            <option value="">{strings.form.productOther}</option>
+          <select
+            id="product"
+            name="product"
+            className={`${styles.select} ${errors.product ? styles.invalid : ""}`}
+            defaultValue=""
+            aria-invalid={!!errors.product}
+            aria-required={asksSerial ? "true" : undefined}
+            aria-describedby={errors.product ? "product-error" : undefined}
+          >
+            {/* Первая строка списка меняется вместе с темой. «Другое или не знаю»
+                для сервисного обращения — не ответ: инженеру ехать к аппарату,
+                а по «не знаю» нечего искать. Там же ниже спрашивается серийный
+                номер, и одно с другим не сходится: номер знают у того изделия,
+                которое как раз и не выбрали. */}
+            <option value="">
+              {asksSerial ? strings.form.productChoose : strings.form.productOther}
+            </option>
             {products.map((p) => (
               <option key={p.slug} value={p.slug}>
                 {p.name} — {p.kind}
               </option>
             ))}
           </select>
+          {errors.product && (
+            <span id="product-error" className={styles.error}>
+              {errors.product}
+            </span>
+          )}
         </div>
       )}
 
       {asksSerial && (
         <div className={`${styles.field} ${styles.fieldWide}`}>
           <label className={styles.label} htmlFor="serialNumber">
-            {strings.form.serialNumber}
+            {strings.form.serialNumber} <span className={styles.required}>*</span>
           </label>
           <input
             id="serialNumber"
@@ -381,6 +449,7 @@ export default function LeadForm({
                как серийный номер — это хуже пустого поля. */
             autoComplete="off"
             aria-invalid={!!errors.serialNumber}
+            aria-required="true"
             aria-describedby={errors.serialNumber ? "serial-error" : "serial-hint"}
           />
           {errors.serialNumber ? (
