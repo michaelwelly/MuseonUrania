@@ -197,12 +197,29 @@ public class ChatDesk {
         if (reply.handoff() != null) {
             // Ответа нет — это штатный исход, а не ошибка: правило «нет
             // подходящих опубликованных источников — нет ответа» сильнее
-            // желания что-нибудь сказать. Разговор встаёт в очередь к человеку.
+            // желания что-нибудь сказать.
             append(conversation, ChatMessage.ASSISTANT, null, reply.answer(), null);
-            conversation.setStatus(Conversation.WAITING);
-            audit.record("public", "chat.handoff", "conversation",
-                    conversation.getId().toString(),
-                    Map.of("reason", reply.handoff().reason()));
+
+            // ————— а вот очередь заводится не всегда —————
+            //
+            // Раньше заводилась: любой ответ с `handoff` ставил разговор
+            // в WAITING. На стенде 9 сентября это дало очередь, в которой
+            // лежало почти всё — «привет», «про что этот сайт», «какие
+            // продукты у вас есть», — и лежало в часы, когда на связи
+            // никого не было. Очередь, куда падает всё, равна отсутствию
+            // очереди: дежурный перестаёт её читать, и настоящее обращение
+            // тонет среди случайных.
+            //
+            // Решает ассистент, а не эта дверь: он один знает, был ли
+            // вопрос про цену, срок и статус регистрации (специалисту есть
+            // что продолжить) или про погоду (продолжать нечего). Здесь
+            // остаётся исполнение решения.
+            if (reply.handoff().queue()) {
+                conversation.setStatus(Conversation.WAITING);
+                audit.record("public", "chat.handoff", "conversation",
+                        conversation.getId().toString(),
+                        Map.of("reason", reply.handoff().reason()));
+            }
         } else {
             append(conversation, ChatMessage.ASSISTANT, null, reply.answer(),
                     serialize(reply.sources()));

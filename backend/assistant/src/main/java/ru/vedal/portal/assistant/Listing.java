@@ -25,21 +25,45 @@ final class Listing {
 
     static LlmEngine.Grounded of(List<Retrieval.Passage> found) {
         var sources = found.stream().map(Retrieval.Passage::source).toList();
-        return new LlmEngine.Grounded(text(sources), sources);
+        return new LlmEngine.Grounded(text(found, sources), sources);
     }
 
-    private static String text(List<LlmEngine.Source> sources) {
-        var products = sources.stream().filter(s -> s.kind().equals("product")).count();
-        var head = products > 0
-                ? "Вот что подходит по вашему запросу из каталога VEDAL:"
-                : "Вот что нашлось по вашему запросу:";
-
-        var body = new StringBuilder(head);
+    private static String text(List<Retrieval.Passage> found, List<LlmEngine.Source> sources) {
+        var body = new StringBuilder(head(found, sources));
         for (var s : sources) {
             body.append("\n— ").append(s.title());
         }
         body.append("\n\nПодробности — на страницах по ссылкам. "
                 + "Подбор комплектации и коммерческие условия уточняет специалист.");
         return body.toString();
+    }
+
+    /**
+     * Первая строка ответа.
+     *
+     * <p><b>Страница сайта отвечает своими словами.</b> На «про что этот сайт»
+     * и «какие продукты у вас есть» перечень заголовков — не ответ: человек
+     * спросил, чем занимается компания, и получил список ссылок, по которым
+     * ему предлагается это выяснить самому. У страницы главное сказано
+     * первым абзацем, и он уже опубликован — сказать его вслух не выдумка,
+     * а цитирование самих себя.
+     *
+     * <p>Берётся ровно то, что стоит до {@link SitePages#BREAK}: остальной
+     * текст страницы длиннее ответа в чате и предназначен модели, а не
+     * посетителю.
+     */
+    private static String head(List<Retrieval.Passage> found, List<LlmEngine.Source> sources) {
+        var first = found.get(0);
+        if ("page".equals(first.source().kind())) {
+            var text = first.text();
+            var border = text.indexOf(SitePages.BREAK);
+            var lead = border < 0 ? text : text.substring(0, border);
+            return lead.strip() + "\n\nГде посмотреть:";
+        }
+
+        var products = sources.stream().filter(s -> s.kind().equals("product")).count();
+        return products > 0
+                ? "Вот что подходит по вашему запросу из каталога VEDAL:"
+                : "Вот что нашлось по вашему запросу:";
     }
 }

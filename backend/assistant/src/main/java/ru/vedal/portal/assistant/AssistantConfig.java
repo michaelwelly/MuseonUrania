@@ -192,8 +192,10 @@ public class AssistantConfig {
     @ConditionalOnProperty(name = "vedal.assistant.rag.enabled", havingValue = "true")
     KnowledgeIndex knowledgeIndex(JdbcClient jdbc, TransactionTemplate transactions,
                                   Embeddings embeddings, CatalogQuery catalog,
-                                  ContentQuery content, DocumentQuery documents) {
-        return new KnowledgeIndex(jdbc, transactions, embeddings, catalog, content, documents);
+                                  ContentQuery content, DocumentQuery documents,
+                                  SitePages pages) {
+        return new KnowledgeIndex(jdbc, transactions, embeddings, catalog, content, documents,
+                pages);
     }
 
     /**

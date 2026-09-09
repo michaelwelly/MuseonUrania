@@ -64,7 +64,8 @@ public class AssistantService {
         var refusal = guardrails.refuse(question);
         if (refusal.isPresent()) {
             journal(actor, "blocked", 0);
-            return new AskReply(refusal.get(), List.of(), handoff(refusal.get()));
+            return new AskReply(refusal.get().answer(), List.of(),
+                    handoff(refusal.get().answer(), refusal.get().human()));
         }
 
         // Приветствие — не вопрос: искать по нему нечего, и до правки «привет»
@@ -85,7 +86,20 @@ public class AssistantService {
             // получал русский отказ — а именно он его и получает чаще всех,
             // потому что материалы у нас русские.
             var notFound = guardrails.notFound(question);
-            return new AskReply(notFound, List.of(), handoff(notFound));
+            // Контакты показываем, человека не зовём.
+            //
+            // Раньше звали. На стенде 9 сентября это выглядело так: «привет»,
+            // «про что этот сайт», «какие продукты у вас есть» — страница
+            // за страницей передач специалисту, которого в это время
+            // на связи не было. Очередь, куда попадает каждый ненайденный
+            // вопрос, дежурный перестаёт читать, и настоящее обращение
+            // тонет среди случайных.
+            //
+            // Отсутствие материалов — не то, что специалист может
+            // продолжить: он получает разговор, в котором посетитель
+            // спросил про погоду. Человек зовётся по просьбе — кнопкой
+            // виджета или словами, которые ловит правило HUMAN.
+            return new AskReply(notFound, List.of(), handoff(notFound, false));
         }
 
         journal(actor, "answered", grounded.get().sources().size());
@@ -132,7 +146,7 @@ public class AssistantService {
     /** Что Ведалина пишет, когда позвали человека, — вместе с контактами. */
     public AskReply callingHuman() {
         return new AskReply(ScriptedReplies.CALLING_HUMAN, List.of(),
-                handoff(ScriptedReplies.CALLING_HUMAN));
+                handoff(ScriptedReplies.CALLING_HUMAN, true));
     }
 
     /**
@@ -144,11 +158,19 @@ public class AssistantService {
      */
     public AskReply callingHumanAfterHours(String hours) {
         var text = ScriptedReplies.callingHumanAfterHours(hours);
-        return new AskReply(text, List.of(), handoff(text));
+        return new AskReply(text, List.of(), handoff(text, true));
     }
 
-    private AskReply.Handoff handoff(String reason) {
-        return new AskReply.Handoff(reason, phone, email, FORMS);
+    /**
+     * Куда обращаться — и зовём ли человека.
+     *
+     * @param queue ставить ли разговор в очередь к специалисту. Контакты
+     *              и формы показываются в обоих случаях: посетителю, которому
+     *              не нашлось ответа, телефон нужен не меньше, чем тому,
+     *              за кем уже пошёл дежурный.
+     */
+    private AskReply.Handoff handoff(String reason, boolean queue) {
+        return new AskReply.Handoff(reason, phone, email, FORMS, queue);
     }
 
     // Текст вопроса в журнал не пишем: посетитель может указать в нём и клинику,

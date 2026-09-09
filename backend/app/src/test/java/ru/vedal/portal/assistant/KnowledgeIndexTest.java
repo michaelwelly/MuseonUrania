@@ -37,10 +37,13 @@ class KnowledgeIndexTest extends PostgresTestBase {
     @Autowired
     DocumentQuery documents;
 
+    @Autowired
+    SitePages pages;
+
     private final SyntheticEmbeddings embeddings = new SyntheticEmbeddings();
 
     private KnowledgeIndex index() {
-        return new KnowledgeIndex(jdbc, transactions, embeddings, catalog, content, documents);
+        return new KnowledgeIndex(jdbc, transactions, embeddings, catalog, content, documents, pages);
     }
 
     private static KnowledgeIndex.Material cube(String text) {
@@ -121,7 +124,7 @@ class KnowledgeIndexTest extends PostgresTestBase {
         index().index(cube(text));
 
         var another = new SyntheticEmbeddings("emb://polygon/synthetic-doc-v2/latest");
-        var outcome = new KnowledgeIndex(jdbc, transactions, another, catalog, content, documents)
+        var outcome = new KnowledgeIndex(jdbc, transactions, another, catalog, content, documents, pages)
                 .index(cube(text));
 
         assertThat(outcome).isEqualTo(KnowledgeIndex.Outcome.INDEXED);
@@ -137,8 +140,12 @@ class KnowledgeIndexTest extends PostgresTestBase {
     void reindexingPublishedMaterialTakesOnlyWhatThePortalAlreadyShows() {
         var stats = index().reindexPublished();
 
+        // Страницы сайта считаются наравне с карточками: их тексты —
+        // такие же опубликованные материалы, и без них ассистенту нечем
+        // отвечать на вопросы о компании, каталоге и разделах сайта.
         assertThat(stats.sources()).isEqualTo(catalog.publishedProducts().size()
-                + content.publishedNews().size() + documents.listedDocuments().size());
+                + content.publishedNews().size() + documents.listedDocuments().size()
+                + pages.published(java.util.List.of()).size());
         assertThat(jdbc.sql("select distinct visibility from knowledge_source")
                 .query(String.class).list())
                 .as("в индекс попадает только публичное")

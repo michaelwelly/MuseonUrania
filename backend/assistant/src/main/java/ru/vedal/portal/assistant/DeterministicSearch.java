@@ -2,6 +2,7 @@ package ru.vedal.portal.assistant;
 
 import org.springframework.stereotype.Component;
 import ru.vedal.portal.catalog.CatalogQuery;
+import ru.vedal.portal.catalog.PublicDto;
 import ru.vedal.portal.content.ContentQuery;
 import ru.vedal.portal.documents.DocumentQuery;
 import ru.vedal.portal.assistant.Retrieval.Passage;
@@ -71,11 +72,14 @@ public class DeterministicSearch implements LlmEngine, Retrieval {
     private final CatalogQuery catalog;
     private final ContentQuery content;
     private final DocumentQuery documents;
+    private final SitePages pages;
 
-    public DeterministicSearch(CatalogQuery catalog, ContentQuery content, DocumentQuery documents) {
+    public DeterministicSearch(CatalogQuery catalog, ContentQuery content,
+                               DocumentQuery documents, SitePages pages) {
         this.catalog = catalog;
         this.content = content;
         this.documents = documents;
+        this.pages = pages;
     }
 
     @Override
@@ -113,7 +117,38 @@ public class DeterministicSearch implements LlmEngine, Retrieval {
         record Hit(Passage passage, int score) {}
         var hits = new ArrayList<Hit>();
 
-        for (var p : catalog.publishedProducts()) {
+        // Каталог спрашивается один раз: он нужен и странице «Продукция»,
+        // и поиску по карточкам, а второй заход — второй запрос на каждый
+        // вопрос посетителя.
+        var products = catalog.publishedProducts();
+
+        // Страницы сайта ищутся первыми, и не ради порядка: они отвечают
+        // на вопросы, на которые не отвечает ни одна карточка изделия, —
+        // «про что этот сайт», «чем занимается компания», «какие продукты
+        // у вас есть», «где вы находитесь». До них у ассистента таких
+        // материалов не было вовсе, и все эти вопросы кончались отказом
+        // «нет согласованных материалов» и очередью к специалисту.
+        //
+        // Совпадение по слову, которым спрашивают, весит как совпадение
+        // по названию: «продукты» и «каталог» стоят не в тексте страницы,
+        // а в вопросе посетителя, и найти по ним страницу — это и есть
+        // работа списка asked.
+        for (var page : pages.published(catalogLines(products))) {
+            var score = score(tokens,
+                    named(page.title()),
+                    // Через words(): слова вопроса нормализованы (нижний
+                    // регистр, «ё» → «е»), и список asked обязан быть
+                    // нормализован так же, иначе «Новорождённых» в вопросе
+                    // и «новорожденных» в списке не совпадут.
+                    new Weighted(NAME, words(String.join(" ", page.asked()))),
+                    text(page.text()));
+            if (score >= MIN_SCORE) {
+                hits.add(new Hit(new Passage(
+                        new Source(page.title(), page.url(), "page"), page.text()), score));
+            }
+        }
+
+        for (var p : products) {
             var score = score(tokens,
                     named(p.name(), p.kind()),
                     text(p.summary(), String.join(" ", p.categories())));
@@ -161,6 +196,19 @@ public class DeterministicSearch implements LlmEngine, Retrieval {
                 .sorted(Comparator.comparingInt(Hit::score).reversed())
                 .limit(MAX_SOURCES)
                 .map(Hit::passage)
+                .toList();
+    }
+
+    /**
+     * Состав каталога строками — для страницы «Продукция».
+     *
+     * <p>Берётся из каталога, а не переписан в {@link SitePages}: изделие
+     * снимают с публикации миграцией, и список, живущий вторым экземпляром,
+     * назвал бы посетителю то, чего в каталоге уже нет.
+     */
+    private static List<String> catalogLines(List<PublicDto.Card> products) {
+        return products.stream()
+                .map(p -> p.name() + " — " + p.kind())
                 .toList();
     }
 
