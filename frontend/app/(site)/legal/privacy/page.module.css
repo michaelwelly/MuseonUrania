@@ -1,4 +1,4 @@
-/* Юридическая страница: одна колонка, крупный набор, без картинок.
+/* Юридический документ: одна колонка, крупный набор, без картинок.
    Здесь читают, а не рассматривают, поэтому ширина строки ограничена
    по читаемости, а не по сетке остальных экранов. */
 
@@ -6,9 +6,102 @@
   padding-bottom: 0;
 }
 
+/* ————— шапка документа: редакция и файл ————— */
+
+.docbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  padding: 20px 48px;
+  border-top: 1px solid var(--line);
+  background: var(--soft);
+}
+
+.revision {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+}
+
+.download {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 16px;
+  border: 1px solid var(--line-3);
+  border-radius: 2px;
+  background: var(--page);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.download:hover {
+  color: var(--green-dark);
+  border-color: currentColor;
+}
+
+/* Размер файла рядом с подписью, а не в отдельной строке: человек решает,
+   качать ли, ровно в этот момент — 300 КБ и 30 МБ это разные решения. */
+.size {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* ————— оглавление ————— */
+
+.toc {
+  padding: 40px 48px;
+  border-top: 1px solid var(--line);
+}
+
+.tocTitle {
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.tocList {
+  /* Две колонки на широком экране: четырнадцать пунктов в одну колонку —
+     это экран прокрутки до первого раздела. */
+  columns: 2;
+  column-gap: 48px;
+  max-width: 1000px;
+  margin-top: 18px;
+  padding: 0;
+  list-style: none;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.tocList li {
+  break-inside: avoid;
+  margin-bottom: 10px;
+}
+
+.tocList a {
+  display: flex;
+  gap: 10px;
+}
+
+.tocList a:hover {
+  color: var(--green-dark);
+}
+
+.tocNum {
+  min-width: 22px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ————— разделы ————— */
+
 .section,
 .sectionSoft {
-  padding: 56px 48px;
+  padding: 48px;
   border-top: 1px solid var(--line);
 }
 
@@ -17,17 +110,28 @@
 }
 
 .h2 {
-  max-width: 24ch;
-  font-size: 26px;
-  line-height: 1.15;
+  display: flex;
+  gap: 14px;
+  max-width: 30ch;
+  font-size: 24px;
+  line-height: 1.2;
   letter-spacing: -0.02em;
+  /* Заголовок — цель ссылки из оглавления, а над ним стоит липкая шапка
+     сайта. Без этого отступа переход показывает раздел, начиная с середины
+     заголовка. */
+  scroll-margin-top: calc(var(--header-h) + 16px);
+}
+
+.num {
+  color: var(--green-dark);
+  font-variant-numeric: tabular-nums;
 }
 
 .text {
   max-width: 68ch;
   margin-top: 16px;
   font-size: 15.5px;
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
 .links {
@@ -48,7 +152,7 @@
 
 .table {
   max-width: 68ch;
-  margin-top: 24px;
+  margin-top: 22px;
 }
 
 .row {
@@ -64,25 +168,16 @@
   color: var(--muted);
 }
 
-.list,
-.numbered {
+.list {
   max-width: 68ch;
-  margin-top: 22px;
+  margin-top: 20px;
   padding-left: 20px;
+  list-style: disc;
   font-size: 15.5px;
   line-height: 1.65;
 }
 
-.list {
-  list-style: disc;
-}
-
-.numbered {
-  list-style: decimal;
-}
-
-.list li + li,
-.numbered li + li {
+.list li + li {
   margin-top: 10px;
 }
 
@@ -106,9 +201,18 @@
 }
 
 @media (max-width: 1100px) {
+  .docbar,
+  .toc,
   .section,
   .sectionSoft {
-    padding: 44px 24px;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .section,
+  .sectionSoft {
+    padding-top: 40px;
+    padding-bottom: 40px;
   }
 
   .row {
@@ -117,10 +221,99 @@
   }
 }
 
+@media (max-width: 780px) {
+  /* На телефоне две колонки оглавления дают строку в три слова с переносами
+     посередине слова. Одна колонка длиннее, но читается. */
+  .tocList {
+    columns: 1;
+  }
+}
+
 @media (max-width: 640px) {
+  .docbar,
+  .toc,
   .section,
   .sectionSoft {
     padding-left: 18px;
     padding-right: 18px;
+  }
+
+  .docbar {
+    /* Кнопка на всю ширину: рядом с датой она сжимается до размера,
+       в который не попадают пальцем. */
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* Высота под палец: в строку с датой кнопка сжималась до 37 пикселей,
+     а это меньше цели, в которую попадают не глядя. */
+  .download {
+    justify-content: center;
+    padding: 13px 16px;
+  }
+
+  .h2 {
+    max-width: none;
+    font-size: 21px;
+  }
+
+  .list {
+    padding-left: 18px;
+  }
+}
+
+/* ————— печать —————
+
+   Из этой же страницы печатается PDF (frontend/scripts/privacy-pdf.sh),
+   поэтому здесь не «на всякий случай», а обязательная часть документа:
+   в PDF не должны попасть ни меню сайта, ни подвал, ни плашка про cookie,
+   ни кнопка чата. Всё это на бумаге не нажимается, а место занимает.
+
+   Прячем не по именам компонентов, а по устройству оболочки
+   (components/SiteShell.tsx): в <body> лежит `.frame` с шапкой и страницей,
+   а рядом с ним — подвал, виджет чата, плашка и счётчик. Значит, «всё,
+   что не .frame» и есть обвязка. Такое правило переживёт добавление
+   ещё одного плавающего блока, а список селекторов — нет. */
+
+@media print {
+  :global(body > *:not(.frame)) {
+    display: none !important;
+  }
+
+  :global(.frame > header) {
+    display: none !important;
+  }
+
+  .docbar,
+  .toc,
+  .section,
+  .sectionSoft {
+    padding: 18px 0;
+    background: none;
+    border-color: #d9d9d9;
+  }
+
+  /* Ссылка на файл внутри самого файла — это ссылка на себя. */
+  .download {
+    display: none;
+  }
+
+  .section,
+  .sectionSoft {
+    /* Раздел целиком на одной странице, если он туда влезает: заголовок,
+       оторванный от своего текста на разрыве страниц, читается как чужой. */
+    break-inside: avoid;
+  }
+
+  .h2 {
+    font-size: 15pt;
+    break-after: avoid;
+  }
+
+  .text,
+  .list,
+  .row,
+  .links {
+    font-size: 10.5pt;
   }
 }
