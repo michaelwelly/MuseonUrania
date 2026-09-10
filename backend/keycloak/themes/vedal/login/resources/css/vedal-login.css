@@ -31,7 +31,9 @@
 }
 
 body.login-pf {
+  height: 100%;
   min-height: 100vh;
+  overflow: hidden;
   background: #fff !important;
   color: var(--vedal-ink);
   font-family: "Commissioner", system-ui, sans-serif;
@@ -44,6 +46,11 @@ body#keycloak-bg,
 .pf-v5-c-login__container {
   background: #fff !important;
   background-image: none !important;
+}
+
+.pf-v5-c-login {
+  min-height: 100vh;
+  overflow: hidden;
 }
 
 .login-pf-page {
@@ -242,6 +249,11 @@ form[action*="UPDATE_PASSWORD"]::before {
 }
 
 @media (max-width: 560px) {
+  body.login-pf,
+  .pf-v5-c-login {
+    overflow: auto;
+  }
+
   .login-pf-page {
     padding: 24px 16px;
     align-items: start;
@@ -260,5 +272,16 @@ form[action*="UPDATE_PASSWORD"]::before {
   #kc-header-wrapper::before {
     margin-left: 0;
     margin-top: 70px;
+  }
+}
+
+@media (max-height: 760px) {
+  body.login-pf,
+  .pf-v5-c-login {
+    overflow: auto;
+  }
+
+  .pf-v5-c-login__container {
+    place-content: start center;
   }
 }
