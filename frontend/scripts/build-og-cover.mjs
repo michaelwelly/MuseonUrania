@@ -9,6 +9,19 @@ import { readFileSync, writeFileSync } from "node:fs";
 //
 // Слово «VEDAL» набрано, а не взято картинкой: в присланных файлах оно
 // чёрное и на тёмной подложке не читается вовсе.
+//
+// Скрипт кладёт разметку карточки в указанный каталог, снимок с неё делает
+// браузер — своего рисовальщика в проекте нет и заводить его ради одной
+// картинки не стоит:
+//
+//   node scripts/build-og-cover.mjs <каталог>
+//   chrome --headless --disable-gpu --hide-scrollbars \
+//     --force-prefers-reduced-motion --window-size=1200,630 \
+//     --virtual-time-budget=8000 \
+//     --screenshot=public/brand/og-cover.png file://<каталог>/og.html
+//
+// Узор в карточке берётся из content/pattern-shapes.ts — перерисовали формы,
+// пересоберите и карточку, иначе она останется с прежними.
 
 const src = readFileSync("content/pattern-shapes.ts", "utf8");
 const формы = {};
