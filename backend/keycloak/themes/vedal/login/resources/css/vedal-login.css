@@ -26,13 +26,18 @@
 
 body.login-pf {
   min-height: 100vh;
-  background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.97) 0%, rgba(255, 255, 255, 0.9) 48%, rgba(244, 248, 246, 0.82) 100%),
-    radial-gradient(circle at 82% 20%, rgba(15, 143, 75, 0.08), transparent 30%),
-    var(--vedal-soft);
+  background: #fff !important;
   color: var(--vedal-ink);
   font-family: "Commissioner", system-ui, sans-serif;
   letter-spacing: 0;
+}
+
+.login-pf body,
+body#keycloak-bg,
+.pf-v5-c-login,
+.pf-v5-c-login__container {
+  background: #fff !important;
+  background-image: none !important;
 }
 
 .login-pf-page {
@@ -42,17 +47,27 @@ body.login-pf {
   place-items: center;
 }
 
-.login-pf-page .card-pf {
+.login-pf-page .card-pf,
+.pf-v5-c-login__main {
   width: min(460px, calc(100vw - 32px));
   margin: 0;
   padding: 40px;
   border: 1px solid var(--vedal-line);
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.96);
+  background: #fff;
   box-shadow: 0 24px 70px rgba(19, 33, 44, 0.12);
 }
 
-#kc-header {
+.pf-v5-c-login__container {
+  min-height: 100vh;
+  padding: 48px 40px;
+  display: grid;
+  place-content: center;
+  row-gap: 28px;
+}
+
+#kc-header,
+.pf-v5-c-login__header {
   margin-bottom: 28px;
 }
 
@@ -63,8 +78,9 @@ body.login-pf {
   display: flex;
   align-items: center;
   background: url("../img/vedal-logo.png") left center / 118px auto no-repeat;
-  color: var(--vedal-muted);
+  color: var(--vedal-ink);
   font: 0/1.4 "Commissioner", system-ui, sans-serif;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
@@ -73,17 +89,23 @@ body.login-pf {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  color: #111;
   font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
 }
 
 #kc-header-wrapper::before {
   content: "";
   position: absolute;
+  left: 132px;
+  top: 50%;
   width: 6px;
   height: 6px;
-  margin-left: 132px;
+  margin: 0;
   border-radius: 50%;
-  background: #35d06f;
+  background: #111;
+  transform: translateY(-50%);
 }
 
 #kc-page-title,
@@ -167,9 +189,19 @@ button[type="submit"]:hover {
   font-family: "Commissioner", system-ui, sans-serif;
 }
 
+#input-error-client-password::before,
+#input-error-password::before {
+  content: "Пример формата: Vedal-2026!Office. Минимум 12 символов, заглавная буква, цифра и специальный символ. Сам пример не используйте как пароль.";
+  display: block;
+  margin: 8px 0 0;
+  color: var(--vedal-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 #kc-passwd-update-form::before,
 form[action*="UPDATE_PASSWORD"]::before {
-  content: "Пароль: минимум 12 символов, одна заглавная буква, одна цифра и один специальный символ. Не используйте логин, email и последние пароли.";
+  content: "Пароль: минимум 12 символов, одна заглавная буква, одна цифра и один специальный символ. Пример формата: Vedal-2026!Office. Сам пример не используйте как пароль.";
   display: block;
   margin: 0 0 16px;
   padding: 14px 16px;
