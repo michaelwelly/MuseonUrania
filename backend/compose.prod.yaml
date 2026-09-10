@@ -85,6 +85,7 @@ services:
       # и в нём нет ни одного пользователя: сотрудников заводит тот, кто держит
       # Keycloak, а не файл в репозитории.
       - ./keycloak/prod:/opt/keycloak/data/import:ro
+      - ./keycloak/themes:/opt/keycloak/themes:ro
       - vedal-keycloak:/opt/keycloak/data
     ports: !override []
     restart: unless-stopped

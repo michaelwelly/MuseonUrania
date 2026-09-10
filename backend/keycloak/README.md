@@ -127,6 +127,36 @@ realm-файл, а не память того, кто заводит учётк�
 Порядок включения на живом Keycloak, откат и решение по `/admin` —
 [docs/operations/mfa_rollout.md](../../docs/operations/mfa_rollout.md).
 
+## Фирменный экран входа
+
+Тема `vedal` лежит в `themes/vedal` и монтируется в контейнер Keycloak в
+`/opt/keycloak/themes/vedal`. В ней живут фирменные стили входа, русские
+подписи и подсказка для смены временного пароля:
+
+- минимум 12 символов;
+- хотя бы одна заглавная буква;
+- хотя бы одна цифра;
+- хотя бы один специальный символ;
+- пароль не должен совпадать с логином, email и последними паролями.
+
+В realm-файлах для чистой установки тема включена полем `loginTheme: vedal`,
+а русский язык задан как язык по умолчанию. На уже созданном realm импорт
+сам не повторяется, поэтому тему надо применить один раз вручную:
+
+```bash
+docker exec vedal-keycloak /opt/keycloak/bin/kcadm.sh config credentials \
+  --server http://localhost:8080 \
+  --realm master \
+  --user "$VEDAL_KEYCLOAK_ADMIN" \
+  --password "$VEDAL_KEYCLOAK_ADMIN_PASSWORD"
+
+docker exec vedal-keycloak /opt/keycloak/bin/kcadm.sh update realms/vedal \
+  -s loginTheme=vedal \
+  -s internationalizationEnabled=true \
+  -s 'supportedLocales=["ru"]' \
+  -s defaultLocale=ru
+```
+
 ## Срок сессии
 
 | Настройка | Значение | Что означает |

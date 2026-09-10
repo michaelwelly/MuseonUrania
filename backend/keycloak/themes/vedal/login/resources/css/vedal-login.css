@@ -1,0 +1,210 @@
+@font-face {
+  font-family: "Commissioner";
+  src: url("../font/Commissioner.woff2") format("woff2");
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Unbounded";
+  src: url("../font/Unbounded.woff2") format("woff2");
+  font-weight: 300 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --vedal-ink: #13212c;
+  --vedal-text: #465660;
+  --vedal-muted: #71808a;
+  --vedal-green: #0f8f4b;
+  --vedal-green-dark: #087a38;
+  --vedal-soft: #f4f8f6;
+  --vedal-line: #d9e4df;
+}
+
+body.login-pf {
+  min-height: 100vh;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.97) 0%, rgba(255, 255, 255, 0.9) 48%, rgba(244, 248, 246, 0.82) 100%),
+    radial-gradient(circle at 82% 20%, rgba(15, 143, 75, 0.08), transparent 30%),
+    var(--vedal-soft);
+  color: var(--vedal-ink);
+  font-family: "Commissioner", system-ui, sans-serif;
+  letter-spacing: 0;
+}
+
+.login-pf-page {
+  min-height: 100vh;
+  padding: 48px 40px;
+  display: grid;
+  place-items: center;
+}
+
+.login-pf-page .card-pf {
+  width: min(460px, calc(100vw - 32px));
+  margin: 0;
+  padding: 40px;
+  border: 1px solid var(--vedal-line);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 24px 70px rgba(19, 33, 44, 0.12);
+}
+
+#kc-header {
+  margin-bottom: 28px;
+}
+
+#kc-header-wrapper {
+  position: relative;
+  min-height: 54px;
+  padding: 0 0 0 148px;
+  display: flex;
+  align-items: center;
+  background: url("../img/vedal-logo.png") left center / 118px auto no-repeat;
+  color: var(--vedal-muted);
+  font: 0/1.4 "Commissioner", system-ui, sans-serif;
+  text-transform: uppercase;
+}
+
+#kc-header-wrapper::after {
+  content: "Закрытый контур";
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+#kc-header-wrapper::before {
+  content: "";
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  margin-left: 132px;
+  border-radius: 50%;
+  background: #35d06f;
+}
+
+#kc-page-title,
+.login-pf-page h1,
+.login-pf-page h2 {
+  margin: 0 0 24px;
+  color: var(--vedal-ink);
+  font-family: "Unbounded", "Commissioner", system-ui, sans-serif;
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1.16;
+  letter-spacing: 0;
+}
+
+#kc-content-wrapper::before {
+  content: "Рабочее место сотрудников VEDAL: каталог, документы, заявки и клиентская работа.";
+  display: block;
+  margin: -8px 0 22px;
+  color: var(--vedal-text);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+#kc-form label,
+.pf-c-form__label,
+.control-label {
+  color: var(--vedal-text);
+  font: 600 13px/1.4 "Commissioner", system-ui, sans-serif;
+}
+
+.pf-c-form-control,
+.pf-v5-c-form-control,
+input[type="text"],
+input[type="password"],
+input[type="email"] {
+  min-height: 44px;
+  border: 1px solid var(--vedal-line);
+  border-radius: 2px;
+  color: var(--vedal-ink);
+  font: 15px/1.4 "Commissioner", system-ui, sans-serif;
+  box-shadow: none;
+}
+
+.pf-c-form-control:focus,
+.pf-v5-c-form-control:focus,
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus {
+  border-color: var(--vedal-green);
+  outline: 2px solid rgba(15, 143, 75, 0.18);
+  outline-offset: 0;
+  box-shadow: none;
+}
+
+.pf-c-button.pf-m-primary,
+.pf-v5-c-button.pf-m-primary,
+input[type="submit"],
+button[type="submit"] {
+  min-height: 44px;
+  border: 0;
+  border-radius: 2px;
+  background: var(--vedal-green-dark);
+  color: #fff;
+  font: 700 15px/1.2 "Commissioner", system-ui, sans-serif;
+}
+
+.pf-c-button.pf-m-primary:hover,
+.pf-v5-c-button.pf-m-primary:hover,
+input[type="submit"]:hover,
+button[type="submit"]:hover {
+  background: #045f2d;
+}
+
+.pf-c-alert {
+  border-radius: 3px;
+  font-family: "Commissioner", system-ui, sans-serif;
+}
+
+.pf-v5-c-alert {
+  border-radius: 3px;
+  font-family: "Commissioner", system-ui, sans-serif;
+}
+
+#kc-passwd-update-form::before,
+form[action*="UPDATE_PASSWORD"]::before {
+  content: "Пароль: минимум 12 символов, одна заглавная буква, одна цифра и один специальный символ. Не используйте логин, email и последние пароли.";
+  display: block;
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  border: 1px solid #cfe4d7;
+  border-radius: 3px;
+  background: #eef8f2;
+  color: #245238;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+#kc-info {
+  margin-top: 24px;
+  color: var(--vedal-muted);
+  font-size: 13px;
+}
+
+@media (max-width: 560px) {
+  .login-pf-page {
+    padding: 24px 16px;
+    align-items: start;
+  }
+
+  .login-pf-page .card-pf {
+    padding: 28px 22px;
+  }
+
+  #kc-header-wrapper {
+    padding-left: 0;
+    padding-top: 66px;
+    background-position: left top;
+  }
+
+  #kc-header-wrapper::before {
+    margin-left: 0;
+    margin-top: 70px;
+  }
+}

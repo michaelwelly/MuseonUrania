@@ -245,7 +245,7 @@ export default function DocumentsPage() {
               <tr>
                 <th>Документ</th>
                 <th>Раздел</th>
-                <th>Чувствительность</th>
+                <th>Доступ</th>
                 <th>Файл</th>
                 <th>Публикация</th>
                 <th />
@@ -257,7 +257,7 @@ export default function DocumentsPage() {
                   key={row.id}
                   // Две приметы, и обе про то, чего нельзя: конфиденциальный
                   // документ наружу не выходит никогда, документ без файла
-                  // не публикуется, пока файла нет. Красная сильнее жёлтой.
+                  // не публикуется, пока файл не загружен. Красная сильнее жёлтой.
                   className={
                     row.sensitivity === "confidential"
                       ? "row--stop"
@@ -319,7 +319,7 @@ export default function DocumentsPage() {
                         {row.fileSize ? размер(row.fileSize) : "размер неизвестен"}
                       </span>
                     ) : (
-                      <span className="nobody">файла нет</span>
+                      <span className="nobody">файл не загружен</span>
                     )}
                     <label className="file">
                       <span className="file__word">{row.hasFile ? "заменить" : "загрузить"}</span>
@@ -609,7 +609,7 @@ function Publication({ row }: { row: DocumentRow }) {
   if (row.publishBlockedBy) {
     return (
       <span className="pub pub--no">
-        <span className="pub__word">нельзя</span>
+        <span className="pub__word">сначала исправьте</span>
         <span className="pub__why">{row.publishBlockedBy}</span>
       </span>
     );

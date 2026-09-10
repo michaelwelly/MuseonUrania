@@ -205,7 +205,7 @@ export function waited(minutes: number): string {
  * каждый раз.
  */
 export function where(page: string | null): string {
-  if (!page) return "страница неизвестна";
+  if (!page) return "источник не определён";
   return page === "/" ? "главная" : page;
 }
 

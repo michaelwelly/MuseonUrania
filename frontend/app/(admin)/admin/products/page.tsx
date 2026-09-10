@@ -62,7 +62,7 @@ const ФИЛЬТРЫ: readonly { id: Отбор; name: string }[] = [
   { id: "all", name: "Все" },
   { id: "live", name: "На сайте" },
   { id: "draft", name: "Черновики" },
-  { id: "nodocs", name: "Ожидают уточнения" },
+  { id: "nodocs", name: "Нужны данные" },
 ];
 
 export default function ProductsPage() {
@@ -242,7 +242,7 @@ export default function ProductsPage() {
                 </th>
                 <th>Изделие</th>
                 {видно("cats") && <th>Категории</th>}
-                {видно("docs") && <th>Данные</th>}
+                {видно("docs") && <th>Статус характеристик</th>}
                 <th>На сайте</th>
                 {видно("changed") && <th>Изменено</th>}
                 <th />
@@ -318,7 +318,7 @@ export default function ProductsPage() {
                       <span
                         className={`badge ${row.docStatus === "confirmed" ? "" : "badge--warn"}`}
                       >
-                        {row.docStatus === "confirmed" ? "по датащиту" : "ожидает уточнения"}
+                        {row.docStatus === "confirmed" ? "подтверждены" : "нужны данные"}
                       </span>
                     </td>
                   )}
@@ -478,7 +478,7 @@ function ProductLook({ row, onClose }: { row: ProductRow; onClose: () => void })
           <p className="look__lead">{data.summary}</p>
 
           <p className="look__text">
-            {data.purpose ?? <span className="nobody">назначение ожидает уточнения</span>}
+            {data.purpose ?? <span className="nobody">назначение готовится</span>}
           </p>
 
           {data.features.length > 0 && (

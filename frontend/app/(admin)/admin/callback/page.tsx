@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { completeLogin } from "@/lib/auth";
 import { message } from "../ui";
@@ -60,9 +61,9 @@ function Callback() {
             Код авторизации одноразовый и живёт минуту: чаще всего он просто устарел, пока
             страница висела открытой. Начните вход заново.
           </p>
-          <a className="btn btn--primary login__big" href="/admin/">
+          <Link className="btn btn--primary login__big" href="/admin/">
             Начать заново
-          </a>
+          </Link>
         </>
       ) : (
         <p>Меняем код авторизации на токен и возвращаем вас туда, откуда начинали.</p>
@@ -70,4 +71,3 @@ function Callback() {
     </Entry>
   );
 }
-

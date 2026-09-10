@@ -302,7 +302,7 @@ function Who({ login, people }: { login: string; people: readonly StaffMember[] 
       <span className="who__body">
         <span className="who__name">{человек?.name || login}</span>
         <span className="who__login mono">
-          {человек ? login : "нет в справочнике"}
+          {человек ? login : "не добавлен в справочник"}
         </span>
       </span>
     </span>

@@ -50,7 +50,9 @@ export default function OwnerField({
 
         {/* Незнакомый логин — первой строкой, чтобы выбранное значение
             было видно, а не выглядело как «не назначен». */}
-        {value && !known && <option value={value}>{value} — нет в справочнике</option>}
+        {value && !known && (
+          <option value={value}>{value} — не добавлен в справочник</option>
+        )}
 
         {people.map((p) => (
           <option key={p.login} value={p.login}>

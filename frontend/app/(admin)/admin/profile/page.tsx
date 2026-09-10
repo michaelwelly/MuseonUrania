@@ -113,7 +113,7 @@ export default function ProfilePage() {
           <Avatar name={имя} login={who.actor} size="xl" presence="unknown" />
           <div className="me__who">
             <h1>{имя}</h1>
-            <p className="me__role nobody">должность ожидает уточнения</p>
+            <p className="me__role nobody">должность не указана</p>
             <p className="me__login mono">{who.actor}</p>
           </div>
         </div>
@@ -144,7 +144,7 @@ export default function ProfilePage() {
               <Pair
                 name="Учётная запись"
                 value={я ? (я.enabled ? "включена" : "отключена") : null}
-                empty="нет в справочнике сотрудников"
+                empty="пользователь не добавлен в справочник сотрудников"
               />
             </dl>
 
@@ -155,10 +155,10 @@ export default function ProfilePage() {
 
                 Причина у всех четырёх одна, и названа она теперь один раз.
                 Сами поля при этом не пропали и не заменены выдумкой — они
-                перечислены, и слова «ожидает уточнения» стоят там же, где
+                перечислены, и пометка «не указано» стоит там же, где
                 стояли: за ними по-прежнему нет данных. */}
             <p className="pairs__none">
-              <span className="nobody">Ожидает уточнения</span> — почта, телефон, дата
+              <span className="nobody">Не указано</span> — почта, телефон, дата
               прихода в портал, последний вход. Эти поля живут в системе входа компании
               и в токен не приезжают; портал показывает только то, что в токене есть.
               Выдумать остальное значило бы однажды посчитать по выдуманной дате стаж.
@@ -476,7 +476,7 @@ function Pair({
   name,
   value,
   mono,
-  empty = "ожидает уточнения",
+  empty = "не указано",
 }: {
   name: string;
   value: string | null;

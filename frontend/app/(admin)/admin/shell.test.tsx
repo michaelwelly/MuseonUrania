@@ -408,7 +408,7 @@ describe("колокол", () => {
 
     await user.click(screen.getByRole("button", { name: "Уведомления" }));
 
-    expect(screen.getByText("Ожидает уточнения")).toBeTruthy();
+    expect(screen.getByText("Уведомления пока не включены")).toBeTruthy();
     // Счётчика на колоколе быть не должно: цифра — тоже утверждение.
     expect(screen.getByRole("button", { name: "Уведомления" }).textContent).toBe("");
   });

@@ -159,10 +159,10 @@ describe("публикация тумблером", () => {
 });
 
 describe("отбор", () => {
-  it("«Ожидают уточнения» показывает только те, у кого данные не по датащиту", async () => {
+  it("«Нужны данные» показывает только изделия без подтверждённых характеристик", async () => {
     const user = await экран();
 
-    await user.click(screen.getByRole("button", { name: /Ожидают уточнения/ }));
+    await user.click(screen.getByRole("button", { name: /Нужны данные/ }));
 
     expect(screen.getByText("VEDAL T-100")).toBeTruthy();
     expect(screen.queryByText("VEDAL R1")).toBeNull();

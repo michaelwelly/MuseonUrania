@@ -541,7 +541,7 @@ function NewsLook({ row, onClose }: { row: NewsRow; onClose: () => void }) {
             {data.body ? (
               data.body.split("\n\n").map((кусок, i) => <p key={i}>{кусок}</p>)
             ) : (
-              <p className="nobody">текст ожидает уточнения</p>
+              <p className="nobody">текст готовится</p>
             )}
           </div>
 

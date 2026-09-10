@@ -2,6 +2,12 @@
   "realm": "vedal",
   "enabled": true,
   "displayName": "VEDAL Portal",
+  "loginTheme": "vedal",
+  "internationalizationEnabled": true,
+  "supportedLocales": [
+    "ru"
+  ],
+  "defaultLocale": "ru",
   "sslRequired": "none",
   "registrationAllowed": false,
   "resetPasswordAllowed": false,

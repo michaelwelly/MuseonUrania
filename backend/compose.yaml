@@ -297,6 +297,7 @@ services:
       - "${VEDAL_KEYCLOAK_PORT:-8180}:8080"
     volumes:
       - ./keycloak:/opt/keycloak/data/import:ro
+      - ./keycloak/themes:/opt/keycloak/themes:ro
       - vedal-keycloak:/opt/keycloak/data
     healthcheck:
       # В образе Keycloak 26 нет ни curl, ни wget: он собран на ubi-micro.

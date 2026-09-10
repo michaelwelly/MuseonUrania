@@ -124,6 +124,7 @@ services:
       # с ним. Второй фактор, защита от перебора и политика паролей
       # здесь те же, что в проде.
       - ./keycloak/stand:/opt/keycloak/data/import:ro
+      - ./keycloak/themes:/opt/keycloak/themes:ro
       - vedal-keycloak:/opt/keycloak/data
 
   api-gateway:

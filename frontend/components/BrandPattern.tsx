@@ -1,5 +1,5 @@
 import { SHAPES } from "@/content/pattern-shapes";
-import { buildField, type Placed } from "@/lib/brand-pattern";
+import { buildField } from "@/lib/brand-pattern";
 import styles from "./BrandPattern.module.css";
 
 /**

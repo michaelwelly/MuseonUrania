@@ -103,12 +103,12 @@ export default function ProductEditor({ existing }: { existing?: Product }) {
           </Field>
 
           <Field
-            label="Адрес в URL (slug)"
+            label="Адрес страницы"
             error={errors.slug}
             hint={
               existing?.published
-                ? "Изделие опубликовано: переименование отклонит портал."
-                : "Латиница в нижнем регистре, цифры и дефис."
+                ? "Изделие опубликовано: адрес страницы менять нельзя."
+                : "Латиница в нижнем регистре, цифры и дефис, например vedal-a-2000."
             }
           >
             <input
@@ -124,16 +124,15 @@ export default function ProductEditor({ existing }: { existing?: Product }) {
           </Field>
 
           <Field
-            label="Статус данных"
+            label="Подтверждение характеристик"
             error={errors.docStatus}
-            hint="Подтверждены ли характеристики датащитом. Это не видимость на сайте."
+            hint="Показывает, подтверждены ли характеристики документом производителя. На публикацию не влияет."
           >
             <select value={form.docStatus} onChange={(e) => set("docStatus", e.target.value)}>
-              {/* Без служебного кода в подписи: выбирающему он не нужен,
-                  а в таблице та же вещь называется просто «по датащиту».
+              {/* Без служебного кода в подписи: выбирающему он не нужен.
                   Значение при этом остаётся кодом — его ждёт портал. */}
-              <option value="confirmed">по датащиту</option>
-              <option value="pending">ожидает уточнения</option>
+              <option value="confirmed">подтверждены документом</option>
+              <option value="pending">нужны данные</option>
             </select>
           </Field>
         </div>
@@ -157,7 +156,7 @@ export default function ProductEditor({ existing }: { existing?: Product }) {
         <Field
           label="Назначение"
           error={errors.purpose}
-          hint="В каких отделениях и для каких задач применяется изделие. Пусто — карточка покажет «ожидает уточнения»."
+          hint="В каких отделениях и для каких задач применяется изделие. Если оставить пустым, карточка покажет, что данные готовятся."
         >
           <textarea
             value={form.purpose ?? ""}
@@ -185,7 +184,7 @@ export default function ProductEditor({ existing }: { existing?: Product }) {
 
         <Field
           label="Снимок"
-          hint="Файл уезжает в открытый на чтение бакет. В базе хранится путь, а не адрес: имя хоста — свойство окружения."
+          hint="Загрузите фото изделия. Сайт покажет файл из хранилища."
         >
           <input
             type="file"
@@ -233,7 +232,7 @@ export default function ProductEditor({ existing }: { existing?: Product }) {
 
       <SpecTable
         title="Характеристики"
-        hint="Таблица на вкладке изделия. Не выдумывать значения: неизвестное — «ожидает уточнения»."
+        hint="Таблица на вкладке изделия. Неизвестные значения оставляйте пустыми или помечайте как неподтверждённые."
         rows={form.specs}
         onChange={(rows) => set("specs", rows)}
       />
@@ -332,13 +331,13 @@ function SpecTable({
             value={row.value}
             onChange={(e) => patch(i, { value: e.target.value })}
           />
-          <label className="field--row" title="Приглушить: значение не подтверждено">
+          <label className="field--row" title="Показать значение как неподтверждённое">
             <input
               type="checkbox"
               checked={row.muted}
               onChange={(e) => patch(i, { muted: e.target.checked })}
             />
-            <span style={{ fontSize: "var(--t-small)" }}>приглушить</span>
+            <span style={{ fontSize: "var(--t-small)" }}>не подтверждено</span>
           </label>
           <button
             className="btn btn--small btn--danger"

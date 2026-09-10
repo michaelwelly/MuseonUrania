@@ -38,7 +38,6 @@
  */
 
 .admin-body {
-
   /* Базовый кегль рабочей поверхности.
    *
    * Без него всё, чему кегль не задан явно, падает на браузерные 16px —
@@ -164,6 +163,14 @@
   min-height: 100vh;
 }
 
+.admin-body :where(button, input, select, textarea) {
+  font: inherit;
+}
+
+.admin-body :where(kbd) {
+  font-family: var(--font-mono), monospace;
+}
+
 /* ═══════════ ОБОЛОЧКА: та же шапка, что на сайте ═══════════
  *
  * Прокручивается документ, а не область внутри него, — как на сайте. Шапка
@@ -226,7 +233,7 @@
   gap: var(--s2);
   font-family: var(--font-mono), monospace;
   font-size: var(--t-micro);
-  letter-spacing: 0.08em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--muted);
   white-space: nowrap;
@@ -295,7 +302,7 @@
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: var(--s3);
+  gap: var(--s4);
 
   /* Без этой строки на телефоне из шапки уезжали за экран кнопка выхода
      и бургер с разделами — то есть с телефона нельзя было ни перейти
@@ -318,6 +325,7 @@
   display: flex;
   align-items: center;
   gap: var(--s3);
+  max-width: 210px;
   min-width: 0;
 }
 
@@ -334,7 +342,7 @@
 .admin-who__name {
   font-size: var(--t-base);
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
   white-space: nowrap;
 }
 
@@ -342,9 +350,11 @@
 .admin-who__meta {
   font-family: var(--font-mono), monospace;
   font-size: var(--t-micro);
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
   color: var(--muted);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Выход — обведённая кнопка на месте кнопки-телефона: те же 44 пикселя,
@@ -372,6 +382,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--s3);
+  margin-left: var(--s4);
   height: 44px;
   padding: 0 var(--s5);
   border-radius: var(--radius-control);
@@ -381,6 +392,25 @@
   font-weight: 600;
   white-space: nowrap;
   text-decoration: none;
+}
+
+.admin-cta svg {
+  flex: none;
+}
+
+@media (max-width: 1180px) {
+  .admin-find {
+    flex-basis: 44px;
+  }
+
+  .admin-find__text,
+  .admin-find__key {
+    display: none;
+  }
+
+  .admin-who {
+    max-width: 170px;
+  }
 }
 
 .admin-cta:hover {
@@ -491,7 +521,7 @@
   padding-bottom: var(--s2);
   font-family: var(--font-mono), monospace;
   font-size: var(--t-micro);
-  letter-spacing: 0.12em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -537,7 +567,7 @@
 .admin-foot__circuit {
   font-family: var(--font-mono), monospace;
   font-size: var(--t-micro);
-  letter-spacing: 0.12em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--text-2);
 }
@@ -729,7 +759,7 @@
   background: var(--page);
   font-family: var(--font-mono), monospace;
   font-size: var(--t-micro);
-  letter-spacing: 0.12em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -779,7 +809,7 @@
   font-family: var(--font-display), system-ui, sans-serif;
   font-size: var(--t-h1);
   font-weight: 500;
-  letter-spacing: -0.035em;
+  letter-spacing: 0;
   line-height: 1.05;
   margin: 0;
 }
@@ -831,7 +861,7 @@
   border-radius: var(--radius-control);
   font-size: var(--t-small);
   font-weight: 600;
-  letter-spacing: 0.01em;
+  letter-spacing: 0;
 }
 
 .admin-pd::before {
@@ -872,7 +902,7 @@
 .admin-card__title {
   font-size: var(--t-base);
   font-weight: 600;
-  letter-spacing: -0.005em;
+  letter-spacing: 0;
   margin: 0 0 var(--s3);
 }
 
@@ -923,7 +953,7 @@
   text-align: left;
   font-size: var(--t-micro);
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--muted);
   white-space: nowrap;
@@ -1065,7 +1095,7 @@
 .field > span {
   font-size: var(--t-small);
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
   color: var(--text-2);
 }
 
@@ -1191,7 +1221,7 @@ th.tight input[type="checkbox"] {
   background: var(--soft);
   font-size: var(--t-micro);
   font-weight: 600;
-  letter-spacing: 0.01em;
+  letter-spacing: 0;
   color: var(--text-2);
   white-space: nowrap;
 }
@@ -1293,7 +1323,7 @@ th.tight input[type="checkbox"] {
   font-family: var(--font-mono), monospace;
   font-size: var(--t-small);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 
 /* ————— плитки сводки ————— */
@@ -1324,7 +1354,7 @@ th.tight input[type="checkbox"] {
   font-size: var(--t-h1);
   font-weight: 500;
   line-height: 1.1;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1573,7 +1603,7 @@ th.tight input[type="checkbox"] {
   font-family: var(--font-display), system-ui, sans-serif;
   font-size: clamp(var(--t-h2), 3vw, var(--t-h1));
   font-weight: 500;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .login__lead {
@@ -1637,7 +1667,7 @@ th.tight input[type="checkbox"] {
   background: var(--surface);
   font-family: var(--font-mono), monospace;
   font-size: var(--t-micro);
-  letter-spacing: 0.06em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -1646,7 +1676,7 @@ th.tight input[type="checkbox"] {
   font-family: var(--font-display), system-ui, sans-serif;
   font-size: clamp(var(--t-h2), 2.4vw, var(--t-h1));
   font-weight: 500;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   line-height: 1.15;
   margin: 0 0 var(--s4);
 }
@@ -1736,7 +1766,7 @@ th.tight input[type="checkbox"] {
 .bubble__who {
   font-size: var(--t-micro);
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
   color: var(--muted);
   margin-bottom: var(--s1);
 }
@@ -1776,7 +1806,7 @@ th.tight input[type="checkbox"] {
 .bubble__read {
   margin-top: var(--s1);
   font-size: var(--t-micro);
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
   color: var(--muted);
   text-align: right;
 }
@@ -1798,7 +1828,7 @@ th.tight input[type="checkbox"] {
 .bubble__rated {
   margin-top: var(--s1);
   font-size: var(--t-micro);
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
   color: var(--muted);
 }
 
@@ -1946,7 +1976,7 @@ th.tight input[type="checkbox"] {
 .bell__title {
   margin: 0 0 var(--s2);
   font-size: var(--t-micro);
-  letter-spacing: 0.12em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -1982,7 +2012,7 @@ th.tight input[type="checkbox"] {
   color: var(--state-ok);
   font-weight: 600;
   line-height: 1;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
   user-select: none;
 }
 
@@ -2240,7 +2270,7 @@ th.tight input[type="checkbox"] {
 .palette__group {
   margin: var(--s2) var(--s5) var(--s1);
   font-size: var(--t-micro);
-  letter-spacing: 0.12em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -2337,7 +2367,7 @@ th.tight input[type="checkbox"] {
   font-family: var(--font-display), system-ui, sans-serif;
   font-size: var(--t-h2);
   font-weight: 500;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .sheet__close {
@@ -2992,7 +3022,7 @@ th.tight input[type="checkbox"] {
 
 .chips__label {
   font-size: var(--t-micro);
-  letter-spacing: 0.12em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--muted);
   margin-right: var(--s1);
@@ -3133,7 +3163,7 @@ th.tight input[type="checkbox"] {
 
 .cols__title {
   font-size: var(--t-micro);
-  letter-spacing: 0.12em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -3423,7 +3453,7 @@ th.tight input[type="checkbox"] {
 
 .sheet-right__eyebrow {
   font-size: var(--t-micro);
-  letter-spacing: 0.08em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -3433,7 +3463,7 @@ th.tight input[type="checkbox"] {
   font-family: var(--font-display), system-ui, sans-serif;
   font-size: var(--t-h2);
   font-weight: 500;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   line-height: 1.15;
 }
 
@@ -3642,7 +3672,7 @@ th.tight input[type="checkbox"] {
 
 .side__eyebrow {
   font-size: var(--t-micro);
-  letter-spacing: 0.12em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -3669,14 +3699,14 @@ th.tight input[type="checkbox"] {
   font-family: var(--font-display), system-ui, sans-serif;
   font-size: var(--t-lead);
   font-weight: 500;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   line-height: 1.2;
 }
 
 .side__label {
   margin: var(--s4) 0 var(--s2);
   font-size: var(--t-micro);
-  letter-spacing: 0.12em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -4467,7 +4497,7 @@ th.tight input[type="checkbox"] {
 
 .duty__label {
   font-size: var(--t-micro);
-  letter-spacing: 0.12em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--text-2);
 }
@@ -5153,7 +5183,7 @@ th.tight input[type="checkbox"] {
   font-family: var(--font-display), system-ui, sans-serif;
   font-size: var(--t-lead);
   font-weight: 500;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   line-height: 1.2;
 }
 
@@ -5207,7 +5237,7 @@ th.tight input[type="checkbox"] {
 .diff thead th {
   font-size: var(--t-micro);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0;
   color: var(--muted);
 }
 
@@ -5237,7 +5267,7 @@ th.tight input[type="checkbox"] {
 
 .look__what {
   font-size: var(--t-micro);
-  letter-spacing: 0.12em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--on-dark-2);
 }
@@ -5320,7 +5350,7 @@ th.tight input[type="checkbox"] {
 .look__eyebrow {
   margin: 0 0 var(--s3);
   font-size: var(--t-micro);
-  letter-spacing: 0.12em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -5330,7 +5360,7 @@ th.tight input[type="checkbox"] {
   font-family: var(--font-display), system-ui, sans-serif;
   font-size: var(--look-title);
   font-weight: 500;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
   line-height: 1.05;
 }
 
@@ -5405,7 +5435,7 @@ th.tight input[type="checkbox"] {
 .hello__date {
   margin: 0 0 var(--s1);
   font-size: var(--t-micro);
-  letter-spacing: 0.08em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--muted);
 }

@@ -153,7 +153,7 @@ function Card({
             {имя}
             {me && <span className="person__me mono">это вы</span>}
           </p>
-          <p className="person__role nobody">должность ожидает уточнения</p>
+          <p className="person__role nobody">должность не указана</p>
           <p className="person__login mono">{person.login}</p>
 
           {/* Роли рядом с логином, а не отдельной колонкой: вопрос

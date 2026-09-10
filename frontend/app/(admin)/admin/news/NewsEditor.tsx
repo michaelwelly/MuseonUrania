@@ -405,7 +405,7 @@ export default function NewsEditor({ existing }: { existing?: News }) {
               {form.body ? (
                 form.body.split("\n\n").map((кусок, i) => <p key={i}>{кусок}</p>)
               ) : (
-                <p className="nobody">текст ожидает уточнения</p>
+                <p className="nobody">текст готовится</p>
               )}
             </div>
           </article>

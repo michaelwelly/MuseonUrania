@@ -30,7 +30,89 @@ if (!URL.createObjectURL) {
   URL.revokeObjectURL = () => {};
 }
 
+const storageState = new WeakMap<object, Map<string, string>>();
+let storagePrototypeReady = false;
+
+function storeOf(storage: object): Map<string, string> {
+  let store = storageState.get(storage);
+  if (!store) {
+    store = new Map<string, string>();
+    storageState.set(storage, store);
+  }
+  return store;
+}
+
+function installMemoryStoragePrototype() {
+  if (storagePrototypeReady || typeof Storage === "undefined") return;
+
+  Object.defineProperties(Storage.prototype, {
+    length: {
+      configurable: true,
+      get() {
+        return storeOf(this).size;
+      },
+    },
+    clear: {
+      configurable: true,
+      value() {
+        storeOf(this).clear();
+      },
+    },
+    getItem: {
+      configurable: true,
+      value(key: string) {
+        return storeOf(this).get(String(key)) ?? null;
+      },
+    },
+    key: {
+      configurable: true,
+      value(index: number) {
+        return Array.from(storeOf(this).keys())[index] ?? null;
+      },
+    },
+    removeItem: {
+      configurable: true,
+      value(key: string) {
+        storeOf(this).delete(String(key));
+      },
+    },
+    setItem: {
+      configurable: true,
+      value(key: string, value: string) {
+        storeOf(this).set(String(key), String(value));
+      },
+    },
+  });
+
+  storagePrototypeReady = true;
+}
+
+function memoryStorage(): Storage {
+  const storage = Object.create(Storage.prototype) as Storage;
+  storageState.set(storage, new Map<string, string>());
+  return storage;
+}
+
 beforeEach(() => {
+  installMemoryStoragePrototype();
+  const local = memoryStorage();
+  const session = memoryStorage();
+  Object.defineProperty(globalThis, "localStorage", {
+    value: local,
+    configurable: true,
+  });
+  Object.defineProperty(globalThis, "sessionStorage", {
+    value: session,
+    configurable: true,
+  });
+  Object.defineProperty(window, "localStorage", {
+    value: local,
+    configurable: true,
+  });
+  Object.defineProperty(window, "sessionStorage", {
+    value: session,
+    configurable: true,
+  });
   sessionStorage.clear();
   localStorage.clear();
 });

@@ -45,7 +45,7 @@ describe("выбор ответственного", () => {
     expect(screen.getByRole("option", { name: "Анна Фёдорова" })).toBeInTheDocument();
   });
 
-  it("не теряет логин, которого нет в справочнике", async () => {
+  it("не теряет логин, который не добавлен в справочник", async () => {
     await show("ushel.v.proshlom");
 
     const select = screen.getByLabelText(/Ответственный/) as HTMLSelectElement;
@@ -53,7 +53,7 @@ describe("выбор ответственного", () => {
     // а не «не назначен», как если бы его подменили пустотой.
     expect(select.value).toBe("ushel.v.proshlom");
     expect(
-      screen.getByRole("option", { name: /ushel\.v\.proshlom.*нет в справочнике/ }),
+      screen.getByRole("option", { name: /ushel\.v\.proshlom.*не добавлен в справочник/ }),
     ).toBeInTheDocument();
   });
 

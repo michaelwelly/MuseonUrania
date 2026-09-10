@@ -516,7 +516,7 @@ const БЕЙДЖ: Record<string, string> = {
 function Факт({
   name,
   value,
-  empty = "ожидает уточнения",
+  empty = "не указано",
 }: {
   name: string;
   value: string | null;
