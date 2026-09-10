@@ -24,6 +24,12 @@
   --vedal-line: #d9e4df;
 }
 
+.login-pf *,
+.login-pf *::before,
+.login-pf *::after {
+  box-sizing: border-box;
+}
+
 body.login-pf {
   min-height: 100vh;
   background: #fff !important;
