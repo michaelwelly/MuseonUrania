@@ -11,6 +11,7 @@ import ProductTabs from "./tabs";
 import styles from "./page.module.css";
 import { mediaSrc } from "@/lib/media";
 import { pageMetadata } from "@/lib/seo";
+import { JsonLd, breadcrumbStructuredData, productStructuredData } from "@/lib/structured-data";
 
 // Карточка изделия. Тело вынесено из `page.tsx` в `screen.tsx`, потому что
 // `screen.tsx` маршрутом не является: здесь можно держать любые экспорты
@@ -60,9 +61,25 @@ export default async function ProductScreen({ slug }: { slug: string }) {
   if (!product) notFound();
 
   const related = products.filter((p) => p.slug !== product.slug).slice(0, 3);
+  const image = product.image ? mediaSrc(product.image.src) : undefined;
 
   return (
     <main className={styles.page}>
+      <JsonLd
+        id={`breadcrumb-jsonld-product-${product.slug}`}
+        data={breadcrumbStructuredData(
+          [
+            { label: strings.crumbs.home, href: "/" },
+            { label: strings.crumbs.products, href: "/products/" },
+            { label: product.name },
+          ],
+          `/products/${product.slug}/`,
+        )}
+      />
+      <JsonLd
+        id={`product-jsonld-${product.slug}`}
+        data={productStructuredData(product, image)}
+      />
       <p className={styles.crumbs}>
         <Link href="/">{strings.crumbs.home}</Link> /{" "}
         <Link href="/products/">{strings.crumbs.products}</Link> /{" "}

@@ -18,8 +18,8 @@ public interface DocumentAdmin {
     // Разделы перечня и уровни доступа закрыты проверками в схеме. Списки
     // продублированы здесь, чтобы админка нарисовала выбор, а не свободное
     // поле, в котором опечатка кончается отказом базы.
-    List<String> GROUPS = List.of("Лицензирование", "Система качества",
-            "Техническая документация", "Коммерческие материалы");
+    List<String> GROUPS = List.of("Техническая документация", "Система качества",
+            "Коммерческие материалы", "О компании");
     List<String> SENSITIVITIES = List.of("public", "internal", "confidential");
     List<String> ACCESS_KINDS = List.of("pdf", "on_request", "pending");
 
@@ -53,8 +53,8 @@ public interface DocumentAdmin {
             @NotBlank @Size(max = 300) String title,
 
             @Schema(description = "Раздел перечня.",
-                    allowableValues = {"Лицензирование", "Система качества",
-                            "Техническая документация", "Коммерческие материалы"})
+                    allowableValues = {"Техническая документация", "Система качества",
+                            "Коммерческие материалы", "О компании"})
             @NotBlank String group,
 
             @Schema(description = "К чему относится документ.", example = "VEDAL R1, R2")

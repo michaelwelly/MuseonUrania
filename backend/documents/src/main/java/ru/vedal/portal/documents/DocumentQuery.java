@@ -18,21 +18,21 @@ public interface DocumentQuery {
     record Card(
 
             @Schema(description = "Идентификатор в URL.",
-                    example = "registracionnoe-udostoverenie-vedal-r1-r2")
+                    example = "vedal-r1-product-sheet")
             String slug,
 
-            @Schema(description = "Название документа.", example = "Регистрационное удостоверение")
+            @Schema(description = "Название документа.", example = "Система реанимационная VEDAL R1")
             String title,
 
-            @Schema(description = "Раздел перечня.", example = "Лицензирование")
+            @Schema(description = "Раздел перечня.", example = "Техническая документация")
             String group,
 
             @Schema(description = "К чему относится документ: изделие или организация.",
-                    example = "VEDAL R1, R2")
+                    example = "VEDAL R1")
             String subject,
 
             @Schema(description = "Изделие, к которому привязан документ. `null` у общих документов.",
-                    example = "vedal-r1-r2", nullable = true)
+                    example = "vedal-r1", nullable = true)
             String productSlug,
 
             @Schema(description = "Как документ достаётся: `pdf` — файл на сайте, `on_request` — "
@@ -45,7 +45,7 @@ public interface DocumentQuery {
 
             @Schema(description = "Ссылка на файл. Заполнена только у опубликованных — собирать её "
                     + "на стороне сайта значит однажды собрать её для закрытого документа.",
-                    example = "/api/public/v1/documents/opisanie-izdeliya-vedal-r1-r2/file",
+                    example = "/api/public/v1/documents/vedal-r1-product-sheet/file",
                     nullable = true)
             String fileUrl) {}
 

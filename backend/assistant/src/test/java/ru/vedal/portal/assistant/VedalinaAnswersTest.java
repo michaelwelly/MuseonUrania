@@ -264,18 +264,21 @@ class VedalinaAnswersTest {
         }
     }
 
-    /** Перечень документов: ни одного опубликованного файла, как на стенде. */
+    /** Перечень документов: финальный открытый пакет сайта. */
     private static final class Перечень implements DocumentQuery {
 
         @Override
         public List<Card> listedDocuments() {
             return List.of(
-                    new Card("registracionnoe-udostoverenie-vedal-a-2000",
-                            "Регистрационное удостоверение", "Лицензирование", "VEDAL A-2000",
-                            "vedal-a-2000", "pending", false, null),
-                    new Card("licenziya-na-proizvodstvo",
-                            "Лицензия на производство медицинских изделий", "Лицензирование",
-                            "ООО «ВЕДАЛ»", null, "on_request", false, null));
+                    new Card("vedal-a-2000-product-sheet",
+                            "Инкубатор-трансформер VEDAL A-2000",
+                            "Техническая документация", "VEDAL A-2000",
+                            "vedal-a-2000", "pdf", true,
+                            "/api/public/v1/documents/vedal-a-2000-product-sheet/file"),
+                    new Card("vedal-product-catalog",
+                            "Каталог продукции VEDAL", "Коммерческие материалы",
+                            "Все изделия", null, "pdf", true,
+                            "/api/public/v1/documents/vedal-product-catalog/file"));
         }
 
         @Override

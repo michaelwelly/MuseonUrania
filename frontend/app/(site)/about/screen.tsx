@@ -40,6 +40,7 @@ export default function AboutScreen() {
         crumbs={[{ label: strings.crumbs.home, href: "/" }, { label: strings.crumbs.about }]}
         title={aboutHero.title}
         lead={aboutHero.lead}
+        currentPath="/about/"
         pattern={101}
       />
 

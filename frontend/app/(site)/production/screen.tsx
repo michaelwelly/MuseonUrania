@@ -12,6 +12,7 @@ import BrandPattern from "@/components/BrandPattern";
 import LivePattern from "@/components/LivePattern";
 import styles from "./page.module.css";
 import { mediaSrc } from "@/lib/media";
+import { JsonLd, breadcrumbStructuredData } from "@/lib/structured-data";
 
 // «Производство». Тело вынесено из `page.tsx` в `screen.tsx`, потому что
 // `screen.tsx` маршрутом не является: здесь можно держать любые экспорты
@@ -31,6 +32,13 @@ export function productionMetadata(): Metadata {
 export default function ProductionScreen() {
   return (
     <main className={styles.page}>
+      <JsonLd
+        id="breadcrumb-jsonld-production"
+        data={breadcrumbStructuredData(
+          [{ label: strings.crumbs.home, href: "/" }, { label: strings.crumbs.production }],
+          "/production/",
+        )}
+      />
       {/* Узор стоит полем за текстом, а не полосой в стыке: правую половину
           занимает фотография во всю высоту, и на полосу оставалось бы
           слишком мало, чтобы композиция читалась.

@@ -37,6 +37,7 @@ export default async function ProductsScreen() {
         crumbs={[{ label: strings.crumbs.home, href: "/" }, { label: strings.crumbs.products }]}
         title={strings.products.heroTitle}
         lead={strings.meta.productsLead}
+        currentPath="/products/"
         pattern={211}
       />
 

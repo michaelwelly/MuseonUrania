@@ -9,8 +9,8 @@ import DocumentsTable from "./table";
 // где файл действительно выложен, и строка без файла ведёт на форму.
 
 const doc = (over: Partial<Doc> = {}): Doc => ({
-  slug: "katalog-produkcii-2026",
-  title: "Каталог продукции 2026",
+  slug: "vedal-product-catalog",
+  title: "Каталог продукции VEDAL",
   group: "Коммерческие материалы",
   product: "Все изделия",
   productSlug: null,
@@ -19,7 +19,7 @@ const doc = (over: Partial<Doc> = {}): Doc => ({
   ...over,
 });
 
-const ФАЙЛ = "http://portal/api/public/v1/documents/sertifikat-iso-13485/file";
+const ФАЙЛ = "http://portal/api/public/v1/documents/vedal-certificate-conformity/file";
 
 /**
  * Адрес строки разобранным. Сравнивать его целой строкой значит зависеть
@@ -32,12 +32,17 @@ describe("перечень документов", () => {
     render(
       <DocumentsTable
         documents={[
-          doc({ slug: "sertifikat-iso-13485", title: "Сертификат ISO 13485", published: true, file: ФАЙЛ }),
+          doc({
+            slug: "vedal-certificate-conformity",
+            title: "Сертификат соответствия ООО «ВЕДАЛ»",
+            published: true,
+            file: ФАЙЛ,
+          }),
         ]}
       />,
     );
 
-    const строка = screen.getByRole("link", { name: /Сертификат ISO 13485/ });
+    const строка = screen.getByRole("link", { name: /Сертификат соответствия/ });
     expect(строка).toHaveAttribute("href", ФАЙЛ);
     expect(строка).toHaveAttribute("target", "_blank");
     expect(строка).toHaveTextContent("Открыть");
@@ -47,7 +52,7 @@ describe("перечень документов", () => {
   it("строка без файла ведёт в форму с выбранной темой", () => {
     render(<DocumentsTable documents={[doc()]} />);
 
-    const строка = screen.getByRole("link", { name: /Каталог продукции 2026/ });
+    const строка = screen.getByRole("link", { name: /Каталог продукции VEDAL/ });
     // next/link в jsdom отдаёт адрес без хвостового слэша — его дописывает
     // сборка (trailingSlash). Проверяем маршрут, а не форму записи.
     expect(адрес(строка).pathname).toMatch(/^\/contacts\/?$/);
@@ -76,7 +81,7 @@ describe("перечень документов", () => {
       />,
     );
 
-    const общий = адрес(screen.getByRole("link", { name: /Каталог продукции 2026/ }));
+    const общий = адрес(screen.getByRole("link", { name: /Каталог продукции VEDAL/ }));
     const изделия = адрес(screen.getByRole("link", { name: /Регистрационное удостоверение/ }));
     expect(общий.searchParams.has("product")).toBe(false);
     expect(изделия.searchParams.get("product")).toBe("vedal-r1");
@@ -87,7 +92,7 @@ describe("перечень документов", () => {
   it("бейдж не обещает файл, которого нет", () => {
     render(<DocumentsTable documents={[doc({ access: "Файл" })]} />);
 
-    expect(screen.getByRole("link", { name: /Каталог продукции 2026/ })).toHaveTextContent(
+    expect(screen.getByRole("link", { name: /Каталог продукции VEDAL/ })).toHaveTextContent(
       "По запросу",
     );
   });
@@ -95,7 +100,7 @@ describe("перечень документов", () => {
   it("«Уточняется» остаётся статусом документа", () => {
     render(<DocumentsTable documents={[doc({ access: "Уточняется" })]} />);
 
-    expect(screen.getByRole("link", { name: /Каталог продукции 2026/ })).toHaveTextContent(
+    expect(screen.getByRole("link", { name: /Каталог продукции VEDAL/ })).toHaveTextContent(
       "Уточняется",
     );
   });

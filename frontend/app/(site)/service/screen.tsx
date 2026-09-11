@@ -14,6 +14,7 @@ import BrandPattern from "@/components/BrandPattern";
 import LivePattern from "@/components/LivePattern";
 import styles from "./page.module.css";
 import { mediaSrc } from "@/lib/media";
+import { JsonLd, breadcrumbStructuredData } from "@/lib/structured-data";
 
 // «Сервис». Тело вынесено из `page.tsx` в `screen.tsx`, потому что
 // `screen.tsx` маршрутом не является: здесь можно держать любые экспорты
@@ -39,6 +40,13 @@ export default async function ServiceScreen() {
 
   return (
     <main className={styles.page}>
+      <JsonLd
+        id="breadcrumb-jsonld-service"
+        data={breadcrumbStructuredData(
+          [{ label: strings.crumbs.home, href: "/" }, { label: strings.crumbs.service }],
+          "/service/",
+        )}
+      />
       {/* Узор стоит полем за текстом, а не полосой в стыке: правую половину
           занимает фотография во всю высоту.
 

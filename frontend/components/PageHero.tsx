@@ -1,6 +1,7 @@
 import Link from "next/link";
 import BrandPattern from "./BrandPattern";
 import LivePattern from "./LivePattern";
+import { JsonLd, breadcrumbStructuredData } from "@/lib/structured-data";
 import styles from "./PageHero.module.css";
 
 type Crumb = { label: string; href?: string };
@@ -13,6 +14,7 @@ type Props = {
   crumbs: Crumb[];
   title: string;
   lead?: string;
+  currentPath?: string;
   /** Произвольный блок справа — например кнопка на экране «Документы». */
   aside?: React.ReactNode;
   /**
@@ -43,9 +45,15 @@ type Props = {
  * а бледная форма светлее бумаги под буквами и читать не мешает, — без
  * неё же левые две трети полосы пустуют, и композиция валится вправо.
  */
-export default function PageHero({ crumbs, title, lead, aside, pattern }: Props) {
+export default function PageHero({ crumbs, title, lead, currentPath, aside, pattern }: Props) {
   return (
     <section className={`${styles.hero} patternHost`}>
+      {currentPath && (
+        <JsonLd
+          id={`breadcrumb-jsonld-${currentPath.replace(/[^a-z0-9]+/gi, "-") || "home"}`}
+          data={breadcrumbStructuredData(crumbs, currentPath)}
+        />
+      )}
       <LivePattern />
       {pattern !== null && (
         <div className={styles.pattern}>

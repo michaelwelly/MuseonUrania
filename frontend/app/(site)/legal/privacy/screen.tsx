@@ -52,6 +52,7 @@ export default function PrivacyScreen() {
         ]}
         title={privacy.title}
         lead={privacy.lead}
+        currentPath="/legal/privacy/"
         // Единственная шапка сайта без узора. Дальше идёт сплошной текст
         // документа на десяток экранов, и фирменное поле над ним читалось бы
         // приглашением этот текст пролистать.

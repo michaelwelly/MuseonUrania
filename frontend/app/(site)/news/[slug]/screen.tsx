@@ -6,6 +6,7 @@ import { ui as strings } from "@/content/ui";
 import { fetchNewsEntry } from "@/lib/api";
 import { mediaSrc } from "@/lib/media";
 import { pageMetadata } from "@/lib/seo";
+import { JsonLd, articleStructuredData, breadcrumbStructuredData } from "@/lib/structured-data";
 import styles from "./page.module.css";
 
 // §8.3 плана: согласованный формат новости — заголовок, краткий анонс, полный
@@ -54,9 +55,32 @@ export default async function NewsEntryScreen({ slug }: { slug: string }) {
     .split(/\n\s*\n/)
     .map((p) => p.trim())
     .filter(Boolean);
+  const path = `/news/${entry.slug}/`;
+  const image = entry.image ? mediaSrc(entry.image.src) : undefined;
 
   return (
     <main className={styles.page}>
+      <JsonLd
+        id={`breadcrumb-jsonld-news-${entry.slug}`}
+        data={breadcrumbStructuredData(
+          [
+            { label: strings.crumbs.home, href: "/" },
+            { label: strings.crumbs.news, href: "/news/" },
+            { label: entry.title },
+          ],
+          path,
+        )}
+      />
+      <JsonLd
+        id={`article-jsonld-${entry.slug}`}
+        data={articleStructuredData({
+          path,
+          title: entry.title,
+          description: entry.excerpt,
+          publishedTime: entry.isoDate,
+          imageUrl: image,
+        })}
+      />
       <p className={styles.crumbs}>
         <Link href="/">{strings.crumbs.home}</Link> /{" "}
         <Link href="/news/">{strings.crumbs.news}</Link> /{" "}

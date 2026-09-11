@@ -36,6 +36,7 @@ export default async function NewsScreen() {
         crumbs={[{ label: strings.crumbs.home, href: "/" }, { label: strings.crumbs.news }]}
         title={newsHero.title}
         lead={newsHero.lead}
+        currentPath="/news/"
         pattern={181}
       />
 

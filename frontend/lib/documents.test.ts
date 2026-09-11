@@ -18,10 +18,10 @@ import {
 // просто получает 404 вместо документа и уходит.
 
 const doc = (over: Partial<Doc> = {}): Doc => ({
-  slug: "opisanie-izdeliya-vedal-r1-r2",
-  title: "Описание изделия",
+  slug: "vedal-r1-product-sheet",
+  title: "Система реанимационная VEDAL R1",
   group: "Техническая документация",
-  product: "VEDAL R1, R2",
+  product: "VEDAL R1",
   productSlug: "vedal-r1",
   access: "Файл",
   published: false,
@@ -30,7 +30,7 @@ const doc = (over: Partial<Doc> = {}): Doc => ({
 
 const открытый = doc({
   published: true,
-  file: "http://portal/api/public/v1/documents/opisanie-izdeliya-vedal-r1-r2/file",
+  file: "http://portal/api/public/v1/documents/vedal-r1-product-sheet/file",
 });
 
 describe("правило ссылки на документ", () => {
@@ -98,9 +98,8 @@ describe("документы изделия", () => {
     expect(forProduct(перечень, "vedal-r1").map((d) => d.slug)).toEqual(["opisanie-r1"]);
   });
 
-  // Подпись «VEDAL R1, R2» относится к строке, привязанной к vedal-r1.
-  // Разбирать её текстом значит показать на карточке R2 документ, которого
-  // у R2 может не быть (V27, §2).
+  // Документы R1 и R2 разделены: карточка R2 не должна подтягивать строку R1
+  // по похожему названию или группе.
   it("подпись с двумя изделиями не притягивает строку к соседу", () => {
     expect(forProduct(перечень, "vedal-r2").map((d) => d.slug)).toEqual(["ru-r2"]);
   });
