@@ -54,8 +54,8 @@ describe("правило ссылки на документ", () => {
     expect(isOpen(doc({ file: "http://portal/file" }))).toBe(false);
   });
 
-  it("новая вкладка и rel — только у открываемых", () => {
-    expect(linkTarget(открытый)).toEqual({ target: "_blank", rel: "noopener" });
+  it("download-атрибут — только у скачиваемых", () => {
+    expect(linkTarget(открытый)).toEqual({ download: "" });
     expect(linkTarget(doc())).toEqual({});
   });
 });
@@ -76,12 +76,12 @@ describe("бейдж доступа", () => {
   });
 
   it("действие называется словом", () => {
-    expect(actionLabel(открытый)).toBe("Открыть");
+    expect(actionLabel(открытый)).toBe("Скачать");
     expect(actionLabel(doc())).toBe("Запросить");
   });
 
   it("подпись говорит, что будет по нажатию", () => {
-    expect(docNote(открытый)).toContain("открывается в новой вкладке");
+    expect(docNote(открытый)).toContain("скачивается с сайта");
     expect(docNote(doc())).toContain("выдаётся по запросу");
     expect(docNote(doc({ access: "Уточняется" }))).toContain("согласуется");
   });

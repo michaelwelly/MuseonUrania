@@ -35,7 +35,7 @@ export const REQUEST_HREF = leadHref(DOCUMENT_TOPIC);
 export const requestHref = (d: Doc): string => leadHref(DOCUMENT_TOPIC, d.productSlug);
 
 /**
- * Документ можно открыть — он опубликован И файл загружен.
+ * Документ можно скачать — он опубликован И файл загружен.
  *
  * Одного `published` мало: ссылку на файл ставит портал, и у документа без
  * файла её просто нет. Схема портала это же требует проверкой
@@ -54,14 +54,13 @@ export const docHref = (d: Doc, requestHref: string = REQUEST_HREF): string =>
   isOpen(d) ? d.file! : requestHref;
 
 /**
- * Атрибуты внешней ссылки — только у открываемых.
+ * Атрибуты ссылки на файл — только у скачиваемых.
  *
- * Файл показывается в новой вкладке: документы смотрят подряд, и уводить
- * с перечня незачем. `rel` обязателен — без него открытая вкладка получает
- * доступ к `window.opener`.
+ * Backend отдаёт файл с `Content-Disposition: attachment`, а `download`
+ * помогает браузеру не превращать кнопку в просмотрщик PDF.
  */
 export const linkTarget = (d: Doc) =>
-  isOpen(d) ? ({ target: "_blank", rel: "noopener" } as const) : {};
+  isOpen(d) ? ({ download: "" } as const) : {};
 
 /**
  * Бейдж доступа. Показывает состояние файла, а не намерение редактора.
@@ -70,7 +69,7 @@ export const linkTarget = (d: Doc) =>
  * PDF (StorageLimits.contentType знает про png, jpeg, webp, svg), а перечень
  * не отдаёт тип файла — значит, слово «PDF» было бы утверждением, которого
  * сайт проверить не может. «Файл» утверждает ровно то, что правда: он выложен
- * и откроется по нажатию.
+ * и скачается по нажатию.
  *
  * У строки без файла бейдж не обещает скачивание. «Уточняется» остаётся как
  * есть — это статус самого документа (V27: регистрационное удостоверение
@@ -95,14 +94,14 @@ export const badgeIsOk = (d: Doc): boolean => isOpen(d);
  */
 export const actionLabel = (
   d: Doc,
-  labels: { open: string; request: string } = { open: "Открыть", request: "Запросить" },
+  labels: { open: string; request: string } = { open: "Скачать", request: "Запросить" },
 ): string => (isOpen(d) ? labels.open : labels.request);
 
 /**
  * Подпись под названием на карточке изделия: раздел перечня и судьба нажатия.
  */
 export const docNote = (d: Doc): string => {
-  if (isOpen(d)) return `${d.group} · открывается в новой вкладке`;
+  if (isOpen(d)) return `${d.group} · скачивается с сайта`;
   if (d.access === "Уточняется") return `${d.group} · статус документа согласуется`;
   return `${d.group} · выдаётся по запросу`;
 };

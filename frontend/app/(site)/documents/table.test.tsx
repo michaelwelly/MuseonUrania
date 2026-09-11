@@ -28,7 +28,7 @@ const ФАЙЛ = "http://portal/api/public/v1/documents/vedal-certificate-confor
 const адрес = (a: HTMLElement) => new URL(a.getAttribute("href")!, "http://vedal.test");
 
 describe("перечень документов", () => {
-  it("строка с файлом ведёт на файл и подписана «Открыть»", () => {
+  it("строка с файлом ведёт на файл и подписана «Скачать»", () => {
     render(
       <DocumentsTable
         documents={[
@@ -44,8 +44,9 @@ describe("перечень документов", () => {
 
     const строка = screen.getByRole("link", { name: /Сертификат соответствия/ });
     expect(строка).toHaveAttribute("href", ФАЙЛ);
-    expect(строка).toHaveAttribute("target", "_blank");
-    expect(строка).toHaveTextContent("Открыть");
+    expect(строка).toHaveAttribute("download");
+    expect(строка).not.toHaveAttribute("target");
+    expect(строка).toHaveTextContent("Скачать");
     expect(строка).toHaveTextContent("Файл");
   });
 

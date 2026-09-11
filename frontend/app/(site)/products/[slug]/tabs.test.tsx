@@ -41,13 +41,14 @@ async function открытьВкладку(documents: Doc[]) {
 }
 
 describe("документы к изделию", () => {
-  it("выложенный файл открывается ссылкой на портал, а не формой", async () => {
+  it("выложенный файл скачивается ссылкой на портал, а не ведёт в форму", async () => {
     await открытьВкладку([doc({ published: true, file: ФАЙЛ })]);
 
     const ссылка = screen.getByRole("link", { name: /VEDAL R1/ });
     expect(ссылка).toHaveAttribute("href", ФАЙЛ);
-    expect(ссылка).toHaveAttribute("target", "_blank");
-    expect(ссылка).toHaveAttribute("rel", expect.stringContaining("noopener"));
+    expect(ссылка).toHaveAttribute("download");
+    expect(ссылка).not.toHaveAttribute("target");
+    expect(ссылка).not.toHaveAttribute("rel");
   });
 
   it("документ без файла ведёт в форму с темой и изделием", async () => {

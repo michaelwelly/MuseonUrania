@@ -136,28 +136,21 @@ class DocumentsApiTest extends PostgresTestBase {
                 .allSatisfy(d -> assertThat(d.getSensitivity()).isEqualTo("public"));
     }
 
-    // Открывать в браузере можно ТОЛЬКО pdf.
-    //
-    // За документом приходят посмотреть, поэтому pdf отдаётся с inline
-    // и открывается прямо во вкладке. Но inline на что угодно — дыра:
-    // тип файла при загрузке не ограничен, а StorageLimits.contentType
-    // умеет image/svg+xml. SVG — это документ со скриптами, и показанный
-    // inline он выполняет их в нашем источнике.
-    //
-    // Проверяются обе стороны правила. Половина, проверяющая только pdf,
-    // зеленела бы и после того, как inline поставят всему подряд.
+    // Публичная кнопка обещает скачивание файла, а не просмотр во вкладке.
+    // PDF тоже отдаётся вложением: иначе в одном браузере человек видит файл,
+    // а в другом — встроенный просмотрщик и думает, что скачивание сломалось.
     @Test
-    void onlyPdfOpensInTheBrowser() throws Exception {
+    void publicPdfIsDownloadedAsAttachment() throws Exception {
         publishWithFile("vedal-product-catalog", "probe.pdf");
 
         mvc.perform(get("/api/public/v1/documents/vedal-product-catalog/file"))
                 .andExpect(status().isOk())
-                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("inline")))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("attachment")))
                 .andExpect(header().string("X-Content-Type-Options", "nosniff"));
     }
 
     @Test
-    void anythingButPdfIsDownloadedAndNotShown() throws Exception {
+    void anythingButPdfIsAlsoDownloadedAsAttachment() throws Exception {
         publishWithFile("vedal-product-catalog", "probe.svg");
 
         mvc.perform(get("/api/public/v1/documents/vedal-product-catalog/file"))

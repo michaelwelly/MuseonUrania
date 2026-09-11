@@ -75,7 +75,7 @@ export default function DocumentsTable({ documents }: { documents: Doc[] }) {
               <span className={styles.cell}>
                 <span className={styles.docTitle}>{d.title}</span>
                 {/* Что произойдёт по нажатию — словами. Без этой строки
-                    «Запросить» отличается от «Открыть» только адресом
+                    «Запросить» отличается от «Скачать» только адресом
                     в статусной строке браузера. Это подпись интерфейса,
                     поэтому она приходит из словаря, а не из содержания. */}
                 <span className={styles.action}>{actionLabel(d, strings.documents)}</span>

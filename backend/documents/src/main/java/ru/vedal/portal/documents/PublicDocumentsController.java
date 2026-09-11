@@ -99,24 +99,11 @@ public class PublicDocumentsController {
         var download = documents.download(slug);
         var stored = download.stored();
 
-        // PDF открываем в браузере, остальное отдаём файлом.
-        //
-        // Для посетителя «открыть» и «скачать» — разные вещи: за датащитом
-        // и сертификатом приходят посмотреть, а не пополнить папку
-        // «Загрузки». Раньше здесь стоял attachment на всё подряд, и любой
-        // документ уезжал на диск, даже если человеку хватило бы взгляда.
-        //
-        // Но inline на ЧТО УГОДНО — это дыра, а не удобство. Тип файла при
-        // загрузке не ограничен ничем (DocumentEditor.uploadFile проверяет
-        // только размер), а StorageLimits.contentType умеет отдавать
-        // image/svg+xml. SVG — это документ со скриптами внутри, и
-        // показанный inline он выполняет их в НАШЕМ источнике: с нашими
-        // куками и нашим доменом. Поэтому inline ровно для application/pdf,
-        // всё прочее по-прежнему attachment.
-        var inline = MediaType.APPLICATION_PDF_VALUE.equals(stored.contentType());
-        var disposition = inline
-                ? ContentDisposition.inline().filename(download.filename()).build()
-                : ContentDisposition.attachment().filename(download.filename()).build();
+        // Публичная кнопка обещает именно файл. Даже PDF отдаём вложением:
+        // так поведение одинаковое на странице документов, в карточке изделия
+        // и в разных браузерах, где inline-просмотр часто выглядит как
+        // «скачивание не сработало».
+        var disposition = ContentDisposition.attachment().filename(download.filename()).build();
 
         // Файлы не кэшируем публично: состав опубликованного меняется
         // согласованием, и снятая с публикации редакция не должна жить
