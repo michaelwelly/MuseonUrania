@@ -34,6 +34,7 @@ export default async function DocumentsScreen() {
         crumbs={[{ label: strings.crumbs.home, href: "/" }, { label: strings.crumbs.documents }]}
         title={documentsHero.title}
         lead={documentsHero.lead}
+        currentPath="/documents/"
         pattern={163}
       />
 

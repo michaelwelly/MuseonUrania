@@ -7,6 +7,11 @@ import ImageGuard from "@/components/ImageGuard";
 import LogoPreloader from "@/components/LogoPreloader";
 import Motion from "@/components/Motion";
 import { fontVariables } from "@/app/fonts";
+import {
+  JsonLd,
+  organizationStructuredData,
+  websiteStructuredData,
+} from "@/lib/structured-data";
 
 // Оболочка публичного сайта: `<html>`, `<body>` и всё, что стоит на каждой
 // странице.
@@ -29,6 +34,8 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
     // расхождение внутри страницы отловится как обычно.
     <html lang="ru" className={fontVariables} suppressHydrationWarning>
       <body suppressHydrationWarning>
+        <JsonLd id="vedal-organization-jsonld" data={organizationStructuredData()} />
+        <JsonLd id="vedal-website-jsonld" data={websiteStructuredData()} />
         <LogoPreloader />
         <Motion />
         <div className="frame">
