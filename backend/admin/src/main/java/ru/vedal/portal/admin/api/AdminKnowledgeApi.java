@@ -72,7 +72,7 @@ public class AdminKnowledgeApi {
             String kind,
 
             @Schema(description = "Идентификатор материала у его модуля.",
-                    example = "opisanie-izdeliya-vedal-r1-r2")
+                    example = "vedal-r1-product-sheet")
             String externalId,
 
             @Schema(description = "Название, которое показывается под ответом.")

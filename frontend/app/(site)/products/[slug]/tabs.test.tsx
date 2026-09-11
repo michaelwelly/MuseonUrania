@@ -20,8 +20,8 @@ const product: Product = {
 };
 
 const doc = (over: Partial<Doc> = {}): Doc => ({
-  slug: "opisanie-izdeliya-vedal-r1-r2",
-  title: "Описание изделия",
+  slug: "vedal-r1-product-sheet",
+  title: "Система реанимационная VEDAL R1",
   group: "Техническая документация",
   product: "VEDAL R1",
   productSlug: "vedal-r1",
@@ -30,7 +30,7 @@ const doc = (over: Partial<Doc> = {}): Doc => ({
   ...over,
 });
 
-const ФАЙЛ = "http://portal/api/public/v1/documents/opisanie-izdeliya-vedal-r1-r2/file";
+const ФАЙЛ = "http://portal/api/public/v1/documents/vedal-r1-product-sheet/file";
 
 /** Адрес ссылки разобранным: порядок параметров к делу не относится. */
 const адрес = (a: HTMLElement) => new URL(a.getAttribute("href")!, "http://vedal.test");
@@ -44,7 +44,7 @@ describe("документы к изделию", () => {
   it("выложенный файл открывается ссылкой на портал, а не формой", async () => {
     await открытьВкладку([doc({ published: true, file: ФАЙЛ })]);
 
-    const ссылка = screen.getByRole("link", { name: /Описание изделия/ });
+    const ссылка = screen.getByRole("link", { name: /VEDAL R1/ });
     expect(ссылка).toHaveAttribute("href", ФАЙЛ);
     expect(ссылка).toHaveAttribute("target", "_blank");
     expect(ссылка).toHaveAttribute("rel", expect.stringContaining("noopener"));
@@ -53,7 +53,7 @@ describe("документы к изделию", () => {
   it("документ без файла ведёт в форму с темой и изделием", async () => {
     await открытьВкладку([doc()]);
 
-    const ссылка = screen.getByRole("link", { name: /Описание изделия/ });
+    const ссылка = screen.getByRole("link", { name: /VEDAL R1/ });
     // next/link в jsdom отдаёт адрес без хвостового слэша — его дописывает
     // сборка (trailingSlash). Проверяем маршрут, а не форму записи.
     expect(адрес(ссылка).pathname).toMatch(/^\/contacts\/?$/);
@@ -95,7 +95,7 @@ describe("документы к изделию", () => {
     const названия = screen
       .getAllByRole("link")
       .map((a) => a.textContent ?? "")
-      .filter((t) => t.includes("удостоверение") || t.includes("Описание"));
+      .filter((t) => t.includes("удостоверение") || t.includes("VEDAL R1"));
     expect(названия).toHaveLength(2);
     expect(названия[0]).toContain("Регистрационное удостоверение");
     expect(названия[0]).toContain("согласуется");

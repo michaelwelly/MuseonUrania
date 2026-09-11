@@ -90,7 +90,7 @@ public class PublicDocumentsController {
     @GetMapping("/documents/{slug}/file")
     public ResponseEntity<InputStreamResource> file(
             @Parameter(description = "Идентификатор документа в URL.",
-                    example = "opisanie-izdeliya-vedal-r1-r2")
+                    example = "vedal-r1-product-sheet")
             @PathVariable String slug,
             HttpServletRequest http) {
         if (!rateLimit.allow(http.getRemoteAddr())) {

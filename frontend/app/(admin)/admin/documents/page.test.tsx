@@ -31,9 +31,9 @@ function row(overrides: Record<string, unknown>) {
   return {
     id: "id-1",
     version: 3,
-    slug: "licenziya",
-    title: "Лицензия на производство",
-    group: "Лицензирование",
+    slug: "vedal-product-catalog",
+    title: "Каталог продукции VEDAL",
+    group: "Коммерческие материалы",
     subject: "ООО «ВЕДАЛ»",
     productSlug: null,
     sensitivity: "public",
@@ -61,7 +61,7 @@ beforeEach(() => {
   vi.mocked(knowledge).mockResolvedValue(ИНДЕКС_ВЫКЛЮЧЕН as never);
   vi.mocked(documents).mockResolvedValue([ONE, TWO] as never);
   vi.mocked(documentVocabulary).mockResolvedValue({
-    groups: ["Лицензирование", "Система качества"],
+    groups: ["Техническая документация", "Система качества", "Коммерческие материалы", "О компании"],
     sensitivities: ["public", "internal", "confidential"],
     access: ["pdf", "on_request", "pending"],
   } as never);
@@ -72,22 +72,22 @@ describe("страница документов", () => {
     const user = userEvent.setup();
     render(<DocumentsPage />);
 
-    await user.click(await screen.findByRole("button", { name: "Правка карточки: Лицензия на производство" }));
-    expect(await screen.findByDisplayValue("licenziya")).toBeInTheDocument();
+    await user.click(await screen.findByRole("button", { name: "Правка карточки: Каталог продукции VEDAL" }));
+    expect(await screen.findByDisplayValue("vedal-product-catalog")).toBeInTheDocument();
 
     // Переключаемся на второй документ, не закрывая карточку.
     await user.click(screen.getByRole("button", { name: "Правка карточки: Сертификат ISO 13485" }));
 
     await waitFor(() => expect(screen.getByDisplayValue("sertifikat")).toBeInTheDocument());
-    expect(screen.queryByDisplayValue("licenziya")).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue("vedal-product-catalog")).not.toBeInTheDocument();
   });
 
   it("сохраняет второй документ его собственными полями и его версией", async () => {
     const user = userEvent.setup();
     render(<DocumentsPage />);
 
-    await user.click(await screen.findByRole("button", { name: "Правка карточки: Лицензия на производство" }));
-    await screen.findByDisplayValue("licenziya");
+    await user.click(await screen.findByRole("button", { name: "Правка карточки: Каталог продукции VEDAL" }));
+    await screen.findByDisplayValue("vedal-product-catalog");
     await user.click(screen.getByRole("button", { name: "Правка карточки: Сертификат ISO 13485" }));
     await screen.findByDisplayValue("sertifikat");
 
@@ -119,7 +119,7 @@ describe("индекс Ведалины на странице документо
   it("не предлагает кнопку, пока индексация выключена", async () => {
     render(<DocumentsPage />);
 
-    expect(await screen.findByText(/Ведалина отвечает поиском по словам/)).toBeInTheDocument();
+    expect(await screen.findByText(/Индекс по PDF пока выключен/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Переиндексировать" })).not.toBeInTheDocument();
     // «Не в индексе» верно у всех документов сразу и потому не значит ничего.
     expect(screen.queryByText("не в индексе Ведалины")).not.toBeInTheDocument();
@@ -133,8 +133,8 @@ describe("индекс Ведалины на странице документо
       rows: [
         {
           kind: "document",
-          externalId: "licenziya",
-          title: "Лицензия на производство",
+          externalId: "vedal-product-catalog",
+          title: "Каталог продукции VEDAL",
           chunks: 4,
           indexedAt: "2026-09-08T10:00:00Z",
         },

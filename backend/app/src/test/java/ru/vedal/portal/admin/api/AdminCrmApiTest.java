@@ -324,14 +324,14 @@ class AdminCrmApiTest extends PostgresTestBase {
     @WithMockUser(username = "editor", roles = "PORTAL_ADMIN")
     void approvedDocumentIsAttachedAndDetached() throws Exception {
         var dealId = dealFromLead("crm-attach-1", "sales");
-        var documentId = approveDocument("katalog-produkcii-2026");
+        var documentId = approveDocument("vedal-product-catalog");
 
         mvc.perform(post("/api/admin/v1/deals/" + dealId + "/attachments")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"documentId\":\"" + documentId + "\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.attachments.length()").value(1))
-                .andExpect(jsonPath("$.attachments[0].slug").value("katalog-produkcii-2026"))
+                .andExpect(jsonPath("$.attachments[0].slug").value("vedal-product-catalog"))
                 .andExpect(jsonPath("$.attachments[0].attachedBy").value("editor"));
 
         mvc.perform(delete("/api/admin/v1/deals/" + dealId + "/attachments/" + documentId))
@@ -343,7 +343,7 @@ class AdminCrmApiTest extends PostgresTestBase {
     @WithMockUser(username = "editor", roles = "PORTAL_ADMIN")
     void sameDocumentIsNotAttachedTwice() throws Exception {
         var dealId = dealFromLead("crm-attach-2", "sales");
-        var documentId = approveDocument("katalog-produkcii-2026");
+        var documentId = approveDocument("vedal-product-catalog");
         var body = "{\"documentId\":\"" + documentId + "\"}";
 
         mvc.perform(post("/api/admin/v1/deals/" + dealId + "/attachments")
@@ -360,10 +360,11 @@ class AdminCrmApiTest extends PostgresTestBase {
     @WithMockUser(username = "editor", roles = "PORTAL_ADMIN")
     void unapprovedDocumentCannotBeAttached() throws Exception {
         var dealId = dealFromLead("crm-attach-3", "sales");
-        // Ни один документ в сиде не загружен и не согласован — берём любой.
-        var document = documents.findBySlug("opisanie-izdeliya-vedal-r1-r2").orElseThrow();
+        var document = documents.findBySlug("vedal-r1-product-sheet").orElseThrow();
+        document.setPublished(false);
+        documents.saveAndFlush(document);
         assertThat(document.isPublished())
-                .as("тест держится на том, что документ не согласован")
+                .as("тест держится на том, что документ снят с публикации")
                 .isFalse();
 
         mvc.perform(post("/api/admin/v1/deals/" + dealId + "/attachments")

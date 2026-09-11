@@ -39,21 +39,30 @@ class DocumentsApiTest extends PostgresTestBase {
     // страница «Документы» так и устроена. Но ссылки на файл быть не должно.
     @Test
     void listedDocumentsHaveNoFileLinkUntilPublished() throws Exception {
+        var document = documents.findBySlug("vedal-product-catalog").orElseThrow();
+        document.setPublished(false);
+        documents.saveAndFlush(document);
+
         mvc.perform(get("/api/public/v1/documents"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].slug").exists())
-                .andExpect(jsonPath("$[?(@.published == true)]").doesNotExist())
-                .andExpect(jsonPath("$[?(@.fileUrl != null)]").doesNotExist());
+                .andExpect(jsonPath("$[?(@.slug == 'vedal-product-catalog')].published").value(false))
+                .andExpect(jsonPath("$[?(@.slug == 'vedal-product-catalog')].fileUrl")
+                        .value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.nullValue())));
     }
 
     @Test
     void closedFileIsNotFoundAndTheAttemptIsJournaled() throws Exception {
-        mvc.perform(get("/api/public/v1/documents/katalog-produkcii-2026/file"))
+        var document = documents.findBySlug("vedal-product-catalog").orElseThrow();
+        document.setPublished(false);
+        documents.saveAndFlush(document);
+
+        mvc.perform(get("/api/public/v1/documents/vedal-product-catalog/file"))
                 .andExpect(status().isNotFound());
 
         // Запись делается в отдельной транзакции: запрос заканчивается
         // исключением, и в общей транзакции она откатилась бы вместе с ним.
-        assertThat(audit.findBySubjectAndSubjectIdOrderByAtDesc("document", "katalog-produkcii-2026"))
+        assertThat(audit.findBySubjectAndSubjectIdOrderByAtDesc("document", "vedal-product-catalog"))
                 .extracting(e -> e.getAction())
                 .contains("document.access.denied");
     }
@@ -71,7 +80,7 @@ class DocumentsApiTest extends PostgresTestBase {
     // публично не размещаются. Правило закрыто в схеме, а не в коде админки.
     @Test
     void internalDocumentCannotBecomePublic() {
-        var document = documents.findBySlug("opisanie-izdeliya-vedal-r1-r2").orElseThrow();
+        var document = documents.findBySlug("vedal-r1-product-sheet").orElseThrow();
         document.setSensitivity("internal");
         document.setStorageKey("probe.pdf");
         // listed выключен намеренно: с ним первым сработал бы
@@ -87,7 +96,7 @@ class DocumentsApiTest extends PostgresTestBase {
 
     @Test
     void publishingWithoutFileIsRejectedBySchema() {
-        var document = documents.findBySlug("katalog-produkcii-2026").orElseThrow();
+        var document = documents.findBySlug("vedal-product-catalog").orElseThrow();
         document.setStorageKey(null);
         document.setListed(true);
         document.setPublished(true);
@@ -109,7 +118,7 @@ class DocumentsApiTest extends PostgresTestBase {
     // Тот же перечень читает ассистент, поэтому утечка попадала бы и в ответы.
     @Test
     void confidentialDocumentNeverReachesThePublicListing() {
-        var document = documents.findBySlug("katalog-produkcii-2026").orElseThrow();
+        var document = documents.findBySlug("vedal-product-catalog").orElseThrow();
         document.setSensitivity("confidential");
         document.setListed(true);
 
@@ -127,9 +136,6 @@ class DocumentsApiTest extends PostgresTestBase {
                 .allSatisfy(d -> assertThat(d.getSensitivity()).isEqualTo("public"));
     }
 
-    // Двенадцать, а не десять: V27 добавила регистрацию VEDAL R2, которая
-    // потерялась при разделении изделия «VEDAL R1, R2» на два, и членский
-    // билет ТПП в новой группе «О компании».
     // Открывать в браузере можно ТОЛЬКО pdf.
     //
     // За документом приходят посмотреть, поэтому pdf отдаётся с inline
@@ -142,9 +148,9 @@ class DocumentsApiTest extends PostgresTestBase {
     // зеленела бы и после того, как inline поставят всему подряд.
     @Test
     void onlyPdfOpensInTheBrowser() throws Exception {
-        publishWithFile("katalog-produkcii-2026", "probe.pdf");
+        publishWithFile("vedal-product-catalog", "probe.pdf");
 
-        mvc.perform(get("/api/public/v1/documents/katalog-produkcii-2026/file"))
+        mvc.perform(get("/api/public/v1/documents/vedal-product-catalog/file"))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("inline")))
                 .andExpect(header().string("X-Content-Type-Options", "nosniff"));
@@ -152,9 +158,9 @@ class DocumentsApiTest extends PostgresTestBase {
 
     @Test
     void anythingButPdfIsDownloadedAndNotShown() throws Exception {
-        publishWithFile("katalog-produkcii-2026", "probe.svg");
+        publishWithFile("vedal-product-catalog", "probe.svg");
 
-        mvc.perform(get("/api/public/v1/documents/katalog-produkcii-2026/file"))
+        mvc.perform(get("/api/public/v1/documents/vedal-product-catalog/file"))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("attachment")))
                 .andExpect(header().string("X-Content-Type-Options", "nosniff"));
@@ -178,10 +184,13 @@ class DocumentsApiTest extends PostgresTestBase {
 
     @Test
     void seedMatchesTheDocumentsPage() {
-        assertThat(documents.findAll()).hasSize(12);
-        assertThat(documents.findByListedTrueOrderByDocGroupAscTitleAsc()).hasSize(12);
+        assertThat(documents.findAll()).hasSize(8);
+        assertThat(documents.findByListedTrueOrderByDocGroupAscTitleAsc()).hasSize(8);
         assertThat(documents.findAll())
-                .as("ни один документ ещё не согласован к публикации")
-                .allSatisfy(d -> assertThat(d.isPublished()).isFalse());
+                .as("финальный пакет согласован к публикации")
+                .allSatisfy(d -> {
+                    assertThat(d.isPublished()).isTrue();
+                    assertThat(d.getStorageKey()).endsWith(".pdf");
+                });
     }
 }

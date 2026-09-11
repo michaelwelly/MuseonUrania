@@ -289,7 +289,8 @@ class AdminApiTest extends PostgresTestBase {
     @Test
     @WithMockUser(username = "editor", roles = "PORTAL_ADMIN")
     void internalDocumentIsRefusedPublicationWithAReason() throws Exception {
-        var document = documents.findBySlug("opisanie-izdeliya-vedal-r1-r2").orElseThrow();
+        var document = documents.findBySlug("vedal-r1-product-sheet").orElseThrow();
+        document.setPublished(false);
         document.setSensitivity("internal");
         // Документ из сида стоит в перечне, а закрытому там не место
         // (document_listed_only_public, V21): снимаем отметку вместе
@@ -305,18 +306,27 @@ class AdminApiTest extends PostgresTestBase {
     @Test
     @WithMockUser(username = "editor", roles = "PORTAL_ADMIN")
     void documentListExplainsWhyPublicationIsBlocked() throws Exception {
+        var document = documents.findBySlug("vedal-product-catalog").orElseThrow();
+        document.setStorageKey(null);
+        document.setFileSize(null);
+        document.setPublished(false);
+        documents.saveAndFlush(document);
+
         mvc.perform(get("/api/admin/v1/documents"))
                 .andExpect(status().isOk())
-                // Ни один документ в сиде не загружен, значит у всех одна
-                // и та же причина: файла нет.
-                .andExpect(jsonPath("$[0].publishBlockedBy")
-                        .value(org.hamcrest.Matchers.containsString("Файл не загружен")));
+                .andExpect(jsonPath("$[?(@.slug == 'vedal-product-catalog')].publishBlockedBy")
+                        .value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("Файл не загружен"))));
     }
 
     @Test
     @WithMockUser(username = "editor", roles = "PORTAL_ADMIN")
     void uploadedFileMakesPublicationPossible() throws Exception {
-        var document = documents.findBySlug("katalog-produkcii-2026").orElseThrow();
+        var document = documents.findBySlug("vedal-product-catalog").orElseThrow();
+        document.setStorageKey(null);
+        document.setFileSize(null);
+        document.setPublished(false);
+        documents.saveAndFlush(document);
+
         var pdf = new MockMultipartFile("file", "katalog.pdf", "application/pdf",
                 "%PDF-1.7 проба".getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
@@ -332,7 +342,7 @@ class AdminApiTest extends PostgresTestBase {
                 .andExpect(jsonPath("$.published").value(true))
                 .andExpect(jsonPath("$.approvedBy").value("editor"));
 
-        mvc.perform(get("/api/public/v1/documents/katalog-produkcii-2026/file"))
+        mvc.perform(get("/api/public/v1/documents/vedal-product-catalog/file"))
                 .andExpect(status().isOk());
     }
 
