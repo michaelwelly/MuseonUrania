@@ -106,9 +106,10 @@ const html = `<!doctype html><meta charset="utf-8"><style>
   .brand { display: flex; align-items: center; gap: 16px }
   .brand img { height: 56px; width: auto }
   .brand span { font-family: Unbounded, system-ui; font-weight: 600; font-size: 34px; letter-spacing: 0.02em }
-  h1 { font-family: Unbounded, system-ui; font-weight: 500; font-size: 60px; line-height: 1.07;
-       letter-spacing: -0.03em; max-width: 14ch }
-  .lead { margin-top: 20px; font-size: 23px; line-height: 1.45; color: rgba(255,255,255,0.72); max-width: 30ch }
+  .eyebrow { font-size: 22px; color: #29D35D; margin-bottom: 18px; letter-spacing: 0.16em; text-transform: uppercase }
+  h1 { font-family: Unbounded, system-ui; font-weight: 500; font-size: 58px; line-height: 1.08;
+       max-width: 15ch }
+  .lead { margin-top: 22px; font-size: 24px; line-height: 1.42; color: rgba(255,255,255,0.76); max-width: 34ch }
   .foot { display: flex; align-items: baseline; gap: 22px; font-size: 20px; color: rgba(255,255,255,0.6) }
   .foot b { color: #fff; font-weight: 600; font-size: 22px }
 </style>
@@ -116,8 +117,9 @@ const html = `<!doctype html><meta charset="utf-8"><style>
 <div class="content">
   <div class="brand"><img src="data:image/png;base64,${знак}" alt=""><span>VEDAL</span></div>
   <div>
-    <h1>Медицинское оборудование, сделанное в России</h1>
-    <p class="lead">Инкубаторы, реанимационные системы и терморегуляция для неонатологии и реанимации</p>
+    <p class="eyebrow">Официальный сайт</p>
+    <h1>Медицинское оборудование VEDAL</h1>
+    <p class="lead">Инкубаторы, реанимационные системы и терморегуляция для неонатологии, реанимации и интенсивной терапии</p>
   </div>
   <div class="foot"><b>vedal-med.ru</b><span>Екатеринбург · собственное производство</span></div>
 </div>`;
