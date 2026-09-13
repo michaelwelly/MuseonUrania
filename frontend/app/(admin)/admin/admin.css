@@ -5667,6 +5667,80 @@ a.recent__row:hover {
 
 /* ————— сотрудники ————— */
 
+.staff-create {
+  margin-bottom: var(--s5);
+  padding: var(--s5);
+  border: 1px solid var(--state-ok-line);
+  border-left: 4px solid var(--green);
+  background: var(--surface);
+}
+
+.staff-create__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s4);
+  margin-bottom: var(--s4);
+}
+
+.staff-create__head h2,
+.staff-create__head p {
+  margin: 0;
+}
+
+.staff-create__head h2 {
+  font-size: var(--t-h3);
+}
+
+.staff-create__head p {
+  margin-top: var(--s1);
+  color: var(--muted);
+  font-size: var(--t-small);
+}
+
+.staff-create__fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 var(--s4);
+}
+
+.staff-create__password {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--s2);
+}
+
+.staff-create__roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3) var(--s5);
+  margin: 0;
+  padding: var(--s3) 0 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+.staff-create__roles legend {
+  width: 100%;
+  margin-bottom: var(--s2);
+  font-size: var(--t-small);
+  font-weight: 600;
+}
+
+.staff-create__roles .field--row {
+  margin: 0;
+}
+
+@media (max-width: 760px) {
+  .staff-create__fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .staff-create__password {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .people {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));

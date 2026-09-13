@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.time.Instant;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -23,9 +24,9 @@ import java.util.Map;
  * для которого выписан токен админки, но по потоку client_credentials:
  * пользователь тут ни при чём, портал спрашивает от своего имени.
  *
- * Прав нужно ровно одно — `view-users` из `realm-management`. Больше давать
- * нельзя: с `manage-users` утёкший секрет клиента означает не «прочитали
- * список сотрудников», а «завели себе учётную запись администратора».
+ * Для чтения нужен `view-users`, для создания сотрудников и назначения
+ * портальных ролей — `manage-users` из `realm-management`. Набор ролей
+ * ограничен списком {@link StaffDirectory#PORTAL_ROLES}.
  *
  * Два адреса Keycloak, и это та же история, что с издателем и JWKS
  * в KeycloakDecoderConfig: внутренний адрес для запросов из docker-сети,
@@ -85,6 +86,41 @@ class KeycloakStaffDirectory implements StaffDirectory {
     }
 
     @Override
+    public void create(String login, String name, String temporaryPassword, List<String> roles) {
+        rejectForeignRoles(roles);
+
+        var token = serviceToken();
+        var account = Map.<String, Object>of(
+                "username", login,
+                "firstName", name,
+                "enabled", true,
+                "credentials", List.of(Map.of(
+                        "type", "password",
+                        "value", temporaryPassword,
+                        "temporary", true)));
+
+        try {
+            http.post()
+                    .uri(base + "/admin/realms/" + realm + "/users")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(account)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (HttpClientErrorException.Conflict e) {
+            throw new Rejected("Логин уже занят: " + login);
+        } catch (HttpClientErrorException.Forbidden e) {
+            throw new Rejected("Keycloak не разрешил создать сотрудника. "
+                    + "Проверьте право manage-users у служебной учётной записи.");
+        }
+
+        // Назначаем только роли портала тем же защищённым методом, который
+        // используется при правке существующей карточки.
+        assignRoles(login, roles);
+        readAt = Instant.EPOCH;
+    }
+
+    @Override
     public void assignRoles(String login, List<String> roles) {
         // Ограничение №2 из StaffDirectory: только портальные роли.
         //
@@ -93,11 +129,7 @@ class KeycloakStaffDirectory implements StaffDirectory {
         // роль realm'а, включая realm-admin. Порт обещает, что через него
         // чужой ролью не распорядиться, и обещание должно держаться
         // независимо от того, кто позовёт его завтра.
-        var чужие = roles.stream().filter(r -> !PORTAL_ROLES.contains(r)).toList();
-        if (!чужие.isEmpty()) {
-            throw new Rejected("Портал распоряжается только своими ролями. "
-                    + "Не его: " + String.join(", ", чужие));
-        }
+        rejectForeignRoles(roles);
 
         var token = serviceToken();
         var userId = userId(token, login);
@@ -145,6 +177,14 @@ class KeycloakStaffDirectory implements StaffDirectory {
         // показывала бы прежние роли — то есть человек нажал бы кнопку
         // и не увидел результата.
         readAt = Instant.EPOCH;
+    }
+
+    private static void rejectForeignRoles(List<String> roles) {
+        var foreign = roles.stream().filter(r -> !PORTAL_ROLES.contains(r)).toList();
+        if (!foreign.isEmpty()) {
+            throw new Rejected("Портал распоряжается только своими ролями. "
+                    + "Не его: " + String.join(", ", foreign));
+        }
     }
 
     private String userId(String token, String login) {

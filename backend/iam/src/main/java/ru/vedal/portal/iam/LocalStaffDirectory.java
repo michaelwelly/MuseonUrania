@@ -31,6 +31,11 @@ class LocalStaffDirectory implements StaffDirectory {
     }
 
     @Override
+    public void create(String login, String name, String temporaryPassword, List<String> roles) {
+        throw new Rejected("Создание сотрудников доступно в рабочем режиме Keycloak.");
+    }
+
+    @Override
     public void assignRoles(String login, List<String> roles) {
         // Запасной режим — это одна учётная запись с полными правами:
         // роли у неё не хранятся нигде, их выдаёт SecurityConfig списком.

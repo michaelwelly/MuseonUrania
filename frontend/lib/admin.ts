@@ -703,6 +703,17 @@ export type StaffMember = {
 
 export const staff = () => get<StaffMember[]>("/staff");
 
+export type NewStaffMember = {
+  login: string;
+  name: string;
+  temporaryPassword: string;
+  roles: string[];
+};
+
+/** Создать сотрудника с временным паролем, который меняется при первом входе. */
+export const createStaff = (member: NewStaffMember) =>
+  post<StaffMember[]>("/staff", member);
+
 /**
  * Выдать сотруднику РОВНО ЭТОТ набор портальных ролей.
  *

@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import {
   assignRoles,
   chatsAll,
+  createStaff,
   deals,
   leads,
   staff as loadStaff,
@@ -17,19 +18,21 @@ import {
 import { plural } from "@/lib/plural";
 import { Avatar } from "../Avatar";
 import { may } from "../roles";
-import { Empty, Note, useLoad } from "../ui";
+import { Empty, Field, Note, fieldErrors, message, useLoad } from "../ui";
 import { useWho } from "../who";
 import { PORTAL_ROLES } from "../roles";
 
+const ROLE_LABELS: Record<string, string> = {
+  "portal-admin": "Администратор",
+  "portal-sales": "Продажи",
+  "portal-production": "Содержимое сайта",
+};
+
 // Сотрудники.
 //
-// Список приходит из провайдера идентичности (`staff()`). Завести человека,
-// отключить его и сменить пароль — по-прежнему консоль Keycloak; кнопки
-// «Добавить сотрудника» здесь нет и не будет.
-//
-// Меняется ровно одно: набор ПОРТАЛЬНЫХ ролей. Раньше и это жило только
-// в консоли, и вопрос «почему Петров не видит заявок» решался походом
-// в другую систему.
+// Список приходит из провайдера идентичности (`staff()`). Администратор
+// создаёт здесь учётную запись с временным паролем и назначает роли.
+// Отключение и сброс пароля остаются в системе входа компании.
 //
 // Редактор показывается только администратору и только на чужой карточке.
 // Своя заперта не интерфейсом, а порталом: он отказывает на любую попытку
@@ -63,21 +66,45 @@ export default function StaffPage() {
   const who = useWho();
   const { data, error, loading, reload, setError } = useLoad<StaffMember[]>(loadStaff);
   const правлю = may(who, "admin");
+  const [создаю, setСоздаю] = useState(false);
+  const [готово, setГотово] = useState<string | null>(null);
 
   return (
     <>
       <div className="admin-head">
         <h1>Сотрудники</h1>
+        {правлю && (
+          <button
+            type="button"
+            className="btn btn--primary"
+            aria-expanded={создаю}
+            onClick={() => setСоздаю((open) => !open)}
+          >
+            {создаю ? "Закрыть форму" : "Добавить сотрудника"}
+          </button>
+        )}
       </div>
 
       <p className="admin-hint">
-        Список приходит из системы входа компании. Завести человека, отключить учётную
-        запись и сменить пароль — работа консоли Keycloak. Здесь меняются только
-        портальные роли: ими решается, что сотрудник видит в админке.
+        Список приходит из системы входа компании. Здесь можно создать сотрудника
+        с временным паролем и назначить портальные роли: ими решается, что он видит
+        в админке. Отключение учётной записи и сброс пароля остаются в системе входа.
         {правлю && " Свои роли через портал не меняются — попросите другого администратора."}
       </p>
 
       <Note kind="error">{error}</Note>
+      <Note kind="ok">{готово}</Note>
+
+      {создаю && (
+        <CreateStaff
+          created={(login) => {
+            setГотово(`Сотрудник ${login} создан. При первом входе он задаст новый пароль.`);
+            setСоздаю(false);
+            reload();
+          }}
+          onError={setError}
+        />
+      )}
       {loading && !data && <p className="muted">Загружаем…</p>}
       {data?.length === 0 && <Empty>В справочнике никого нет.</Empty>}
 
@@ -96,6 +123,90 @@ export default function StaffPage() {
         </div>
       )}
     </>
+  );
+}
+
+function CreateStaff({
+  created,
+  onError,
+}: {
+  created: (login: string) => void;
+  onError: (text: string | null) => void;
+}) {
+  const [name, setName] = useState("");
+  const [login, setLogin] = useState("");
+  const [password, setPassword] = useState("");
+  const [roles, setRoles] = useState<string[]>(["portal-sales"]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [sending, setSending] = useState(false);
+
+  const generate = () => {
+    const bytes = new Uint32Array(4);
+    crypto.getRandomValues(bytes);
+    setPassword(`Vd!${Array.from(bytes, (n) => n.toString(36)).join("-")}`);
+  };
+
+  const toggleRole = (role: string) =>
+    setRoles((current) =>
+      current.includes(role) ? current.filter((item) => item !== role) : [...current, role],
+    );
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    setSending(true);
+    setErrors({});
+    onError(null);
+    try {
+      await createStaff({ login: login.trim(), name: name.trim(), temporaryPassword: password, roles });
+      created(login.trim());
+    } catch (e) {
+      setErrors(fieldErrors(e));
+      onError(message(e));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <form className="staff-create" onSubmit={(event) => void submit(event)}>
+      <div className="staff-create__head">
+        <div>
+          <h2>Новый сотрудник</h2>
+          <p>Логин используется как ответственный в заявках, сделках и разговорах.</p>
+        </div>
+      </div>
+
+      <div className="staff-create__fields">
+        <Field label="Имя сотрудника" error={errors.name}>
+          <input value={name} required maxLength={160} onChange={(e) => setName(e.target.value)} />
+        </Field>
+        <Field label="Логин" hint="Латинские буквы, цифры, точка, дефис или подчёркивание." error={errors.login}>
+          <input value={login} required minLength={3} maxLength={64} pattern="[a-z0-9._-]+" autoCapitalize="none" onChange={(e) => setLogin(e.target.value.toLowerCase())} />
+        </Field>
+        <Field label="Временный пароль" hint="Не короче 12 символов. Сотрудник сменит его при первом входе." error={errors.temporaryPassword}>
+          <span className="staff-create__password">
+            <input type="text" value={password} required minLength={12} maxLength={128} autoComplete="new-password" onChange={(e) => setPassword(e.target.value)} />
+            <button type="button" className="btn btn--small" onClick={generate}>Сгенерировать</button>
+          </span>
+        </Field>
+      </div>
+
+      <fieldset className="staff-create__roles">
+        <legend>Доступ в портал</legend>
+        {PORTAL_ROLES.map((role) => (
+          <label key={role} className="field--row">
+            <input type="checkbox" checked={roles.includes(role)} onChange={() => toggleRole(role)} />
+            <span>{ROLE_LABELS[role] ?? role}</span>
+          </label>
+        ))}
+      </fieldset>
+
+      <div className="row row--end">
+        <button type="submit" className="btn btn--primary" disabled={sending}>
+          {sending ? "Создаём…" : "Создать сотрудника"}
+        </button>
+      </div>
+    </form>
   );
 }
 
@@ -168,7 +279,7 @@ function Card({
               ) : (
                 person.roles.map((r) => (
                   <span key={r} className="role mono">
-                    {r}
+                    {ROLE_LABELS[r] ?? r}
                   </span>
                 ))
               )}
@@ -282,10 +393,11 @@ function Roles({
             type="button"
             className={`role role--pick mono${выбрана ? " role--on" : ""}`}
             aria-pressed={выбрана}
+            aria-label={роль}
             disabled={шлём}
             onClick={() => переключить(роль)}
           >
-            {роль}
+            {ROLE_LABELS[роль] ?? роль}
           </button>
         );
       })}
