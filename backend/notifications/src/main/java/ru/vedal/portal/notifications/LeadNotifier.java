@@ -56,7 +56,9 @@ public class LeadNotifier implements DomainEventConsumer {
 
         var context = new MailTemplate.Context(leadId, contact.number(), contact.form(),
                 contact.productSlug(), portalUrl);
-        mailer.queue(MailTemplate.LEAD_CONFIRMATION, contact.email(), context, leadId);
+        if (contact.email() != null && !contact.email().isBlank()) {
+            mailer.queue(MailTemplate.LEAD_CONFIRMATION, contact.email(), context, leadId);
+        }
 
         if (manager.isBlank()) {
             // Адрес не настроен — молча заводить чужую почту нельзя.

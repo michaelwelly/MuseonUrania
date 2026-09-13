@@ -112,12 +112,20 @@ public class YandexGptEngine implements LlmEngine {
     @Override
     public Optional<Grounded> answer(String question, String context, Scope scope,
                                      Consumer<String> onChunk) {
+        return answer(question, context, scope, onChunk, stage -> { });
+    }
+
+    @Override
+    public Optional<Grounded> answer(String question, String context, Scope scope,
+                                    Consumer<String> onChunk, Consumer<String> onStage) {
+        onStage.accept("searching");
         var found = search.find(searchQuestion(question, context), scope);
         if (found.isEmpty()) return Optional.empty();
 
         var sources = found.stream().map(Retrieval.Passage::source).toList();
 
         try {
+            onStage.accept("composing");
             var text = model.complete(List.of(
                     new YandexGpt.Message(YandexGpt.Role.SYSTEM,
                             RULES + conversation(context) + "\n\n" + materials(found)),

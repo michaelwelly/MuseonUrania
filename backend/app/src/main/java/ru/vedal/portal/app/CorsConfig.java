@@ -37,7 +37,7 @@ public class CorsConfig {
     // незачем: заголовок, которого нет в этом перечне, — повод посмотреть,
     // кто и зачем его добавил.
     private static final List<String> PUBLIC_HEADERS =
-            List.of("Content-Type", "Idempotency-Key");
+            List.of("Content-Type", "Idempotency-Key", "X-Voice-Consent");
 
     private static final List<String> ADMIN_HEADERS =
             List.of("Content-Type", "Authorization");

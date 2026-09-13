@@ -2,6 +2,10 @@
 
 import { Fragment, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import ChatNavigation from "./ChatNavigation";
+import { products } from "@/content/products";
+import { VoiceInput, VoiceReply } from "./VedalinaVoice";
 import LivePattern from "./LivePattern";
 import { vedalina, quickReplies, answerFor } from "@/content/vedalina";
 import { site } from "@/content/site";
@@ -18,6 +22,8 @@ import {
   sayInChat,
   visitorKey,
   type ChatLine,
+  type ChatLead,
+  type NavigationAction,
   type ChatSupport,
   type Handoff,
   type Prompt,
@@ -39,6 +45,7 @@ import styles from "./VedalinaChat.module.css";
 // понимают это по-разному.
 
 type Message = {
+  actions?: NavigationAction[];
   from: "bot" | "me" | "staff";
   /** Имя сотрудника: посетитель должен видеть, что отвечает человек. */
   who?: string;
@@ -95,6 +102,7 @@ function toMessage(line: ChatLine): Message {
     text: line.body,
     at: line.at,
     helpful: line.helpful,
+    actions: line.actions,
     sources: line.sources?.length ? line.sources : undefined,
   };
 }
@@ -236,16 +244,12 @@ const THINKING_LIMIT = 60_000;
  * в чат, — значит спросить дважды.
  */
 function TicketForm({
+  callback,
   onSend,
   onCancel,
 }: {
-  onSend: (lead: {
-    name: string;
-    company: string;
-    phone: string;
-    email: string;
-    consent: boolean;
-  }) => Promise<string | null>;
+  callback: boolean;
+  onSend: (lead: ChatLead) => Promise<string | null>;
   onCancel: () => void;
 }) {
   const [sending, setSending] = useState(false);
@@ -265,17 +269,20 @@ function TicketForm({
             phone: String(data.get("phone") ?? "").trim(),
             email: String(data.get("email") ?? "").trim(),
             consent: Boolean(data.get("consent")),
+            callback,
+            reason: String(data.get("reason") ?? "").trim(),
+            productSlug: String(data.get("productSlug") ?? "").trim(),
           }),
         );
         setSending(false);
       }}
     >
-      <p className={styles.ticketTitle}>Обращение специалисту</p>
+      <p className={styles.ticketTitle}>{callback ? "Заказать обратный звонок" : "Обращение специалисту"}</p>
       {/* Что произойдёт — сказано до того, как человек заполнит поля.
           «Оставьте контакты» без объяснения выглядит как сбор базы. */}
       <p className={styles.ticketNote}>
         Переписка приложится к обращению — пересказывать вопрос не нужно.
-        Номер придёт на почту.
+        {callback ? "Специалист перезвонит по указанному телефону." : "Номер придёт на почту."}
       </p>
 
       <input className={styles.ticketField} name="name" placeholder="Имя" required />
@@ -295,9 +302,15 @@ function TicketForm({
         className={styles.ticketField}
         name="email"
         type="email"
-        placeholder="Почта"
-        required
+        placeholder={callback ? "Почта (необязательно)" : "Почта"}
+        required={!callback}
       />
+
+      <input className={styles.ticketField} name="reason" placeholder="Причина обращения (необязательно)" maxLength={500} />
+      <select className={styles.ticketField} name="productSlug" aria-label="Интересующее изделие" defaultValue="">
+        <option value="">Изделие не выбрано</option>
+        {products.map(product => <option key={product.slug} value={product.slug}>{product.name}</option>)}
+      </select>
 
       <label className={styles.ticketConsent}>
         <input type="checkbox" name="consent" required />
@@ -335,6 +348,10 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
   // заменяется лентой, как только ответ записан. Сам по себе он не значит
   // ничего: в базе его нет.
   const [answerDraft, setAnswerDraft] = useState("");
+  const [stage, setStage] = useState("");
+  const [voiceConsent, setVoiceConsent] = useState(false);
+  const [showVoiceConsent, setShowVoiceConsent] = useState(false);
+  const [voiceDraft, setVoiceDraft] = useState(false);
   const [draft, setDraft] = useState("");
   // Кнопки приходят с портала: подпись и заготовка, разложенные по двум
   // местам, расходятся на первой же правке — и расходятся молча.
@@ -349,6 +366,7 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
   // Форма обращения раскрыта. Не отдельный экран: разговор остаётся на месте,
   // и видно, из чего обращение заводится.
   const [ticketForm, setTicketForm] = useState(false);
+  const [callback, setCallback] = useState(false);
   // Отвечают ли сейчас люди. Приходит с лентой и меняется событием потока:
   // сотрудник, открывший админку, появляется на связи не тогда, когда
   // посетитель обновит страницу.
@@ -495,6 +513,14 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
       }
     });
 
+    stream.addEventListener("stage", (event) => {
+      try {
+        const parsed = JSON.parse((event as MessageEvent).data) as { stage: string };
+        const labels: Record<string, string> = { searching: "Ищу в материалах", documents: "Сверяю документы", composing: "Формулирую ответ" };
+        if (alive && labels[parsed.stage]) { setStage(labels[parsed.stage]); thinking(true); }
+      } catch { /* A malformed event must not break text chat. */ }
+    });
+
     // Кусок ответа, который ещё пишется. Единственное событие с текстом:
     // оно уходит только на этот ключ и повторится лентой через секунду.
     stream.addEventListener("draft", (event) => {
@@ -527,7 +553,7 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
   function thinking(on: boolean) {
     setTyping(on);
     if (patience.current) clearTimeout(patience.current);
-    if (!on) return;
+    if (!on) { setStage(""); return; }
     patience.current = setTimeout(() => {
       setTyping(false);
       setAnswerDraft("");
@@ -537,10 +563,18 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
   function ask(text: string, intent?: string) {
     const question = text.trim();
     if (!question) return;
+    if (apiConfigured && /^(?:позвоните|перезвоните)(?:\s+мне)?[.!?]*$/i.test(question)) {
+      setCallback(true);
+      setTicketForm(true);
+      setDraft("");
+      return;
+    }
 
     if (timer.current) clearTimeout(timer.current);
     setList((prev) => [...prev, { from: "me", text: question }]);
     setDraft("");
+    setVoiceDraft(false);
+    setStage("");
     thinking(true);
 
     // Без адреса API отвечаем локально: так чат работает в режиме вёрстки,
@@ -610,15 +644,17 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
    *         Ошибка возвращается, а не рисуется здесь: показать её обязана
    *         форма, рядом с кнопкой, которую нажали.
    */
-  async function sendTicket(lead: {
-    name: string;
-    company: string;
-    phone: string;
-    email: string;
-    consent: boolean;
-  }): Promise<string | null> {
+  async function sendTicket(lead: ChatLead): Promise<string | null> {
     if (!apiConfigured) return "Портал недоступен: обращение не отправлено.";
 
+    // The form can be opened before the first message. Start the conversation
+    // only on submission, after the visitor explicitly supplied consent.
+    if (!lead.consent) return "Без согласия отправить обращение нельзя.";
+    const existing = await chatThread(visitor.current);
+    if (!existing?.id) {
+      const started = await sayInChat(visitor.current, lead.callback ? "Позвоните мне" : "Хочу оставить обращение", "quote");
+      if ("error" in started) return started.error;
+    }
     const result = await raiseChatLead(visitor.current, lead);
     if ("error" in result) {
       // Разбор по полям приходит от портала; в узком окне чата показываем
@@ -633,7 +669,11 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
     // Перечитываем сами на случай, если поток оборвался: номер обязан
     // оказаться на экране, он единственное, что человек унесёт с собой.
     void chatThread(visitor.current).then((thread) => {
-      if (thread?.messages.length) setList([GREETING, ...thread.messages.map(toMessage)]);
+      if (thread?.messages.length) {
+        setList([GREETING, ...thread.messages.map(toMessage)]);
+        setWaiting(thread.status === "waiting");
+        thinking(thread.answering);
+      }
     });
     return null;
   }
@@ -854,6 +894,8 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
                 )}
               </p>
 
+              {m.from === "bot" && <VoiceReply text={m.text} consent={voiceConsent} requestConsent={() => setShowVoiceConsent(true)} />}
+
               {/* Время и отметка доставки. Галочки, а не слово: слово
                   «прочитано» занимает строку, а отметка стоит рядом со
                   временем и читается одним взглядом.
@@ -891,6 +933,10 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
                   ))}
                 </ol>
               )}
+
+              {m.from === "bot" && m.id && m.actions?.length ? (
+                <ChatNavigation actions={m.actions} visitor={visitor.current} messageId={m.id} />
+              ) : null}
 
               {/* Помог ли ответ. Спрашивается только у Ведалины: «специалист
                   не помог» — это не оценка ответа, а жалоба на человека,
@@ -956,6 +1002,7 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
           </p>
         )}
 
+        {typing && stage && <p role="status" className={styles.voiceNote}>{stage}…</p>}
         {typing && !answerDraft && (
           <p className={`${styles.msg} ${styles.bot} ${styles.typing}`} aria-label="Ведалина печатает">
             <span />
@@ -1002,14 +1049,14 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
             страницу, которой не существует. */}
         {leadNumber && (
           <p className={styles.ticketBadge} aria-live="polite">
-            Обращение <b>{leadNumber}</b> · подтверждение отправлено на почту
+            Обращение <b>{leadNumber}</b> · принято
           </p>
         )}
 
         {/* Форма обращения раскрывается прямо в ленте: разговор остаётся
             на месте, и видно, из чего обращение заводится. */}
         {ticketForm && !leadNumber && (
-          <TicketForm onSend={sendTicket} onCancel={() => setTicketForm(false)} />
+          <TicketForm callback={callback} onSend={sendTicket} onCancel={() => setTicketForm(false)} />
         )}
 
         {/* Позвать человека можно и не дожидаясь, пока Ведалина не найдёт
@@ -1020,10 +1067,17 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
           <button
             type="button"
             className={styles.ticketOpen}
-            onClick={() => setTicketForm(true)}
+            onClick={() => { setCallback(false); setTicketForm(true); }}
             data-analytics="vedalina_ticket_open"
           >
             Создать обращение
+          </button>
+        )}
+
+        {!ticketForm && !leadNumber && apiConfigured && (
+          <button type="button" className={styles.ticketOpen}
+            onClick={() => { setCallback(true); setTicketForm(true); }}>
+            Позвоните мне
           </button>
         )}
 
@@ -1047,6 +1101,12 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
         )}
       </div>
 
+      {showVoiceConsent && <div className={styles.voiceConsent} role="group" aria-label="Согласие на обработку голоса">
+        <p>Разрешить обработку голоса в Yandex SpeechKit для расшифровки и озвучивания? Сайт не сохраняет аудио. Расшифровка попадёт в переписку только после нажатия «Отправить». <Link href="/legal/privacy/">Политика обработки данных</Link></p>
+        <button type="button" onClick={() => { setVoiceConsent(true); setShowVoiceConsent(false); }}>Согласен, включить голос</button>
+        <button type="button" onClick={() => setShowVoiceConsent(false)}>Не сейчас</button>
+      </div>}
+      {voiceDraft && <p role="status" className={styles.voiceNote}>Проверьте расшифровку в поле ниже, при необходимости исправьте и нажмите «Отправить».</p>}
       <form
         className={styles.inputRow}
         onSubmit={(e) => {
@@ -1071,6 +1131,7 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
           placeholder={vedalina.placeholder}
           aria-label={`Сообщение ассистенту ${vedalina.name}`}
         />
+        <VoiceInput consent={voiceConsent} requestConsent={() => setShowVoiceConsent(true)} onTranscript={(text) => { setDraft(was => was ? `${was} ${text}` : text); setVoiceDraft(true); }} />
         <button type="submit" className={styles.send} aria-label="Отправить">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path

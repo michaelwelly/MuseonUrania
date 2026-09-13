@@ -96,6 +96,7 @@ export function contentSecurityPolicy(env: Env): string {
     // из байтов, которые она уже получила. Чужого через него не приедет.
     join("img-src 'self' data: blob:", media, ...counter),
     "style-src 'self' 'unsafe-inline'",
+    "media-src 'self' blob:",
     "font-src 'self' data:",
     join("connect-src 'self'", api, keycloak, ...counter),
     join("frame-src 'self'", ...MAP, ...counter),

@@ -144,6 +144,45 @@ class ChatLeadApiTest extends ru.vedal.portal.chat.ChatTestBase {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    void callbackWithoutEmailRecordsConsentContextAndOneLead() throws Exception {
+        var key = visitor();
+        sayAndAnswer(key, "Расскажите об A-2000");
+        var body = """
+                {"visitorKey":"%s","name":"Ирина","phone":"+7 343 300-00-00",
+                 "callback":true,"consent":true,"reason":"Нужна консультация",
+                 "productSlug":"vedal-a-2000"}
+                """.formatted(key);
+        for (int i = 0; i < 2; i++) {
+            mvc.perform(post("/api/forms/v1/leads/from-chat").with(свой(адрес))
+                    .contentType(MediaType.APPLICATION_JSON).content(body))
+                    .andExpect(status().isAccepted());
+        }
+        var thread = desk.threadFor(key);
+        assertThat(thread.callbackRequested()).isTrue();
+        assertThat(thread.status()).isEqualTo(Conversation.WAITING);
+        var lead = leads.findAll().stream().filter(l -> thread.leadNumber().equals(l.getNumber())).findFirst().orElseThrow();
+        assertThat(lead.getEmail()).isEmpty();
+        assertThat(lead.getPhone()).isEqualTo("+7 343 300-00-00");
+        assertThat(lead.getConsentAt()).isNotNull();
+        assertThat(lead.getProductSlug()).isEqualTo("vedal-a-2000");
+        assertThat(lead.getMessage()).contains("Краткое содержание", "Нужна консультация", "Следующий шаг: Позвонить", "A-2000");
+        assertThat(thread.messages().stream().filter(m -> m.body().contains("Обращение принято"))).hasSize(1);
+    }
+
+    @Test
+    void callbackWithoutConsentIsRejected() throws Exception {
+        var key = visitor();
+        sayAndAnswer(key, "Позвоните мне");
+        mvc.perform(post("/api/forms/v1/leads/from-chat").with(свой(адрес))
+                .contentType(MediaType.APPLICATION_JSON).content("""
+                {"visitorKey":"%s","name":"Ирина","phone":"+7 343 300-00-00",
+                 "callback":true,"consent":false}
+                """.formatted(key))).andExpect(status().isBadRequest());
+        assertThat(desk.threadFor(key).callbackRequested()).isFalse();
+        assertThat(desk.threadFor(key).leadNumber()).isNull();
+    }
+
     private org.springframework.test.web.servlet.RequestBuilder raise(String key) {
         return post("/api/forms/v1/leads/from-chat")
                 .with(свой(адрес))

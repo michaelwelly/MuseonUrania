@@ -105,6 +105,25 @@ class LeadNotificationTest extends PostgresTestBase {
         assertThat(mails.findAll()).as("потребитель идемпотентен").hasSize(2);
     }
 
+    @Test
+    void phoneOnlyCallbackQueuesOneSalesNoticeAcrossRetries() {
+        clean();
+        var draft = new LeadIntake.Draft("consultation", "Ирина", null,
+                "+7 343 300-00-00", "", "vedal-a-2000", null,
+                "Следующий шаг: позвонить", "chat", "ru", null);
+        intake.accept(draft, "chat:callback-test");
+        intake.accept(draft, "chat:callback-test");
+        relay.drain();
+        outbox.findAll().forEach(e -> { e.setPublishedAt(null); outbox.save(e); });
+        relay.drain();
+        assertThat(mails.findAll()).singleElement().satisfies(mail -> {
+            assertThat(mail.getTemplate()).isEqualTo("LEAD_MANAGER_NOTICE");
+            assertThat(mail.getToAddress()).isEqualTo("sales@vedal-med.ru");
+        });
+        assertThat(dispatch.drain()).isEqualTo(1);
+        assertThat(dispatch.drain()).isZero();
+    }
+
     private void accept(String key) {
         intake.accept(new LeadIntake.Draft("service", "Пётр Смирнов", null,
                 "+7 343 555-33-22", "client@example.ru", "vedal-a-2000", null,

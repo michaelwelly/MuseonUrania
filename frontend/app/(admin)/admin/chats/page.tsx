@@ -13,6 +13,7 @@ import {
 } from "@/lib/admin";
 import { useLive } from "../live";
 import Duty from "../Duty";
+import ConversationBoard from "./ConversationBoard";
 import EraseData from "../EraseData";
 import { CHAT_STATUS, LEAD_LANGUAGE, label } from "../labels";
 import Thread from "../Thread";
@@ -251,6 +252,8 @@ function Chats() {
       )}
 
       <Note kind="error">{error}</Note>
+
+      <ConversationBoard beat={beat} onOpen={(id) => { адресный.current = id; setOpen(id); }} />
 
       <div className="chats3">
         <aside className="chats3__queue">

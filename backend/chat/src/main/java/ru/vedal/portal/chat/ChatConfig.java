@@ -23,7 +23,7 @@ import java.time.Duration;
 public class ChatConfig {
 
     @Bean
-    RateLimit chatMessageRateLimit(@Value("${vedal.chat.message-rate-limit.count:60}") int limit,
+    RateLimit chatMessageRateLimit(@Value("${vedal.chat.message-rate-limit.count:300}") int limit,
                                    @Value("${vedal.chat.message-rate-limit.window:PT10M}") Duration window) {
         return new RateLimit(limit, window);
     }
@@ -34,7 +34,7 @@ public class ChatConfig {
     // легитимную нагрузку, а про то, чтобы перебор ключей упирался в потолок,
     // а не в диск.
     @Bean
-    RateLimit chatReadRateLimit(@Value("${vedal.chat.read-rate-limit.count:60}") int limit,
+    RateLimit chatReadRateLimit(@Value("${vedal.chat.read-rate-limit.count:300}") int limit,
                                 @Value("${vedal.chat.read-rate-limit.window:PT10M}") Duration window) {
         return new RateLimit(limit, window);
     }

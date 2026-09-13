@@ -167,7 +167,28 @@ async function readProblem(response: Response): Promise<Problem> {
 
 export type ChatAuthor = "visitor" | "assistant" | "staff";
 
+export type NavigationAction = {
+  type: "navigate" | "document";
+  title: string;
+  url: string;
+  confirmationRequired: boolean;
+};
+
+export async function confirmChatNavigation(visitor: string, messageId: string, action: NavigationAction): Promise<boolean> {
+  try {
+    const response = await fetch(`${apiUrl}/api/assistant/v1/chat/navigation`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ visitorKey: visitor, messageId, url: action.url, confirmed: true }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 export type ChatLine = {
+  actions?: NavigationAction[];
   /**
    * Идентификатор сообщения. Нужен оценке: «этот ответ не помог» надо
    * к чему-то отнести, а порядковый номер в ленте съезжает от каждой
@@ -408,6 +429,9 @@ export async function rateAnswer(
 
 /** Контакты для обращения, заводимого из разговора. */
 export type ChatLead = {
+  callback?: boolean;
+  reason?: string;
+  productSlug?: string;
   name: string;
   company?: string;
   phone: string;
@@ -448,6 +472,9 @@ export async function raiseChatLead(
         phone: lead.phone,
         email: lead.email,
         consent: lead.consent,
+        callback: lead.callback ?? false,
+        reason: lead.reason || null,
+        productSlug: lead.productSlug || null,
         language: document.documentElement.lang || null,
         campaign: new URLSearchParams(location.search).get("utm_campaign"),
         // Ловушка для ботов: поле обязано уходить пустым.

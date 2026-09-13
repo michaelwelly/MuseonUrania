@@ -112,7 +112,7 @@ public class PublicChatController {
                     состояние, а при обрыве связи они понимают это по-разному.
 
                     Первый запуск разговора входит в общий анонимный лимит. После начала
-                    беседы действует отдельный лимит по `visitorKey` — 60 сообщений за
+                    беседы действует отдельный лимит по `visitorKey` — 300 действий за
                     10 минут: посетители одной клиники за общим NAT не блокируют друг друга.
                     """)
     @ApiResponse(responseCode = "200",
@@ -224,6 +224,18 @@ public class PublicChatController {
         return desk.rate(request.visitorKey(), request.messageId(), request.helpful());
     }
 
+    public record Navigate(@NotBlank @Size(max = 64) String visitorKey,
+                           @NotNull UUID messageId, @NotBlank @Size(max = 512) String url,
+                           @jakarta.validation.constraints.AssertTrue boolean confirmed) {}
+
+    @PostMapping("/navigation")
+    public NavigationAction navigate(@Valid @RequestBody Navigate request) {
+        if (!messageRateLimit.allow(request.visitorKey())) {
+            throw new TooManyRequestsException("Слишком много переходов. Попробуйте позже.");
+        }
+        return desk.confirmNavigation(request.visitorKey(), request.messageId(), request.url());
+    }
+
     private boolean allowConversation(String visitorKey, String address, boolean mayStart) {
         if (mayStart && !desk.hasOpenConversation(visitorKey)
                 && !anonymousRateLimit.allow(address)) {
@@ -238,7 +250,7 @@ public class PublicChatController {
                     для виджета «ещё не писали» и «не нашли» это одно и то же состояние,
                     и различать их незачем.
 
-                    Свой лимит частоты, отдельный от `ask`/`say`: 60 обращений за 10
+                    Свой лимит частоты, отдельный от `ask`/`say`: 300 обращений за 10
                     минут с адреса. Дверь читает базу по чужому ключу без проверки
                     прав, и без предела перебор ключей упирался бы не в потолок,
                     а в диск.
@@ -293,6 +305,8 @@ public class PublicChatController {
                     - `typing` — противоположная сторона набирает текст;
                       `who` = `staff` или `assistant`.
                     - `draft` — кусок ещё не дописанного ответа Ведалины.
+                    - `stage` — текущая реальная стадия: поиск, сверка документов
+                      или формирование ответа.
 
                     `changed` не несёт текста намеренно: положи мы тело сообщения
                     в событие, и рассылка стала бы вторым местом, где решается,

@@ -69,6 +69,12 @@ public class AssistantService {
     @Transactional
     public AskReply ask(String question, String context, LlmEngine.Scope scope, String actor,
                         Consumer<String> onChunk) {
+        return ask(question, context, scope, actor, onChunk, stage -> { });
+    }
+
+    @Transactional
+    public AskReply ask(String question, String context, LlmEngine.Scope scope, String actor,
+                        Consumer<String> onChunk, Consumer<String> onStage) {
         // Сначала ограничения, потом движок: вопрос про диагноз или цену
         // до поиска не доходит вообще.
         var refusal = guardrails.refuse(question);
@@ -87,6 +93,7 @@ public class AssistantService {
             return new AskReply(smallTalk.get(), List.of(), null);
         }
 
+        onStage.accept("documents");
         var document = documentAnswers.answer(question, scope);
         if (document.isPresent()) {
             journal(actor, "document", document.get().sources().size());
@@ -94,7 +101,7 @@ public class AssistantService {
             return document.get();
         }
 
-        var grounded = engine.answer(question, context, scope, onChunk);
+        var grounded = engine.answer(question, context, scope, onChunk, onStage);
         if (grounded.isEmpty()) {
             journal(actor, "no-sources", 0);
             // Текст берётся у ограничений, а не лежит здесь строкой: язык

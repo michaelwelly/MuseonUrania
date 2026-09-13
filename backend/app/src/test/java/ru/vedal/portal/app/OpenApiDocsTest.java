@@ -74,9 +74,15 @@ class OpenApiDocsTest extends PostgresTestBase {
                 // можно было единственным способом: задать вопрос, на который
                 // Ведалина не найдёт ответа.
                 "/api/assistant/v1/chat/handoff",
+                // Переход выполняется только после подтверждения посетителя и
+                // только на адрес, предложенный сохранённым ответом Ведалины.
+                "/api/assistant/v1/chat/navigation",
                 "/api/assistant/v1/chat/{visitorKey}",
                 "/api/assistant/v1/chat/{visitorKey}/typing",
-                "/api/assistant/v1/chat/{visitorKey}/stream")));
+                "/api/assistant/v1/chat/{visitorKey}/stream",
+                "/api/assistant/v1/voice",
+                "/api/assistant/v1/voice/recognize",
+                "/api/assistant/v1/voice/synthesize")));
     }
 
     // Тот же список, но собранный из настоящих маршрутов приложения: список выше

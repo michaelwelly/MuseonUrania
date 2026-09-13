@@ -922,7 +922,7 @@ export type ChatLine = {
   helpful: boolean | null;
 };
 
-export type ChatThread = { id: string | null; status: ChatStatus; messages: ChatLine[] };
+export type ChatThread = { callbackRequested?: boolean; leadNumber?: string | null; id: string | null; status: ChatStatus; messages: ChatLine[] };
 
 export const chatQueue = (page = 0, size = 20) =>
   get<Page<ChatCard>>(`/chats/queue?page=${page}&size=${size}`);
@@ -957,3 +957,14 @@ export const eraseChatData = (id: string) =>
 /** Сообщить посетителю, что сотрудник печатает. Подсказка, а не действие. */
 export const pingTypingInChat = (id: string) =>
   post<void>(`/chats/${id}/typing`, {}).catch(() => {});
+
+export type ConversationBoardRow = {
+  id: string; summary: string; stage: string; owner: string | null; importance: string;
+  nextAction: string; updatedAt: string; manual: boolean; version: number;
+};
+export const conversationBoard = (stage = "", owner = "", importance = "", page = 0) =>
+  get<Page<ConversationBoardRow>>(`/chats/board?${new URLSearchParams({ stage, owner, importance, page: String(page), size: "10" })}`);
+export const editConversationBoard = (row: ConversationBoardRow) =>
+  post<ConversationBoardRow>(`/chats/board/${row.id}`, row);
+export const sendConversationDigest = () =>
+  post<{ date: string; queued: boolean }>("/chats/board/digest", {});

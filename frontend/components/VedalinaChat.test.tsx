@@ -42,6 +42,8 @@ vi.mock("@/lib/submit", () => ({
   chatStreamUrl: mocks.chatStreamUrl,
 }));
 
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+
 import VedalinaChat from "./VedalinaChat";
 
 const КНОПКИ = [
@@ -695,6 +697,9 @@ describe("обращение из разговора", () => {
         phone: "+7 343 300-00-00",
         email: "i.petrova@example.ru",
         consent: true,
+        callback: false,
+        reason: "",
+        productSlug: "",
       }),
     );
 
@@ -804,4 +809,30 @@ describe("кнопка закрытия", () => {
     await userEvent.click(кнопки[0]);
     expect(закрыть).toHaveBeenCalledTimes(1);
   });
+});
+
+it("команда Позвоните мне открывает форму без передачи контактов и вызова специалиста", async () => {
+  const user = userEvent.setup();
+  render(<VedalinaChat />);
+  await user.type(screen.getByRole("textbox", { name: /Сообщение ассистенту/ }), "Позвоните мне");
+  await user.click(screen.getByRole("button", { name: /^Отправить$/ }));
+  expect(await screen.findByText("Заказать обратный звонок")).toBeTruthy();
+  expect(mocks.raiseChatLead).not.toHaveBeenCalled();
+  expect(mocks.callHuman).not.toHaveBeenCalled();
+  expect(screen.getByPlaceholderText("Почта (необязательно)")).not.toBeRequired();
+  expect(screen.getByRole("checkbox")).not.toBeChecked();
+});
+
+it("отправляет обратный звонок без почты только с явным согласием", async () => {
+  const user = userEvent.setup();
+  render(<VedalinaChat />);
+  await user.click(await screen.findByRole("button", { name: "Позвоните мне" }));
+  await user.type(screen.getByPlaceholderText("Имя"), "Ирина");
+  await user.type(screen.getByPlaceholderText("Телефон"), "+7 343 300-00-00");
+  await user.selectOptions(screen.getByRole("combobox", { name: "Интересующее изделие" }), "vedal-a-2000");
+  await user.click(screen.getByRole("checkbox"));
+  await user.click(screen.getByRole("button", { name: "Отправить обращение" }));
+  await waitFor(() => expect(mocks.raiseChatLead).toHaveBeenCalledWith("ключ-вкладки", expect.objectContaining({
+    name: "Ирина", email: "", callback: true, consent: true, productSlug: "vedal-a-2000",
+  })));
 });

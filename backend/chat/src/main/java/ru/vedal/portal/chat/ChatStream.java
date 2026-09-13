@@ -407,6 +407,16 @@ public class ChatStream {
     }
 
     /** Кусок недописанного ответа. В базе не хранится: ответ запишется целиком. */
+    public void stage(String visitorKey, String stage) {
+        for (var emitter : byVisitor.getOrDefault(visitorKey, List.of())) {
+            try {
+                emitter.send(SseEmitter.event().name("stage").data(java.util.Map.of("stage", stage)));
+            } catch (IOException | IllegalStateException e) {
+                emitter.completeWithError(e);
+            }
+        }
+    }
+
     public record Draft(UUID conversationId, String chunk) {}
 
     private void send(List<SseEmitter> subscribers, Changed event) {

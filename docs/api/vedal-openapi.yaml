@@ -25,8 +25,10 @@ info:
     публичных дверей нет ни cookie, ни сессии. Повторную отправку
     заявки различает заголовок `Idempotency-Key`, а не пользователь.
 
-    Лимит частоты считается по адресу клиента, у каждой двери свой
-    бюджет: формы — 5 обращений за 10 минут, ассистент — 20.
+    Лимит форм и новых анонимных обращений считается по адресу
+    клиента: формы — 5, новые разговоры с ассистентом — 20 за 10 минут.
+    У уже начатого разговора свой бюджет: 60 сообщений за 10 минут
+    по `visitorKey`, поэтому общий NAT клиники его не обрывает.
     Превышение отдаёт `429`.
   title: VEDAL Portal — публичное API
   version: v1
@@ -119,7 +121,9 @@ paths:
         требует, чтобы клиент и сервер одинаково понимали, где кончилось прошлое
         состояние, а при обрыве связи они понимают это по-разному.
 
-        Лимит частоты общий с `ask` — 20 обращений за 10 минут с адреса.
+        Первый запуск разговора входит в общий анонимный лимит. После начала
+        беседы действует отдельный лимит по `visitorKey` — 300 действий за
+        10 минут: посетители одной клиники за общим NAT не блокируют друг друга.
       operationId: say
       requestBody:
         content:
@@ -162,7 +166,7 @@ paths:
         Повторный вызов ничего не меняет: разговор уже у человека,
         второго сообщения и второй записи в журнале не будет.
 
-        Лимит частоты общий с `ask`.
+        Для начатого разговора действует отдельный лимит по `visitorKey`.
       operationId: handoff
       requestBody:
         content:
@@ -186,6 +190,24 @@ paths:
       summary: Позвать специалиста
       tags:
       - Ассистент
+  /api/assistant/v1/chat/navigation:
+    post:
+      operationId: navigate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Navigate"
+        required: true
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/NavigationAction"
+          description: OK
+      tags:
+      - Ассистент
   /api/assistant/v1/chat/rating:
     post:
       description: |
@@ -205,7 +227,7 @@ paths:
         В журнал уходит каждое изменение; важно не последнее нажатие,
         а то, что ответ вызвал сомнение.
 
-        Лимит частоты общий с `ask`.
+        Оценка входит в лимит активности своего разговора.
       operationId: rate
       requestBody:
         content:
@@ -242,7 +264,7 @@ paths:
         для виджета «ещё не писали» и «не нашли» это одно и то же состояние,
         и различать их незачем.
 
-        Свой лимит частоты, отдельный от `ask`/`say`: 60 обращений за 10
+        Свой лимит частоты, отдельный от `ask`/`say`: 300 обращений за 10
         минут с адреса. Дверь читает базу по чужому ключу без проверки
         прав, и без предела перебор ключей упирался бы не в потолок,
         а в диск.
@@ -282,6 +304,8 @@ paths:
         - `typing` — противоположная сторона набирает текст;
           `who` = `staff` или `assistant`.
         - `draft` — кусок ещё не дописанного ответа Ведалины.
+        - `stage` — текущая реальная стадия: поиск, сверка документов
+          или формирование ответа.
 
         `changed` не несёт текста намеренно: положи мы тело сообщения
         в событие, и рассылка стала бы вторым местом, где решается,
@@ -330,7 +354,7 @@ paths:
         ради надписи, которая и так не меняется.
 
         Свой, более широкий лимит частоты: 240 обращений за 10 минут
-        с адреса. Общий с `ask`/`say` (20 за 10 минут) обрывал бы надпись
+        с адреса. Общий с лимитом сообщений обрывал бы надпись
         «печатает» на середине обычного набора текста.
       operationId: typing
       parameters:
@@ -381,6 +405,49 @@ paths:
       summary: Кнопки быстрых ответов
       tags:
       - Ассистент
+  /api/assistant/v1/voice:
+    get:
+      operationId: status
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: object
+          description: OK
+      tags:
+      - voice-controller
+  /api/assistant/v1/voice/recognize:
+    post:
+      operationId: recognize
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: object
+          description: OK
+      tags:
+      - voice-controller
+  /api/assistant/v1/voice/synthesize:
+    post:
+      operationId: synthesize
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Speak"
+        required: true
+      responses:
+        "200":
+          content:
+            audio/wav:
+              schema:
+                type: string
+                format: byte
+          description: OK
+      tags:
+      - voice-controller
   /api/forms/v1/leads:
     post:
       description: |
@@ -450,9 +517,9 @@ paths:
         заявку с тем же номером: два номера на одно обращение — это
         два обращения в глазах того, кто их называет.
 
-        Разговор при этом не закрывается и в очередь не встаёт: заявка —
-        результат разговора, а не его конец. Человек волен спросить
-        дальше, и отвечать ему будут в том же окне.
+        Разговор не закрывается. При callback=true он ожидает специалиста,
+        который должен позвонить; обычное обращение не меняет состояние.
+        Контакты и согласие приходят только из заполненной формы.
 
         Лимит частоты общий с заявками форм — 5 обращений за 10 минут.
       operationId: fromChat
@@ -508,8 +575,8 @@ paths:
         такая строка на сайте ведёт на запрос. Ссылка `fileUrl` заполнена только
         у опубликованных.
 
-        Лимит частоты общий со скачиванием файла — 30 обращений за 10 минут
-        с адреса.
+        Просмотр перечня и скачивание имеют независимые лимиты — по 120
+        обращений за 10 минут с адреса.
       operationId: documents
       responses:
         "200":
@@ -549,7 +616,7 @@ paths:
       operationId: file
       parameters:
       - description: Идентификатор документа в URL.
-        example: opisanie-izdeliya-vedal-r1-r2
+        example: vedal-r1-product-sheet
         in: path
         name: slug
         required: true
@@ -779,10 +846,12 @@ components:
     ChatLeadSubmission:
       type: object
       description: |
-        Контакты для обращения, заводимого из разговора. Тип формы, текст
-        и изделие не передаются: форма всегда `consultation`, текстом
-        становится переписка, изделия в разговоре может не быть вовсе.
+        Контакты для обращения из разговора. Форма — consultation, переписку
+        прикладывает сервер. Для callback=true почта необязательна; телефон
+        и явное согласие обязательны. Изделие и причина — со слов посетителя.
       properties:
+        callback:
+          type: boolean
         campaign:
           type: string
           description: "Кампания, приведшая посетителя. Разрез аналитики."
@@ -813,7 +882,10 @@ components:
           description: Адрес почты для ответа. На него уходит подтверждение с номером
             обращения.
           example: i.petrova@example.ru
-          minLength: 1
+          maxLength: 254
+          minLength: 0
+        emailProvided:
+          type: boolean
         language:
           type: string
           description: "Язык страницы: двухбуквенный код. Разрез аналитики."
@@ -827,13 +899,24 @@ components:
           type: string
           description: Имя обращающегося.
           example: Ирина Петрова
-          minLength: 1
+          maxLength: 200
+          minLength: 0
         phone:
           type: string
           description: "Телефон с кодом: не меньше десяти цифр, разделители любые."
           example: +7 343 300-00-00
-          minLength: 1
+          maxLength: 100
+          minLength: 0
           pattern: "^(?:\\D*\\d){10,}\\D*$"
+        productSlug:
+          type: string
+          maxLength: 128
+          minLength: 0
+          pattern: "^[a-z0-9-]*$"
+        reason:
+          type: string
+          maxLength: 500
+          minLength: 0
         trap:
           type: string
           description: "Ловушка для ботов: поле скрыто в разметке и должно приходи\
@@ -848,7 +931,6 @@ components:
           minLength: 0
       required:
       - consent
-      - email
       - name
       - phone
       - visitorKey
@@ -949,33 +1031,33 @@ components:
           - "null"
           description: Ссылка на файл. Заполнена только у опубликованных — собирать
             её на стороне сайта значит однажды собрать её для закрытого документа.
-          example: /api/public/v1/documents/opisanie-izdeliya-vedal-r1-r2/file
+          example: /api/public/v1/documents/vedal-r1-product-sheet/file
         group:
           type: string
           description: Раздел перечня.
-          example: Лицензирование
+          example: Техническая документация
         productSlug:
           type:
           - string
           - "null"
           description: "Изделие, к которому привязан документ. `null` у общих доку\
             ментов."
-          example: vedal-r1-r2
+          example: vedal-r1
         published:
           type: boolean
           description: Файл согласован к публикации и доступен для скачивания.
         slug:
           type: string
           description: Идентификатор в URL.
-          example: registracionnoe-udostoverenie-vedal-r1-r2
+          example: vedal-r1-product-sheet
         subject:
           type: string
           description: "К чему относится документ: изделие или организация."
-          example: "VEDAL R1, R2"
+          example: VEDAL R1
         title:
           type: string
           description: Название документа.
-          example: Регистрационное удостоверение
+          example: Система реанимационная VEDAL R1
     Handoff:
       type: object
       description: "Куда обращаться, когда ассистент не отвечает."
@@ -1151,6 +1233,10 @@ components:
     Line:
       type: object
       properties:
+        actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/NavigationAction"
         actor:
           type: string
         at:
@@ -1172,6 +1258,37 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Source"
+    Navigate:
+      type: object
+      properties:
+        confirmed:
+          type: boolean
+        messageId:
+          type: string
+          format: uuid
+        url:
+          type: string
+          maxLength: 512
+          minLength: 0
+        visitorKey:
+          type: string
+          maxLength: 64
+          minLength: 0
+      required:
+      - messageId
+      - url
+      - visitorKey
+    NavigationAction:
+      type: object
+      properties:
+        confirmationRequired:
+          type: boolean
+        title:
+          type: string
+        type:
+          type: string
+        url:
+          type: string
     NewsArticle:
       type: object
       description: Материал ленты целиком.
@@ -1418,6 +1535,11 @@ components:
           type: string
           description: Адрес материала на сайте.
           example: /products/vedal-a-2000/
+    Speak:
+      type: object
+      properties:
+        text:
+          type: string
     Spec:
       type: object
       description: "Строка характеристики: подпись и значение."
@@ -1453,6 +1575,8 @@ components:
       type: object
       properties:
         answering:
+          type: boolean
+        callbackRequested:
           type: boolean
         id:
           type: string

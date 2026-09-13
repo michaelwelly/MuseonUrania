@@ -87,4 +87,9 @@ public interface LlmEngine {
                                       Consumer<String> onChunk) {
         return answer(question, scope, onChunk);
     }
+    default Optional<Grounded> answer(String question, String context, Scope scope,
+                                      Consumer<String> onChunk, Consumer<String> onStage) {
+        onStage.accept("searching");
+        return answer(question, context, scope, onChunk);
+    }
 }
