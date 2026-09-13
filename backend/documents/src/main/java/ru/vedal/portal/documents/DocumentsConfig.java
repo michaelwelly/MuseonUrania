@@ -18,8 +18,15 @@ import java.time.Duration;
 public class DocumentsConfig {
 
     @Bean
-    RateLimit documentsRateLimit(@Value("${vedal.documents.rate-limit.count:30}") int limit,
-                                 @Value("${vedal.documents.rate-limit.window:PT10M}") Duration window) {
+    RateLimit documentsListRateLimit(@Value("${vedal.documents.list-rate-limit.count:120}") int limit,
+                                     @Value("${vedal.documents.rate-limit.window:PT10M}") Duration window) {
+        return new RateLimit(limit, window);
+    }
+
+    @Bean
+    RateLimit documentsDownloadRateLimit(
+            @Value("${vedal.documents.download-rate-limit.count:120}") int limit,
+            @Value("${vedal.documents.rate-limit.window:PT10M}") Duration window) {
         return new RateLimit(limit, window);
     }
 }

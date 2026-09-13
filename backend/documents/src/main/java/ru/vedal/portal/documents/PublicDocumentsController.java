@@ -29,12 +29,15 @@ import java.util.List;
 public class PublicDocumentsController {
 
     private final DocumentQuery documents;
-    private final RateLimit rateLimit;
+    private final RateLimit listRateLimit;
+    private final RateLimit downloadRateLimit;
 
     public PublicDocumentsController(DocumentQuery documents,
-                                     @Qualifier("documentsRateLimit") RateLimit rateLimit) {
+                                     @Qualifier("documentsListRateLimit") RateLimit listRateLimit,
+                                     @Qualifier("documentsDownloadRateLimit") RateLimit downloadRateLimit) {
         this.documents = documents;
-        this.rateLimit = rateLimit;
+        this.listRateLimit = listRateLimit;
+        this.downloadRateLimit = downloadRateLimit;
     }
 
     @Operation(summary = "Перечень документов",
@@ -43,8 +46,8 @@ public class PublicDocumentsController {
                     такая строка на сайте ведёт на запрос. Ссылка `fileUrl` заполнена только
                     у опубликованных.
 
-                    Лимит частоты общий со скачиванием файла — 30 обращений за 10 минут
-                    с адреса.
+                    Просмотр перечня и скачивание имеют независимые лимиты — по 120
+                    обращений за 10 минут с адреса.
                     """)
     @ApiResponse(responseCode = "200", description = "Перечень документов. Кэш пять минут.")
     @ApiResponse(responseCode = "429", description = "Превышен лимит частоты.",
@@ -52,7 +55,7 @@ public class PublicDocumentsController {
                     schema = @Schema(ref = "#/components/schemas/ProblemDetail")))
     @GetMapping("/documents")
     public ResponseEntity<List<DocumentQuery.Card>> documents(HttpServletRequest http) {
-        if (!rateLimit.allow(http.getRemoteAddr())) {
+        if (!listRateLimit.allow(http.getRemoteAddr())) {
             throw new TooManyRequestsException("Слишком много обращений подряд. Попробуйте позже.");
         }
         return ResponseEntity.ok()
@@ -93,7 +96,7 @@ public class PublicDocumentsController {
                     example = "vedal-r1-product-sheet")
             @PathVariable String slug,
             HttpServletRequest http) {
-        if (!rateLimit.allow(http.getRemoteAddr())) {
+        if (!downloadRateLimit.allow(http.getRemoteAddr())) {
             throw new TooManyRequestsException("Слишком много обращений подряд. Попробуйте позже.");
         }
         var download = documents.download(slug);
