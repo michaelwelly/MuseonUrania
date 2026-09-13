@@ -74,18 +74,16 @@ export default function DocumentsTable({ documents }: { documents: Doc[] }) {
             >
               <span className={styles.cell}>
                 <span className={styles.docTitle}>{d.title}</span>
-                {/* Что произойдёт по нажатию — словами. Без этой строки
-                    «Запросить» отличается от «Скачать» только адресом
-                    в статусной строке браузера. Это подпись интерфейса,
-                    поэтому она приходит из словаря, а не из содержания. */}
-                <span className={styles.action}>{actionLabel(d, strings.documents)}</span>
+                {!badgeIsOk(d) && <span className={styles.actionState}>{accessBadge(d)}</span>}
               </span>
               <span className={styles.dim}>{d.group}</span>
               <span className={`${styles.dim} ${styles.product}`}>{d.product}</span>
               <span
-                className={`${styles.badge} ${badgeIsOk(d) ? styles.badgeOk : styles.badgeMuted}`}
+                className={`${styles.downloadAction} ${
+                  badgeIsOk(d) ? styles.downloadActionReady : styles.downloadActionMuted
+                }`}
               >
-                {accessBadge(d)}
+                {actionLabel(d, strings.documents)}
               </span>
             </Link>
           ))}

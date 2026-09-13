@@ -9,11 +9,10 @@ import java.time.Duration;
 
 // Лимиты частоты для дверей чата, у которых нет своего бюджета.
 //
-// `say`/`handoff`/`rate`/`ask` уже стоят под assistantRateLimit — это запись
-// и вопрос, дорогие по смыслу (движок, база, письмо менеджеру). `thread`
-// (чтение ленты) и `typing` (пинг «печатает») были заведены без всякого
-// лимита: разбор issue #65 назвал это дверью без счётчика — самой дешёвой,
-// через которую можно класть портал.
+// Первый `say` стоит под assistantRateLimit по адресу: новый visitorKey легко
+// менять, поэтому им нельзя защищать создание строк в базе. После старта чат
+// получает отдельный бюджет по visitorKey: общий адрес клиники не должен
+// обрывать уже начатую беседу. `thread` и `typing` имеют свои бюджеты ниже.
 //
 // Общий лимит с assistantRateLimit им не подходит: `typing` виджет шлёт
 // каждые три секунды, пока поле не пустое (см. frontend/lib/submit.ts,
@@ -22,6 +21,12 @@ import java.time.Duration;
 // а отказ настоящему посетителю посреди набора сообщения.
 @Configuration
 public class ChatConfig {
+
+    @Bean
+    RateLimit chatMessageRateLimit(@Value("${vedal.chat.message-rate-limit.count:60}") int limit,
+                                   @Value("${vedal.chat.message-rate-limit.window:PT10M}") Duration window) {
+        return new RateLimit(limit, window);
+    }
 
     // Чтение ленты: на открытие виджета и на каждое событие `changed`.
     // Обращений в разговоре в разы меньше, чем сообщений — но дверь читает

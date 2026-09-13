@@ -46,6 +46,8 @@ public class ChatDesk {
     // примерно тридцать реплик: разговор длиннее в заявке всё равно не читают,
     // а полная переписка остаётся в разговоре, на который заявка ссылается.
     private static final int MAX_TRANSCRIPT = 4000;
+    private static final int MAX_ASSISTANT_CONTEXT = 3000;
+    private static final int MAX_CONTEXT_MESSAGES = 6;
 
     private final ConversationRepository conversations;
     private final ChatMessageRepository messages;
@@ -81,6 +83,11 @@ public class ChatDesk {
         return stream.watch(visitorKey);
     }
 
+    @Transactional(readOnly = true)
+    public boolean hasOpenConversation(String visitorKey) {
+        return conversations.findByVisitorKeyAndStatusNot(visitorKey, Conversation.CLOSED).isPresent();
+    }
+
     /** Откуда пришёл посетитель. Снимается при первом сообщении и больше не меняется. */
     public record Context(String language, String campaign, String page) {}
 
@@ -108,6 +115,7 @@ public class ChatDesk {
     @Transactional
     public Thread say(String visitorKey, String text, String intent, Context context) {
         var conversation = openFor(visitorKey, context);
+        var recentContext = assistantContext(conversation.getId());
         append(conversation, ChatMessage.VISITOR, null, text, null);
 
         // Человек в разговоре — ассистенту здесь делать нечего.
@@ -159,7 +167,7 @@ public class ChatDesk {
         // Поэтому дверь возвращает ленту сразу, с одним лишь вопросом
         // посетителя, а ответ доезжает рассылкой. Кто его считает —
         // {@link Answering}.
-        bus.publishEvent(new Asked(conversation.getId(), visitorKey, text));
+        bus.publishEvent(new Asked(conversation.getId(), visitorKey, text, recentContext));
         return thread(conversation);
     }
 
@@ -175,7 +183,11 @@ public class ChatDesk {
      * которого это событие»: посетитель волен написать второй раз, пока
      * считается ответ на первый.
      */
-    public record Asked(UUID conversationId, String visitorKey, String question) {}
+    public record Asked(UUID conversationId, String visitorKey, String question, String context) {
+        public Asked(UUID conversationId, String visitorKey, String question) {
+            this(conversationId, visitorKey, question, "");
+        }
+    }
 
     /**
      * Ведалина ответила.
@@ -409,6 +421,23 @@ public class ChatDesk {
         return text.length() <= MAX_TRANSCRIPT
                 ? text
                 : "…\n\n" + text.substring(text.length() - MAX_TRANSCRIPT);
+    }
+
+    /** Recent messages supplied to Vedalina for pronouns and follow-up questions. */
+    private String assistantContext(UUID conversationId) {
+        var all = messages.findByConversationIdOrderByAtAsc(conversationId);
+        var from = Math.max(0, all.size() - MAX_CONTEXT_MESSAGES);
+        var lines = all.subList(from, all.size()).stream()
+                .map(message -> switch (message.getAuthor()) {
+                    case ChatMessage.VISITOR -> "Посетитель: " + message.getBody();
+                    case ChatMessage.STAFF -> "Сотрудник: " + message.getBody();
+                    default -> "Ведалина: " + message.getBody();
+                })
+                .toList();
+        var context = String.join("\n", lines);
+        return context.length() <= MAX_ASSISTANT_CONTEXT
+                ? context
+                : context.substring(context.length() - MAX_ASSISTANT_CONTEXT);
     }
 
     /** Разговор вместе с его перепиской. */

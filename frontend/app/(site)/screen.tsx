@@ -243,7 +243,7 @@ export default function HomeScreen() {
             className={`${styles.btn} ${styles.btnDark} ${styles.docsCta}`}
             href={documentsBlock.cta.href}
           >
-            {strings.actions.allDocuments}
+            {documentsBlock.cta.label}
             <Arrow />
           </Link>
         </div>
@@ -255,20 +255,17 @@ export default function HomeScreen() {
             <span>{strings.home.docHeadAccess}</span>
           </div>
           {documentsBlock.rows.map((row) => (
-            <div
+            <Link
               key={row.name}
               className={styles.tableRow}
+              href={row.href}
             >
               <span>{row.name}</span>
               <span className={styles.tableType}>{row.type}</span>
-              <span
-                className={`${styles.badge} ${
-                  row.access === "Уточняется" ? styles.badgeMuted : styles.badgeOk
-                }`}
-              >
+              <span className={`${styles.badge} ${styles.badgeOk}`}>
                 {row.access}
               </span>
-            </div>
+            </Link>
           ))}
         </div>
       </section>

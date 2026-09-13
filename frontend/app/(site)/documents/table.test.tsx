@@ -28,7 +28,7 @@ const ФАЙЛ = "http://portal/api/public/v1/documents/vedal-certificate-confor
 const адрес = (a: HTMLElement) => new URL(a.getAttribute("href")!, "http://vedal.test");
 
 describe("перечень документов", () => {
-  it("строка с файлом ведёт на файл и подписана «Скачать»", () => {
+  it("строка с файлом ведёт на файл и явно предлагает скачивание", () => {
     render(
       <DocumentsTable
         documents={[
@@ -46,8 +46,7 @@ describe("перечень документов", () => {
     expect(строка).toHaveAttribute("href", ФАЙЛ);
     expect(строка).toHaveAttribute("download");
     expect(строка).not.toHaveAttribute("target");
-    expect(строка).toHaveTextContent("Скачать");
-    expect(строка).toHaveTextContent("Файл");
+    expect(строка).toHaveTextContent("Скачать файл");
   });
 
   it("строка без файла ведёт в форму с выбранной темой", () => {
@@ -63,7 +62,7 @@ describe("перечень документов", () => {
     expect(адрес(строка).searchParams.get("topic")).toBe("catalog");
     expect(адрес(строка).hash).toBe("#lead");
     expect(строка).not.toHaveAttribute("target");
-    expect(строка).toHaveTextContent("Запросить");
+    expect(строка).toHaveTextContent("Запросить документ");
   });
 
   // Документ компании к изделию не привязан, и подставить в заявку изделие

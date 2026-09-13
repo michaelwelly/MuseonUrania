@@ -260,10 +260,10 @@ describe("карточка для новичка", () => {
   it("убирается и остаётся убранной", async () => {
     const user = await сводка();
 
-    expect(screen.getByText("Три правила, из которых следует остальное")).toBeTruthy();
+    expect(screen.getByText("С чего начать сегодня")).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Убрать подсказку" }));
 
-    expect(screen.queryByText("Три правила, из которых следует остальное")).toBeNull();
+    expect(screen.queryByText("С чего начать сегодня")).toBeNull();
     // Подсказка, которую нельзя закрыть, через неделю читается как реклама.
     expect(window.localStorage.getItem("vedal.admin.hints")).toBe("false");
   });

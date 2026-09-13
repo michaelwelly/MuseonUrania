@@ -53,7 +53,7 @@ class VedalinaAnswersTest {
     private final DeterministicSearch search =
             new DeterministicSearch(new Каталог(), new Лента(), new Перечень(), pages);
     private final AssistantService vedalina = new AssistantService(
-            new Guardrails(), search, Mockito.mock(AuditLog.class), PHONE, EMAIL);
+            new Guardrails(), search, new Перечень(), Mockito.mock(AuditLog.class), PHONE, EMAIL);
 
     private AskReply ask(String question) {
         return vedalina.ask(question, LlmEngine.Scope.PUBLIC, "public");
@@ -130,6 +130,39 @@ class VedalinaAnswersTest {
         assertThat(reply.sources())
                 .as("ответ опирается на опубликованное: %s", question)
                 .isNotEmpty();
+    }
+
+    @Test
+    void aRequestedProductSheetIsReturnedAsTheActualDownload() {
+        var reply = ask("Пришли описание VEDAL A-2000 отдельным PDF");
+
+        assertThat(reply.answer()).contains("доступен для скачивания");
+        assertThat(reply.sources()).singleElement().satisfies(source -> {
+            assertThat(source.kind()).isEqualTo("document");
+            assertThat(source.url()).isEqualTo(
+                    "/api/public/v1/documents/vedal-a-2000-product-sheet/file");
+        });
+    }
+
+    @Test
+    void aRequestedT100SheetUnderstandsTheCyrillicModelName() {
+        var reply = ask("Дай PDF на VEDAL Т-100");
+
+        assertThat(reply.sources()).singleElement()
+                .satisfies(source -> assertThat(source.url())
+                        .contains("vedal-t-100-product-sheet/file"));
+    }
+
+    @Test
+    void theDocumentListComesFromTheCurrentPublishedCards() {
+        var reply = ask("Перечисли доступные документы компании VEDAL");
+
+        assertThat(reply.answer())
+                .contains("Инкубатор-трансформер VEDAL A-2000")
+                .contains("Система терморегулирующая VEDAL Т-100")
+                .contains("Каталог продукции VEDAL");
+        assertThat(reply.sources()).hasSize(3)
+                .allMatch(source -> "document".equals(source.kind()));
     }
 
     // ————— а на это отвечать нельзя —————
@@ -275,6 +308,11 @@ class VedalinaAnswersTest {
                             "Техническая документация", "VEDAL A-2000",
                             "vedal-a-2000", "pdf", true,
                             "/api/public/v1/documents/vedal-a-2000-product-sheet/file"),
+                    new Card("vedal-t-100-product-sheet",
+                            "Система терморегулирующая VEDAL Т-100",
+                            "Техническая документация", "VEDAL Т-100",
+                            "vedal-t-100", "pdf", true,
+                            "/api/public/v1/documents/vedal-t-100-product-sheet/file"),
                     new Card("vedal-product-catalog",
                             "Каталог продукции VEDAL", "Коммерческие материалы",
                             "Все изделия", null, "pdf", true,
