@@ -51,9 +51,9 @@
 		<!-- Ветка 3.x springdoc собрана под Spring Boot 4; 2.x — под Boot 3
 		     и в этом проекте не поднимется. Версию держим сами: в BOM
 		     Spring Boot springdoc не входит. -->
-		<springdoc.version>3.1.0</springdoc.version>
+		<springdoc.version>3.1.1</springdoc.version>
 		<!-- Клиент объектного хранилища. В BOM Spring Boot не входит. -->
-		<awssdk.version>2.54.12</awssdk.version>
+		<awssdk.version>2.54.16</awssdk.version>
 		<!-- SMTP-сервер в процессе теста. Нужен, чтобы проверить отправку
 		     настоящим протоколом, а не подменённым портом MailSender:
 		     кодировка темы, обратный адрес и авторизация ломаются именно
