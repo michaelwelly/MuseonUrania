@@ -127,7 +127,12 @@ export default function ProductionScreen() {
                 src={mediaSrc(shot.src)}
                 alt={shot.alt}
                 fill
-                sizes="(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 33vw"
+                /* Первый кадр занимает две колонки из трёх (сетка 2fr 1fr) —
+                   ему нужна подсказка 67vw. Раньше у всех трёх стояло 33vw,
+                   и браузер тянул для большой ячейки файл в полтора раза уже
+                   её: кадр на мониторе выходил мыльным. На телефоне сетка
+                   в одну колонку, там все по ширине экрана. */
+                sizes={i === 0 ? "(max-width: 640px) 100vw, 67vw" : "(max-width: 640px) 100vw, 33vw"}
               />
             </div>
           </li>
