@@ -25,8 +25,10 @@ info:
     публичных дверей нет ни cookie, ни сессии. Повторную отправку
     заявки различает заголовок `Idempotency-Key`, а не пользователь.
 
-    Лимит частоты считается по адресу клиента, у каждой двери свой
-    бюджет: формы — 5 обращений за 10 минут, ассистент — 20.
+    Лимит форм и новых анонимных обращений считается по адресу
+    клиента: формы — 5, новые разговоры с ассистентом — 20 за 10 минут.
+    У уже начатого разговора свой бюджет: 60 сообщений за 10 минут
+    по `visitorKey`, поэтому общий NAT клиники его не обрывает.
     Превышение отдаёт `429`.
   title: VEDAL Portal — публичное API
   version: v1
@@ -353,6 +355,85 @@ paths:
       summary: Все разговоры
       tags:
       - "Админка: чат"
+  /api/admin/v1/chats/board:
+    get:
+      operationId: list
+      parameters:
+      - in: query
+        name: stage
+        required: false
+        schema:
+          type: string
+      - in: query
+        name: owner
+        required: false
+        schema:
+          type: string
+      - in: query
+        name: importance
+        required: false
+        schema:
+          type: string
+      - in: query
+        name: page
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - in: query
+        name: size
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Page"
+          description: OK
+      tags:
+      - admin-conversation-board-api
+  /api/admin/v1/chats/board/digest:
+    post:
+      operationId: digest
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DigestResult"
+          description: OK
+      tags:
+      - admin-conversation-board-api
+  /api/admin/v1/chats/board/{id}:
+    post:
+      operationId: update_6
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Edit"
+        required: true
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Row"
+          description: OK
+      tags:
+      - admin-conversation-board-api
   /api/admin/v1/chats/queue:
     get:
       description: |
@@ -591,7 +672,7 @@ paths:
       tags:
       - "Админка: клиенты"
     post:
-      operationId: create_5
+      operationId: create_6
       requestBody:
         content:
           application/json:
@@ -829,7 +910,7 @@ paths:
       - "Админка: сделки"
     post:
       description: "Сделка из заявки заводится другой дверью — `POST /leads/{id}/convert`."
-      operationId: create_4
+      operationId: create_5
       requestBody:
         content:
           application/json:
@@ -1106,7 +1187,7 @@ paths:
       - "Админка: документы"
     post:
       description: Создаётся без файла и без публикации.
-      operationId: create_3
+      operationId: create_4
       requestBody:
         content:
           application/json:
@@ -1814,7 +1895,7 @@ paths:
       - "Админка: новости"
     post:
       description: Создаётся черновиком.
-      operationId: create_2
+      operationId: create_3
       requestBody:
         content:
           application/json:
@@ -1985,7 +2066,7 @@ paths:
       - "Админка: каталог"
     post:
       description: Создаётся неопубликованным. Публикация — отдельным действием.
-      operationId: create_1
+      operationId: create_2
       requestBody:
         content:
           application/json:
@@ -2193,7 +2274,7 @@ paths:
       description: "Новое КП — черновик со своим номером. Номер выдаёт последовате\
         льность базы: двое, нажавшие «создать» одновременно, получат разные номера\
         ."
-      operationId: create
+      operationId: create_1
       requestBody:
         content:
           application/json:
@@ -2377,6 +2458,30 @@ paths:
       security:
       - keycloak: []
       summary: Сотрудники для выбора ответственного
+      tags:
+      - "Админка: сотрудники"
+    post:
+      description: Создаёт учётную запись Keycloak с временным паролем. При первом
+        входе сотрудник обязан задать новый пароль.
+      operationId: create
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewStaff"
+        required: true
+      responses:
+        "200":
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminStaffMember"
+          description: OK
+      security:
+      - keycloak: []
+      summary: Создать сотрудника
       tags:
       - "Админка: сотрудники"
   /api/admin/v1/staff/{login}/avatar:
@@ -2779,10 +2884,10 @@ components:
           type: string
           description: Раздел перечня.
           enum:
-          - Лицензирование
-          - Система качества
           - Техническая документация
+          - Система качества
           - Коммерческие материалы
+          - О компании
           minLength: 1
         listed:
           type: boolean
@@ -3882,6 +3987,14 @@ components:
           format: int64
         wonAmount:
           type: number
+    DigestResult:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        queued:
+          type: boolean
     DutyAssignment:
       type: object
       description: Кого поставить и с какой запиской.
@@ -3979,6 +4092,38 @@ components:
         workingHours:
           type: boolean
           description: Идёт ли рабочее время поддержки прямо сейчас.
+    Edit:
+      type: object
+      properties:
+        importance:
+          type: string
+          pattern: normal|high|urgent
+        manual:
+          type: boolean
+        nextAction:
+          type: string
+          maxLength: 600
+          minLength: 0
+        owner:
+          type: string
+          maxLength: 200
+          minLength: 0
+        stage:
+          type: string
+          pattern: new|clarification|selection|ready_for_quote|handed_to_human|closed
+        summary:
+          type: string
+          maxLength: 600
+          minLength: 0
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - importance
+      - nextAction
+      - stage
+      - summary
     Handoff:
       type: object
       description: "Куда обращаться, когда ассистент не отвечает."
@@ -4027,7 +4172,7 @@ components:
         externalId:
           type: string
           description: Идентификатор материала у его модуля.
-          example: opisanie-izdeliya-vedal-r1-r2
+          example: vedal-r1-product-sheet
         indexedAt:
           type: string
           format: date-time
@@ -4068,6 +4213,10 @@ components:
     Line:
       type: object
       properties:
+        actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/NavigationAction"
         actor:
           type: string
         at:
@@ -4089,6 +4238,41 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Source"
+    NavigationAction:
+      type: object
+      properties:
+        confirmationRequired:
+          type: boolean
+        title:
+          type: string
+        type:
+          type: string
+        url:
+          type: string
+    NewStaff:
+      type: object
+      properties:
+        login:
+          type: string
+          minLength: 1
+          pattern: "[a-z0-9._-]{3,64}"
+        name:
+          type: string
+          maxLength: 160
+          minLength: 0
+        roles:
+          type: array
+          items:
+            type: string
+        temporaryPassword:
+          type: string
+          maxLength: 128
+          minLength: 12
+      required:
+      - login
+      - name
+      - roles
+      - temporaryPassword
     Page:
       type: object
       description: Страница списка.
@@ -4179,6 +4363,30 @@ components:
             type: string
       required:
       - roles
+    Row:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        importance:
+          type: string
+        manual:
+          type: boolean
+        nextAction:
+          type: string
+        owner:
+          type: string
+        stage:
+          type: string
+        summary:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          format: int64
     Source:
       type: object
       description: "Опубликованный материал, на который опирается ответ."
@@ -4221,6 +4429,8 @@ components:
       type: object
       properties:
         answering:
+          type: boolean
+        callbackRequested:
           type: boolean
         id:
           type: string

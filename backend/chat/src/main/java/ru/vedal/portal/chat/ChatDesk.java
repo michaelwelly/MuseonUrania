@@ -46,6 +46,8 @@ public class ChatDesk {
     // примерно тридцать реплик: разговор длиннее в заявке всё равно не читают,
     // а полная переписка остаётся в разговоре, на который заявка ссылается.
     private static final int MAX_TRANSCRIPT = 4000;
+    private static final int MAX_ASSISTANT_CONTEXT = 3000;
+    private static final int MAX_CONTEXT_MESSAGES = 6;
 
     private final ConversationRepository conversations;
     private final ChatMessageRepository messages;
@@ -81,6 +83,11 @@ public class ChatDesk {
         return stream.watch(visitorKey);
     }
 
+    @Transactional(readOnly = true)
+    public boolean hasOpenConversation(String visitorKey) {
+        return conversations.findByVisitorKeyAndStatusNot(visitorKey, Conversation.CLOSED).isPresent();
+    }
+
     /** Откуда пришёл посетитель. Снимается при первом сообщении и больше не меняется. */
     public record Context(String language, String campaign, String page) {}
 
@@ -108,6 +115,7 @@ public class ChatDesk {
     @Transactional
     public Thread say(String visitorKey, String text, String intent, Context context) {
         var conversation = openFor(visitorKey, context);
+        var recentContext = assistantContext(conversation.getId());
         append(conversation, ChatMessage.VISITOR, null, text, null);
 
         // Человек в разговоре — ассистенту здесь делать нечего.
@@ -159,7 +167,7 @@ public class ChatDesk {
         // Поэтому дверь возвращает ленту сразу, с одним лишь вопросом
         // посетителя, а ответ доезжает рассылкой. Кто его считает —
         // {@link Answering}.
-        bus.publishEvent(new Asked(conversation.getId(), visitorKey, text));
+        bus.publishEvent(new Asked(conversation.getId(), visitorKey, text, recentContext));
         return thread(conversation);
     }
 
@@ -175,7 +183,11 @@ public class ChatDesk {
      * которого это событие»: посетитель волен написать второй раз, пока
      * считается ответ на первый.
      */
-    public record Asked(UUID conversationId, String visitorKey, String question) {}
+    public record Asked(UUID conversationId, String visitorKey, String question, String context) {
+        public Asked(UUID conversationId, String visitorKey, String question) {
+            this(conversationId, visitorKey, question, "");
+        }
+    }
 
     /**
      * Ведалина ответила.
@@ -367,6 +379,22 @@ public class ChatDesk {
         return thread(conversation);
     }
 
+    @Transactional
+    public NavigationAction confirmNavigation(String visitorKey, UUID messageId, String url) {
+        var conversation = conversations.lockOpen(visitorKey)
+                .orElseThrow(() -> new NotFoundException("Разговор не найден"));
+        var message = messages.findById(messageId)
+                .filter(m -> conversation.getId().equals(m.getConversationId()))
+                .filter(m -> ChatMessage.ASSISTANT.equals(m.getAuthor()))
+                .orElseThrow(() -> new NotFoundException("Сообщение не найдено"));
+        var action = NavigationAction.from(deserialize(message.getSources())).stream()
+                .filter(a -> a.url().equals(url)).findFirst()
+                .orElseThrow(() -> new NotFoundException("Переход не предложен"));
+        audit.record("public", "chat.navigation.confirmed", "conversation",
+                conversation.getId().toString(), Map.of("message", messageId.toString(), "url", action.url()));
+        return action;
+    }
+
     // ————— разговор, доросший до заявки —————
 
     /**
@@ -383,9 +411,9 @@ public class ChatDesk {
      * человек пришёл, остался в разговоре, до которого ещё надо догадаться
      * дойти.
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public Optional<Transcript> transcriptFor(String visitorKey) {
-        return conversations.findByVisitorKeyAndStatusNot(visitorKey, Conversation.CLOSED)
+        return conversations.lockOpen(visitorKey)
                 .map(c -> new Transcript(c.getId(), transcript(c.getId())));
     }
 
@@ -411,6 +439,23 @@ public class ChatDesk {
                 : "…\n\n" + text.substring(text.length() - MAX_TRANSCRIPT);
     }
 
+    /** Recent messages supplied to Vedalina for pronouns and follow-up questions. */
+    private String assistantContext(UUID conversationId) {
+        var all = messages.findByConversationIdOrderByAtAsc(conversationId);
+        var from = Math.max(0, all.size() - MAX_CONTEXT_MESSAGES);
+        var lines = all.subList(from, all.size()).stream()
+                .map(message -> switch (message.getAuthor()) {
+                    case ChatMessage.VISITOR -> "Посетитель: " + message.getBody();
+                    case ChatMessage.STAFF -> "Сотрудник: " + message.getBody();
+                    default -> "Ведалина: " + message.getBody();
+                })
+                .toList();
+        var context = String.join("\n", lines);
+        return context.length() <= MAX_ASSISTANT_CONTEXT
+                ? context
+                : context.substring(context.length() - MAX_ASSISTANT_CONTEXT);
+    }
+
     /** Разговор вместе с его перепиской. */
     public record Transcript(UUID conversationId, String text) {}
 
@@ -427,20 +472,30 @@ public class ChatDesk {
      */
     @Transactional
     public Thread leadRaised(UUID conversationId, UUID leadId, String number) {
+        return leadRaised(conversationId, leadId, number, false);
+    }
+
+    @Transactional
+    public Thread leadRaised(UUID conversationId, UUID leadId, String number, boolean callback) {
         var conversation = find(conversationId);
 
         // Повторное нажатие: заявка та же (ключ повтора — разговор), и второе
         // сообщение о ней в ленте выглядело бы как второе обращение.
         if (conversation.getLeadId() != null) return thread(conversation);
 
+        conversation.setCallbackRequested(callback);
+        if (callback && !Conversation.ATTENDED.equals(conversation.getStatus())) {
+            conversation.setStatus(Conversation.WAITING);
+        }
         conversation.setLeadId(leadId);
         conversation.setLeadNumber(number);
         append(conversation, ChatMessage.ASSISTANT, null,
-                "Обращение принято, номер " + number + ". Подтверждение отправлено на почту. "
-                        + "Специалист ответит здесь же, в этом окне.", null);
+                "Обращение принято, номер " + number + ". "
+                        + (callback ? "Специалист перезвонит по указанному телефону."
+                                    : "Специалист ответит на обращение."), null);
 
         audit.record("public", "chat.lead", "conversation", conversationId.toString(),
-                Map.of("lead", leadId.toString()));
+                Map.of("lead", leadId.toString(), "callback", String.valueOf(callback)));
 
         return thread(conversation);
     }
@@ -622,6 +677,10 @@ public class ChatDesk {
         messages.save(message);
 
         conversation.setLastAt(Instant.now());
+        if (ConversationBoard.project(conversation, author, body)) {
+            audit.record(actor == null ? "public" : actor, "chat.board.recalculated", "conversation",
+                    conversation.getId().toString(), Map.of("stage", conversation.getStage()));
+        }
 
         // Рассылка объявляется здесь, а не в вызывающих: сообщение, о котором
         // забыли сообщить, — это сообщение, которое собеседник увидит только
@@ -637,10 +696,10 @@ public class ChatDesk {
         var list = messages.findByConversationIdOrderByAtAsc(conversation.getId()).stream()
                 .map(m -> new Line(m.getAuthor(), m.getActor(), m.getBody(),
                         deserialize(m.getSources()), m.getAt(), m.getReadAt(),
-                        m.getId(), m.getHelpful()))
+                        m.getId(), m.getHelpful(), NavigationAction.from(deserialize(m.getSources()))))
                 .toList();
         return new Thread(conversation.getId(), conversation.getStatus(), list,
-                stream.answering(conversation.getId()), conversation.getLeadNumber(), support());
+                stream.answering(conversation.getId()), conversation.getLeadNumber(), support(), conversation.isCallbackRequested());
     }
 
     /**
@@ -725,10 +784,10 @@ public class ChatDesk {
                          * читает ленту при каждом открытии, а лишняя дверь
                          * означала бы второй запрос ради двух полей.
                          */
-                        Support support) {
+                        Support support, boolean callbackRequested) {
 
         static Thread empty(Support support) {
-            return new Thread(null, Conversation.OPEN, List.of(), false, null, support);
+            return new Thread(null, Conversation.OPEN, List.of(), false, null, support, false);
         }
     }
 
@@ -774,5 +833,5 @@ public class ChatDesk {
                         * оценивал; отличать это от «не помог» обязательно,
                         * иначе доля плохих ответов считается по молчавшим.
                         */
-                       Boolean helpful) {}
+                       Boolean helpful, List<NavigationAction> actions) {}
 }

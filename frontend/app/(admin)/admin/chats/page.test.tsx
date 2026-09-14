@@ -25,6 +25,9 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/admin", () => ({
   AdminError: class AdminError extends Error {},
+  conversationBoard: () => Promise.resolve({ items: [], total: 0, pages: 0, page: 0, size: 10 }),
+  editConversationBoard: vi.fn(),
+  sendConversationDigest: vi.fn(),
   chatsAll: mocks.chatsAll,
   chatQueue: mocks.chatQueue,
   chatThread: mocks.chatThread,

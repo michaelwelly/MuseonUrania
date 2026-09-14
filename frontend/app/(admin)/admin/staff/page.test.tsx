@@ -27,6 +27,7 @@ const mocks = vi.hoisted(() => ({
   chatsAll: vi.fn(),
   audit: vi.fn(),
   assignRoles: vi.fn(),
+  createStaff: vi.fn(),
   avatarOf: vi.fn(),
   uploadMyAvatar: vi.fn(),
   removeMyAvatar: vi.fn(),
@@ -39,6 +40,7 @@ vi.mock("@/lib/admin", () => ({
   chatsAll: mocks.chatsAll,
   audit: mocks.audit,
   assignRoles: mocks.assignRoles,
+  createStaff: mocks.createStaff,
   // Портрет. Кружок спрашивает его сам, по логину, — то есть эти двери
   // дёргаются на обоих экранах, даже когда проверяется не портрет.
   avatarOf: mocks.avatarOf,
@@ -98,6 +100,7 @@ beforeEach(() => {
     pages: 0,
   });
   mocks.assignRoles.mockReset().mockResolvedValue([]);
+  mocks.createStaff.mockReset().mockResolvedValue([]);
   mocks.audit.mockReset().mockResolvedValue({
     items: [
       {
@@ -138,7 +141,7 @@ function карточкаПо(логин: string): HTMLElement {
 /** Кнопка-чип роли на карточке. Нет кнопки — значит редактора там нет. */
 function чип(логин: string, роль: string): HTMLButtonElement | undefined {
   return [...карточкаПо(логин).querySelectorAll("button")].find(
-    (b) => b.textContent === роль,
+    (b) => b.getAttribute("aria-label") === роль,
   ) as HTMLButtonElement | undefined;
 }
 
@@ -160,6 +163,35 @@ function можно(текст: string): boolean {
 function карточка(имя: string) {
   return screen.getByText(new RegExp(имя)).closest("article")!;
 }
+
+describe("создание сотрудника", () => {
+  it("передаёт имя, логин, временный пароль и выбранные роли", async () => {
+    await сотрудники();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Добавить сотрудника" }));
+    await user.type(screen.getByLabelText("Имя сотрудника"), "Лаки Ромаган Голо");
+    await user.type(screen.getByLabelText(/^Логин/), "Lucky");
+    await user.type(screen.getByLabelText(/^Временный пароль/), "Temporary!2026");
+    await user.click(screen.getByLabelText("Содержимое сайта"));
+    await user.click(screen.getByRole("button", { name: "Создать сотрудника" }));
+
+    await waitFor(() =>
+      expect(mocks.createStaff).toHaveBeenCalledWith({
+        login: "lucky",
+        name: "Лаки Ромаган Голо",
+        temporaryPassword: "Temporary!2026",
+        roles: ["portal-sales", "portal-production"],
+      }),
+    );
+    expect(await screen.findByText(/Сотрудник lucky создан/)).toBeTruthy();
+  });
+
+  it("не показывает создание сотрудника продавцу", async () => {
+    await сотрудники(["portal-sales"]);
+    expect(screen.queryByRole("button", { name: "Добавить сотрудника" })).toBeNull();
+  });
+});
 
 describe("карточка сотрудника", () => {
   it("должность не выдумывает", async () => {
@@ -210,7 +242,7 @@ describe("карточка сотрудника", () => {
     await сотрудники();
 
     // Своя карточка — только показ, поэтому роль там ровно одна и текстом.
-    expect(within(карточкаПо("i.koltsova")).getByText("portal-admin")).toBeTruthy();
+    expect(within(карточкаПо("i.koltsova")).getByText("Администратор")).toBeTruthy();
     expect(screen.getByText("в портал не пущен")).toBeTruthy();
   });
 
@@ -264,7 +296,7 @@ describe("карточка сотрудника", () => {
     await сотрудники(["portal-sales"]);
 
     expect(чип("a.rogov", "portal-production")).toBeUndefined();
-    expect(within(карточкаПо("a.rogov")).getByText("portal-sales")).toBeTruthy();
+    expect(within(карточкаПо("a.rogov")).getByText("Продажи")).toBeTruthy();
   });
 });
 

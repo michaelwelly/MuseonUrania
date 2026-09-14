@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.vedal.portal.audit.AuditLog;
+import ru.vedal.portal.documents.DocumentQuery;
 
 import java.util.List;
 import java.util.Map;
@@ -19,15 +20,18 @@ public class AssistantService {
 
     private final Guardrails guardrails;
     private final LlmEngine engine;
+    private final DocumentAnswers documentAnswers;
     private final AuditLog audit;
     private final String phone;
     private final String email;
 
-    public AssistantService(Guardrails guardrails, LlmEngine engine, AuditLog audit,
+    public AssistantService(Guardrails guardrails, LlmEngine engine, DocumentQuery documents,
+                           AuditLog audit,
                            @Value("${vedal.contacts.phone}") String phone,
                            @Value("${vedal.contacts.email}") String email) {
         this.guardrails = guardrails;
         this.engine = engine;
+        this.documentAnswers = new DocumentAnswers(documents);
         this.audit = audit;
         this.phone = phone;
         this.email = email;
@@ -40,7 +44,7 @@ public class AssistantService {
      */
     @Transactional
     public AskReply ask(String question, LlmEngine.Scope scope, String actor) {
-        return ask(question, scope, actor, chunk -> { });
+        return ask(question, "", scope, actor, chunk -> { });
     }
 
     /**
@@ -59,6 +63,18 @@ public class AssistantService {
     @Transactional
     public AskReply ask(String question, LlmEngine.Scope scope, String actor,
                         Consumer<String> onChunk) {
+        return ask(question, "", scope, actor, onChunk);
+    }
+
+    @Transactional
+    public AskReply ask(String question, String context, LlmEngine.Scope scope, String actor,
+                        Consumer<String> onChunk) {
+        return ask(question, context, scope, actor, onChunk, stage -> { });
+    }
+
+    @Transactional
+    public AskReply ask(String question, String context, LlmEngine.Scope scope, String actor,
+                        Consumer<String> onChunk, Consumer<String> onStage) {
         // Сначала ограничения, потом движок: вопрос про диагноз или цену
         // до поиска не доходит вообще.
         var refusal = guardrails.refuse(question);
@@ -77,7 +93,15 @@ public class AssistantService {
             return new AskReply(smallTalk.get(), List.of(), null);
         }
 
-        var grounded = engine.answer(question, scope, onChunk);
+        onStage.accept("documents");
+        var document = documentAnswers.answer(question, scope);
+        if (document.isPresent()) {
+            journal(actor, "document", document.get().sources().size());
+            onChunk.accept(document.get().answer());
+            return document.get();
+        }
+
+        var grounded = engine.answer(question, context, scope, onChunk, onStage);
         if (grounded.isEmpty()) {
             journal(actor, "no-sources", 0);
             // Текст берётся у ограничений, а не лежит здесь строкой: язык

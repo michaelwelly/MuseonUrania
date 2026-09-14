@@ -109,6 +109,36 @@ class YandexGptEngineTest extends PostgresTestBase {
         assertThat(user.getFirst().text()).isEqualTo("Что такое VEDAL A-2000?");
     }
 
+    @Test
+    void aFollowUpUsesOnlyItsOwnConversationContext() {
+        var model = new Подставная();
+        var engine = new YandexGptEngine(search, model, true);
+
+        var answer = engine.answer("А сколько он весит?",
+                "Посетитель: Расскажи про VEDAL R1.\nВедалина: VEDAL R1 — открытая система.",
+                LlmEngine.Scope.PUBLIC, chunk -> { }).orElseThrow();
+
+        assertThat(answer.sources()).anyMatch(source -> source.title().contains("VEDAL R1"));
+        var system = model.asked.stream()
+                .filter(message -> message.role() == YandexGpt.Role.SYSTEM)
+                .findFirst().orElseThrow().text();
+        assertThat(system).contains("Контекст текущего разговора:")
+                .contains("Расскажи про VEDAL R1");
+        assertThat(model.asked.getLast().text()).isEqualTo("А сколько он весит?");
+    }
+
+    @Test
+    void aPunctuatedFollowUpUsesTheConversationContextForSearch() {
+        var model = new Подставная();
+        var engine = new YandexGptEngine(search, model, true);
+
+        var answer = engine.answer("А маленького?",
+                "Посетитель: Расскажи про VEDAL T-100.",
+                LlmEngine.Scope.PUBLIC, chunk -> { }).orElseThrow();
+
+        assertThat(answer.sources()).anyMatch(source -> source.title().contains("VEDAL T-100"));
+    }
+
     // Ответ приходит кусками — ради них в разговоре и заведено событие draft.
     @Test
     void theAnswerIsHandedOverAsItArrives() {

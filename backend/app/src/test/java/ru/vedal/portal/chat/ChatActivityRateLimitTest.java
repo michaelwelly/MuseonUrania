@@ -3,9 +3,12 @@ package ru.vedal.portal.chat;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import ru.vedal.portal.PostgresTestBase;
 
 import java.util.UUID;
@@ -27,11 +30,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @TestPropertySource(properties = {
         "vedal.chat.read-rate-limit.count=2",
-        "vedal.chat.typing-rate-limit.count=2"})
+        "vedal.chat.typing-rate-limit.count=2",
+        "vedal.chat.message-rate-limit.count=3",
+        "vedal.assistant.rate-limit.count=1"})
 class ChatActivityRateLimitTest extends PostgresTestBase {
 
     @Autowired
     MockMvc mvc;
+
+    @Autowired
+    ConversationRepository conversations;
+
+    @Autowired
+    ChatMessageRepository messages;
 
     @Test
     void readingTheThreadHasItsOwnBudget() throws Exception {
@@ -76,6 +87,44 @@ class ChatActivityRateLimitTest extends PostgresTestBase {
         // по-прежнему проходит.
         mvc.perform(post("/api/assistant/v1/chat/{key}/typing", key).with(адрес))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void anActiveConversationIsNotBlockedByTheAnonymousIpBudget() throws Exception {
+        var address = свой();
+        var active = UUID.randomUUID().toString();
+        var rotated = UUID.randomUUID().toString();
+
+        try {
+            say(active, address).andExpect(status().isOk());
+            say(active, address).andExpect(status().isOk());
+            say(active, address).andExpect(status().isOk());
+
+            say(active, address).andExpect(status().isTooManyRequests());
+            say(rotated, address).andExpect(status().isTooManyRequests());
+        } finally {
+            deleteConversation(active);
+            deleteConversation(rotated);
+        }
+    }
+
+    private void deleteConversation(String visitorKey) {
+        conversations.findByVisitorKeyAndStatusNot(visitorKey, Conversation.CLOSED)
+                .ifPresent(conversation -> {
+                    messages.deleteAll(messages.findByConversationIdOrderByAtAsc(conversation.getId()));
+                    conversations.delete(conversation);
+                });
+    }
+
+    private org.springframework.test.web.servlet.ResultActions say(
+            String key, RequestPostProcessor address) throws Exception {
+        return mvc.perform(post("/api/assistant/v1/chat")
+                .with(address)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"visitorKey":"%s","text":"Найти документ","intent":"document"}
+                        """.formatted(key)));
     }
 
     /** Свой адрес клиента на тест — счётчик живёт в памяти процесса и не сбрасывается транзакцией. */

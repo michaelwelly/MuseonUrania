@@ -56,6 +56,7 @@ public class AssistantConfig {
     LlmEngine llmEngine(
             DeterministicSearch search,
             ObjectProvider<VectorSearch> vectors,
+            JdbcClient jdbc,
             ObjectMapper json,
             @Value("${vedal.assistant.engine:search}") String engine,
             @Value("${vedal.assistant.yandex.api-key:}") String apiKey,
@@ -118,7 +119,7 @@ public class AssistantConfig {
                 .map(vector -> {
                     log.info("Ведалина ищет по индексу pgvector, "
                             + "не нашлось — поиском по словам");
-                    return (Retrieval) new RagRetrieval(vector, search);
+                    return (Retrieval) new RagRetrieval(vector, new IndexedDocumentSearch(search, jdbc));
                 })
                 .orElse(search);
 

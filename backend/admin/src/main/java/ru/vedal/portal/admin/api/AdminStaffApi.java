@@ -4,9 +4,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -53,6 +58,39 @@ public class AdminStaffApi {
                     """)
     @GetMapping("/staff")
     public List<StaffDirectory.Person> staff() {
+        return staff.staff();
+    }
+
+    public record NewStaff(
+            @NotBlank @Pattern(regexp = "[a-z0-9._-]{3,64}") String login,
+            @NotBlank @Size(max = 160) String name,
+            @NotBlank @Size(min = 12, max = 128) String temporaryPassword,
+            @NotNull List<String> roles) {}
+
+    @Operation(summary = "Создать сотрудника",
+            description = "Создаёт учётную запись Keycloak с временным паролем. "
+                    + "При первом входе сотрудник обязан задать новый пароль.")
+    @PostMapping("/staff")
+    public List<StaffDirectory.Person> create(@Valid @RequestBody NewStaff body,
+                                              Authentication who) {
+        var roles = body.roles().stream().distinct().toList();
+        var foreign = roles.stream()
+                .filter(role -> !StaffDirectory.PORTAL_ROLES.contains(role))
+                .toList();
+        if (!foreign.isEmpty()) {
+            throw new ConflictException("Портал распоряжается только своими ролями: "
+                    + String.join(", ", StaffDirectory.PORTAL_ROLES) + ".");
+        }
+
+        try {
+            staff.create(body.login().trim(), body.name().trim(),
+                    body.temporaryPassword(), roles);
+        } catch (StaffDirectory.Rejected e) {
+            throw new ConflictException(e.getMessage());
+        }
+
+        audit.recordIndependently(Actor.of(who), "staff.created", "staff", body.login().trim(),
+                Map.of("имя", body.name().trim(), "роли", roles));
         return staff.staff();
     }
 

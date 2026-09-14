@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 /**
@@ -49,6 +49,7 @@ public class VectorSearch implements Retrieval {
      * а выглядит как опирающийся на четыре.
      */
     private static final int CANDIDATES = 24;
+    private static final int MAX_CHUNKS_PER_SOURCE = 3;
 
     private final JdbcClient jdbc;
     private final Embeddings embeddings;
@@ -112,19 +113,20 @@ public class VectorSearch implements Retrieval {
                         rs.getString("url"), rs.getString("text"), rs.getDouble("distance")))
                 .list();
 
-        var passages = new ArrayList<Passage>();
-        var seen = new HashSet<String>();
+        var grouped = new LinkedHashMap<String, List<Hit>>();
         for (var hit : rows) {
             if (hit.distance() > maxDistance) continue;
-            // Один материал — один источник в ответе. Второй фрагмент того же
-            // документа занял бы место другого материала, а читателю показал бы
-            // ту же ссылку дважды.
-            if (!seen.add(hit.url())) continue;
-            passages.add(new Passage(
-                    new LlmEngine.Source(hit.title(), hit.url(), hit.kind()), hit.text()));
-            if (passages.size() == MAX_SOURCES) break;
+            if (!grouped.containsKey(hit.url()) && grouped.size() == MAX_SOURCES) continue;
+            var chunks = grouped.computeIfAbsent(hit.url(), ignored -> new ArrayList<>());
+            if (chunks.size() < MAX_CHUNKS_PER_SOURCE) chunks.add(hit);
         }
-        return List.copyOf(passages);
+        return grouped.values().stream().map(chunks -> {
+            var first = chunks.getFirst();
+            // Several matching passages can contain complementary specifications;
+            // keep their text while showing the source link only once.
+            return new Passage(new LlmEngine.Source(first.title(), first.url(), first.kind()),
+                    String.join("\n\n", chunks.stream().map(Hit::text).toList()));
+        }).toList();
     }
 
     /**

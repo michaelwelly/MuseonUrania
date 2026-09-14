@@ -46,6 +46,10 @@ public class Conversation {
     private String status = OPEN;
     private String owner;
 
+    private boolean callbackRequested;
+    public boolean isCallbackRequested() { return callbackRequested; }
+    public void setCallbackRequested(boolean value) { callbackRequested = value; }
+
     @Column(name = "lead_id")
     private UUID leadId;
 
@@ -70,6 +74,30 @@ public class Conversation {
     @Column(name = "last_at")
     private Instant lastAt = Instant.now();
 
+    @Column(name = "board_summary")
+    private String summary = "";
+    private String stage = "new";
+    private String importance = "normal";
+    @Column(name = "next_action")
+    private String nextAction = "Уточнить задачу посетителя";
+    @Column(name = "board_updated_at")
+    private Instant boardUpdatedAt = Instant.now();
+    @Column(name = "board_manual")
+    private boolean boardManual;
+
+    public String getSummary() { return summary; }
+    public void setSummary(String value) { summary = value; }
+    public String getStage() { return stage; }
+    public void setStage(String value) { stage = value; }
+    public String getImportance() { return importance; }
+    public void setImportance(String value) { importance = value; }
+    public String getNextAction() { return nextAction; }
+    public void setNextAction(String value) { nextAction = value; }
+    public Instant getBoardUpdatedAt() { return boardUpdatedAt; }
+    public void setBoardUpdatedAt(Instant value) { boardUpdatedAt = value; }
+    public boolean isBoardManual() { return boardManual; }
+    public void setBoardManual(boolean value) { boardManual = value; }
+
     @Version
     private long version;
 
@@ -84,7 +112,14 @@ public class Conversation {
     public String getPage() { return page; }
     public void setPage(String page) { this.page = page; }
     public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public void setStatus(String status) { this.status = status;
+        if (!boardManual) {
+            if (CLOSED.equals(status)) { stage = "closed"; nextAction = "Работа завершена"; }
+            else if (WAITING.equals(status) || ATTENDED.equals(status)) {
+                stage = "handed_to_human"; nextAction = "Ответить посетителю";
+            }
+        }
+        boardUpdatedAt = Instant.now(); }
     public String getOwner() { return owner; }
     public void setOwner(String owner) { this.owner = owner; }
     public UUID getLeadId() { return leadId; }

@@ -41,6 +41,8 @@ public interface OutboundMailRepository extends JpaRepository<OutboundMail, UUID
 
     long countByStatus(String status);
 
+    long countByTemplateAndStatus(String template, String status);
+
     // Письма, отправленные по заявке. Нужен обезличиванию по обращению
     // субъекта: заявку и переписку по ней уже стирают одним обращением
     // (см. AdminPrivacyApi), письмо-подтверждение — тот же носитель

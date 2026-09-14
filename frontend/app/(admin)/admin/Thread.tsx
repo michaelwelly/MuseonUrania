@@ -81,6 +81,14 @@ export default function Thread({
     <>
       <Note kind="error">{error}</Note>
 
+      {data && data.status !== "closed" && (data.callbackRequested || data.status === "waiting") && (
+        <div className="thread__alert" role="alert">
+          <strong>{data.callbackRequested ? "Посетитель просит перезвонить" : "Разговор ждёт специалиста"}</strong>
+          <p>{data.callbackRequested
+            ? `Обращение ${data.leadNumber ?? ""}. Следующий шаг — позвонить по контакту из заявки. Согласие зафиксировано при отправке.`
+            : "Посетитель ожидает ответа человека. Ведалина приостановила ответы."}</p>
+        </div>
+      )}
       <div className="thread">
         {data?.messages.map((m, i) => (
           <div key={i} className={`bubble bubble--${m.author}`}>
@@ -189,4 +197,3 @@ export default function Thread({
     </>
   );
 }
-

@@ -18,6 +18,10 @@ public interface ConversationRepository extends JpaRepository<Conversation, UUID
     // пишет в одно окно, а сотрудник отвечает в другое.
     Optional<Conversation> findByVisitorKeyAndStatusNot(String visitorKey, String status);
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select c from Conversation c where c.visitorKey = :key and c.status <> 'closed'")
+    Optional<Conversation> lockOpen(@Param("key") String key);
+
     // Очередь сотрудника: кто ждёт живого ответа дольше всех. Сортировка
     // по возрастанию времени последнего сообщения — первым тот, кто ждёт дольше.
     Page<Conversation> findByStatusOrderByLastAtAsc(String status, Pageable pageable);
@@ -39,6 +43,16 @@ public interface ConversationRepository extends JpaRepository<Conversation, UUID
             order by c.lastAt desc
             """)
     Page<Conversation> filter(@Param("owner") String owner, Pageable pageable);
+
+    @Query("""
+            select c from Conversation c where c.erasedAt is null
+              and (:stage is null or c.stage = :stage)
+              and (:owner is null or (:owner = '-' and c.owner is null) or c.owner = :owner)
+              and (:importance is null or c.importance = :importance)
+            order by c.boardUpdatedAt desc, c.id
+            """)
+    Page<Conversation> board(@Param("stage") String stage, @Param("owner") String owner,
+                             @Param("importance") String importance, Pageable pageable);
 
     // Разговор, из которого выросла заявка. Нужен обезличиванию: человек
     // просит удалить свои данные один раз, а лежат они в двух местах —

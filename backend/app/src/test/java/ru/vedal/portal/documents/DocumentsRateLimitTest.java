@@ -14,31 +14,34 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 // Двери документов (issue #65: разбор назвал их дверью без счётчика) теперь
 // стоят под лимитом частоты — как формы и ассистент.
 //
-// Предел здесь понижен настройкой теста, а не проверяется настоящим
-// (30 за 10 минут): дожидаться тридцати одного запроса ради теста накладно,
+// Предел здесь понижен настройкой теста, а не проверяется настоящий
+// (120 за 10 минут): дожидаться ста двадцати запросов ради теста накладно,
 // а привязка к самому механизму RateLimit уже проверена RateLimitTest.
-// Здесь проверяется другое — что дверь вообще спрашивает лимит и правильный
-// (documentsRateLimit, а не чужой).
+// Здесь проверяется другое — что список и файл имеют независимые бюджеты.
 @AutoConfigureMockMvc
-@TestPropertySource(properties = "vedal.documents.rate-limit.count=3")
+@TestPropertySource(properties = {
+        "vedal.documents.list-rate-limit.count=2",
+        "vedal.documents.download-rate-limit.count=2"
+})
 class DocumentsRateLimitTest extends PostgresTestBase {
 
     @Autowired
     MockMvc mvc;
 
     @Test
-    void listAndFileShareOneBudgetPerAddress() throws Exception {
+    void listAndFileHaveSeparateBudgetsPerAddress() throws Exception {
         var адрес = свой();
 
-        // Перечень и файл документа делят один бюджет: три обращения в любой
-        // комбинации между обеими дверьми проходят...
         mvc.perform(get("/api/public/v1/documents").with(адрес)).andExpect(status().isOk());
+        mvc.perform(get("/api/public/v1/documents").with(адрес)).andExpect(status().isOk());
+        mvc.perform(get("/api/public/v1/documents").with(адрес))
+                .andExpect(status().isTooManyRequests());
+
+        // Исчерпанный бюджет списка не блокирует скачивание.
         mvc.perform(get("/api/public/v1/documents/no-such-document/file").with(адрес))
                 .andExpect(status().isNotFound());
-        mvc.perform(get("/api/public/v1/documents").with(адрес)).andExpect(status().isOk());
-
-        // ...а четвёртое, независимо от того, в какую из двух дверей,
-        // упирается в общий потолок.
+        mvc.perform(get("/api/public/v1/documents/no-such-document/file").with(адрес))
+                .andExpect(status().isNotFound());
         mvc.perform(get("/api/public/v1/documents/no-such-document/file").with(адрес))
                 .andExpect(status().isTooManyRequests());
     }

@@ -128,9 +128,9 @@ public class FormsController {
                     заявку с тем же номером: два номера на одно обращение — это
                     два обращения в глазах того, кто их называет.
 
-                    Разговор при этом не закрывается и в очередь не встаёт: заявка —
-                    результат разговора, а не его конец. Человек волен спросить
-                    дальше, и отвечать ему будут в том же окне.
+                    Разговор не закрывается. При callback=true он ожидает специалиста,
+                    который должен позвонить; обычное обращение не меняет состояние.
+                    Контакты и согласие приходят только из заполненной формы.
 
                     Лимит частоты общий с заявками форм — 5 обращений за 10 минут.
                     """)
@@ -142,6 +142,7 @@ public class FormsController {
     @ApiResponse(responseCode = "429", description = "Превышен лимит частоты.",
             content = @Content(mediaType = "application/problem+json",
                     schema = @Schema(ref = "#/components/schemas/ProblemDetail")))
+    @org.springframework.transaction.annotation.Transactional
     @PostMapping("/leads/from-chat")
     public ResponseEntity<Accepted> fromChat(@Valid @RequestBody ChatLeadSubmission body,
                                              HttpServletRequest request) {
@@ -164,15 +165,29 @@ public class FormsController {
         var receipt = intake.accept(new LeadIntake.Draft(
                 // Консультация: тип формы в чате не выбирают, а из четырёх
                 // существующих обращение из разговора — именно она.
-                "consultation", body.name(), body.company(), body.phone(), body.email(),
-                null, null, transcript.text(), "chat",
+                "consultation", body.name(), body.company(), body.phone(), body.email() == null ? "" : body.email(),
+                body.productSlug(), null, handoffText(body, transcript.text()), "chat",
                 body.language(), body.campaign()), "chat:" + transcript.conversationId());
 
         // Сообщение в ленту пишется и при повторе — точнее, не пишется:
         // разговор, у которого заявка уже есть, второй раз о ней не объявляет.
-        chat.leadRaised(transcript.conversationId(), receipt.id(), receipt.number());
+        chat.leadRaised(transcript.conversationId(), receipt.id(), receipt.number(),
+                body.callbackRequested());
 
         return ResponseEntity.accepted()
                 .body(new Accepted(receipt.id(), receipt.number(), SUCCESS));
     }
+    private static String handoffText(ChatLeadSubmission body, String transcript) {
+        return "Краткое содержание (последние реплики):\n"
+                + transcript.substring(Math.max(0, transcript.length() - 1000))
+                + "\nПричина: " + (body.reason() == null || body.reason().isBlank()
+                    ? (body.callbackRequested() ? "Просьба перезвонить" : "Консультация")
+                    : body.reason())
+                + "\nИзделие (со слов посетителя): "
+                + (body.productSlug() == null || body.productSlug().isBlank() ? "Не указано" : body.productSlug())
+                + "\nСледующий шаг: " + (body.callbackRequested()
+                    ? "Позвонить по указанному телефону" : "Ответить на обращение")
+                + "\n\nПереписка:\n" + transcript;
+    }
+
 }

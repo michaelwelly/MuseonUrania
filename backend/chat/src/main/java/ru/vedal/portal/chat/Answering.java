@@ -121,8 +121,9 @@ public class Answering {
             // Куски ответа уходят посетителю по мере готовности. Детерминированный
             // поиск отдаёт один кусок — он ничего не генерирует, и притворяться,
             // что он печатает по словам, значит рисовать работу, которой нет.
-            var reply = assistant.ask(asked.question(), LlmEngine.Scope.PUBLIC, "public",
-                    chunk -> stream.draft(asked.conversationId(), asked.visitorKey(), chunk));
+            var reply = assistant.ask(asked.question(), asked.context(), LlmEngine.Scope.PUBLIC, "public",
+                    chunk -> stream.draft(asked.conversationId(), asked.visitorKey(), chunk),
+                    stage -> stream.stage(asked.visitorKey(), stage));
 
             desk.answered(asked.conversationId(), reply);
 

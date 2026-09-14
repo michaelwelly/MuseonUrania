@@ -125,6 +125,7 @@ class VectorSearchTest extends PostgresTestBase {
 
         assertThat(index().stats().chunks()).isGreaterThan(1);
         assertThat(found).hasSize(1);
+        assertThat(found.getFirst().text().length()).isGreaterThan(Chunks.MAX);
     }
 
     // Область — не фильтр поверх выдачи, а условие запроса. Внутренний

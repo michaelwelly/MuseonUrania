@@ -1,0 +1,17 @@
+.board { margin: 0 0 32px; padding: 0 0 24px; border-bottom: 1px solid var(--line, #d9dfe5); }
+.heading, .filters { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-bottom: 12px; }
+.heading { justify-content: space-between; }
+.heading h2 { margin: 0; }
+.filters label, .editor > label { display: flex; flex-direction: column; gap: 8px; }
+.filters input, .filters select, .editor textarea { padding: 8px; border: 1px solid #aebac3; border-radius: var(--radius-control); background: transparent; color: inherit; font: inherit; }
+.scroll { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.table th, .table td { text-align: left; vertical-align: top; padding: 12px 8px; border-bottom: 1px solid var(--line, #d9dfe5); }
+.table th { white-space: nowrap; }
+.table td:first-child { min-width: 220px; max-width: 360px; overflow-wrap: anywhere; }
+.table td:nth-child(5) { min-width: 180px; overflow-wrap: anywhere; }
+.table button { display: block; margin-bottom: 8px; }
+.manual { display: block; opacity: .65; margin-top: 8px; }
+.editor { display: grid; gap: 16px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #aebac3; }
+.editor textarea { width: 100%; min-height: 70px; box-sizing: border-box; }
+@media (max-width: 640px) { .board { padding-bottom: 16px; } .filters label { width: 100%; } }

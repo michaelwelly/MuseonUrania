@@ -93,6 +93,10 @@ public class ChatPrivacy {
             message.setSources(null);
         }
 
+        conversation.setSummary(ERASED);
+        conversation.setNextAction(ERASED);
+        conversation.setBoardUpdatedAt(Instant.now());
+        conversation.setCallbackRequested(false);
         conversation.setErasedAt(Instant.now());
         conversation.setErasureBasis(basis);
 

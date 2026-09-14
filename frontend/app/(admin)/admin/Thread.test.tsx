@@ -50,14 +50,14 @@ const ответ = (status: number, body: string) =>
  *
  * `closing` — то, чем дверь закрытия отвечает на POST.
  */
-async function поднять(closing: Response) {
+async function поднять(closing: Response, threadData = ЛЕНТА) {
   vi.stubEnv("NEXT_PUBLIC_API_URL", BASE);
   vi.resetModules();
   // Вход подменяется целиком: этот набор про закрытие разговора, а не про PKCE.
   vi.doMock("@/lib/auth", () => ({ accessToken: async () => "token-1" }));
 
   const fetchMock = vi.fn(async (url: string) =>
-    String(url).endsWith("/close") ? closing : ответ(200, JSON.stringify(ЛЕНТА)),
+    String(url).endsWith("/close") ? closing : ответ(200, JSON.stringify(threadData)),
   );
   vi.stubGlobal("fetch", fetchMock);
 
@@ -103,4 +103,15 @@ describe("закрытие разговора", () => {
     await screen.findByText("Разговор не найден");
     expect(onDone).not.toHaveBeenCalled();
   });
+});
+
+
+it("показывает просьбу перезвонить отдельным алертом над перепиской", async () => {
+  const callbackThread = { ...ЛЕНТА, callbackRequested: true, leadNumber: "З-2026-0042" };
+  const { Thread } = await поднять(ответ(204, ""), callbackThread);
+  const { container } = render(<Thread id="c-1" beat={0} typing={false} onDone={() => {}} />);
+  const alert = await screen.findByRole("alert");
+  expect(alert).toHaveTextContent("Посетитель просит перезвонить");
+  expect(alert).toHaveTextContent("З-2026-0042");
+  expect(container.querySelector(".thread")?.contains(alert)).toBe(false);
 });

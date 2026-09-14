@@ -7,26 +7,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-/**
- * Обращение, заведённое прямо из разговора.
- *
- * <p><b>Почему не та же {@link LeadSubmission}.</b> Разница не в удобстве,
- * а в том, откуда берутся поля. Тип формы здесь не выбирают — обращение
- * из чата всегда консультация. Текст обращения не пишут — им становится
- * переписка, которая уже состоялась: заставлять человека пересказывать
- * в форме то, что он только что написал в чат, значит спрашивать дважды.
- * Изделие и серийный номер сюда не приходят вовсе.
- *
- * <p>А вот проверки контактов те же, и это не формальность: заявка без
- * телефона и почты — заявка, по которой некому ответить, независимо от того,
- * из какой двери она пришла.
- */
-@Schema(name = "ChatLeadSubmission",
-        description = """
-                Контакты для обращения, заводимого из разговора. Тип формы, текст
-                и изделие не передаются: форма всегда `consultation`, текстом
-                становится переписка, изделия в разговоре может не быть вовсе.
-                """)
+/** Explicitly provided contacts and consent for a conversation handoff. */
+@Schema(name = "ChatLeadSubmission", description = """
+        Контакты для обращения из разговора. Форма — consultation, переписку
+        прикладывает сервер. Для callback=true почта необязательна; телефон
+        и явное согласие обязательны. Изделие и причина — со слов посетителя.
+        """)
 public record ChatLeadSubmission(
 
         @Schema(description = """
@@ -39,7 +25,7 @@ public record ChatLeadSubmission(
         @Schema(description = "Имя обращающегося.", example = "Ирина Петрова",
                 requiredMode = Schema.RequiredMode.REQUIRED)
         @NotBlank(message = "Укажите, к кому обращаться")
-        String name,
+        @Size(max = 200) String name,
 
         @Schema(description = "Организация. Необязательно.",
                 example = "Областной перинатальный центр")
@@ -50,14 +36,13 @@ public record ChatLeadSubmission(
                 example = "+7 343 300-00-00", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotBlank
         @Pattern(regexp = "^(?:\\D*\\d){10,}\\D*$", message = "Укажите телефон с кодом")
-        String phone,
+        @Size(max = 100) String phone,
 
         @Schema(description = "Адрес почты для ответа. На него уходит подтверждение "
                 + "с номером обращения.",
-                example = "i.petrova@example.ru", requiredMode = Schema.RequiredMode.REQUIRED)
-        @NotBlank
+                example = "i.petrova@example.ru")
         @Email(message = "Проверьте адрес почты")
-        String email,
+        @Size(max = 254) String email,
 
         @Schema(description = "Язык страницы: двухбуквенный код. Разрез аналитики.",
                 allowableValues = {"ru", "en", "zh"}, example = "ru")
@@ -84,6 +69,18 @@ public record ChatLeadSubmission(
 
         @Schema(description = "Ловушка для ботов: поле скрыто в разметке и должно приходить "
                 + "пустым. Заполненное — обращение отклоняется с `400`.", example = "")
-        String trap
+        String trap,
+
+        Boolean callback,
+        @Size(max = 500) String reason,
+        @Size(max = 128) @Pattern(regexp = "^[a-z0-9-]*$") String productSlug
 ) {
+    @AssertTrue(message = "Укажите почту для обращения")
+    public boolean isEmailProvided() {
+        return callbackRequested() || (email != null && !email.isBlank());
+    }
+
+    public boolean callbackRequested() {
+        return Boolean.TRUE.equals(callback);
+    }
 }

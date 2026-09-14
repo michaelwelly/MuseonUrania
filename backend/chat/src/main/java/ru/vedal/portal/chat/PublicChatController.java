@@ -40,16 +40,19 @@ import java.util.UUID;
 public class PublicChatController {
 
     private final ChatDesk desk;
-    private final RateLimit rateLimit;
+    private final RateLimit anonymousRateLimit;
+    private final RateLimit messageRateLimit;
     private final RateLimit readRateLimit;
     private final RateLimit typingRateLimit;
 
     public PublicChatController(ChatDesk desk,
                                 @Qualifier("assistantRateLimit") RateLimit rateLimit,
+                                @Qualifier("chatMessageRateLimit") RateLimit messageRateLimit,
                                 @Qualifier("chatReadRateLimit") RateLimit readRateLimit,
                                 @Qualifier("chatTypingRateLimit") RateLimit typingRateLimit) {
         this.desk = desk;
-        this.rateLimit = rateLimit;
+        this.anonymousRateLimit = rateLimit;
+        this.messageRateLimit = messageRateLimit;
         this.readRateLimit = readRateLimit;
         this.typingRateLimit = typingRateLimit;
     }
@@ -108,7 +111,9 @@ public class PublicChatController {
                     требует, чтобы клиент и сервер одинаково понимали, где кончилось прошлое
                     состояние, а при обрыве связи они понимают это по-разному.
 
-                    Лимит частоты общий с `ask` — 20 обращений за 10 минут с адреса.
+                    Первый запуск разговора входит в общий анонимный лимит. После начала
+                    беседы действует отдельный лимит по `visitorKey` — 300 действий за
+                    10 минут: посетители одной клиники за общим NAT не блокируют друг друга.
                     """)
     @ApiResponse(responseCode = "200",
             description = "Лента разговора с вопросом посетителя; ответ придёт потоком.")
@@ -120,7 +125,7 @@ public class PublicChatController {
                     schema = @Schema(ref = "#/components/schemas/ProblemDetail")))
     @PostMapping
     public ChatDesk.Thread say(@Valid @RequestBody Say request, HttpServletRequest http) {
-        if (!rateLimit.allow(http.getRemoteAddr())) {
+        if (!allowConversation(request.visitorKey(), http.getRemoteAddr(), true)) {
             throw new TooManyRequestsException("Слишком много сообщений подряд. Попробуйте позже.");
         }
         return desk.say(request.visitorKey(), request.text(), request.intent(),
@@ -153,7 +158,7 @@ public class PublicChatController {
                     Повторный вызов ничего не меняет: разговор уже у человека,
                     второго сообщения и второй записи в журнале не будет.
 
-                    Лимит частоты общий с `ask`.
+                    Для начатого разговора действует отдельный лимит по `visitorKey`.
                     """)
     @ApiResponse(responseCode = "200", description = "Лента разговора; статус — `waiting`.")
     @ApiResponse(responseCode = "429", description = "Превышен лимит частоты.",
@@ -161,7 +166,7 @@ public class PublicChatController {
                     schema = @Schema(ref = "#/components/schemas/ProblemDetail")))
     @PostMapping("/handoff")
     public ChatDesk.Thread handoff(@Valid @RequestBody CallHuman request, HttpServletRequest http) {
-        if (!rateLimit.allow(http.getRemoteAddr())) {
+        if (!allowConversation(request.visitorKey(), http.getRemoteAddr(), true)) {
             throw new TooManyRequestsException("Слишком много обращений подряд. Попробуйте позже.");
         }
         return desk.callHuman(request.visitorKey(),
@@ -201,7 +206,7 @@ public class PublicChatController {
                     В журнал уходит каждое изменение; важно не последнее нажатие,
                     а то, что ответ вызвал сомнение.
 
-                    Лимит частоты общий с `ask`.
+                    Оценка входит в лимит активности своего разговора.
                     """)
     @ApiResponse(responseCode = "200", description = "Лента разговора с проставленной оценкой.")
     @ApiResponse(responseCode = "404", description = "Разговора нет, сообщение чужое "
@@ -213,10 +218,30 @@ public class PublicChatController {
                     schema = @Schema(ref = "#/components/schemas/ProblemDetail")))
     @PostMapping("/rating")
     public ChatDesk.Thread rate(@Valid @RequestBody Rating request, HttpServletRequest http) {
-        if (!rateLimit.allow(http.getRemoteAddr())) {
+        if (!messageRateLimit.allow(request.visitorKey())) {
             throw new TooManyRequestsException("Слишком много обращений подряд. Попробуйте позже.");
         }
         return desk.rate(request.visitorKey(), request.messageId(), request.helpful());
+    }
+
+    public record Navigate(@NotBlank @Size(max = 64) String visitorKey,
+                           @NotNull UUID messageId, @NotBlank @Size(max = 512) String url,
+                           @jakarta.validation.constraints.AssertTrue boolean confirmed) {}
+
+    @PostMapping("/navigation")
+    public NavigationAction navigate(@Valid @RequestBody Navigate request) {
+        if (!messageRateLimit.allow(request.visitorKey())) {
+            throw new TooManyRequestsException("Слишком много переходов. Попробуйте позже.");
+        }
+        return desk.confirmNavigation(request.visitorKey(), request.messageId(), request.url());
+    }
+
+    private boolean allowConversation(String visitorKey, String address, boolean mayStart) {
+        if (mayStart && !desk.hasOpenConversation(visitorKey)
+                && !anonymousRateLimit.allow(address)) {
+            return false;
+        }
+        return messageRateLimit.allow(visitorKey);
     }
 
     @Operation(summary = "Прочитать разговор",
@@ -225,7 +250,7 @@ public class PublicChatController {
                     для виджета «ещё не писали» и «не нашли» это одно и то же состояние,
                     и различать их незачем.
 
-                    Свой лимит частоты, отдельный от `ask`/`say`: 60 обращений за 10
+                    Свой лимит частоты, отдельный от `ask`/`say`: 300 обращений за 10
                     минут с адреса. Дверь читает базу по чужому ключу без проверки
                     прав, и без предела перебор ключей упирался бы не в потолок,
                     а в диск.
@@ -254,7 +279,7 @@ public class PublicChatController {
                     ради надписи, которая и так не меняется.
 
                     Свой, более широкий лимит частоты: 240 обращений за 10 минут
-                    с адреса. Общий с `ask`/`say` (20 за 10 минут) обрывал бы надпись
+                    с адреса. Общий с лимитом сообщений обрывал бы надпись
                     «печатает» на середине обычного набора текста.
                     """)
     @ApiResponse(responseCode = "204", description = "Принято.")
@@ -280,6 +305,8 @@ public class PublicChatController {
                     - `typing` — противоположная сторона набирает текст;
                       `who` = `staff` или `assistant`.
                     - `draft` — кусок ещё не дописанного ответа Ведалины.
+                    - `stage` — текущая реальная стадия: поиск, сверка документов
+                      или формирование ответа.
 
                     `changed` не несёт текста намеренно: положи мы тело сообщения
                     в событие, и рассылка стала бы вторым местом, где решается,
