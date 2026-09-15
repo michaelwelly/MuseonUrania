@@ -5,7 +5,7 @@ import HomeLeadForm from "@/components/HomeLeadForm";
 import BrandPattern from "@/components/BrandPattern";
 import { site } from "@/content/site";
 import { ui as strings } from "@/content/ui";
-import { news } from "@/content/news";
+import { fetchNews, type NewsItem } from "@/lib/api";
 import {
   homeHero,
   featured,
@@ -43,7 +43,14 @@ function Arrow({ size = 16 }: { size?: number }) {
   );
 }
 
-export default function HomeScreen() {
+export default async function HomeScreen() {
+  // Новости — из портала, как на странице новостей. Раньше главная брала
+  // локальный массив из content/news.ts, пустой навсегда, и продолжала
+  // обещать «первым материалом — Иннопром» уже после того, как материал
+  // вышел. Портал недоступен — блок показывает пустое состояние, а не роняет
+  // главную: она должна открываться при любых проблемах бэкенда.
+  const news: NewsItem[] = await fetchNews().catch(() => []);
+
   return (
     <main className={styles.page}>
       {/* 01. Hero */}
@@ -300,9 +307,19 @@ export default function HomeScreen() {
         ) : (
           <ul className={styles.newsGrid}>
             {news.slice(0, 3).map((item, i) => (
-              <li key={item.title} data-reveal={i}>
-                <Link className={styles.card} href="/news/">
-                  <div className={styles.newsPhoto} />
+              <li key={item.slug || item.title} data-reveal={i}>
+                <Link className={styles.card} href={item.slug ? `/news/${item.slug}/` : "/news/"}>
+                  <div className={styles.newsPhoto}>
+                    {item.image && (
+                      <Image
+                        src={mediaSrc(item.image.src)}
+                        alt={item.image.alt}
+                        fill
+                        quality={90}
+                        sizes="(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 33vw"
+                      />
+                    )}
+                  </div>
                   <div className={styles.newsBody}>
                     <span className={styles.newsDate}>{item.date}</span>
                     <h3 className={styles.newsTitle}>{item.title}</h3>

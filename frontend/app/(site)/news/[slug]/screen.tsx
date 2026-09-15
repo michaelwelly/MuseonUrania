@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { newsMedia } from "@/content/news-media";
 import { ui as strings } from "@/content/ui";
 import { fetchNewsEntry } from "@/lib/api";
 import { mediaSrc } from "@/lib/media";
@@ -57,6 +58,7 @@ export default async function NewsEntryScreen({ slug }: { slug: string }) {
     .filter(Boolean);
   const path = `/news/${entry.slug}/`;
   const image = entry.image ? mediaSrc(entry.image.src) : undefined;
+  const media = newsMedia[entry.slug];
 
   return (
     <main className={styles.page}>
@@ -137,6 +139,42 @@ export default async function NewsEntryScreen({ slug }: { slug: string }) {
             {BODY_AWAITING}
           </p>
         )}
+
+        {/* Фото и видео сверх обложки — content/news-media.ts. Видео
+            грузится по нажатию (preload="none"): два ролика по 8–10 МБ
+            не должны скачиваться у каждого, кто открыл новость. */}
+        {media && media.gallery.length > 0 && (
+          <ul className={styles.gallery}>
+            {media.gallery.map((shot) => (
+              <li key={shot.src} className={styles.galleryItem}>
+                <Image
+                  src={mediaSrc(shot.src)}
+                  alt={shot.alt}
+                  fill
+                  quality={90}
+                  sizes="(max-width: 700px) 50vw, 380px"
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+        {media && media.videos.length > 0 && (
+          <div className={styles.videos}>
+            {media.videos.map((v) => (
+              <figure key={v.src} className={styles.video}>
+                <video
+                  src={mediaSrc(v.src)}
+                  controls
+                  playsInline
+                  preload="none"
+                  aria-label={v.title}
+                />
+                <figcaption>{v.title}</figcaption>
+              </figure>
+            ))}
+          </div>
+        )}
+        {media?.credit && <p className={styles.credit}>{media.credit}</p>}
       </article>
 
       <div className={styles.back}>

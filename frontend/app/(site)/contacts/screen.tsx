@@ -19,6 +19,7 @@ import {
 } from "@/content/contacts";
 import { ui as strings } from "@/content/ui";
 import { LEAD_ANCHOR } from "@/lib/lead-link";
+import { mediaSrc } from "@/lib/media";
 import styles from "./page.module.css";
 
 // Контакты. Тело страницы вынесено из `page.tsx` сюда, потому что
@@ -102,6 +103,18 @@ export default async function ContactsScreen() {
               </li>
             ))}
           </ul>
+          <figure className={styles.building}>
+            <div className={styles.buildingPhoto}>
+              <Image
+                src={mediaSrc(route.building.src)}
+                alt={route.building.alt}
+                fill
+                quality={90}
+                sizes="(max-width: 1100px) 100vw, 304px"
+              />
+            </div>
+            <figcaption className={styles.buildingCaption}>{route.building.caption}</figcaption>
+          </figure>
           {/* Ссылка остаётся и после того, как появилась встроенная карта
               (issue #74): она работает у всех — у отказавшегося от кадра,
               у браузера без JS и у поисковика, — и ведёт на Яндекс.Карты
