@@ -48,11 +48,14 @@ export const headerCta = { href: "/contacts/" };
 //
 // Здесь состав и порядок — решение заказчика. Подписи здесь не лежат:
 // они в `content/ui.ts` под теми же ключами.
+//
+// «Производство» — вторым, сразу после «О компании» (заказчик, 15 сентября):
+// собственная площадка — главный довод, и он стоит раньше каталога.
 export const nav = [
   { key: "about", href: "/about/" },
+  { key: "production", href: "/production/" },
   { key: "products", href: "/products/" },
   { key: "service", href: "/service/" },
-  { key: "production", href: "/production/" },
   { key: "documents", href: "/documents/" },
   { key: "news", href: "/news/" },
   { key: "contacts", href: "/contacts/" },
