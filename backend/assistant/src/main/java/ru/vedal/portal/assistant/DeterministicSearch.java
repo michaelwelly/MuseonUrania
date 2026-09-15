@@ -73,13 +73,16 @@ public class DeterministicSearch implements LlmEngine, Retrieval {
     private final ContentQuery content;
     private final DocumentQuery documents;
     private final SitePages pages;
+    private final PublicDocuments publicDocuments;
 
     public DeterministicSearch(CatalogQuery catalog, ContentQuery content,
-                               DocumentQuery documents, SitePages pages) {
+                               DocumentQuery documents, SitePages pages,
+                               PublicDocuments publicDocuments) {
         this.catalog = catalog;
         this.content = content;
         this.documents = documents;
         this.pages = pages;
+        this.publicDocuments = publicDocuments;
     }
 
     @Override
@@ -175,7 +178,13 @@ public class DeterministicSearch implements LlmEngine, Retrieval {
         // Единственное место, где области расходятся. Изделия и новости
         // в обоих контурах одни и те же — опубликованные: черновик карточки
         // сотруднику показывать незачем, он смотрит его в админке.
-        var visible = scope == Scope.STAFF ? documents.staffDocuments() : documents.listedDocuments();
+        //
+        // Раздел документов на сайте скрыт — посетителю перечень не показывается
+        // вовсе, а не отсеивается после подсчёта: строка документа, отнятая
+        // уже из первой четвёрки, унесла бы с собой место изделия или страницы.
+        var visible = scope == Scope.STAFF ? documents.staffDocuments()
+                : publicDocuments.hiddenFrom(scope) ? List.<DocumentQuery.Card>of()
+                : documents.listedDocuments();
         for (var d : visible) {
             var score = score(tokens, named(d.title(), d.subject()), text(d.group()));
             if (score >= MIN_SCORE) {
@@ -193,6 +202,11 @@ public class DeterministicSearch implements LlmEngine, Retrieval {
         }
 
         return hits.stream()
+                // Страница раздела документов сюда уже не приходит — её не отдаёт
+                // SitePages. Проверка стоит ещё раз, до предела выдачи: ссылка
+                // на скрытый раздел, пришедшая любым будущим путём, не должна
+                // ни попасть в ответ, ни занять в нём место.
+                .filter(hit -> !publicDocuments.hides(hit.passage().source(), scope))
                 .sorted(Comparator.comparingInt(Hit::score).reversed())
                 .limit(MAX_SOURCES)
                 .map(Hit::passage)

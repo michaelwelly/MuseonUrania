@@ -49,11 +49,17 @@ class VedalinaAnswersTest {
     private static final String PHONE = "8 800 600 3449";
     private static final String EMAIL = "sales@vedal-med.ru";
 
-    private final SitePages pages = new SitePages(PHONE, EMAIL, "09:00", "17:30");
+    // Раздел документов здесь открыт: тест стережёт ответы по перечню и выдачу
+    // файлов, то есть поведение для включённого раздела. Что Ведалина говорит
+    // при скрытом разделе, проверяет HiddenPublicDocumentsTest.
+    private static final PublicDocuments SHOWN = PublicDocuments.SHOWN;
+
+    private final SitePages pages = new SitePages(PHONE, EMAIL, "09:00", "17:30", SHOWN);
     private final DeterministicSearch search =
-            new DeterministicSearch(new Каталог(), new Лента(), new Перечень(), pages);
+            new DeterministicSearch(new Каталог(), new Лента(), new Перечень(), pages, SHOWN);
     private final AssistantService vedalina = new AssistantService(
-            new Guardrails(), search, new Перечень(), Mockito.mock(AuditLog.class), PHONE, EMAIL);
+            new Guardrails(SHOWN), search, new Перечень(), SHOWN, Mockito.mock(AuditLog.class),
+            PHONE, EMAIL);
 
     private AskReply ask(String question) {
         return vedalina.ask(question, LlmEngine.Scope.PUBLIC, "public");
@@ -242,7 +248,7 @@ class VedalinaAnswersTest {
     // ————— материалы стенда —————
 
     /** Каталог первого релиза: те же четыре позиции, что на сайте. */
-    private static final class Каталог implements CatalogQuery {
+    static final class Каталог implements CatalogQuery {
 
         @Override
         public List<PublicDto.CategoryView> categories() {
@@ -281,7 +287,7 @@ class VedalinaAnswersTest {
         }
     }
 
-    private static final class Лента implements ContentQuery {
+    static final class Лента implements ContentQuery {
 
         @Override
         public List<Card> publishedNews() {
@@ -298,7 +304,7 @@ class VedalinaAnswersTest {
     }
 
     /** Перечень документов: финальный открытый пакет сайта. */
-    private static final class Перечень implements DocumentQuery {
+    static final class Перечень implements DocumentQuery {
 
         @Override
         public List<Card> listedDocuments() {

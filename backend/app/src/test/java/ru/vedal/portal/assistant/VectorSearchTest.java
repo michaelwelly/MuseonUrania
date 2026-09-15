@@ -49,7 +49,7 @@ class VectorSearchTest extends PostgresTestBase {
     }
 
     private VectorSearch search() {
-        return new VectorSearch(jdbc, embeddings, 0.45);
+        return new VectorSearch(jdbc, embeddings, 0.45, PublicDocuments.HIDDEN);
     }
 
     private void put(String id, String title, String visibility, String text) {
@@ -142,6 +142,25 @@ class VectorSearchTest extends PostgresTestBase {
                 .containsExactly("Полигон: внутренний кубик");
     }
 
+    // Раздел документов скрыт — документ из индекса посетителю не находится,
+    // и отсекается он условием запроса, а не после: иначе четыре места выдачи
+    // заняли бы фрагменты датащита, а после отсева не осталось бы ничего.
+    // Сотруднику тот же документ находится.
+    @Test
+    void aHiddenDocumentIsNotFoundForAVisitorButIsForStaff() {
+        index().index(new KnowledgeIndex.Material("document", "cube-sheet",
+                "Полигон: датащит кубика", "/api/public/v1/documents/cube-sheet/file", "ru",
+                "public", "Синтетический материал полигона. Кубик, датащит кубика."));
+        index().index(new KnowledgeIndex.Material("page", "documents",
+                "Полигон: раздел документов", "/documents/", "ru",
+                "public", "Синтетический материал полигона. Кубик в разделе документов."));
+
+        assertThat(search().find("расскажите про кубик", LlmEngine.Scope.PUBLIC)).isEmpty();
+        assertThat(search().find("расскажите про кубик", LlmEngine.Scope.STAFF))
+                .extracting(p -> p.source().title())
+                .contains("Полигон: датащит кубика");
+    }
+
     // Векторы разных моделей лежат в разных пространствах: расстояние до
     // чужого чанка считается, а смысла не имеет. Лучше не найти ничего,
     // чем найти неизвестно что.
@@ -151,7 +170,8 @@ class VectorSearchTest extends PostgresTestBase {
                 "Синтетический материал полигона. Красный кубик.");
 
         var another = new VectorSearch(jdbc,
-                new SyntheticEmbeddings("emb://polygon/synthetic-doc-v2/latest"), 0.45);
+                new SyntheticEmbeddings("emb://polygon/synthetic-doc-v2/latest"), 0.45,
+                PublicDocuments.HIDDEN);
 
         assertThat(another.find("расскажите про кубик", LlmEngine.Scope.PUBLIC)).isEmpty();
     }
@@ -168,7 +188,7 @@ class VectorSearchTest extends PostgresTestBase {
             public float[] ofQuery(String text) {
                 throw new IllegalStateException("Эмбеддинги недоступны");
             }
-        }, 0.45);
+        }, 0.45, PublicDocuments.HIDDEN);
 
         assertThat(broken.find("расскажите про кубик", LlmEngine.Scope.PUBLIC)).isEmpty();
         assertThat(new RagRetrieval(broken, words)

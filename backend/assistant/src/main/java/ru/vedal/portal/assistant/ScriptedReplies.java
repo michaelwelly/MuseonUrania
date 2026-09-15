@@ -110,12 +110,22 @@ public final class ScriptedReplies {
                         + "позовите его, и он подключится к этому разговору.");
     }
 
+    /** Намерение кнопки «Найти документ». */
+    static final String DOCUMENT = "document";
+
     private static final List<Prompt> PROMPTS = List.of(
             new Prompt("equipment", "Подобрать оборудование", ASK),
-            new Prompt("document", "Найти документ", ASK),
+            new Prompt(DOCUMENT, "Найти документ", ASK),
             new Prompt("quote", "Запросить КП", ASK),
             new Prompt("service", "Сервис", ASK),
             new Prompt("human", "Позвать специалиста", HANDOFF));
+
+    // Кнопки без «Найти документ» — пока публичный раздел документов скрыт.
+    // Список отдельный, а не отфильтрованный на лету: порядок и состав кнопок
+    // видны здесь целиком, и сравнить два набора можно глазами.
+    private static final List<Prompt> PROMPTS_WITHOUT_DOCUMENTS = PROMPTS.stream()
+            .filter(prompt -> !DOCUMENT.equals(prompt.intent()))
+            .toList();
 
     /**
      * Что Ведалина пишет, когда позвали человека и человек на связи.
@@ -151,37 +161,57 @@ public final class ScriptedReplies {
 
     private ScriptedReplies() {}
 
-    /** Кнопки виджета по порядку. */
-    public static List<Prompt> prompts() {
-        return PROMPTS;
+    /**
+     * Кнопки виджета по порядку.
+     *
+     * <p>При скрытом разделе документов кнопки «Найти документ» нет: её
+     * заготовка обещает показать перечень, которого на сайте сейчас нет.
+     */
+    public static List<Prompt> prompts(PublicDocuments documents) {
+        return documents.enabled() ? PROMPTS : PROMPTS_WITHOUT_DOCUMENTS;
     }
 
     /**
      * Заготовка по намерению. Пусто — намерения такого нет, и вопрос идёт
      * обычным путём: незнакомое намерение не повод отказать, виджет мог
      * остаться от прошлой версии в открытой вкладке.
+     *
+     * <p>Та же открытая вкладка — причина, по которой при скрытом разделе
+     * пусто и для {@code document}: кнопка могла остаться в виджете,
+     * загруженном до скрытия, и нажатие не должно получить обещание перечня.
+     * Подпись уйдёт обычным путём, где документы отсечены.
      */
-    public static Optional<String> answerFor(String intent) {
-        return intent == null ? Optional.empty()
-                : Optional.ofNullable(ANSWERS.get(intent.trim()));
+    public static Optional<String> answerFor(String intent, PublicDocuments documents) {
+        if (intent == null) return Optional.empty();
+        var key = intent.trim();
+        if (DOCUMENT.equals(key) && !documents.enabled()) return Optional.empty();
+        return Optional.ofNullable(ANSWERS.get(key));
     }
 
     /**
      * Короткие фразы интерфейса — не предметные вопросы. Без этого любое
      * «привет» попадало в поиск, не находило источников и ставило разговор
      * в очередь к человеку, после чего Ведалина замолкала уже по правилу чата.
+     *
+     * <p>Документы в приветствии называются, только пока раздел открыт:
+     * предлагать с первой реплики то, чего на сайте нет, — худший способ
+     * начать разговор.
      */
-    public static Optional<String> smallTalk(String text) {
+    public static Optional<String> smallTalk(String text, PublicDocuments documents) {
         if (text == null) return Optional.empty();
         var normalized = text.trim();
         if (normalized.isEmpty() || normalized.length() > 80) return Optional.empty();
         if (GREETING.matcher(normalized).matches()) {
             return Optional.of("Здравствуйте. Я Ведалина — ассистент VEDAL. "
-                    + "Могу подсказать по опубликованным материалам: продукции, документам и сервису. "
+                    + (documents.enabled()
+                            ? "Могу подсказать по опубликованным материалам: продукции, документам и сервису. "
+                            : "Могу подсказать по опубликованным материалам: продукции, производству и сервису. ")
                     + "Напишите модель или задачу отделения.");
         }
         if (ACK.matcher(normalized).matches()) {
-            return Optional.of("Хорошо, я на связи. Напишите модель, документ или задачу отделения — "
+            return Optional.of((documents.enabled()
+                    ? "Хорошо, я на связи. Напишите модель, документ или задачу отделения — "
+                    : "Хорошо, я на связи. Напишите модель или задачу отделения — ")
                     + "подскажу по открытым материалам VEDAL.");
         }
         return Optional.empty();

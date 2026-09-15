@@ -123,7 +123,7 @@ class ChatActivityRateLimitTest extends PostgresTestBase {
                 .with(address)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"visitorKey":"%s","text":"Найти документ","intent":"document"}
+                        {"visitorKey":"%s","text":"Подобрать оборудование","intent":"equipment"}
                         """.formatted(key)));
     }
 

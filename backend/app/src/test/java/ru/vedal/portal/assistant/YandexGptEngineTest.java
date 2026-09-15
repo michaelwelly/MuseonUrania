@@ -41,7 +41,7 @@ class YandexGptEngineTest extends PostgresTestBase {
     @Test
     void theAnswerComesFromTheModelAndTheLinksFromThePortal() {
         var model = new Подставная();
-        var engine = new YandexGptEngine(search, model, true);
+        var engine = new YandexGptEngine(search, model, true, PublicDocuments.HIDDEN);
 
         var answer = engine.answer("Что такое VEDAL A-2000?", LlmEngine.Scope.PUBLIC).orElseThrow();
 
@@ -59,7 +59,7 @@ class YandexGptEngineTest extends PostgresTestBase {
     @Test
     void withoutMaterialsTheModelIsNotAskedAtAll() {
         var model = new Подставная();
-        var engine = new YandexGptEngine(search, model, true);
+        var engine = new YandexGptEngine(search, model, true, PublicDocuments.HIDDEN);
 
         var answer = engine.answer("расскажи про погоду в Кабуле", LlmEngine.Scope.PUBLIC);
 
@@ -75,7 +75,7 @@ class YandexGptEngineTest extends PostgresTestBase {
     @Test
     void theModelSeesTheFoundMaterialsNumberedTheSameWayAsTheLinks() {
         var model = new Подставная();
-        var engine = new YandexGptEngine(search, model, true);
+        var engine = new YandexGptEngine(search, model, true, PublicDocuments.HIDDEN);
 
         var answer = engine.answer("Что такое VEDAL A-2000?", LlmEngine.Scope.PUBLIC).orElseThrow();
 
@@ -102,7 +102,7 @@ class YandexGptEngineTest extends PostgresTestBase {
     @Test
     void theQuestionIsAskedAsTheVisitorsOwnMessage() {
         var model = new Подставная();
-        new YandexGptEngine(search, model, true).answer("Что такое VEDAL A-2000?", LlmEngine.Scope.PUBLIC);
+        new YandexGptEngine(search, model, true, PublicDocuments.HIDDEN).answer("Что такое VEDAL A-2000?", LlmEngine.Scope.PUBLIC);
 
         var user = model.asked.stream().filter(m -> m.role() == YandexGpt.Role.USER).toList();
         assertThat(user).hasSize(1);
@@ -112,7 +112,7 @@ class YandexGptEngineTest extends PostgresTestBase {
     @Test
     void aFollowUpUsesOnlyItsOwnConversationContext() {
         var model = new Подставная();
-        var engine = new YandexGptEngine(search, model, true);
+        var engine = new YandexGptEngine(search, model, true, PublicDocuments.HIDDEN);
 
         var answer = engine.answer("А сколько он весит?",
                 "Посетитель: Расскажи про VEDAL R1.\nВедалина: VEDAL R1 — открытая система.",
@@ -130,13 +130,17 @@ class YandexGptEngineTest extends PostgresTestBase {
     @Test
     void aPunctuatedFollowUpUsesTheConversationContextForSearch() {
         var model = new Подставная();
-        var engine = new YandexGptEngine(search, model, true);
+        var engine = new YandexGptEngine(search, model, true, PublicDocuments.HIDDEN);
 
+        // Изделие — R2, а не T-100: T-100 снят с публикации в каталоге (V40),
+        // и находился он только строкой перечня документов. При скрытом
+        // разделе документов такой источник посетителю не отдаётся, и тест
+        // проверял бы уже не контекст разговора, а состав перечня.
         var answer = engine.answer("А маленького?",
-                "Посетитель: Расскажи про VEDAL T-100.",
+                "Посетитель: Расскажи про VEDAL R2.",
                 LlmEngine.Scope.PUBLIC, chunk -> { }).orElseThrow();
 
-        assertThat(answer.sources()).anyMatch(source -> source.title().contains("VEDAL T-100"));
+        assertThat(answer.sources()).anyMatch(source -> source.title().contains("VEDAL R2"));
     }
 
     // Ответ приходит кусками — ради них в разговоре и заведено событие draft.
@@ -145,7 +149,7 @@ class YandexGptEngineTest extends PostgresTestBase {
         var model = new Подставная();
         var chunks = new ArrayList<String>();
 
-        new YandexGptEngine(search, model, true)
+        new YandexGptEngine(search, model, true, PublicDocuments.HIDDEN)
                 .answer("Что такое VEDAL A-2000?", LlmEngine.Scope.PUBLIC, chunks::add);
 
         assertThat(String.join("", chunks)).isEqualTo(model.reply);
@@ -157,7 +161,7 @@ class YandexGptEngineTest extends PostgresTestBase {
     void whenTheModelIsDownTheFoundMaterialsAreStillAnswered() {
         var model = new Подставная();
         model.fail = new IllegalStateException("Модель недоступна");
-        var engine = new YandexGptEngine(search, model, true);
+        var engine = new YandexGptEngine(search, model, true, PublicDocuments.HIDDEN);
 
         var answer = engine.answer("Что такое VEDAL A-2000?", LlmEngine.Scope.PUBLIC).orElseThrow();
 
