@@ -273,6 +273,18 @@
   object-fit: cover;
 }
 
+/* Рендер вместо фото (сейчас только R1): вписываем целиком, не режем.
+   Подложка белая, как в каталоге, — рендер снят на чистом белом, и на
+   --img-bg вокруг него проступил бы белый прямоугольник. */
+.cardPhotoContain {
+  background: #fff;
+}
+
+.cardPhotoContain img {
+  object-fit: contain;
+  padding: 12px 16px;
+}
+
 .cardBody {
   padding: 22px 22px 26px;
 }
