@@ -9,17 +9,26 @@ vi.mock("@/lib/api", () => ({
   fetchNews: vi.fn(async () => [{ slug: "innoprom-2026" }, { slug: "" }]),
 }));
 
-const saved = { site: process.env.NEXT_PUBLIC_SITE_URL, api: process.env.NEXT_PUBLIC_API_URL };
+const saved = {
+  site: process.env.NEXT_PUBLIC_SITE_URL,
+  api: process.env.NEXT_PUBLIC_API_URL,
+  documents: process.env.NEXT_PUBLIC_DOCUMENTS_ENABLED,
+};
 
 beforeEach(() => {
   vi.resetModules();
   delete process.env.NEXT_PUBLIC_SITE_URL;
   delete process.env.NEXT_PUBLIC_API_URL;
+  delete process.env.NEXT_PUBLIC_DOCUMENTS_ENABLED;
 });
 
 afterEach(() => {
-  process.env.NEXT_PUBLIC_SITE_URL = saved.site;
-  process.env.NEXT_PUBLIC_API_URL = saved.api;
+  if (saved.site === undefined) delete process.env.NEXT_PUBLIC_SITE_URL;
+  else process.env.NEXT_PUBLIC_SITE_URL = saved.site;
+  if (saved.api === undefined) delete process.env.NEXT_PUBLIC_API_URL;
+  else process.env.NEXT_PUBLIC_API_URL = saved.api;
+  if (saved.documents === undefined) delete process.env.NEXT_PUBLIC_DOCUMENTS_ENABLED;
+  else process.env.NEXT_PUBLIC_DOCUMENTS_ENABLED = saved.documents;
 });
 
 describe("robots.txt", () => {
@@ -43,7 +52,7 @@ describe("robots.txt", () => {
     const rule = Array.isArray(result.rules) ? result.rules[0] : result.rules;
 
     expect(rule.allow).toBe("/");
-    expect(rule.disallow).toEqual(["/admin/", "/api/"]);
+    expect(rule.disallow).toEqual(["/admin/", "/api/", "/documents/"]);
     expect(result.sitemap).toBe("https://vedal-med.ru/sitemap.xml");
   });
 });
@@ -66,8 +75,19 @@ describe("карта сайта", () => {
 
     expect(urls).toContain("https://vedal-med.ru/");
     expect(urls).toContain("https://vedal-med.ru/products/");
+    expect(urls).not.toContain("https://vedal-med.ru/documents/");
     expect(urls).toContain("https://vedal-med.ru/products/vedal-r1/");
     expect(urls).toContain("https://vedal-med.ru/news/innoprom-2026/");
+  });
+
+  it("возвращает витрину документов одной настройкой", async () => {
+    process.env.NEXT_PUBLIC_SITE_URL = "https://vedal-med.ru";
+    process.env.NEXT_PUBLIC_DOCUMENTS_ENABLED = "true";
+    const sitemap = (await import("./sitemap")).default;
+
+    expect((await sitemap()).map((entry) => entry.url)).toContain(
+      "https://vedal-med.ru/documents/",
+    );
   });
 
   it("все адреса со слэшем на конце — иначе обходчик ходит через 308", async () => {

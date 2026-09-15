@@ -137,6 +137,9 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: ${VEDAL_PUBLIC_URL:?set VEDAL_PUBLIC_URL}
       NEXT_PUBLIC_MEDIA_URL: ${VEDAL_MEDIA_URL:?set VEDAL_MEDIA_URL}
+      # Временное решение заказчика от 15 сентября: публичная витрина
+      # документов скрыта, но карточки, файлы в S3 и админка сохранены.
+      NEXT_PUBLIC_DOCUMENTS_ENABLED: ${VEDAL_PUBLIC_DOCUMENTS_ENABLED:-false}
       # Без значения по умолчанию: молчаливый localhost здесь и был причиной
       # того, что вход не работал ни у кого, кроме сидящего за самой ВМ.
       # Пусть развёртывание падает на отсутствующей переменной, а не выдаёт

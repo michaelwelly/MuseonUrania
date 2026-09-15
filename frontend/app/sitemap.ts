@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 
 import { fetchNews, fetchProducts } from "@/lib/api";
 import { publicSite } from "@/lib/seo";
+import { publicDocumentsEnabled } from "@/lib/features";
 
 // Карта сайта.
 //
@@ -56,6 +57,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   };
 
   for (const { path, priority, changeFrequency } of STATIC) {
+    if (path === "/documents/" && !publicDocumentsEnabled) continue;
     push(path, priority, changeFrequency);
   }
 

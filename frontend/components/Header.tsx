@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import AnimatedLogo from "@/components/AnimatedLogo";
 import { nav, headerCta, site } from "@/content/site";
 import { ui as strings } from "@/content/ui";
+import { isPublicLinkVisible } from "@/lib/features";
 import styles from "./Header.module.css";
 
 // Клиентский компонент: нужен активный пункт по текущему маршруту и состояние
@@ -75,7 +76,7 @@ export default function Header() {
         </Link>
 
         <nav className={styles.nav} aria-label={strings.header.mainNav}>
-          {nav.map((item) => (
+          {nav.filter(isPublicLinkVisible).map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -127,7 +128,7 @@ export default function Header() {
 
       {open && (
         <nav className={`${styles.menu} ${styles.menuOpen}`} aria-label={strings.header.mobileNav}>
-          {nav.map((item) => (
+          {nav.filter(isPublicLinkVisible).map((item) => (
             <Link
               key={item.href}
               href={item.href}

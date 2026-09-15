@@ -3,6 +3,7 @@ import Image from "next/image";
 import { membership } from "@/content/about";
 import { footer, site } from "@/content/site";
 import { ui as strings } from "@/content/ui";
+import { isPublicLinkVisible } from "@/lib/features";
 import FooterSubscribe from "./FooterSubscribe";
 import styles from "./Footer.module.css";
 
@@ -57,7 +58,7 @@ export default function Footer() {
           <nav key={column.key}>
             <p className={styles.colTitle}>{label[column.key]}</p>
             <div className={styles.links}>
-              {column.links.map((link) => (
+              {column.links.filter(isPublicLinkVisible).map((link) => (
                 <Link key={`${column.key}-${link.key}`} href={link.href}>
                   {label[link.key]}
                 </Link>

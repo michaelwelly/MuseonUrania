@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { publicSite } from "@/lib/seo";
+import { publicDocumentsEnabled } from "@/lib/features";
 
 // robots.txt.
 //
@@ -26,7 +27,17 @@ export default function robots(): MetadataRoute.Robots {
   }
 
   return {
-    rules: [{ userAgent: "*", allow: "/", disallow: ["/admin/", "/api/"] }],
+    rules: [
+      {
+        userAgent: "*",
+        allow: "/",
+        disallow: [
+          "/admin/",
+          "/api/",
+          ...(!publicDocumentsEnabled ? ["/documents/"] : []),
+        ],
+      },
+    ],
     sitemap: `${publicSite}/sitemap.xml`,
     host: publicSite,
   };

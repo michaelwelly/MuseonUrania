@@ -47,15 +47,14 @@ import styles from "./not-found.module.css";
  * Разделы, куда осмысленно уйти с несуществующего адреса.
  *
  * Не весь список из шапки: она и так стоит выше на этой же странице.
- * Здесь четыре входа, за которыми люди приходят на сайт, — каталог,
- * документы, сервис и контакты.
+ * Здесь три входа, за которыми люди приходят на сайт: каталог,
+ * сервис и контакты. Публичная витрина документов временно скрыта.
  */
-const DESTINATIONS = ["/products/", "/documents/", "/service/", "/contacts/"] as const;
+const DESTINATIONS = ["/products/", "/service/", "/contacts/"] as const;
 
 export default function NotFound() {
   const label: Record<(typeof DESTINATIONS)[number], string> = {
     "/products/": strings.crumbs.products,
-    "/documents/": strings.crumbs.documents,
     "/service/": strings.crumbs.service,
     "/contacts/": strings.crumbs.contacts,
   };

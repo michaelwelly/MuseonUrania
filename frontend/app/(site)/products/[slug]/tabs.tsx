@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ui as strings } from "@/content/ui";
 import type { Doc, Product } from "@/lib/api";
 import { accessBadge, docHref, docNote, isOpen, linkTarget, requestHref } from "@/lib/documents";
+import { publicDocumentsEnabled } from "@/lib/features";
 import { DOCUMENT_TOPIC, SERVICE_HREF, leadHref } from "@/lib/lead-link";
 import styles from "./page.module.css";
 
@@ -196,12 +197,16 @@ export default function ProductTabs({
               </ul>
             )}
 
-            {/* Документы компании — лицензия, сертификат системы качества,
-                каталог — к изделию не привязаны и живут в общем перечне.
-                Ссылка ведёт туда, а не подмешивает их в список изделия. */}
+            {/* Документы компании к изделию не привязаны и живут в общем
+                перечне. Ссылка на него скрывается вместе с публичной витриной,
+                а запрос конкретного документа остаётся доступен. */}
             <p className={styles.docsAll}>
-              <Link href="/documents/">{strings.product.allDocuments}</Link>
-              {" · "}
+              {publicDocumentsEnabled && (
+                <>
+                  <Link href="/documents/">{strings.product.allDocuments}</Link>
+                  {" · "}
+                </>
+              )}
               {strings.product.notInListing}{" "}
               {/* Изделие известно — уходим в форму вместе с ним и с темой
                   запроса документа. Спрашивать изделие второй раз у того,

@@ -38,10 +38,11 @@ describe("страница «не найдено»", () => {
     const адреса = screen
       .getAllByRole("link")
       .map((a) => (a.getAttribute("href") ?? "").replace(/(.)\/$/, "$1"));
-    // Главная плюс четыре входа, за которыми люди приходят на сайт.
+    // Главная плюс три открытых публичных входа.
     expect(адреса).toEqual(
-      expect.arrayContaining(["/", "/products", "/documents", "/service", "/contacts"]),
+      expect.arrayContaining(["/", "/products", "/service", "/contacts"]),
     );
+    expect(адреса).not.toContain("/documents");
   });
 
   it("даёт телефон и почту из общего места, а не набранные здесь", () => {

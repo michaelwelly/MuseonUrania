@@ -15,6 +15,7 @@ import {
 } from "@/content/home";
 import styles from "./page.module.css";
 import { mediaSrc } from "@/lib/media";
+import { publicDocumentsEnabled } from "@/lib/features";
 import { pageMetadata } from "@/lib/seo";
 
 // Главная. Тело страницы вынесено из `page.tsx` в `screen.tsx`, потому что
@@ -227,48 +228,51 @@ export default function HomeScreen() {
         </div>
       </section>
 
-      {/* 06. Документы */}
-      <section className={styles.docs}>
-        <div data-reveal="0">
-          <p className={`${styles.eyebrow} ${styles.eyebrowLight}`}>
-            {documentsBlock.eyebrow}
-          </p>
-          <h2 className={styles.docsTitle} data-words="30">
-            {documentsBlock.title}
-          </h2>
-          <p className={styles.docsText}>
-            {documentsBlock.text}
-          </p>
-          <Link
-            className={`${styles.btn} ${styles.btnDark} ${styles.docsCta}`}
-            href={documentsBlock.cta.href}
-          >
-            {documentsBlock.cta.label}
-            <Arrow />
-          </Link>
-        </div>
-
-        <div className={styles.table} data-reveal="1">
-          <div className={styles.tableHead}>
-            <span>{strings.home.docHeadName}</span>
-            <span>{strings.home.docHeadType}</span>
-            <span>{strings.home.docHeadAccess}</span>
-          </div>
-          {documentsBlock.rows.map((row) => (
+      {/* 06. Документы. Витрина временно скрывается единым флагом по
+          просьбе заказчика; контент остаётся здесь для обратного включения. */}
+      {publicDocumentsEnabled && (
+        <section className={styles.docs}>
+          <div data-reveal="0">
+            <p className={`${styles.eyebrow} ${styles.eyebrowLight}`}>
+              {documentsBlock.eyebrow}
+            </p>
+            <h2 className={styles.docsTitle} data-words="30">
+              {documentsBlock.title}
+            </h2>
+            <p className={styles.docsText}>
+              {documentsBlock.text}
+            </p>
             <Link
-              key={row.name}
-              className={styles.tableRow}
-              href={row.href}
+              className={`${styles.btn} ${styles.btnDark} ${styles.docsCta}`}
+              href={documentsBlock.cta.href}
             >
-              <span>{row.name}</span>
-              <span className={styles.tableType}>{row.type}</span>
-              <span className={`${styles.badge} ${styles.badgeOk}`}>
-                {row.access}
-              </span>
+              {documentsBlock.cta.label}
+              <Arrow />
             </Link>
-          ))}
-        </div>
-      </section>
+          </div>
+
+          <div className={styles.table} data-reveal="1">
+            <div className={styles.tableHead}>
+              <span>{strings.home.docHeadName}</span>
+              <span>{strings.home.docHeadType}</span>
+              <span>{strings.home.docHeadAccess}</span>
+            </div>
+            {documentsBlock.rows.map((row) => (
+              <Link
+                key={row.name}
+                className={styles.tableRow}
+                href={row.href}
+              >
+                <span>{row.name}</span>
+                <span className={styles.tableType}>{row.type}</span>
+                <span className={`${styles.badge} ${styles.badgeOk}`}>
+                  {row.access}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* 07. Новости */}
       <section className={styles.sectionSoft}>
