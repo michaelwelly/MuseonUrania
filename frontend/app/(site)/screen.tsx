@@ -176,13 +176,7 @@ export default async function HomeScreen() {
                 href={`/products/${p.slug}/`}
                 data-analytics="product_card_open"
               >
-                <div
-                  className={
-                    p.imageFit === "contain"
-                      ? `${styles.cardPhoto} ${styles.cardPhotoContain}`
-                      : styles.cardPhoto
-                  }
-                >
+                <div className={styles.cardPhoto}>
                   <Image
                     src={mediaSrc(p.image.src)}
                     alt={p.image.alt}
