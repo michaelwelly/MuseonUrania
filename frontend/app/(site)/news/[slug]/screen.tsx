@@ -164,6 +164,7 @@ export default async function NewsEntryScreen({ slug }: { slug: string }) {
               <figure key={v.src} className={styles.video}>
                 <video
                   src={mediaSrc(v.src)}
+                  poster={mediaSrc(v.poster)}
                   controls
                   playsInline
                   preload="none"

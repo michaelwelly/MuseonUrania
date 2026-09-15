@@ -15,7 +15,11 @@
 
 export type NewsMedia = {
   gallery: { src: string; alt: string }[];
-  videos: { src: string; title: string }[];
+  /**
+   * poster — кадр из самого ролика. Обязателен: видео не грузится заранее
+   * (preload="none"), и без обложки на странице стоит чёрный прямоугольник.
+   */
+  videos: { src: string; poster: string; title: string }[];
   /** Чьи фото и видео — показывается под галереей. */
   credit?: string;
 };
@@ -47,7 +51,14 @@ export const newsMedia: Record<string, NewsMedia> = {
     // Первый ролик со съёмки снят: в нём макет дата-центра другой компании,
     // а не стенд VEDAL (правка заказчика 15 сентября). Файл остался в бакете,
     // на сайте на него ничто не ссылается.
-    videos: [{ src: "/photos/news/innoprom-2026/video-2.mp4", title: "У стенда VEDAL, ИННОПРОМ-2026" }],
+    videos: [
+      {
+        src: "/photos/news/innoprom-2026/video-2.mp4",
+        // Первая секунда ролика: стенд целиком.
+        poster: "/photos/news/innoprom-2026/video-2-poster.jpg",
+        title: "У стенда VEDAL, ИННОПРОМ-2026",
+      },
+    ],
     credit: "Фото обложки и общего вида стенда: информационный портал Свердловской области.",
   },
 };

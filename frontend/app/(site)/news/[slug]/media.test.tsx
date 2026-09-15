@@ -34,9 +34,11 @@ describe("медиа новости", () => {
     }
     const videos = container.querySelectorAll("video");
     expect(videos).toHaveLength(media.videos.length);
-    for (const v of videos) {
+    for (const [i, v] of [...videos].entries()) {
       expect(v).toHaveAttribute("preload", "none");
       expect(v).toHaveAttribute("controls");
+      // Без обложки плеер с preload="none" — чёрный прямоугольник.
+      expect(v.getAttribute("poster")).toContain(media.videos[i].poster);
     }
   });
 
