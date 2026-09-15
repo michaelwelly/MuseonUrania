@@ -98,14 +98,17 @@ public class SitePages {
     private final String phone;
     private final String email;
     private final String hours;
+    private final PublicDocuments documents;
 
     public SitePages(@Value("${vedal.contacts.phone}") String phone,
                      @Value("${vedal.contacts.email}") String email,
                      @Value("${vedal.support.opens:09:00}") String opens,
-                     @Value("${vedal.support.closes:17:30}") String closes) {
+                     @Value("${vedal.support.closes:17:30}") String closes,
+                     PublicDocuments documents) {
         this.phone = phone;
         this.email = email;
         this.hours = "Пн–Пт " + trim(opens) + "–" + trim(closes);
+        this.documents = documents;
     }
 
     /**
@@ -120,6 +123,14 @@ public class SitePages {
      *                однажды случилось с таблицей документов на главной.
      */
     public List<Page> published(List<String> catalog) {
+        // Раздел документов скрыт на сайте — его нет и среди страниц. Текст
+        // страницы, которой посетитель не найдёт, — это ровно то «ассистент
+        // рассказывает про сайт то, чего на сайте нет», от чего предостерегает
+        // заметка про расхождение с фронтендом выше.
+        if (!documents.enabled()) {
+            return List.of(home(), about(), products(catalog), production(), service(),
+                    contacts(), news());
+        }
         return List.of(home(), about(), products(catalog), production(), service(),
                 documents(), contacts(), news());
     }
@@ -137,8 +148,11 @@ public class SitePages {
                         + "и интенсивной терапии. Разработка, сборка и сервис — внутри "
                         + "одной компании.",
                 join(
-                        "Разделы сайта: продукция, о компании, производство, сервис, документы, "
-                                + "новости, контакты.",
+                        documents.enabled()
+                                ? "Разделы сайта: продукция, о компании, производство, сервис, "
+                                        + "документы, новости, контакты."
+                                : "Разделы сайта: продукция, о компании, производство, сервис, "
+                                        + "новости, контакты.",
                         "Подберём конфигурацию и подготовим предложение: опишите задачу отделения — "
                                 + "специалист VEDAL предложит модели и подготовит коммерческое "
                                 + "предложение."),
@@ -308,9 +322,13 @@ public class SitePages {
 
     // ————— новости —————
     private Page news() {
+        // «…и документах» при скрытом разделе не говорится: слово тянет
+        // вопрос «а где документы», ответить на который сайт сейчас не может.
         return new Page("news", "Новости", "/news/",
                 "В разделе «Новости» VEDAL публикует материалы о продукции, "
-                        + "производстве, выставках, сервисе и документах.",
+                        + (documents.enabled()
+                                ? "производстве, выставках, сервисе и документах."
+                                : "производстве, выставках и сервисе."),
                 "Каждый материал ленты выходит после согласования.",
                 List.of("новости", "новость", "новостей", "лента", "пресс", "события",
                         "выставки", "выставка", "news", "press"));

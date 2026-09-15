@@ -98,13 +98,18 @@ class SearchNoiseTest extends PostgresTestBase {
         // «Т-100» распадается на «т» и «100». Первое — одна буква, второе —
         // три знака: под прежним порогом не проходило ни то, ни другое.
         //
-        // Тут же вторая ловушка: «Т» в названии этого изделия кириллическая,
-        // а посетитель наберёт латинскую. Обе формы обязаны находить, и находят
-        // они по цифрам — буква в совпадении не участвует вовсе.
-        assertThat(engine.answer("Т-100", LlmEngine.Scope.PUBLIC).orElseThrow().sources())
-                .anyMatch(s -> s.title().contains("100"));
-        assertThat(engine.answer("T-100", LlmEngine.Scope.PUBLIC).orElseThrow().sources())
-                .anyMatch(s -> s.title().contains("100"));
+        // Проверяется на A-2000: T-100 снят с публикации в каталоге (V40)
+        // и находился только строкой перечня документов, которую при скрытом
+        // разделе посетителю не показывают. Устройство то же — дефис и
+        // обозначение из цифр.
+        //
+        // Тут же вторая ловушка: посетитель наберёт букву то кириллицей,
+        // то латиницей. Обе формы обязаны находить, и находят они по цифрам —
+        // буква в совпадении не участвует вовсе.
+        assertThat(engine.answer("А-2000", LlmEngine.Scope.PUBLIC).orElseThrow().sources())
+                .anyMatch(s -> s.title().contains("2000"));
+        assertThat(engine.answer("A-2000", LlmEngine.Scope.PUBLIC).orElseThrow().sources())
+                .anyMatch(s -> s.title().contains("2000"));
     }
 
     @Test

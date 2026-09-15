@@ -68,10 +68,14 @@ public class VectorSearch implements Retrieval {
      */
     private final double maxDistance;
 
-    public VectorSearch(JdbcClient jdbc, Embeddings embeddings, double maxDistance) {
+    private final PublicDocuments documents;
+
+    public VectorSearch(JdbcClient jdbc, Embeddings embeddings, double maxDistance,
+                        PublicDocuments documents) {
         this.jdbc = jdbc;
         this.embeddings = embeddings;
         this.maxDistance = maxDistance;
+        this.documents = documents;
     }
 
     @Override
@@ -92,6 +96,18 @@ public class VectorSearch implements Retrieval {
         // значением здесь неоткуда.
         var visible = scope == LlmEngine.Scope.STAFF ? "'public', 'internal'" : "'public'";
 
+        // Скрытые документы отсекаются условием запроса, а не фильтром поверх
+        // выдачи. Фильтр поверх отнял бы у ответа места: двадцать четыре
+        // ближайших фрагмента легко оказываются кусками одного датащита,
+        // и после отсева не осталось бы ничего — а пустая выдача здесь
+        // означает «в индексе не нашлось», и поиск по словам не получил бы
+        // слова, хотя изделие в индексе лежит. Строки собраны из констант,
+        // а не из наружного ввода, — склеивать SQL здесь не с чем опасным.
+        var withoutDocuments = documents.hiddenFrom(scope)
+                ? "and s.kind <> 'document' and s.url not like '" + PublicDocuments.SECTION
+                        + "%' and s.url not like '" + PublicDocuments.FILES + "%'"
+                : "";
+
         var rows = jdbc.sql("""
                         select s.kind, s.title, s.url, c.text,
                                (c.embedding <=> cast(:question as vector)) as distance
@@ -99,9 +115,10 @@ public class VectorSearch implements Retrieval {
                         join knowledge_source s on s.id = c.source_id
                         where s.visibility in (%s)
                           and c.model = :model
+                          %s
                         order by c.embedding <=> cast(:question as vector)
                         limit :candidates
-                        """.formatted(visible))
+                        """.formatted(visible, withoutDocuments))
                 .param("question", KnowledgeIndex.literal(vector))
                 // Чанки, посчитанные другой моделью, не рассматриваются вовсе.
                 // Расстояние до них считается, но ничего не значит: векторы

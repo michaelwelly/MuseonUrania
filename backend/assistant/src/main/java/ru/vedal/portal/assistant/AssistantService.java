@@ -21,17 +21,19 @@ public class AssistantService {
     private final Guardrails guardrails;
     private final LlmEngine engine;
     private final DocumentAnswers documentAnswers;
+    private final PublicDocuments publicDocuments;
     private final AuditLog audit;
     private final String phone;
     private final String email;
 
     public AssistantService(Guardrails guardrails, LlmEngine engine, DocumentQuery documents,
-                           AuditLog audit,
+                           PublicDocuments publicDocuments, AuditLog audit,
                            @Value("${vedal.contacts.phone}") String phone,
                            @Value("${vedal.contacts.email}") String email) {
         this.guardrails = guardrails;
         this.engine = engine;
         this.documentAnswers = new DocumentAnswers(documents);
+        this.publicDocuments = publicDocuments;
         this.audit = audit;
         this.phone = phone;
         this.email = email;
@@ -87,18 +89,25 @@ public class AssistantService {
         // Приветствие — не вопрос: искать по нему нечего, и до правки «привет»
         // уходил к человеку как вопрос без источников. Отвечается заготовкой
         // и в модель не идёт: платить за «здравствуйте» незачем.
-        var smallTalk = ScriptedReplies.smallTalk(question);
+        var smallTalk = ScriptedReplies.smallTalk(question, publicDocuments);
         if (smallTalk.isPresent()) {
             journal(actor, "scripted", 0);
             return new AskReply(smallTalk.get(), List.of(), null);
         }
 
-        onStage.accept("documents");
-        var document = documentAnswers.answer(question, scope);
-        if (document.isPresent()) {
-            journal(actor, "document", document.get().sources().size());
-            onChunk.accept(document.get().answer());
-            return document.get();
+        // Выдача файла по просьбе «пришли PDF» — прямая ссылка на скачивание.
+        // При скрытом разделе посетитель её не получает вовсе, и этап
+        // «documents» не объявляется: виджет не должен показывать поиск
+        // по документам, которого не было. Вопрос идёт обычным путём, где
+        // документы отсечены так же.
+        if (!publicDocuments.hiddenFrom(scope)) {
+            onStage.accept("documents");
+            var document = documentAnswers.answer(question, scope);
+            if (document.isPresent()) {
+                journal(actor, "document", document.get().sources().size());
+                onChunk.accept(document.get().answer());
+                return document.get();
+            }
         }
 
         var grounded = engine.answer(question, context, scope, onChunk, onStage);
@@ -143,7 +152,7 @@ public class AssistantService {
      */
     @Transactional
     public Optional<AskReply> scripted(String intent, String actor) {
-        return ScriptedReplies.answerFor(intent).map(text -> {
+        return ScriptedReplies.answerFor(intent, publicDocuments).map(text -> {
             journal(actor, "scripted", 0);
             return new AskReply(text, List.of(), null);
         });
@@ -161,7 +170,7 @@ public class AssistantService {
      */
     @Transactional
     public Optional<AskReply> smallTalk(String question, String actor) {
-        return ScriptedReplies.smallTalk(question).map(text -> {
+        return ScriptedReplies.smallTalk(question, publicDocuments).map(text -> {
             journal(actor, "scripted", 0);
             return new AskReply(text, List.of(), null);
         });

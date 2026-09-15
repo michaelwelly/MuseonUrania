@@ -33,6 +33,24 @@ public class AssistantConfig {
     }
 
     /**
+     * Показывает ли Ведалина посетителю документы.
+     *
+     * <p>По умолчанию нет: публичный раздел документов скрыт решением
+     * заказчика, и ассистент, забывший об этом при пустом окружении, повёл бы
+     * посетителя в раздел, которого на сайте нет. Включается вместе с разделом
+     * на фронте — {@code VEDAL_PUBLIC_DOCUMENTS_ENABLED=true}.
+     */
+    @Bean
+    PublicDocuments publicDocuments(
+            @Value("${vedal.assistant.public-documents-enabled:false}") boolean enabled) {
+        if (!enabled) {
+            log.info("Ведалина не показывает посетителю документы "
+                    + "(vedal.assistant.public-documents-enabled=false)");
+        }
+        return new PublicDocuments(enabled);
+    }
+
+    /**
      * Кто отвечает: модель или поиск по словам.
      *
      * <p><b>Почему выбор настройкой, а не наличием ключа.</b> «Есть ключ —
@@ -58,6 +76,7 @@ public class AssistantConfig {
             ObjectProvider<VectorSearch> vectors,
             JdbcClient jdbc,
             ObjectMapper json,
+            PublicDocuments documents,
             @Value("${vedal.assistant.engine:search}") String engine,
             @Value("${vedal.assistant.yandex.api-key:}") String apiKey,
             @Value("${vedal.assistant.yandex.model-uri:}") String modelUri,
@@ -127,7 +146,7 @@ public class AssistantConfig {
         return new YandexGptEngine(retrieval,
                 new YandexGptHttp(URI.create(endpoint), json, apiKey, modelUri,
                         temperature, maxTokens, timeout),
-                fallback);
+                fallback, documents);
     }
 
     /**
@@ -184,9 +203,9 @@ public class AssistantConfig {
 
     @Bean
     @ConditionalOnProperty(name = "vedal.assistant.rag.enabled", havingValue = "true")
-    VectorSearch vectorSearch(JdbcClient jdbc, Embeddings embeddings,
+    VectorSearch vectorSearch(JdbcClient jdbc, Embeddings embeddings, PublicDocuments documents,
                               @Value("${vedal.assistant.rag.max-distance:0.45}") double maxDistance) {
-        return new VectorSearch(jdbc, embeddings, maxDistance);
+        return new VectorSearch(jdbc, embeddings, maxDistance, documents);
     }
 
     @Bean

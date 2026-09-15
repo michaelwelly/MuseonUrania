@@ -10,7 +10,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 // в самом дешёвом тесте, чтобы он гонялся всегда.
 class GuardrailsTest {
 
-    private final Guardrails guardrails = new Guardrails();
+    // Редакция по умолчанию — раздел документов скрыт. Формулировки, которые
+    // здесь проверяются, в обеих редакциях одни и те же.
+    private final Guardrails guardrails = new Guardrails(PublicDocuments.HIDDEN);
 
     /**
      * Текст отказа без флага очереди — им проверяются формулировки.

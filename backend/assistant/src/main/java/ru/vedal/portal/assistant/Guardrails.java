@@ -2,6 +2,7 @@ package ru.vedal.portal.assistant;
 
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -143,47 +144,70 @@ public class Guardrails {
                             + "by email.",
                     "交货时间和库存由专家根据具体请求确认，我不会自行猜测。"
                             + "请在此写明型号和数量，我会转交专家，他会在本窗口回复；"
-                            + "也可以在网站上留下请求，答复将发送到您的邮箱。"),
+                            + "也可以在网站上留下请求，答复将发送到您的邮箱。"));
 
-            // ————— статус регистрации и сертификации —————
-            //
-            // Правило проекта — «не выдумывать сертификаты и статус
-            // регистрации», и это единственное правило, которое обходится
-            // не выдумкой, а пересказом. Строка перечня «Регистрационное
-            // удостоверение — VEDAL R1, R2» на вопрос «есть ли у вас
-            // регистрационное удостоверение» читается как «да, есть»,
-            // хотя у неё стоит статус «наличие уточняется».
-            //
-            // Поэтому вопрос о НАЛИЧИИ разрешительного документа отвечается
-            // здесь и одинаково, а сам перечень остаётся доступен обычным
-            // путём: «какие документы есть по VEDAL A-2000» под это правило
-            // не подходит и по-прежнему отвечается перечнем со статусами.
-            new Rule(
-                    words("есть\\s+ли\\s+(у\\s+вас\\s+)?(регистрационн\\w+|сертификат\\w*"
-                                    + "|лицензи\\w+|удостоверени\\w+|разрешени\\w+)",
-                            "сертифицирован\\w*", "зарегистрирован\\w*",
-                            "статус\\w*\\s+регистрации", "росздравнадзор\\w*",
-                            "регистрационн\\w+\\s+удостоверени\\w+",
-                            "is\\s+it\\s+(registered|certified)",
-                            "do\\s+you\\s+have\\s+(a\\s+)?"
-                                    + "(registration|certificate|licence|license)",
-                            "registration\\s+certificate"),
-                    marks("注册证", "认证", "许可证"),
-                    "Наличие и статус разрешительных документов я не подтверждаю: это утверждение "
-                            + "о регистрации медицинского изделия, и его даёт специалист, а не "
-                            + "ассистент. В разделе «Документы» на сайте у каждой строки указан "
-                            + "статус — файл, по запросу или уточняется. Назовите модель: покажу, "
-                            + "что стоит в перечне, и передам вопрос специалисту.",
-                    "I do not confirm whether a permit document exists or what its status is: "
-                            + "that is a statement about the registration of a medical device, "
-                            + "and a specialist makes it, not an assistant. The «Documents» "
-                            + "section lists the status of every entry — file, on request, "
-                            + "or being clarified. Name the model: I will show what the listing "
-                            + "has and pass the question to a specialist.",
-                    "我不确认许可文件是否存在及其状态：这是关于医疗器械注册的声明，"
-                            + "应由专家而非助手作出。网站「文件」栏目中每一条都标注了状态——"
-                            + "文件、按请求提供或正在确认。请告知型号：我会显示清单中的内容，"
-                            + "并把问题转交专家。"));
+    // ————— статус регистрации и сертификации —————
+    //
+    // Правило проекта — «не выдумывать сертификаты и статус
+    // регистрации», и это единственное правило, которое обходится
+    // не выдумкой, а пересказом. Строка перечня «Регистрационное
+    // удостоверение — VEDAL R1, R2» на вопрос «есть ли у вас
+    // регистрационное удостоверение» читается как «да, есть»,
+    // хотя у неё стоит статус «наличие уточняется».
+    //
+    // Поэтому вопрос о НАЛИЧИИ разрешительного документа отвечается
+    // здесь и одинаково, а сам перечень остаётся доступен обычным
+    // путём: «какие документы есть по VEDAL A-2000» под это правило
+    // не подходит и по-прежнему отвечается перечнем со статусами.
+    //
+    // Правило живёт в двух редакциях, и ловит обе одна пара шаблонов.
+    // Первая отправляет в раздел «Документы» и обещает показать перечень;
+    // пока раздел на сайте скрыт, звучит вторая — без раздела и без
+    // перечня. Сам отказ подтверждать статус от раздела не зависит.
+    private static final Pattern REGISTRATION_WORDS = words(
+            "есть\\s+ли\\s+(у\\s+вас\\s+)?(регистрационн\\w+|сертификат\\w*"
+                    + "|лицензи\\w+|удостоверени\\w+|разрешени\\w+)",
+            "сертифицирован\\w*", "зарегистрирован\\w*",
+            "статус\\w*\\s+регистрации", "росздравнадзор\\w*",
+            "регистрационн\\w+\\s+удостоверени\\w+",
+            "is\\s+it\\s+(registered|certified)",
+            "do\\s+you\\s+have\\s+(a\\s+)?"
+                    + "(registration|certificate|licence|license)",
+            "registration\\s+certificate");
+
+    private static final Pattern REGISTRATION_MARKS = marks("注册证", "认证", "许可证");
+
+    private static final Rule REGISTRATION_WITH_LISTING = new Rule(
+            REGISTRATION_WORDS, REGISTRATION_MARKS,
+            "Наличие и статус разрешительных документов я не подтверждаю: это утверждение "
+                    + "о регистрации медицинского изделия, и его даёт специалист, а не "
+                    + "ассистент. В разделе «Документы» на сайте у каждой строки указан "
+                    + "статус — файл, по запросу или уточняется. Назовите модель: покажу, "
+                    + "что стоит в перечне, и передам вопрос специалисту.",
+            "I do not confirm whether a permit document exists or what its status is: "
+                    + "that is a statement about the registration of a medical device, "
+                    + "and a specialist makes it, not an assistant. The «Documents» "
+                    + "section lists the status of every entry — file, on request, "
+                    + "or being clarified. Name the model: I will show what the listing "
+                    + "has and pass the question to a specialist.",
+            "我不确认许可文件是否存在及其状态：这是关于医疗器械注册的声明，"
+                    + "应由专家而非助手作出。网站「文件」栏目中每一条都标注了状态——"
+                    + "文件、按请求提供或正在确认。请告知型号：我会显示清单中的内容，"
+                    + "并把问题转交专家。");
+
+    private static final Rule REGISTRATION = new Rule(
+            REGISTRATION_WORDS, REGISTRATION_MARKS,
+            "Наличие и статус разрешительных документов я не подтверждаю: это утверждение "
+                    + "о регистрации медицинского изделия, и его даёт специалист, а не "
+                    + "ассистент. Назовите модель — передам вопрос специалисту, и он ответит "
+                    + "в этом же окне.",
+            "I do not confirm whether a permit document exists or what its status is: "
+                    + "that is a statement about the registration of a medical device, "
+                    + "and a specialist makes it, not an assistant. Name the model and I will "
+                    + "pass the question to a specialist, who will answer in this window.",
+            "我不确认许可文件是否存在及其状态：这是关于医疗器械注册的声明，"
+                    + "应由专家而非助手作出。请告知型号，我会把问题转交专家，"
+                    + "他会在本窗口回复。");
 
     // Острое состояние человека. Эти слова не встречаются в вопросе про изделие:
     // «не дышит» и «судороги» описывают человека, а не инкубатор, поэтому
@@ -316,10 +340,11 @@ public class Guardrails {
      * нечего.
      */
     public String notFound(String question) {
+        var listing = documents.enabled();
         return switch (speechOf(question)) {
-            case RU -> NOT_FOUND_RU;
-            case EN -> NOT_FOUND_EN;
-            case ZH -> NOT_FOUND_ZH;
+            case RU -> listing ? NOT_FOUND_RU : NOT_FOUND_RU_WITHOUT_DOCUMENTS;
+            case EN -> listing ? NOT_FOUND_EN : NOT_FOUND_EN_WITHOUT_DOCUMENTS;
+            case ZH -> listing ? NOT_FOUND_ZH : NOT_FOUND_ZH_WITHOUT_DOCUMENTS;
         };
     }
 
@@ -357,14 +382,54 @@ public class Guardrails {
                     + "还可以告诉您如何提交请求。请说明型号或科室的任务。"
                     + "如果需要真人专家，请告诉我，我会转交对话。";
 
+    // Те же тексты без «найти документ в перечне»: пока публичный раздел
+    // документов скрыт, это обещание невыполнимо, а перечисление умений
+    // здесь ровно затем и стоит, чтобы обещать только выполнимое.
+    private static final String NOT_FOUND_RU_WITHOUT_DOCUMENTS =
+            "Такого в опубликованных материалах VEDAL нет, а придумывать ответ я не буду. "
+                    + "Зато могу рассказать о компании и производстве, показать каталог — "
+                    + "инкубаторы, открытые реанимационные системы, терморегуляция, — "
+                    + "и подсказать, как оставить обращение. Назовите модель или задачу отделения. "
+                    + "Нужен живой специалист — напишите об этом, и я передам разговор.";
+
+    private static final String NOT_FOUND_EN_WITHOUT_DOCUMENTS =
+            "VEDAL has nothing published on this, and I will not invent an answer. "
+                    + "What I can do: tell you about the company and the production site, show "
+                    + "the catalogue — incubators, open resuscitation systems, thermoregulation "
+                    + "— and explain how to leave a request. Name the model or the task of your unit. "
+                    + "If you need a live specialist, say so and I will pass the conversation on.";
+
+    private static final String NOT_FOUND_ZH_WITHOUT_DOCUMENTS =
+            "关于这个问题，VEDAL 没有已公开的资料，我也不会凭空编造。"
+                    + "我可以介绍公司和生产基地，展示产品目录——婴儿培养箱、"
+                    + "开放式复苏系统、体温调节，"
+                    + "还可以告诉您如何提交请求。请说明型号或科室的任务。"
+                    + "如果需要真人专家，请告诉我，我会转交对话。";
+
+    private final PublicDocuments documents;
+
+    /**
+     * Правила статуса регистрации — в редакции, соответствующей разделу
+     * документов на сайте. Остальные правила от раздела не зависят.
+     */
+    private final List<Rule> blocked;
+
+    public Guardrails(PublicDocuments documents) {
+        this.documents = documents;
+        var rules = new ArrayList<>(BLOCKED);
+        rules.add(documents.enabled() ? REGISTRATION_WITH_LISTING : REGISTRATION);
+        this.blocked = List.copyOf(rules);
+    }
+
     // Пустой Optional означает «вопрос можно передать движку».
     public Optional<Refusal> refuse(String question) {
         // Пустое сообщение специалиста не требует. До правки требовало:
         // отказ ставил разговор в очередь наравне с вопросом про цену,
         // и дежурный получал разговор, в котором никто ничего не спросил.
         if (question == null || question.isBlank()) {
-            return Optional.of(new Refusal(
-                    "Напишите вопрос — подскажу по продукции, документам или сервису.", false));
+            return Optional.of(new Refusal(documents.enabled()
+                    ? "Напишите вопрос — подскажу по продукции, документам или сервису."
+                    : "Напишите вопрос — подскажу по продукции, производству или сервису.", false));
         }
 
         var speech = speechOf(question);
@@ -412,7 +477,7 @@ public class Guardrails {
         // Все правила списка означают «дальше отвечает человек»: цена,
         // сроки, наличие и статус регистрации — ровно те вопросы,
         // по которым специалист действительно продолжает разговор.
-        return BLOCKED.stream()
+        return blocked.stream()
                 .filter(rule -> rule.matches(question))
                 .map(rule -> new Refusal(rule.answer(speech), true))
                 .findFirst();

@@ -2,10 +2,8 @@
 
 import { Fragment, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import ChatNavigation from "./ChatNavigation";
 import { products } from "@/content/products";
-import { VoiceInput, VoiceReply } from "./VedalinaVoice";
 import LivePattern from "./LivePattern";
 import { vedalina, quickReplies, answerFor } from "@/content/vedalina";
 import { site } from "@/content/site";
@@ -349,9 +347,9 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
   // ничего: в базе его нет.
   const [answerDraft, setAnswerDraft] = useState("");
   const [stage, setStage] = useState("");
-  const [voiceConsent, setVoiceConsent] = useState(false);
-  const [showVoiceConsent, setShowVoiceConsent] = useState(false);
-  const [voiceDraft, setVoiceDraft] = useState(false);
+  // Голоса в чате нет: ни записи, ни озвучивания ответа. Решение заказчика
+  // 15 сентября — «не для этого проекта фича». Бэкенд голоса не тронут,
+  // но окно к нему больше не обращается.
   const [draft, setDraft] = useState("");
   // Кнопки приходят с портала: подпись и заготовка, разложенные по двум
   // местам, расходятся на первой же правке — и расходятся молча.
@@ -573,7 +571,6 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
     if (timer.current) clearTimeout(timer.current);
     setList((prev) => [...prev, { from: "me", text: question }]);
     setDraft("");
-    setVoiceDraft(false);
     setStage("");
     thinking(true);
 
@@ -894,8 +891,6 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
                 )}
               </p>
 
-              {m.from === "bot" && <VoiceReply text={m.text} consent={voiceConsent} requestConsent={() => setShowVoiceConsent(true)} />}
-
               {/* Время и отметка доставки. Галочки, а не слово: слово
                   «прочитано» занимает строку, а отметка стоит рядом со
                   временем и читается одним взглядом.
@@ -1002,7 +997,7 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
           </p>
         )}
 
-        {typing && stage && <p role="status" className={styles.voiceNote}>{stage}…</p>}
+        {typing && stage && <p role="status" className={styles.stageNote}>{stage}…</p>}
         {typing && !answerDraft && (
           <p className={`${styles.msg} ${styles.bot} ${styles.typing}`} aria-label="Ведалина печатает">
             <span />
@@ -1101,12 +1096,6 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
         )}
       </div>
 
-      {showVoiceConsent && <div className={styles.voiceConsent} role="group" aria-label="Согласие на обработку голоса">
-        <p>Разрешить обработку голоса в Yandex SpeechKit для расшифровки и озвучивания? Сайт не сохраняет аудио. Расшифровка попадёт в переписку только после нажатия «Отправить». <Link href="/legal/privacy/">Политика обработки данных</Link></p>
-        <button type="button" onClick={() => { setVoiceConsent(true); setShowVoiceConsent(false); }}>Согласен, включить голос</button>
-        <button type="button" onClick={() => setShowVoiceConsent(false)}>Не сейчас</button>
-      </div>}
-      {voiceDraft && <p role="status" className={styles.voiceNote}>Проверьте расшифровку в поле ниже, при необходимости исправьте и нажмите «Отправить».</p>}
       <form
         className={styles.inputRow}
         onSubmit={(e) => {
@@ -1131,7 +1120,6 @@ export default function VedalinaChat({ onClose }: { onClose?: () => void }) {
           placeholder={vedalina.placeholder}
           aria-label={`Сообщение ассистенту ${vedalina.name}`}
         />
-        <VoiceInput consent={voiceConsent} requestConsent={() => setShowVoiceConsent(true)} onTranscript={(text) => { setDraft(was => was ? `${was} ${text}` : text); setVoiceDraft(true); }} />
         <button type="submit" className={styles.send} aria-label="Отправить">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path

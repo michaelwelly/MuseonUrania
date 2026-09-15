@@ -263,18 +263,24 @@
   border-color: var(--green);
 }
 
-/* Превью — рендеры каталога: вертикальные и снятые на чистом белом.
-   Поэтому целиком (contain) и на белой подложке, как в каталоге: cover резал
-   бы стойку до одного ложа, а на --img-bg вокруг рендера проступал бы белый
-   прямоугольник. Линия отделяет картинку от текста — оба на белом. */
 .cardPhoto {
   position: relative;
   height: 212px;
-  background: #fff;
-  border-bottom: 1px solid var(--line);
+  background: var(--img-bg);
 }
 
 .cardPhoto img {
+  object-fit: cover;
+}
+
+/* Рендер вместо фото (сейчас только R1): вписываем целиком, не режем.
+   Подложка белая, как в каталоге, — рендер снят на чистом белом, и на
+   --img-bg вокруг него проступил бы белый прямоугольник. */
+.cardPhotoContain {
+  background: #fff;
+}
+
+.cardPhotoContain img {
   object-fit: contain;
   padding: 12px 16px;
 }

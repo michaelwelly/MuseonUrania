@@ -864,10 +864,10 @@
   }
 }
 
-.inputRow { position: relative; }
-.voiceConsent { padding: 12px 16px; font-size: 13px; background: #f2f6f3; color: #243c31; }
-.voiceConsent button { min-height: 44px; margin: 4px 8px 0 0; padding: 6px 10px; cursor: pointer; }
-.voiceNote { margin: 0; padding: 8px 16px; font-size: 13px; color: #315246; }
+/* Голосового ввода больше нет — решение заказчика 15 сентября: «не для этого
+   проекта фича». Вместе с ним ушли согласие на обработку голоса и подсказка
+   к расшифровке; строка этапа ответа осталась, она про текстовый чат. */
+.stageNote { margin: 0; padding: 8px 16px; font-size: 13px; color: #315246; }
 
 .navigation { margin-block: 8px; }
 .navigationConfirm { padding: 12px; border: 1px solid currentColor; border-radius: 8px; }

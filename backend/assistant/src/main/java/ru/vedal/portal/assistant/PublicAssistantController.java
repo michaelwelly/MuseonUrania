@@ -28,11 +28,14 @@ public class PublicAssistantController {
 
     private final AssistantService assistant;
     private final RateLimit rateLimit;
+    private final PublicDocuments documents;
 
     public PublicAssistantController(AssistantService assistant,
-                                     @Qualifier("assistantRateLimit") RateLimit rateLimit) {
+                                     @Qualifier("assistantRateLimit") RateLimit rateLimit,
+                                     PublicDocuments documents) {
         this.assistant = assistant;
         this.rateLimit = rateLimit;
+        this.documents = documents;
     }
 
     @Operation(summary = "Кнопки быстрых ответов",
@@ -55,7 +58,7 @@ public class PublicAssistantController {
     public ResponseEntity<List<ScriptedReplies.Prompt>> prompts() {
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.maxAge(Duration.ofHours(1)).cachePublic())
-                .body(ScriptedReplies.prompts());
+                .body(ScriptedReplies.prompts(documents));
     }
 
     @Operation(summary = "Спросить Ведалину",

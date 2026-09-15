@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.vedal.portal.PostgresTestBase;
 import ru.vedal.portal.documents.Document;
@@ -29,6 +30,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * проверяется не исчезновение строки, а наличие рядом с ней статуса.
  */
 @AutoConfigureMockMvc
+// Раздел документов открыт: правило о статусе касается того, КАК документ
+// назван посетителю, а при скрытом разделе он не называется вовсе.
+@TestPropertySource(properties = "vedal.assistant.public-documents-enabled=true")
 class UnconfirmedDocumentStatusTest extends PostgresTestBase {
 
     private static final String TITLE = "Сертификат электромагнитной совместимости";

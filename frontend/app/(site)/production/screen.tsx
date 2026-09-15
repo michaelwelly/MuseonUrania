@@ -5,7 +5,7 @@ import Link from "next/link";
 import VedalMap from "@/components/VedalMap";
 import VedalMapEmbed from "@/components/VedalMapEmbed";
 import { site } from "@/content/site";
-import { productionHero, facility, gallery, address } from "@/content/production";
+import { productionHero, facility, productionMedia, address } from "@/content/production";
 import { ui as strings } from "@/content/ui";
 import TreeMark from "@/components/TreeMark";
 import BrandPattern from "@/components/BrandPattern";
@@ -120,25 +120,60 @@ export default function ProductionScreen() {
         </div>
       </section>
 
+      {/* Плеер и фотоархив — решение заказчика 15 сентября, подробности
+          в content/production.ts. Обе ячейки рисуются по данным: вписали
+          путь к ролику — вместо постера встаёт плеер, вписали ссылку —
+          плитка становится ссылкой. */}
       <ul className={styles.gallery}>
-        {gallery.map((shot, i) => (
-          <li key={shot.src} data-reveal={i}>
-            <div className={styles.shot}>
+        <li data-reveal="0">
+          <div className={styles.shot}>
+            {productionMedia.video.src ? (
+              /* preload="none": ролик не тянется у каждого, кто открыл
+                 страницу, — только у того, кто нажал «play». */
+              <video
+                src={mediaSrc(productionMedia.video.src)}
+                poster={mediaSrc(productionMedia.video.poster)}
+                controls
+                playsInline
+                preload="none"
+                aria-label={productionMedia.video.title}
+              />
+            ) : (
+              /* Ролика нет — только постер. Ни кнопки «play», ни «скоро»:
+                 кнопка, которая ничего не запускает, обещает то, чего нет. */
               <Image
-                src={mediaSrc(shot.src)}
-                alt={shot.alt}
+                src={mediaSrc(productionMedia.video.poster)}
+                alt={productionMedia.video.title}
                 fill
                 quality={90}
-                /* Первый кадр занимает две колонки из трёх (сетка 2fr 1fr) —
-                   ему нужна подсказка 67vw. Раньше у всех трёх стояло 33vw,
-                   и браузер тянул для большой ячейки файл в полтора раза уже
-                   её: кадр на мониторе выходил мыльным. На телефоне сетка
-                   в одну колонку, там все по ширине экрана. */
-                sizes={i === 0 ? "(max-width: 640px) 100vw, 67vw" : "(max-width: 640px) 100vw, 33vw"}
+                /* Ячейка занимает две колонки из трёх (сетка 2fr 1fr) —
+                   ей нужна подсказка 67vw. С 33vw браузер тянул файл
+                   в полтора раза уже ячейки, и кадр на мониторе выходил
+                   мыльным. На телефоне сетка в одну колонку. */
+                sizes="(max-width: 640px) 100vw, 67vw"
               />
+            )}
+          </div>
+        </li>
+        <li data-reveal="1">
+          {productionMedia.archive.href ? (
+            /* Ссылка на архив ведёт за пределы сайта — новая вкладка, а
+               `noopener` обязателен: без него открытая вкладка получает
+               доступ к `window.opener`. */
+            <a
+              className={`${styles.shot} ${styles.archive} ${styles.archiveLink}`}
+              href={productionMedia.archive.href}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <ArchiveTile linked />
+            </a>
+          ) : (
+            <div className={`${styles.shot} ${styles.archive}`}>
+              <ArchiveTile linked={false} />
             </div>
-          </li>
-        ))}
+          )}
+        </li>
       </ul>
 
       <section className={styles.address} id="map">
@@ -197,5 +232,35 @@ export default function ProductionScreen() {
         </div>
       </section>
     </main>
+  );
+}
+
+/** Содержимое плитки фотоархива: титульный кадр и подпись поверх него.
+ *  Одно и то же и в ссылке, и без неё — различаются только стрелка
+ *  и подпись для читалки экрана: без ссылки вести некуда. */
+function ArchiveTile({ linked }: { linked: boolean }) {
+  const { cover, coverAlt, label, note } = productionMedia.archive;
+  return (
+    <>
+      <Image
+        src={mediaSrc(cover)}
+        alt={coverAlt}
+        fill
+        quality={90}
+        sizes="(max-width: 640px) 100vw, 33vw"
+      />
+      <span className={styles.archiveCaption}>
+        <span className={styles.archiveLabel}>
+          {label}
+          {linked && (
+            <span className={styles.archiveArrow} aria-hidden="true">
+              ↗
+            </span>
+          )}
+        </span>
+        <span className={styles.archiveNote}>{note}</span>
+        {linked && <span className={styles.srOnly}> (откроется в новой вкладке)</span>}
+      </span>
+    </>
   );
 }
