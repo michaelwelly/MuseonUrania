@@ -253,7 +253,7 @@
 }
 
 .archiveLink:hover .archiveArrow {
-  transform: translate(2px, -2px);
+  transform: translateX(3px);
 }
 
 .archiveLink:focus-visible {

@@ -157,17 +157,14 @@ export default function ProductionScreen() {
         </li>
         <li data-reveal="1">
           {productionMedia.archive.href ? (
-            /* Ссылка на архив ведёт за пределы сайта — новая вкладка, а
-               `noopener` обязателен: без него открытая вкладка получает
-               доступ к `window.opener`. */
-            <a
+            /* Архив — своя страница сайта (/production/archive/), поэтому
+               обычный переход в той же вкладке. */
+            <Link
               className={`${styles.shot} ${styles.archive} ${styles.archiveLink}`}
               href={productionMedia.archive.href}
-              target="_blank"
-              rel="noopener noreferrer"
             >
               <ArchiveTile linked />
-            </a>
+            </Link>
           ) : (
             <div className={`${styles.shot} ${styles.archive}`}>
               <ArchiveTile linked={false} />
@@ -254,12 +251,11 @@ function ArchiveTile({ linked }: { linked: boolean }) {
           {label}
           {linked && (
             <span className={styles.archiveArrow} aria-hidden="true">
-              ↗
+              →
             </span>
           )}
         </span>
         <span className={styles.archiveNote}>{note}</span>
-        {linked && <span className={styles.srOnly}> (откроется в новой вкладке)</span>}
       </span>
     </>
   );
