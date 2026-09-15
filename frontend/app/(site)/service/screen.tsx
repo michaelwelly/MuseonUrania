@@ -88,6 +88,7 @@ export default async function ServiceScreen() {
             src={mediaSrc(serviceHero.image.src)}
             alt={serviceHero.image.alt}
             fill
+            quality={90}
             sizes="(max-width: 1100px) 100vw, 50vw"
             priority
           />

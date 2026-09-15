@@ -92,6 +92,7 @@ export default function ProductionScreen() {
             src={mediaSrc(productionHero.image.src)}
             alt={productionHero.image.alt}
             fill
+            quality={90}
             sizes="(max-width: 1100px) 100vw, 50vw"
             priority
           />
@@ -127,6 +128,7 @@ export default function ProductionScreen() {
                 src={mediaSrc(shot.src)}
                 alt={shot.alt}
                 fill
+                quality={90}
                 /* Первый кадр занимает две колонки из трёх (сетка 2fr 1fr) —
                    ему нужна подсказка 67vw. Раньше у всех трёх стояло 33vw,
                    и браузер тянул для большой ячейки файл в полтора раза уже

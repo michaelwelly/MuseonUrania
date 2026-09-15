@@ -124,6 +124,7 @@ export default function HomeScreen() {
             src={mediaSrc(homeHero.image.src)}
             alt={homeHero.image.alt}
             fill
+            quality={90}
             sizes="(max-width: 1100px) 100vw, 588px"
             priority
           />
@@ -173,6 +174,7 @@ export default function HomeScreen() {
                     src={mediaSrc(p.image.src)}
                     alt={p.image.alt}
                     fill
+                    quality={90}
                     sizes="(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 25vw"
                   />
                 </div>
@@ -194,6 +196,7 @@ export default function HomeScreen() {
             src={mediaSrc(productionBlock.image.src)}
             alt={productionBlock.image.alt}
             fill
+            quality={90}
             sizes="(max-width: 1100px) 100vw, 50vw"
           />
         </div>
