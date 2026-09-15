@@ -3,7 +3,7 @@ import { pageMetadata } from "@/lib/seo";
 import Image from "next/image";
 import BrandPattern from "@/components/BrandPattern";
 import PageHero from "@/components/PageHero";
-import { newsHero, press } from "@/content/news";
+import { newsHero, press, pressMentions, pressMentionsBlock } from "@/content/news";
 import { companyContact } from "@/content/staff";
 import { ui as strings } from "@/content/ui";
 import { vedalina } from "@/content/vedalina";
@@ -41,6 +41,45 @@ export default async function NewsScreen() {
       />
 
       <NewsFeed news={news} />
+
+      {/* Публикации в СМИ — чужие материалы со ссылкой на источник, поэтому
+          отдельным списком, а не карточками ленты: у них нет своей страницы
+          на сайте, и выглядеть собственной новостью они не должны.
+          Ссылки уводят на сторонний сайт — открываются в новой вкладке,
+          без передачи окна (noopener) и без адреса страницы (noreferrer). */}
+      {pressMentions.length > 0 && (
+        <section className={styles.mentions} aria-labelledby="press-mentions">
+          <p className={styles.mentionsEyebrow} data-reveal="0">
+            {pressMentionsBlock.eyebrow}
+          </p>
+          <h2 id="press-mentions" className={styles.mentionsTitle} data-words="30">
+            {pressMentionsBlock.title}
+          </h2>
+          <ul className={styles.mentionsList}>
+            {pressMentions.map((m, i) => (
+              <li key={m.href} className={styles.mention} data-reveal={i}>
+                <p className={styles.mentionMeta}>
+                  <span className={styles.mentionOutlet}>{m.outlet}</span>
+                  <time dateTime={m.isoDate}>{m.date}</time>
+                </p>
+                <a
+                  className={styles.mentionLink}
+                  href={m.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {m.title}
+                  <span className={styles.mentionArrow} aria-hidden="true">
+                    ↗
+                  </span>
+                  <span className={styles.srOnly}> (откроется в новой вкладке)</span>
+                </a>
+                <p className={styles.mentionNote}>{m.note}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Тёмная полоса «для СМИ» — единственный крупный однотонный блок
           на этой странице: выше идёт лента карточек, узор в ней спорил бы

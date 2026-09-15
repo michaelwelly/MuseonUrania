@@ -175,6 +175,128 @@
   background: #a08422;
 }
 
+/* ---------- публикации в СМИ ---------- */
+
+/* Список, а не сетка карточек: у публикаций нет обложек и своих страниц,
+   и карточка без картинки рядом с карточками ленты выглядела бы пустой.
+   Строка на публикацию — издание и дата сверху, заголовок-ссылка, пересказ. */
+.mentions {
+  padding: 8px 48px 64px;
+}
+
+.mentionsEyebrow {
+  font-family: var(--font-mono), monospace;
+  font-size: 11.5px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  /* --green-dark, а не --green: на белом последний не дотягивает до 4.5:1. */
+  color: var(--green-dark);
+}
+
+.mentionsTitle {
+  margin-top: 14px;
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.mentionsList {
+  margin-top: 28px;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+
+.mention {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  column-gap: 40px;
+  row-gap: 8px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.mentionMeta {
+  grid-row: span 2;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+.mentionOutlet {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.mentionLink {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.mentionLink:hover {
+  color: var(--green-dark);
+}
+
+.mentionArrow {
+  margin-left: 6px;
+  color: var(--green-dark);
+}
+
+.mentionNote {
+  max-width: 78ch;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+/* Подпись «откроется в новой вкладке» — для читалки экрана, глазу не нужна:
+   стрелка ↗ говорит то же самое. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+  .mentions {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .mention {
+    grid-template-columns: 1fr;
+  }
+
+  .mentionMeta {
+    grid-row: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+  }
+
+  .mentionsTitle {
+    font-size: 26px;
+  }
+}
+
+@media (max-width: 640px) {
+  .mentions {
+    padding: 0 18px 44px;
+  }
+
+  .mentionLink {
+    font-size: 16.5px;
+  }
+}
+
 /* ---------- для СМИ и подписка ---------- */
 
 /* Коробка узора тёмной полосы: полоса целиком. Опору и обрезку даёт
