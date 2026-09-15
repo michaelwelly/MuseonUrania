@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { tags, expected } from "@/content/news";
+import { tags, expected, tagFiltersEnabled } from "@/content/news";
 import { ui as strings } from "@/content/ui";
 import type { NewsItem } from "@/lib/api";
 import styles from "./page.module.css";
@@ -46,7 +46,7 @@ export default function NewsFeed({ news }: { news: NewsItem[] }) {
         >
           {strings.news.all}
         </button>
-        {tags.map((t) => (
+        {tagFiltersEnabled && tags.map((t) => (
           <button
             key={t}
             type="button"

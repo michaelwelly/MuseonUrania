@@ -144,29 +144,6 @@
   min-height: 520px;
 }
 
-/* Фото корпуса в панели маршрута: узнать здание по вывеске, подъехав. */
-.building {
-  margin: 22px 0 0;
-}
-
-.buildingPhoto {
-  position: relative;
-  aspect-ratio: 16 / 10;
-  border-radius: 3px;
-  overflow: hidden;
-  background: var(--deep-2);
-}
-
-.buildingPhoto img {
-  object-fit: cover;
-}
-
-.buildingCaption {
-  margin-top: 8px;
-  font-size: 13px;
-  color: var(--on-dark-3);
-}
-
 .h2 {
   margin-top: 14px;
   font-size: 36px;
