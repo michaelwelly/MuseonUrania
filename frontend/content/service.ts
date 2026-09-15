@@ -22,7 +22,7 @@ export const serviceHero = {
   // Подмена по тому же адресу оставляет у открывавших страницу старый кадр:
   // браузер держит его в кеше, не переспрашивая.
   image: {
-    src: "/images/site/service-hero.jpg",
+    src: "/images/site/service-hero-v2.jpg",
     alt: "Инженер VEDAL проверяет открытую реанимационную систему",
   },
 };

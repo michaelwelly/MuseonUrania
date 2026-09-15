@@ -49,6 +49,7 @@ export default function AboutScreen() {
           src={mediaSrc(aboutHero.image.src)}
           alt={aboutHero.image.alt}
           fill
+          quality={90}
           sizes="100vw"
           priority
         />
@@ -144,6 +145,7 @@ export default function AboutScreen() {
             src={mediaSrc(legal.image.src)}
             alt={legal.image.alt}
             fill
+            quality={90}
             sizes="(max-width: 1100px) 100vw, 45vw"
           />
         </div>
