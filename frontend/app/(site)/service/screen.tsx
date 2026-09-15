@@ -9,7 +9,6 @@ import { serviceHero, steps, serviceForm, serviceNotice, urgent } from "@/conten
 import { companyContact } from "@/content/staff";
 import { ui as strings } from "@/content/ui";
 import { LEAD_ANCHOR } from "@/lib/lead-link";
-import { vedalina } from "@/content/vedalina";
 import BrandPattern from "@/components/BrandPattern";
 import LivePattern from "@/components/LivePattern";
 import styles from "./page.module.css";
@@ -130,7 +129,7 @@ export default async function ServiceScreen() {
             <p className={styles.asideLabel}>{strings.service.enquiryLabel}</p>
             <div className={styles.person}>
               <div className={styles.avatar}>
-                <Image src={vedalina.avatar} alt="" width={46} height={46} />
+                <Image src="/brand/vedal-tree.png" alt="" width={512} height={512} />
               </div>
               {/* Наименование юрлица и круг вопросов, по которым отвечают, —
                   утверждение о компании, а не подпись интерфейса. */}

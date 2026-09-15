@@ -6,7 +6,6 @@ import PageHero from "@/components/PageHero";
 import { newsHero, press, pressMentions, pressMentionsBlock } from "@/content/news";
 import { companyContact } from "@/content/staff";
 import { ui as strings } from "@/content/ui";
-import { vedalina } from "@/content/vedalina";
 import { fetchNews } from "@/lib/api";
 import NewsFeed from "./feed";
 import NewsSubscribe from "./subscribe";
@@ -119,7 +118,7 @@ export default async function NewsScreen() {
 
           <div className={styles.contact}>
             <div className={styles.avatar}>
-              <Image src={vedalina.avatar} alt="" width={40} height={40} />
+              <Image src="/brand/vedal-tree.png" alt="" width={512} height={512} />
             </div>
             <div>
               <p className={styles.contactName}>
