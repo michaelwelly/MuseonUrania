@@ -45,6 +45,7 @@ vi.mock("@/lib/submit", () => ({
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 import VedalinaChat from "./VedalinaChat";
+import { answerFor, quickReplies, vedalina } from "@/content/vedalina";
 
 const КНОПКИ = [
   { intent: "equipment", label: "Подобрать оборудование", action: "ask" },
@@ -835,4 +836,24 @@ it("отправляет обратный звонок без почты тол�
   await waitFor(() => expect(mocks.raiseChatLead).toHaveBeenCalledWith("ключ-вкладки", expect.objectContaining({
     name: "Ирина", email: "", callback: true, consent: true, productSlug: "vedal-a-2000",
   })));
+});
+
+// Решения заказчика 15 сентября. Голос — «не для этого проекта фича»,
+// а публичный раздел документов скрыт, и Ведалина не должна их обещать.
+// Возвращается и то и другое одной строкой, поэтому сторож здесь.
+describe("чего в чате нет", () => {
+  it("ни записи голоса, ни озвучивания ответа", async () => {
+    mocks.chatThread.mockResolvedValue(лента([реплика("assistant", "Ответ Ведалины")]));
+    await открыть();
+    await screen.findByText("Ответ Ведалины");
+
+    expect(screen.queryByRole("button", { name: /голос|запис/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Прослушать/ })).toBeNull();
+  });
+
+  it("запасные кнопки и заготовки не обещают документов", () => {
+    expect(quickReplies).not.toContain("Найти документ");
+    expect(answerFor("Найти документ")).not.toMatch(/документ/i);
+    expect(vedalina.greeting).not.toMatch(/документ/i);
+  });
 });
