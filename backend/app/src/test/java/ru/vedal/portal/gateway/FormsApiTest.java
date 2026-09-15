@@ -187,6 +187,20 @@ class FormsApiTest extends PostgresTestBase {
         assertThat(leads.findAll()).as("отказ не заводит заявку").isEmpty();
     }
 
+    @Test
+    void serviceLeadWithoutCompanyNamesTheField() throws Exception {
+        leads.deleteAll();
+
+        mvc.perform(post("/api/forms/v1/leads")
+                        .with(свой(адрес))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(SERVICE.replace("\"company\":\"Роддом №2\",", "")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fields.company").value("Укажите организацию"));
+
+        assertThat(leads.findAll()).as("отказ не заводит заявку").isEmpty();
+    }
+
     // Правило привязано к сервисной форме и растекаться на остальные не должно:
     // в запросе цены изделия у человека ещё нет, и требовать серийный номер там
     // значит не пустить к нам того, кто пришёл покупать.

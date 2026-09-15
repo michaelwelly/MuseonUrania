@@ -29,11 +29,8 @@ import styles from "./LeadForm.module.css";
  * Порядок здесь обязан совпадать с порядком полей в разметке: человек
  * должен попасть на первую ошибку сверху, а не на случайную.
  *
- * Организации здесь нет намеренно: ярлыка ошибки у неё не нарисовано,
- * и ошибка по ней молча пропала бы. Такие ответы бэкенда показывает
- * общее сообщение под кнопкой.
  */
-const FIELDS = ["name", "phone", "email", "product", "serialNumber", "message", "consent"] as const;
+const FIELDS = ["name", "company", "phone", "email", "product", "serialNumber", "message", "consent"] as const;
 
 /**
  * Поля, которые бэкенд называет иначе, чем форма.
@@ -102,6 +99,7 @@ export function validate(
   const get = (k: string) => String(data.get(k) ?? "").trim();
 
   if (!get("name")) errors.name = messages.name;
+  if (need.service && !get("company")) errors.company = messages.company;
   if (get("phone").replace(/\D/g, "").length < 10) errors.phone = messages.phone;
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(get("email"))) errors.email = messages.email;
   if (need.service && need.productAsked && !get("product")) {
@@ -385,13 +383,20 @@ export default function LeadForm({
         <div className={styles.field}>
           <label className={styles.label} htmlFor="company">
             {strings.form.company}
+            {asksSerial && <> <span className={styles.required}>*</span></>}
           </label>
           <input
             id="company"
             name="company"
-            className={styles.input}
+            className={`${styles.input} ${errors.company ? styles.invalid : ""}`}
             autoComplete="organization"
+            aria-invalid={!!errors.company}
+            aria-required={asksSerial ? "true" : undefined}
+            aria-describedby={errors.company ? "company-error" : undefined}
           />
+          {errors.company && (
+            <span id="company-error" className={styles.error}>{errors.company}</span>
+          )}
         </div>
 
         <div className={styles.field}>

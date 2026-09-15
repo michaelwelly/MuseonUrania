@@ -67,6 +67,10 @@ async function формаСТемами() {
  */
 async function заполнитьОбязательное(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText(/Контактное лицо/), "Ольга Кузнецова");
+  const company = screen.getByLabelText(/Организация/);
+  if (company.getAttribute("aria-required") === "true") {
+    await user.type(company, "Роддом №2");
+  }
   await user.type(screen.getByLabelText(/Телефон/), "+7 343 200 10 10");
   await user.type(screen.getByLabelText(/Электронная почта/), "olga@rd2.ru");
   await user.type(
@@ -114,6 +118,19 @@ describe("серийный номер спрашивается там, где и
 });
 
 describe("что уезжает с заявкой", () => {
+  it("сервисное обращение без организации не отправляется", async () => {
+    const user = await сервиснаяФорма();
+    await заполнитьОбязательное(user);
+    await user.clear(screen.getByLabelText(/Организация/));
+    await user.type(серийныйНомер()!, "R2-2026-00417");
+
+    await отправить(user);
+
+    expect(mocks.submitLead).not.toHaveBeenCalled();
+    expect(screen.getByText("Укажите организацию")).toBeInTheDocument();
+    expect(screen.getByLabelText(/Организация/)).toHaveAttribute("aria-required", "true");
+  });
+
   it("номер уходит вместе с обращением", async () => {
     const user = await сервиснаяФорма();
     await заполнитьОбязательное(user);

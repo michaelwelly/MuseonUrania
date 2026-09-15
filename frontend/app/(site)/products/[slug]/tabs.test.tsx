@@ -36,7 +36,7 @@ const ФАЙЛ = "http://portal/api/public/v1/documents/vedal-r1-product-sheet/f
 const адрес = (a: HTMLElement) => new URL(a.getAttribute("href")!, "http://vedal.test");
 
 async function открытьВкладку(documents: Doc[]) {
-  render(<ProductTabs product={product} documents={documents} />);
+  render(<ProductTabs product={product} documents={documents} documentsEnabled />);
   await userEvent.click(screen.getByRole("tab", { name: "Документы" }));
 }
 
@@ -113,7 +113,7 @@ describe("вкладки с клавиатуры", () => {
   const вкладки = () => screen.getAllByRole("tab");
 
   function отрисовать() {
-    render(<ProductTabs product={product} documents={[]} />);
+    render(<ProductTabs product={product} documents={[]} documentsEnabled />);
   }
 
   it("в порядок обхода Tab попадает одна вкладка — выбранная", () => {
@@ -175,5 +175,17 @@ describe("вкладки с клавиатуры", () => {
     await userEvent.keyboard("{ArrowRight}{Enter}");
 
     expect(вкладки()[1]).toHaveAttribute("aria-selected", "true");
+  });
+});
+
+describe("временное скрытие документов", () => {
+  it("не показывает вкладку, пока публичная витрина выключена", () => {
+    render(<ProductTabs product={product} documents={[doc()]} documentsEnabled={false} />);
+
+    expect(screen.queryByRole("tab", { name: "Документы" })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+      "Характеристики",
+      "Сервис и обучение",
+    ]);
   });
 });

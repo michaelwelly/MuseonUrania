@@ -18,7 +18,7 @@ import jakarta.validation.constraints.Size;
                 `fields`, чтобы форма показала ошибку рядом с полем.
 
                 Одно правило зависит от типа формы: сервисное обращение (`form: service`)
-                обязано называть изделие — и списком, и серийным номером.
+                обязано называть организацию и изделие — и списком, и серийным номером.
                 """)
 @ServiceLeadNamesTheDevice
 public record LeadSubmission(
@@ -39,7 +39,7 @@ public record LeadSubmission(
         @NotBlank(message = "Укажите, к кому обращаться")
         String name,
 
-        @Schema(description = "Организация. Необязательно.",
+        @Schema(description = "Организация. Обязательна в сервисном обращении.",
                 example = "Областной перинатальный центр")
         String company,
 

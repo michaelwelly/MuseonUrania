@@ -124,6 +124,7 @@ export type UiStrings = {
     again: string;
     errors: {
       name: string;
+      company: string;
       phone: string;
       email: string;
       product: string;
@@ -334,6 +335,7 @@ export const ui: UiStrings = {
     again: "Отправить ещё одно обращение",
     errors: {
       name: "Укажите, к кому обращаться",
+      company: "Укажите организацию",
       phone: "Укажите телефон с кодом",
       email: "Проверьте адрес почты",
       product: "Выберите изделие из списка",

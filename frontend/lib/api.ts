@@ -156,7 +156,7 @@ function toProduct(card: ApiCard): Product {
 }
 
 export async function fetchProducts(): Promise<Product[]> {
-  if (!apiConfigured) return localProducts;
+  if (!apiConfigured) return localProducts.filter((product) => product.slug !== "vedal-t-100");
   const cards = await get<ApiCard[]>("/api/public/v1/products");
   return cards.map(toProduct);
 }
@@ -184,7 +184,10 @@ function slugParam(slug: string): string {
   }
 }
 export async function fetchProduct(slug: string): Promise<Product | null> {
-  if (!apiConfigured) return localProducts.find((p) => p.slug === slug) ?? null;
+  if (!apiConfigured) {
+    if (slug === "vedal-t-100") return null;
+    return localProducts.find((p) => p.slug === slug) ?? null;
+  }
 
   // buildUrl, а не apiUrl: этот запрос идёт на сборке, из процесса Node.
   // Собственный fetch здесь нужен ради разбора 404 — общий get() на нём

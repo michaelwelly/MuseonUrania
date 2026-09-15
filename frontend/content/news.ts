@@ -19,7 +19,7 @@ export const newsHero = {
   lead: "Выставки, обновления изделий, производство и документы. Запросы на комментарии и материалы принимаем по общему номеру и почте.",
 };
 
-export const tags = ["Продукция", "Производство", "Выставки", "Сервис", "Документы"] as const;
+export const tags = ["Продукция", "Производство", "Выставки", "Сервис"] as const;
 export type Tag = (typeof tags)[number];
 
 export type NewsItem = {

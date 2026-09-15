@@ -7,14 +7,12 @@ import LeadForm from "@/components/LeadForm";
 import VedalMap from "@/components/VedalMap";
 import VedalMapEmbed from "@/components/VedalMapEmbed";
 import { fetchProducts } from "@/lib/api";
-import { companyContact } from "@/content/staff";
 import { vedalina } from "@/content/vedalina";
 import {
   contactsHero,
   topics,
   contactBlocks,
   route,
-  staffSection,
   legalRows,
   contactsNotice,
   vedalinaCard,
@@ -126,26 +124,6 @@ export default async function ContactsScreen() {
             <VedalMap />
           </VedalMapEmbed>
         </div>
-      </section>
-
-      {/* Блок «Кому писать напрямую» снят: все шесть карточек были
-          придуманными людьми с придуманными телефонами, а примечание рядом
-          не мешает по такому телефону позвонить. Вернётся, когда заказчик
-          подтвердит список — §9.3 плана, см. content/staff.ts. */}
-      <section className={styles.staffPending} data-reveal="0">
-        <p
-          className={styles.eyebrow}
-          style={{ color: "var(--green-dark)" }}
-        >
-          {staffSection.eyebrow}
-        </p>
-        <h2 className={styles.h2} data-words="30">
-          {staffSection.title}
-        </h2>
-        <address className={styles.staffFallback}>
-          <a href={`tel:${companyContact.phone.replace(/\s/g, "")}`}>{companyContact.phone}</a>
-          <a href={`mailto:${companyContact.email}`}>{companyContact.email}</a>
-        </address>
       </section>
 
       {/* id — цель кнопок «Запросить КП», «Запросить документ» и «Запросить

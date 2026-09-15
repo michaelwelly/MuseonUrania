@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { statusLabel } from "@/content/products";
 import { ui as strings } from "@/content/ui";
 import type { Product } from "@/lib/api";
 import styles from "./page.module.css";
@@ -53,13 +52,6 @@ export default function Catalog({ products }: Props) {
                 <h3 className={styles.name}>{p.name}</h3>
                 <p className={styles.kind}>{p.kind}</p>
                 <p className={styles.summary}>{p.summary}</p>
-                <span
-                  className={`${styles.badge} ${
-                    p.status === "confirmed" ? styles.badgeOk : styles.badgeMuted
-                  }`}
-                >
-                  {statusLabel[p.status]}
-                </span>
               </div>
             </Link>
           </li>

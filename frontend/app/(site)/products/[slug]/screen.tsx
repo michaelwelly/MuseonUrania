@@ -132,7 +132,7 @@ export default async function ProductScreen({ slug }: { slug: string }) {
 
           {product.keyParams && (
             <ul className={styles.params}>
-              {product.keyParams.map((p) => (
+              {product.keyParams.filter((p) => p.label !== "Производство").map((p) => (
                 <li key={p.label} className={styles.param}>
                   <span className={styles.paramLabel}>{p.label}</span>
                   <span>{p.value}</span>

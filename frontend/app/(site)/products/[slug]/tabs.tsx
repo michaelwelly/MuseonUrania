@@ -21,7 +21,6 @@ type Tab = (typeof ALL_TABS)[number];
 // вернуть вкладку, и тогда это одна строка — убрать её из HIDDEN_TABS, —
 // а не восстановление текста заново.
 const HIDDEN_TABS: readonly Tab[] = ["kit"];
-const TABS = ALL_TABS.filter((t) => !HIDDEN_TABS.includes(t));
 
 // Раньше здесь стоял список из трёх строк, набранный руками: «Описание
 // изделия», «Регистрационное удостоверение», «Каталог продукции 2026» —
@@ -44,12 +43,19 @@ const panelId = "product-tabpanel";
 export default function ProductTabs({
   product,
   documents,
+  documentsEnabled = publicDocumentsEnabled,
 }: {
   product: Product;
   /** Документы этого изделия. Отбор делает страница — см. lib/documents.forProduct. */
   documents: Doc[];
+  /** Вкладка возвращается вместе с общей публичной витриной документов. */
+  documentsEnabled?: boolean;
 }) {
   const [tab, setTab] = useState<Tab>("specs");
+  const tabs = ALL_TABS.filter(
+    (candidate) =>
+      !HIDDEN_TABS.includes(candidate) && (documentsEnabled || candidate !== "documents"),
+  );
 
   /**
    * Выбрать вкладку и увести на неё фокус.
@@ -75,23 +81,23 @@ export default function ProductTabs({
    * в шаблоне, и так удобнее — три вкладки обходятся одной клавишей.
    */
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    const index = TABS.indexOf(tab);
+    const index = tabs.indexOf(tab);
     let next: number | null = null;
-    if (event.key === "ArrowRight") next = (index + 1) % TABS.length;
-    else if (event.key === "ArrowLeft") next = (index - 1 + TABS.length) % TABS.length;
+    if (event.key === "ArrowRight") next = (index + 1) % tabs.length;
+    else if (event.key === "ArrowLeft") next = (index - 1 + tabs.length) % tabs.length;
     else if (event.key === "Home") next = 0;
-    else if (event.key === "End") next = TABS.length - 1;
+    else if (event.key === "End") next = tabs.length - 1;
     if (next === null) return;
     // Иначе Home и End прокрутят страницу, а стрелки — горизонтальный
     // список вкладок: браузер сделает и то и другое поверх переключения.
     event.preventDefault();
-    focusTab(TABS[next]);
+    focusTab(tabs[next]);
   };
 
   return (
     <>
       <div className={styles.tabs} role="tablist" onKeyDown={onKeyDown}>
-        {TABS.map((t) => (
+        {tabs.map((t) => (
           <button
             key={t}
             id={tabId(t)}
@@ -153,7 +159,7 @@ export default function ProductTabs({
           </>
         )}
 
-        {tab === "documents" && (
+        {documentsEnabled && tab === "documents" && (
           <>
             <h2 className={styles.panelTitle}>{strings.product.documentsTitle}</h2>
 

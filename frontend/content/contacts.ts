@@ -86,11 +86,6 @@ export const route = {
   mapTitle: `Карта: ${site.address}`,
 };
 
-export const staffSection = {
-  eyebrow: "Сотрудники",
-  title: "Куда попадёт обращение",
-};
-
 export const legalRows = [
   { label: "Полное наименование", value: site.legalNameFull },
   { label: "ИНН", value: site.inn },

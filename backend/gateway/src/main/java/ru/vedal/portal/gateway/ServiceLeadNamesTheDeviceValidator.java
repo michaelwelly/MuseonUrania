@@ -5,7 +5,7 @@ import jakarta.validation.ConstraintValidatorContext;
 
 /**
  * Проверка {@link ServiceLeadNamesTheDevice}: у сервисной заявки должны быть
- * и изделие, и серийный номер.
+ * организация, изделие и серийный номер.
  */
 public class ServiceLeadNamesTheDeviceValidator
         implements ConstraintValidator<ServiceLeadNamesTheDevice, LeadSubmission> {
@@ -20,6 +20,7 @@ public class ServiceLeadNamesTheDeviceValidator
     static final String SERIAL_REQUIRED =
             "Укажите серийный номер — по нему инженер определит изделие";
     static final String PRODUCT_REQUIRED = "Выберите изделие из списка";
+    static final String COMPANY_REQUIRED = "Укажите организацию";
 
     @Override
     public boolean isValid(LeadSubmission lead, ConstraintValidatorContext context) {
@@ -34,6 +35,11 @@ public class ServiceLeadNamesTheDeviceValidator
         // Нарушение по умолчанию отключается: оно приехало бы без имени поля,
         // то есть общей строкой над формой — ровно тем, чего мы избегаем.
         context.disableDefaultConstraintViolation();
+
+        if (blank(lead.company())) {
+            violation(context, "company", COMPANY_REQUIRED);
+            named = false;
+        }
 
         if (blank(lead.serialNumber())) {
             violation(context, "serialNumber", SERIAL_REQUIRED);
