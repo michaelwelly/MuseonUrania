@@ -505,6 +505,10 @@
   background: var(--img-bg);
 }
 
+.newsPhoto img {
+  object-fit: cover;
+}
+
 .newsBody {
   padding: 20px 22px 24px;
 }

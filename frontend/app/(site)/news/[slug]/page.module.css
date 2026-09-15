@@ -119,7 +119,75 @@
   color: var(--green-dark);
 }
 
+/* ---------- галерея и видео ---------- */
+
+/* Фото со стенда вертикальные, с телефона, — ячейка тоже вертикальная,
+   три в ряд. Общий вид стенда горизонтальный и встаёт в неё с обрезкой
+   по бокам: главное на нём — центр кадра. */
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 34px;
+  list-style: none;
+}
+
+.galleryItem {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--line);
+}
+
+.galleryItem img {
+  object-fit: cover;
+}
+
+.videos {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 26px;
+}
+
+.video {
+  margin: 0;
+}
+
+/* Видео вертикальное. Чёрный фон — пока ролик не запущен, поле не выглядит
+   дырой в странице. */
+.video video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  max-height: 560px;
+  border-radius: 3px;
+  background: #0b1a14;
+  object-fit: contain;
+}
+
+.video figcaption {
+  margin-top: 8px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+.credit {
+  margin-top: 18px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
 @media (max-width: 700px) {
+  .gallery {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .videos {
+    grid-template-columns: 1fr;
+  }
+
   .crumbs {
     padding: 18px 18px 0;
   }

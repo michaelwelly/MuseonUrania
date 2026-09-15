@@ -96,7 +96,10 @@ export function contentSecurityPolicy(env: Env): string {
     // из байтов, которые она уже получила. Чужого через него не приедет.
     join("img-src 'self' data: blob:", media, ...counter),
     "style-src 'self' 'unsafe-inline'",
-    "media-src 'self' blob:",
+    // Хранилище медиа — ради видео в новостях: ролики лежат в бакете рядом
+    // с фотографиями и отдаются оттуда же. Без источника в media-src браузер
+    // молча не грузит <video> — плеер стоит, а нажатие ничего не делает.
+    join("media-src 'self' blob:", media),
     "font-src 'self' data:",
     join("connect-src 'self'", api, keycloak, ...counter),
     join("frame-src 'self'", ...MAP, ...counter),
