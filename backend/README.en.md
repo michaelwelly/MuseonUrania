@@ -231,6 +231,13 @@ panel.
 There is no public door to the CRM: the client base, deal amounts and quote
 prices belong to the closed contour.
 
+Both document doors sit behind the same switch as the storefront on the site —
+`VEDAL_PUBLIC_DOCUMENTS_ENABLED`. While it is off (the default, a temporary
+decision by the customer), the listing and the file both answer `404`, just like
+the `/documents/` page itself: a hidden storefront with an open API would mean
+the files leave unapproved — knowing the address is enough. The switch does not
+touch the admin panel: staff see and download documents whatever its position.
+
 Errors from every door are `application/problem+json` (RFC 9457). The forms and
 the assistant have their own per-client rate limits. The admin API contract is
 [docs/api/vedal-admin-openapi.yaml](../docs/api/vedal-admin-openapi.yaml).
