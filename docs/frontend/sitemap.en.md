@@ -2,131 +2,76 @@
 
 [Русский](sitemap.md) · **English**
 
-## Purpose
+State of the public `vedal-med.ru` routes as of 16 September 2026.
 
-This sitemap defines the first website release structure for `vedal-med.ru`.
+## Global navigation
 
-Primary goal: turn the current public website into a practical B2B sales and information interface for VEDAL medical equipment.
+Visible items are ordered as About, Production, Products, Service, News, and
+Contacts. Documents remains in the navigation configuration but is hidden by
+the shared public-documents switch. The VEDAL mark in the header opens Home.
 
-## Global Navigation
+Persistent elements are the VEDAL mark, telephone number, contact button, and
+Vedalina's floating button.
 
-Recommended top-level navigation:
+## Public routes
 
-1. Главная
-2. Продукция
-3. Производство
-4. Документы
-5. Новости
-6. Сервис
-7. Контакты
-
-There is no press centre and no partners page in the navigation — the reason
-is in "First Release Routes" below.
-
-Persistent elements:
-
-- VEDAL logo.
-- Phone number.
-- Search icon.
-- CTA: `Запросить КП`.
-- Vedalina floating assistant button.
-
-## First Release Routes
-
-| Route | Page | Status | Purpose |
-| --- | --- | --- | --- |
-| `/` | Главная | MVP | production/product positioning, hero, Vedalina slot, product categories, trust, CTA |
-| `/products/` | Продукция | MVP | catalog overview, product cards, filters, quote/catalog requests |
-| `/products/<slug>/` | Product detail | MVP | individual product page with specs, docs, media, CTA |
-| `/production/` | Производство | MVP | production story, quality system, approved photos |
-| `/documents/` | Документы | MVP | approved public certificates, catalog, brochures |
-| `/news/` | Новости | done | news feed, including the Innoprom release |
-| `/news/<slug>/` | News entry | done | a single article |
-| `/about/` | О компании | done | who we are, in-house R&D, Ural Chamber of Commerce membership |
-| `/service/` | Сервис | MVP | service request and support routing |
-| `/contacts/` | Контакты | MVP | contact details and forms |
-| `/legal/privacy/` | Политика приватности | done | personal data handling, consent used by the forms |
-
-There is no press centre and no partners page in the code, and that is not
-an omission.
-
-`/press/` became `/news/`: for a visitor a press centre and a news feed are
-the same thing, and two sections with the same content would have to be filled
-twice. The Innoprom release will be an article in the feed, not a route
-of its own.
-
-`/partners/` is deliberately absent: naming a company as a partner in public
-is a statement about them, not about us, and it needs their consent. After the
-meeting with the customer the partners block was removed from the home page;
-Ural Chamber of Commerce membership stands in its place.
-
-The discrepancy had lived since the frontend began and became visible together
-with `sitemap.xml`: the crawler-facing map is built from actual routes, and
-promising there what the portal does not serve means sending crawlers to a 404.
-
-## Later Routes
-
-| Route | Page | Reason To Defer |
+| Route | Page | State |
 | --- | --- | --- |
-| `/technology/` | Разработка и технологии | needs careful approval of R&D and claims |
-| `/cases/` | Кейсы | needs customer/project approval |
-| `/en/` | English version | after Russian content approval |
-| `/zh/` | Chinese version | after Russian content approval |
-| `/hi/` | Hindi version | later market-entry stage |
-| `/knowledge/` | Internal knowledge portal | private contour, not public release |
+| `/` | Home | published; the documents block is hidden |
+| `/about/` | About | published; copy describing the tree as a marking sign was removed |
+| `/production/` | Production | published; the video and photo archive link are off pending material approval |
+| `/products/` | Products | published; T-100 is hidden |
+| `/products/<slug>/` | Product detail | published products; the status badge and documents tab are hidden |
+| `/service/` | Service | published; Organisation is required in the full form |
+| `/news/` | News | published; the category-filter row is off |
+| `/news/<slug>/` | News entry | published entries |
+| `/contacts/` | Contacts | published; Organisation is required in the full form |
+| `/legal/privacy/` | Data processing policy | published |
+| `/documents/` | Documents | temporarily returns `404` at the customer's request; data has not been deleted |
 
-## Home Page Structure
+`/production/archive/` was withdrawn pending material approval and permanently
+redirects to `/production/`. Its restoration procedure is in the
+[switch table](../operations/public_feature_switches.en.md).
 
-1. Header and navigation.
-2. Hero/title section:
-   - VEDAL production headline.
-   - two CTAs: `Запросить КП`, `Каталог`.
-   - visual evidence: real product/production image.
-   - Vedalina assistant card/slot.
-3. Product categories.
-4. Priority products.
-5. Production and quality block.
-6. Documents/certification teaser.
-7. News/Innoprom block.
-8. Ural Chamber of Commerce membership.
-9. Lead capture block.
-10. Footer.
+## Permanent redirects
 
-## Vedalina Placement
+`frontend/next.config.ts` expands the table below into 39 permanent path
+redirects. Next.js accepts each source with or without a trailing slash. The
+fortieth rule applies to the host name and is described after the table.
 
-First release should support:
+| Canonical address | Sources |
+| --- | --- |
+| `/` | `/home`, `/main`, `/index`, `/glavnaya` |
+| `/about/` | `/about-us`, `/o-kompanii`, `/o-nas`, `/company`, `/partners` |
+| `/production/` | `/proizvodstvo`, `/manufacturing`, `/production/archive` |
+| `/products/` | `/product`, `/catalog`, `/katalog`, `/produkciya`, `/produktsiya` |
+| `/service/` | `/servis`, `/service-request`, `/support` |
+| `/news/` | `/new`, `/novosti`, `/press`, `/blog` |
+| `/contacts/` | `/contact`, `/contact-us`, `/kontakty`, `/kontakti` |
+| `/legal/privacy/` | `/legal`, `/privacy`, `/privacy-policy`, `/policy`, `/politika-konfidencialnosti` |
+| `/products/vedal-r1/` | `/products/vedal-r1-r2` |
+| `/` | `/en`, `/en/:path*`, `/zh`, `/zh/:path*` |
+| `/:path*/` | `/ru/:path*` — the same path without the Russian prefix; this also covers `/ru` |
 
-- hero assistant card on desktop;
-- floating button after scroll;
-- compact mobile assistant button;
-- quick actions:
-  - Подобрать оборудование
-  - Найти документ
-  - Запросить КП
-  - Сервис
+English and Chinese addresses lead to Russian Home because approved content
+translations do not exist. The Russian prefix preserves the path:
+`/ru/products/` → `/products/`.
 
-## Smart Solution Placement
+`next.config.ts` also contains a host rule from `www` to the address without
+`www`, but the production gateway does not preserve the original `Host`, so the
+rule does not remove the domain duplicate at the current perimeter. The
+canonical redirect must be configured in nginx; the issue remains open until
+then.
 
-Smart Solution should appear as:
+## Deferred routes
 
-- technology integration partner;
-- not stronger than VEDAL visually;
-- connected to forms, CRM handoff, S3/document metadata, future AI search.
+| Route | Page | Reason to defer |
+| --- | --- | --- |
+| `/technology/` | R&D and technology | R&D and public claims require approval |
+| `/cases/` | Cases | customer consent and confirmed materials are required |
+| `/en/`, `/zh/` | Website translations | approved content translations are missing; the addresses currently redirect |
+| `/hi/` | Hindi version | a later market-entry phase |
+| `/knowledge/` | Internal knowledge portal | closed contour, not a public release |
 
-Recommended placement:
-
-- a mention in the footer rather than a block of its own on Home.
-- short explanation on the About page.
-- internal architecture roadmap, not headline brand.
-
-## SEO Route Notes
-
-Priority SEO pages:
-
-- `/products/`
-- `/products/<slug>/`
-- `/production/`
-- `/documents/`
-- `/news/` and its articles, including the Innoprom release.
-
-No SEO page should publish unapproved certification, clinical, price, availability, or delivery claims.
+No public page may publish unapproved prices, availability, delivery dates,
+clinical outcomes, certificates, or registration status.

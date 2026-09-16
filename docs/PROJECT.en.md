@@ -296,6 +296,13 @@ It does not, however, provide trust: the portal verifies the token itself and
 refuses a request that arrived bypassing the gateway. The gateway is a filter,
 not a trust boundary.
 
+The public documents door is a temporary exception within the Public API. With
+`VEDAL_PUBLIC_DOCUMENTS_ENABLED=false`, both the listing and file routes return
+`404`; the switch is checked before rate limiting. The admin door and stored
+materials are not deleted. The variable must reach both `portal` and `site`;
+the complete mapping is in the
+[reversible switch table](operations/public_feature_switches.en.md).
+
 ### 5.2 The path of a lead
 
 It also defines the module boundaries.
@@ -879,8 +886,8 @@ Working routes:
 | `GET /api/public/v1/products/{slug}` | site build | product page; unpublished returns 404 |
 | `GET /api/public/v1/news` | site build | the feed; empty is `[]`, not an error |
 | `GET /api/public/v1/news/{slug}` | site build | a publication; unpublished returns 404 |
-| `GET /api/public/v1/documents` | site build | the listing; the file link only for published ones |
-| `GET /api/public/v1/documents/{slug}/file` | visitor | the file; closed returns 404 and the request is logged |
+| `GET /api/public/v1/documents` | site build | when enabled, the published listing; when disabled, 404 |
+| `GET /api/public/v1/documents/{slug}/file` | visitor | when enabled, a published file; a disabled section, closed document, or missing file returns 404 |
 | `POST /api/forms/v1/leads` | website forms | lead intake, `Idempotency-Key`, `202` response |
 | `POST /api/assistant/v1/ask` | Vedalina | an answer from published content with links |
 | `GET /api/assistant/v1/prompts` | chat widget | quick-reply buttons and what each one does |
@@ -938,21 +945,32 @@ decision (issue #51).
 
 A note on `assistant`: the limits live in `Guardrails` **before** the engine is
 called, not in the prompt — a prompt is a request to the model, not a guarantee.
-Closed materials are physically unreachable: `LlmEngine` only goes through
-`CatalogQuery`, `ContentQuery` and `DocumentQuery`, and those return published
-items exclusively. The assistant cannot be talked into showing a closed file
-because the file is not in the context. No suitable sources means no answer —
-there is a handoff to a human.
+A refusal about price, delivery dates or availability, a clinical question, or
+registration status answers within the current conversation and does **not**
+hand it to a human. Intentional handoff happens only through the “Call a
+specialist” button or an explicit request in the visitor's words. A technical
+answer-generation failure remains a separate case and may queue the
+conversation.
+
+Being queued does not imply unconditional assistant silence. While a
+conversation has no owner and no employee desk is open, Vedalina continues to
+answer. Once an owner is assigned or an employee opens the admin UI, the human
+takes over. Closed materials are physically unreachable: `LlmEngine` only goes
+through `CatalogQuery`, `ContentQuery` and `DocumentQuery`, and public document
+use is additionally blocked by the shared switch.
 
 ### 6.2 Frontend — the site and the admin UI
 
 Next.js 16.3.0, React 19.2.8, App Router, TypeScript, CSS Modules, no external
 dependencies besides Next and React.
 
-Ten site routes: `/`, `/products`, `/products/[slug]`, `/production`,
-`/documents`, `/news`, `/news/[slug]`, `/service`, `/about`, `/contacts`, plus
-`/legal/privacy`. Thirteen product cards, five categories, animations,
-a preloader, an animated VEDAL mark, a map, tabs on the product page.
+Published site routes are `/`, `/products`, `/products/[slug]`, `/production`,
+`/news`, `/news/[slug]`, `/service`, `/about`, `/contacts`, and
+`/legal/privacy`. `/documents` temporarily returns `404`, while
+`/production/archive` redirects to `/production`; both states follow the
+customer's request pending material approval. Public product cards, five
+categories, animations, a preloader, a map, and product-page tabs remain; the
+documents tab is hidden by the shared switch.
 On the contacts page the map is an embedded Yandex one, and its frame is
 created only after consent in the cookie banner — by the same rule as the
 Metrica counter. Without consent its place holds the CSS route scheme and the
@@ -1017,6 +1035,25 @@ leads to the container itself, and `portal:8081` does not resolve in a browser.
 **What is left of the old gap:** multilingual routing and SEO markup from
 section 8 — those are about content, not about the wire. Yandex Metrica has
 left that list: the code is written and waits for one counter id (issue #53).
+
+### 6.4 Public state after the 16 September changes
+
+Public pages no longer contain copy describing the tree as a marking sign, the
+“Documentation confirmed” badge, or product-page document tabs. The documents
+block is hidden on Home, and the category-filter row is hidden on News.
+Organisation is required in the full `LeadForm` on product pages, Contacts, and
+Service; the short `HomeLeadForm` on Home was not changed.
+
+The site serves HTML with
+`Cache-Control: public, max-age=0, must-revalidate`; hashed `/_next/` assets
+retain immutable caching. This replaces the former almost year-long
+`stale-while-revalidate` window that could show a stale page after a rollout.
+
+The complete current route set and all 40 redirects are in the
+[sitemap](frontend/sitemap.en.md). Reversible states are collected in the
+[switch table](operations/public_feature_switches.en.md). The `site` startup
+build and the first rollout incident are documented in the
+[operations note](operations/frontend_startup_build.en.md).
 
 ---
 
@@ -1289,6 +1326,8 @@ The full roadmap is [operations/roadmap.en.md](operations/roadmap.en.md): stage 
 | The boundaries of a specific module | `backend/<module>/README.en.md` |
 | How to run the frontend, content rules | [../frontend/README.en.md](../frontend/README.en.md) |
 | Site structure and routes | [frontend/sitemap.en.md](frontend/sitemap.en.md) |
+| Reversible public feature switches | [operations/public_feature_switches.en.md](operations/public_feature_switches.en.md) |
+| Site startup build and the 16 September incident | [operations/frontend_startup_build.en.md](operations/frontend_startup_build.en.md) |
 | Data models for page, product, document, form, assistant | [frontend/content_model.en.md](frontend/content_model.en.md) |
 | What each page must contain | [frontend/page_briefs.en.md](frontend/page_briefs.en.md) |
 | Acceptance checklist and analytics events | [frontend/implementation_checklist.en.md](frontend/implementation_checklist.en.md) |
