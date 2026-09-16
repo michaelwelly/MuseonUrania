@@ -336,7 +336,19 @@ export async function fetchDocuments(): Promise<Doc[]> {
     }));
   }
 
-  const cards = await get<ApiDoc[]>("/api/public/v1/documents");
+  // Собственный fetch, а не общий get(), ради разбора 404 — тем же приёмом,
+  // что в fetchProduct и fetchNewsEntry.
+  const url = `${buildUrl}/api/public/v1/documents`;
+  const response = await fetch(url, { next: { revalidate: REVALIDATE } });
+
+  // 404 — это закрытый выключателем раздел документов, а не сбой. Витрина и
+  // вкладка на карточке погашены тем же выключателем, так что странице нужен
+  // пустой перечень, а не исключение. Валить на этом сборку нельзя: перечень
+  // читает и карточка изделия, то есть упало бы всё /products/<slug>.
+  if (response.status === 404) return [];
+  if (!response.ok) throw new Error(`Публичное API ответило ${response.status}: ${url}`);
+
+  const cards = (await response.json()) as ApiDoc[];
   return cards.map((c) => ({
     slug: c.slug,
     title: c.title,
