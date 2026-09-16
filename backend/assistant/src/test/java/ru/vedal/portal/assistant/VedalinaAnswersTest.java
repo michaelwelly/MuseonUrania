@@ -184,8 +184,9 @@ class VedalinaAnswersTest {
         assertThat(reply.sources()).isEmpty();
         assertThat(reply.handoff()).isNotNull();
         assertThat(reply.handoff().queue())
-                .as("цену считает специалист — здесь очередь уместна")
-                .isTrue();
+                .as("а вот очередь отказ не заводит: посетитель спросил про цену, "
+                        + "а не про живого человека, и разговор остаётся у Ведалины")
+                .isFalse();
         assertThat(reply.handoff().phone()).isEqualTo(PHONE);
     }
 
@@ -195,7 +196,7 @@ class VedalinaAnswersTest {
 
         assertThat(reply.answer()).contains("Сроки и наличие подтверждает специалист");
         assertThat(reply.handoff()).isNotNull();
-        assertThat(reply.handoff().queue()).isTrue();
+        assertThat(reply.handoff().queue()).isFalse();
     }
 
     // Самый тонкий случай. Строка перечня «Регистрационное удостоверение —
@@ -211,7 +212,27 @@ class VedalinaAnswersTest {
                 .as("и ни слова о том, что удостоверение есть")
                 .doesNotContain("Статус: опубликован");
         assertThat(reply.handoff()).isNotNull();
-        assertThat(reply.handoff().queue()).isTrue();
+        assertThat(reply.handoff().queue()).isFalse();
+    }
+
+    // Главная проверка починки 16 сентября: отказ сторожевого правила не
+    // передаёт разговор человеку сам по себе, и следующий вопрос отвечается.
+    // До правки очередь заводилась отказом, разговор уходил в WAITING,
+    // и ассистент для этого посетителя замолкал навсегда.
+    @Test
+    void aRefusalLeavesTheAssistantInTheConversation() {
+        var refused = ask("Сколько стоит инкубатор A-2000 и какая скидка?");
+        assertThat(refused.handoff()).isNotNull();
+        assertThat(refused.handoff().queue())
+                .as("отказ по цене человека не зовёт")
+                .isFalse();
+
+        var next = ask("что такое VEDAL A-2000");
+        assertThat(next.handoff()).isNull();
+        assertThat(next.answer()).contains("VEDAL A-2000");
+        assertThat(next.sources())
+                .as("следующий вопрос отвечается по существу, а не тишиной")
+                .isNotEmpty();
     }
 
     // ————— очередь заводится не на всё —————

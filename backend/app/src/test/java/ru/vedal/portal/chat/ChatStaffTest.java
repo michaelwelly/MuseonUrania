@@ -10,9 +10,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 // Сторона сотрудника: очередь, ответ, закрытие.
 class ChatStaffTest extends ChatTestBase {
 
-    /** Вопрос про цену отклоняется ограничениями — разговор встаёт в очередь. */
+    /**
+     * Разговор в очереди.
+     *
+     * <p>Просьба о человеке, а не вопрос про цену: отказ сторожевого правила
+     * очередь не заводит с 16 сентября — он говорит, чего Ведалина не называет,
+     * и остаётся в разговоре. В очередь попадает тот, кто человека попросил.
+     */
     private UUID waitingConversation() {
-        return sayAndAnswer(visitor(), "Сколько стоит инкубатор?").id();
+        return sayAndAnswer(visitor(), "позовите живого человека").id();
     }
 
     @Test

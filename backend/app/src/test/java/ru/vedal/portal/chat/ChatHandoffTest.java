@@ -40,16 +40,18 @@ class ChatHandoffTest extends ChatTestBase {
     }
 
     @Test
-    void theAssistantGoesQuietOnceAHumanIsCalled() {
+    void theAssistantGoesQuietOnceAHumanIsInTheConversation() {
         var key = visitor();
-        desk.callHuman(key, FROM_SITE);
+        var called = desk.callHuman(key, FROM_SITE);
+        // Дежурный взял разговор: у него появился владелец, и дальше говорит он.
+        desk.reply(called.id(), "editor", "Здравствуйте, слушаю вас.");
 
         var thread = desk.say(key, "Что такое VEDAL A-2000?", FROM_SITE);
 
         // Машина, отвечающая поверх человека, выглядит как сотрудник,
         // который не читает, что ему пишут.
-        assertThat(thread.status()).isEqualTo(Conversation.WAITING);
-        assertThat(thread.messages()).hasSize(2);
+        assertThat(thread.status()).isEqualTo(Conversation.ATTENDED);
+        assertThat(thread.messages()).hasSize(3);
         assertThat(thread.messages().getLast().author()).isEqualTo(ChatMessage.VISITOR);
     }
 
@@ -63,6 +65,35 @@ class ChatHandoffTest extends ChatTestBase {
         // а в очереди — как второе обращение. Ни того, ни другого не было.
         assertThat(thread.messages()).hasSize(1);
         assertThat(thread.status()).isEqualTo(Conversation.WAITING);
+    }
+
+    // ————— где передача осталась, а где её больше нет —————
+    //
+    // Половина посетителей пишет просьбу словами, а не нажимает кнопку.
+    // Этот путь после починки 16 сентября обязан работать по-прежнему.
+    @Test
+    void askingForAPersonInWordsStillQueues() {
+        var key = visitor();
+        sayAndAnswer(key, "позовите живого человека");
+
+        var thread = desk.threadFor(key);
+        assertThat(thread.status())
+                .as("Просьба о человеке — ровно тот случай, ради которого очередь есть")
+                .isEqualTo(Conversation.WAITING);
+        assertThat(thread.messages().getLast().body()).containsIgnoringCase("специалист");
+    }
+
+    // А вопрос про цену — нет. До 16 сентября он ставил разговор в очередь
+    // наравне с просьбой о человеке, и ассистент для этого посетителя
+    // замолкал навсегда: очередь никто не читал.
+    @Test
+    void aPriceQuestionIsNotARequestForAPerson() {
+        var key = visitor();
+        sayAndAnswer(key, "Сколько стоит инкубатор A-2000 и какая скидка?");
+
+        assertThat(desk.threadFor(key).status())
+                .as("Отказ сторожевого правила разговор человеку не передаёт")
+                .isEqualTo(Conversation.OPEN);
     }
 
     @Test

@@ -77,49 +77,75 @@ class ChatDeskTest extends ChatTestBase {
         assertThat(desk.threadFor(key).messages().get(0).sources()).isEmpty();
     }
 
+    // ————— поломка 16 сентября —————
+    //
     // Вопрос про цену отклоняется ограничениями до поиска — это правило проекта,
-    // а не поведение движка. Разговор при этом не обрывается, а встаёт в очередь
-    // к человеку: передача специалисту это штатный исход.
+    // а не поведение движка. Но отказ ПЕРЕДАВАЛ разговор человеку, разговор
+    // уходил в WAITING, и дальше срабатывало правило «человек в разговоре —
+    // Ведалина молчит». Дежурных на линии нет, очередь никто не читает,
+    // а ключ посетителя лежит в браузере — ассистент замолкал для него
+    // навсегда, переживая перезагрузку страницы.
+    //
+    // Обиднее всего, что сам отказ кончается словами «а про сами изделия
+    // я расскажу сразу — спрашивайте», и ровно следующий вопрос получал тишину.
     @Test
-    void questionWithoutAnAnswerPutsTheConversationInTheQueue() {
+    void aPriceQuestionDoesNotSilenceTheAssistant() {
         var key = visitor();
-        sayAndAnswer(key, "Сколько стоит инкубатор?");
 
+        sayAndAnswer(key, "Сколько стоит инкубатор A-2000 и какая скидка?");
+        var afterRefusal = desk.threadFor(key);
+
+        assertThat(afterRefusal.status())
+                .as("Отказ сторожевого правила разговор человеку не передаёт")
+                .isEqualTo(Conversation.OPEN);
+        assertThat(afterRefusal.messages()).hasSize(2);
+        assertThat(afterRefusal.messages().get(1).body()).contains("Цены не публикуются");
+
+        sayAndAnswer(key, "Что такое VEDAL A-2000?");
         var thread = desk.threadFor(key);
 
-        assertThat(thread.status()).isEqualTo(Conversation.WAITING);
-        assertThat(thread.messages()).hasSize(2);
+        // Четыре сообщения: вопрос про цену, отказ, вопрос про изделие — и ответ
+        // на него. До правки четвёртого не было никогда.
+        assertThat(thread.messages()).hasSize(4);
+        assertThat(thread.messages().get(3).author())
+                .as("На вопрос про изделие приходит ответ, а не тишина")
+                .isEqualTo(ChatMessage.ASSISTANT);
+        assertThat(thread.messages().get(3).sources()).isNotEmpty();
     }
 
-    // Главное правило модуля. Как только разговор передан человеку, машина
-    // замолкает совсем: иначе на «хорошо, жду» посетителя ассистент выдаёт
-    // справку по каталогу, и со стороны это выглядит как сотрудник, который
-    // не читает, что ему пишут.
+    // Главное правило модуля. Как только человек в разговоре, машина замолкает
+    // совсем: иначе на «хорошо, жду» посетителя ассистент выдаёт справку
+    // по каталогу, и со стороны это выглядит как сотрудник, который не читает,
+    // что ему пишут.
+    //
+    // «Человек в разговоре» здесь — взятый разговор: сотрудник ответил,
+    // и владелец у разговора появился. Что происходит с очередью, которую
+    // никто не взял, проверяет ChatQueuedSilenceTest.
     @Test
     void assistantStaysSilentOnceAHumanIsInvolved() {
         var key = visitor();
-        sayAndAnswer(key, "Сколько стоит инкубатор?");
+        var accepted = desk.say(key, "Сколько стоит инкубатор?", FROM_SITE);
+        desk.reply(accepted.id(), "editor", "Здравствуйте, сейчас посчитаю комплектацию.");
 
         sayAndAnswer(key, "Хорошо, жду ответа");
         var thread = desk.threadFor(key);
 
-        // Три сообщения, а не четыре: вопрос, отказ ассистента, второе сообщение
-        // посетителя — и ничего в ответ на него.
+        // Три сообщения, а не четыре: вопрос, реплика сотрудника, второе
+        // сообщение посетителя — и ничего в ответ на него.
         assertThat(thread.messages()).hasSize(3);
         assertThat(thread.messages().get(2).author()).isEqualTo(ChatMessage.VISITOR);
     }
 
     // То же правило, но в щели между приёмом вопроса и готовым ответом.
-    // Пока Ведалина считала, посетитель нажал «позвать специалиста» или
-    // сотрудник взял разговор из очереди — и готовый ответ уже нельзя
-    // записывать: он ляжет поверх реплики человека.
+    // Пока Ведалина считала, сотрудник взял разговор из очереди — и готовый
+    // ответ уже нельзя записывать: он ляжет поверх реплики человека.
     @Test
     void answerIsDroppedIfAHumanSteppedInWhileItWasBeingComputed() {
         var key = visitor();
         var accepted = desk.say(key, "Что такое VEDAL A-2000?", FROM_SITE);
 
         // Человек вошёл в разговор до того, как ответ был записан.
-        desk.callHuman(key, FROM_SITE);
+        desk.reply(accepted.id(), "editor", "Здравствуйте, я отвечу сам.");
 
         answering.answer(new ChatDesk.Asked(accepted.id(), key, "Что такое VEDAL A-2000?"));
 
@@ -127,8 +153,7 @@ class ChatDeskTest extends ChatTestBase {
         assertThat(thread.messages())
                 .as("Ответ, поспевший после человека, в ленту не попадает")
                 .extracting(ChatDesk.Line::author)
-                .containsExactly(ChatMessage.VISITOR, ChatMessage.ASSISTANT);
-        assertThat(thread.messages().getLast().body()).containsIgnoringCase("специалист");
+                .containsExactly(ChatMessage.VISITOR, ChatMessage.STAFF);
     }
 
     // Один открытый разговор на ключ: второй означал бы, что посетитель пишет
