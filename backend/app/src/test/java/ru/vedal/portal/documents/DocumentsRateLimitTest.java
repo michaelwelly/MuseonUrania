@@ -19,7 +19,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 // а привязка к самому механизму RateLimit уже проверена RateLimitTest.
 // Здесь проверяется другое — что список и файл имеют независимые бюджеты.
 @AutoConfigureMockMvc
+// Раздел открыт настройкой: при закрытом обе двери отвечают 404 и до счётчика
+// не доходят вовсе — это проверяет HiddenPublicDocumentsApiTest.
 @TestPropertySource(properties = {
+        "vedal.documents.public-enabled=true",
         "vedal.documents.list-rate-limit.count=2",
         "vedal.documents.download-rate-limit.count=2"
 })

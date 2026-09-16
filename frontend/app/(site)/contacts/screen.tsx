@@ -202,7 +202,6 @@ export default async function ContactsScreen() {
           </div>
         </div>
       </section>
-
     </main>
   );
 }

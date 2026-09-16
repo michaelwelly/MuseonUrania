@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import ru.vedal.portal.common.NotFoundException;
 import ru.vedal.portal.common.RateLimit;
 import ru.vedal.portal.common.TooManyRequestsException;
 
@@ -28,16 +29,46 @@ import java.util.List;
 @Tag(name = "Документы")
 public class PublicDocumentsController {
 
+    /**
+     * Один и тот же текст на «документа нет», «документ закрыт» и «раздела
+     * сейчас нет». Снаружи эти три случая должны быть неразличимы: разный
+     * текст в теле ответа — такая же подсказка, как разный код, только
+     * читаемая глазами.
+     */
+    private static final String NOT_FOUND = "Документ не найден";
+
     private final DocumentQuery documents;
+    private final PublicDocumentsSection section;
     private final RateLimit listRateLimit;
     private final RateLimit downloadRateLimit;
 
     public PublicDocumentsController(DocumentQuery documents,
+                                     PublicDocumentsSection section,
                                      @Qualifier("documentsListRateLimit") RateLimit listRateLimit,
                                      @Qualifier("documentsDownloadRateLimit") RateLimit downloadRateLimit) {
         this.documents = documents;
+        this.section = section;
         this.listRateLimit = listRateLimit;
         this.downloadRateLimit = downloadRateLimit;
+    }
+
+    /**
+     * Закрытый раздел отвечает так же, как сайт на скрытую страницу: 404.
+     *
+     * <p>Не пустой перечень и не 403. Пустой перечень — это «документов нет»,
+     * то есть неправда, которую сайт и интегратор примут за факт; 403 — это
+     * «они есть, но вам нельзя», то есть подсказка искать дальше. 404 говорит
+     * ровно то, что нужно сказать: такой двери здесь нет.
+     *
+     * <p>Проверяется раньше лимита частоты намеренно. Закрытая дверь не должна
+     * отвечать 429: ответ «слишком часто» сам по себе означает, что за дверью
+     * что-то считают, — и заодно даёт отличить скрытый раздел от ненастоящего
+     * адреса. Заодно закрытая дверь не ходит ни в базу, ни в журнал.
+     */
+    private void requireOpenSection() {
+        if (section.hidden()) {
+            throw new NotFoundException(NOT_FOUND);
+        }
     }
 
     @Operation(summary = "Перечень документов",
@@ -48,13 +79,21 @@ public class PublicDocumentsController {
 
                     Просмотр перечня и скачивание имеют независимые лимиты — по 120
                     обращений за 10 минут с адреса.
+
+                    Пока публичный раздел документов скрыт настройкой портала
+                    (`VEDAL_PUBLIC_DOCUMENTS_ENABLED`), дверь отвечает `404` —
+                    как и сама страница раздела на сайте.
                     """)
     @ApiResponse(responseCode = "200", description = "Перечень документов. Кэш пять минут.")
+    @ApiResponse(responseCode = "404", description = "Публичный раздел документов скрыт.",
+            content = @Content(mediaType = "application/problem+json",
+                    schema = @Schema(ref = "#/components/schemas/ProblemDetail")))
     @ApiResponse(responseCode = "429", description = "Превышен лимит частоты.",
             content = @Content(mediaType = "application/problem+json",
                     schema = @Schema(ref = "#/components/schemas/ProblemDetail")))
     @GetMapping("/documents")
     public ResponseEntity<List<DocumentQuery.Card>> documents(HttpServletRequest http) {
+        requireOpenSection();
         if (!listRateLimit.allow(http.getRemoteAddr())) {
             throw new TooManyRequestsException("Слишком много обращений подряд. Попробуйте позже.");
         }
@@ -72,6 +111,10 @@ public class PublicDocumentsController {
                     не должно быть видно, что такой документ вообще есть. Каждая попытка
                     попадает в журнал.
 
+                    Пока публичный раздел документов скрыт настройкой портала
+                    (`VEDAL_PUBLIC_DOCUMENTS_ENABLED`), `404` отвечают все адреса —
+                    и опубликованные документы тоже.
+
                     Ответ не кэшируется: снятая с публикации редакция не должна остаться
                     в кэшах прокси.
 
@@ -84,7 +127,8 @@ public class PublicDocumentsController {
             content = @Content(mediaType = "application/octet-stream",
                     schema = @Schema(type = "string", format = "binary")))
     @ApiResponse(responseCode = "404",
-            description = "Документа нет, он не опубликован или файл недоступен.",
+            description = "Документа нет, он не опубликован, файл недоступен "
+                    + "или публичный раздел документов скрыт.",
             content = @Content(mediaType = "application/problem+json",
                     schema = @Schema(ref = "#/components/schemas/ProblemDetail")))
     @ApiResponse(responseCode = "429", description = "Превышен лимит частоты.",
@@ -96,6 +140,7 @@ public class PublicDocumentsController {
                     example = "vedal-r1-product-sheet")
             @PathVariable String slug,
             HttpServletRequest http) {
+        requireOpenSection();
         if (!downloadRateLimit.allow(http.getRemoteAddr())) {
             throw new TooManyRequestsException("Слишком много обращений подряд. Попробуйте позже.");
         }

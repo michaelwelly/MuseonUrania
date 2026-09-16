@@ -6,6 +6,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.vedal.portal.PostgresTestBase;
 import ru.vedal.portal.audit.AuditEntryRepository;
@@ -27,7 +28,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+// Публичный раздел документов здесь открыт настройкой: uploadedFileMake-
+// PublicationPossible проверяет, что публикация из админки открывает файл
+// посетителю, — а при скрытом разделе (значение по умолчанию, решение
+// заказчика) публичных дверей к документам нет вовсе, и проверять было бы
+// нечего. На саму админку выключатель не влияет: сотрудник видит и скачивает
+// документы при любом его положении.
 @AutoConfigureMockMvc
+@TestPropertySource(properties = "vedal.documents.public-enabled=true")
 class AdminApiTest extends PostgresTestBase {
 
     @Autowired

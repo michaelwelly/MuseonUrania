@@ -7,7 +7,7 @@ import VedalMapEmbed from "@/components/VedalMapEmbed";
 import { site } from "@/content/site";
 import { productionHero, facility, productionMedia, address } from "@/content/production";
 import { ui as strings } from "@/content/ui";
-import TreeMark from "@/components/TreeMark";
+import VideoPlayer from "@/components/VideoPlayer";
 import BrandPattern from "@/components/BrandPattern";
 import LivePattern from "@/components/LivePattern";
 import styles from "./page.module.css";
@@ -114,60 +114,50 @@ export default function ProductionScreen() {
               {p}
             </p>
           ))}
-          {/* §11.2: место маркировочного знака. Рисуется, когда заказчик
-              передаст файл — см. content/brand.ts. */}
-          <TreeMark where="production" />
+          {/* Место маркировочного знака (§11.2) здесь было до правки
+              заказчика 16 сентября: знак и подпись о маркировке изделий
+              убраны с сайта целиком. */}
         </div>
       </section>
 
-      {/* Плеер и фотоархив — решение заказчика 15 сентября, подробности
-          в content/production.ts. Обе ячейки рисуются по данным: вписали
-          путь к ролику — вместо постера встаёт плеер, вписали ссылку —
-          плитка становится ссылкой. */}
+      {/* Две ячейки: слева площадка под ролик о производстве, справа
+          титульный кадр площадки. Решение заказчика 15 сентября — вместо
+          прежней галереи из трёх снимков.
+
+          Обе рисуются по данным из content/production.ts, руками тут
+          править нечего: придёт ролик — в PRODUCTION_VIDEO_SRC вписывается
+          путь, и постер сам сменяется плеером; согласуют фотоархив —
+          в PRODUCTION_ARCHIVE_HREF вписывается адрес, и правая ячейка сама
+          становится ссылкой с подписью. Пока обе пусты, на странице стоят
+          два статичных кадра и ничто никуда не ведёт. */}
       <ul className={styles.gallery}>
         <li data-reveal="0">
           <div className={styles.shot}>
-            {productionMedia.video.src ? (
-              /* preload="none": ролик не тянется у каждого, кто открыл
-                 страницу, — только у того, кто нажал «play». */
-              <video
-                src={mediaSrc(productionMedia.video.src)}
-                poster={mediaSrc(productionMedia.video.poster)}
-                controls
-                playsInline
-                preload="none"
-                aria-label={productionMedia.video.title}
-              />
-            ) : (
-              /* Ролика нет — только постер. Ни кнопки «play», ни «скоро»:
-                 кнопка, которая ничего не запускает, обещает то, чего нет. */
-              <Image
-                src={mediaSrc(productionMedia.video.poster)}
-                alt={productionMedia.video.title}
-                fill
-                quality={90}
-                /* Ячейка занимает две колонки из трёх (сетка 2fr 1fr) —
-                   ей нужна подсказка 67vw. С 33vw браузер тянул файл
-                   в полтора раза уже ячейки, и кадр на мониторе выходил
-                   мыльным. На телефоне сетка в одну колонку. */
-                sizes="(max-width: 640px) 100vw, 67vw"
-              />
-            )}
+            <VideoPlayer
+              src={productionMedia.video.src}
+              poster={productionMedia.video.poster}
+              title={productionMedia.video.title}
+              /* Ячейка занимает две колонки из трёх (сетка 2fr 1fr) —
+                 ей нужна подсказка 67vw. С 33vw браузер тянул файл
+                 в полтора раза уже ячейки, и кадр на мониторе выходил
+                 мыльным. На телефоне сетка в одну колонку. */
+              sizes="(max-width: 640px) 100vw, 67vw"
+            />
           </div>
         </li>
         <li data-reveal="1">
-          {productionMedia.archive.href ? (
+          {productionMedia.cover.href ? (
             /* Архив — своя страница сайта (/production/archive/), поэтому
                обычный переход в той же вкладке. */
             <Link
-              className={`${styles.shot} ${styles.archive} ${styles.archiveLink}`}
-              href={productionMedia.archive.href}
+              className={`${styles.shot} ${styles.cover} ${styles.coverLink}`}
+              href={productionMedia.cover.href}
             >
-              <ArchiveTile linked />
+              <CoverShot linked />
             </Link>
           ) : (
-            <div className={`${styles.shot} ${styles.archive}`}>
-              <ArchiveTile linked={false} />
+            <div className={`${styles.shot} ${styles.cover}`}>
+              <CoverShot linked={false} />
             </div>
           )}
         </li>
@@ -232,31 +222,35 @@ export default function ProductionScreen() {
   );
 }
 
-/** Содержимое плитки фотоархива: титульный кадр и подпись поверх него.
- *  Одно и то же и в ссылке, и без неё — различаются только стрелка
- *  и подпись для читалки экрана: без ссылки вести некуда. */
-function ArchiveTile({ linked }: { linked: boolean }) {
-  const { cover, coverAlt, label, note } = productionMedia.archive;
+/** Правая ячейка галереи: титульный кадр производства.
+ *
+ *  Подпись поверх кадра появляется только вместе со ссылкой на фотоархив
+ *  (PRODUCTION_ARCHIVE_HREF в content/production.ts). Без перехода она звала
+ *  бы в архив, которого на сайте нет, — а это ровно то, что убрано правкой
+ *  заказчика 16 сентября. Поэтому сам по себе кадр стоит чистым: ни подписи,
+ *  ни стрелки, ни отклика на наведение. */
+function CoverShot({ linked }: { linked: boolean }) {
+  const { src, alt, label, note } = productionMedia.cover;
   return (
     <>
       <Image
-        src={mediaSrc(cover)}
-        alt={coverAlt}
+        src={mediaSrc(src)}
+        alt={alt}
         fill
         quality={90}
         sizes="(max-width: 640px) 100vw, 33vw"
       />
-      <span className={styles.archiveCaption}>
-        <span className={styles.archiveLabel}>
-          {label}
-          {linked && (
-            <span className={styles.archiveArrow} aria-hidden="true">
+      {linked && (
+        <span className={styles.coverCaption}>
+          <span className={styles.coverLabel}>
+            {label}
+            <span className={styles.coverArrow} aria-hidden="true">
               →
             </span>
-          )}
+          </span>
+          <span className={styles.coverNote}>{note}</span>
         </span>
-        <span className={styles.archiveNote}>{note}</span>
-      </span>
+      )}
     </>
   );
 }

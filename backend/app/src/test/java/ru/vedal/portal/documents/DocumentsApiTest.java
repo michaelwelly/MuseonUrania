@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.vedal.portal.PostgresTestBase;
 import ru.vedal.portal.audit.AuditEntryRepository;
@@ -20,7 +21,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+// Раздел здесь открыт настройкой: тест про отбор опубликованного, про журнал
+// и про вложение, а не про выключатель. Сам выключатель закрыт по умолчанию
+// (vedal.documents.public-enabled=false, решение заказчика), и что при нём
+// обе двери отвечают 404, сторожит HiddenPublicDocumentsApiTest в модуле
+// документов.
 @AutoConfigureMockMvc
+@TestPropertySource(properties = "vedal.documents.public-enabled=true")
 class DocumentsApiTest extends PostgresTestBase {
 
     @Autowired

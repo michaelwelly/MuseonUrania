@@ -548,6 +548,13 @@ services:
       VEDAL_PORTAL_URL: ${VEDAL_PUBLIC_URL:-http://localhost:8080}
       VEDAL_NOTIFICATIONS_MANAGER: ${VEDAL_NOTIFICATIONS_MANAGER:-}
 
+      # Публичный раздел документов — тот же рубильник, что у витрины
+      # (site: NEXT_PUBLIC_DOCUMENTS_ENABLED) и у Ведалины. Переменная не
+      # доезжала до портала вовсе: витрину гасили, а перечень и файлы
+      # оставались открыты по прямому адресу. Теперь одно значение в .env
+      # задаёт одно состояние во всех трёх местах.
+      VEDAL_PUBLIC_DOCUMENTS_ENABLED: ${VEDAL_PUBLIC_DOCUMENTS_ENABLED:-false}
+
       # Почта. Пустой адрес сервера — рабочее состояние, а не поломка: письма
       # пишутся в лог и наружу не уходят, так и живёт машина разработчика.
       # Портал отличает пустое значение от заданного сам (MailSenderConfig),

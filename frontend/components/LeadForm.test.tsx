@@ -67,10 +67,10 @@ async function формаСТемами() {
  */
 async function заполнитьОбязательное(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText(/Контактное лицо/), "Ольга Кузнецова");
-  const company = screen.getByLabelText(/Организация/);
-  if (company.getAttribute("aria-required") === "true") {
-    await user.type(company, "Роддом №2");
-  }
+  // Организация обязательна на всех формах этого компонента, а не только
+  // в сервисном обращении: раньше здесь стояла проверка `aria-required`,
+  // и заполнялось поле не всегда.
+  await user.type(screen.getByLabelText(/Организация/), "Роддом №2");
   await user.type(screen.getByLabelText(/Телефон/), "+7 343 200 10 10");
   await user.type(screen.getByLabelText(/Электронная почта/), "olga@rd2.ru");
   await user.type(
@@ -604,5 +604,97 @@ describe("изделие приходит из адреса", () => {
     await user.selectOptions(селекторИзделия(), "vedal-r1");
 
     expect(селекторИзделия().value).toBe("vedal-r1");
+  });
+});
+
+// Организация обязательна на всех трёх формах, где стоит этот компонент:
+// на карточке изделия, на /contacts/ и на /service/. Просьба заказчика
+// от 16 сентября; до неё поле требовалось только в сервисном обращении.
+//
+// Проверяется не звёздочка ради звёздочки, а то, что подпись, `aria-required`
+// и проверка при отправке говорят одно и то же. Разъехавшись, они дают одну
+// из двух тихих поломок: помеченное звёздочкой поле, которое уезжает пустым,
+// — или отказ отправить форму, в которой на вид всё заполнено.
+//
+// Отдельно — пробелы: для человека строка из пробелов это незаполненное поле,
+// и для бэкенда тоже (`String.isBlank`). Форма, принимающая такое значение,
+// отдаёт менеджеру заявку с организацией из одного пробела.
+describe("организация обязательна", () => {
+  const организация = () => screen.getByLabelText(/Организация/) as HTMLInputElement;
+
+  it("на карточке изделия помечена и объявлена так же, как соседние поля", async () => {
+    await формаКарточки();
+
+    expect(screen.getByLabelText(/^Организация \*$/)).toBe(организация());
+    expect(организация()).toHaveAttribute("aria-required", "true");
+  });
+
+  it("на форме контактов — тоже, и при теме, которая не про сервис", async () => {
+    await формаСТемами();
+
+    expect(селекторТемы().value, "тема по умолчанию — запрос КП").toBe("quote");
+    expect(screen.getByLabelText(/^Организация \*$/)).toBe(организация());
+    expect(организация()).toHaveAttribute("aria-required", "true");
+  });
+
+  it("на форме сервиса — тоже", async () => {
+    await сервиснаяФорма();
+
+    expect(screen.getByLabelText(/^Организация \*$/)).toBe(организация());
+    expect(организация()).toHaveAttribute("aria-required", "true");
+  });
+
+  it("пустая организация не даёт отправить запрос КП с карточки", async () => {
+    const user = await формаКарточки();
+    await заполнитьОбязательное(user);
+    await user.clear(организация());
+
+    await запросить(user);
+
+    expect(mocks.submitLead).not.toHaveBeenCalled();
+    expect(screen.getByText("Укажите организацию")).toBeInTheDocument();
+    expect(организация()).toHaveAttribute("aria-invalid", "true");
+    // Фокус встаёт на первую ошибку сверху — здесь она одна.
+    expect(document.activeElement).toBe(организация());
+  });
+
+  it("пустая организация не даёт отправить обращение с контактов", async () => {
+    const user = await формаСТемами();
+    await заполнитьОбязательное(user);
+    await user.clear(организация());
+
+    await отправить(user);
+
+    expect(mocks.submitLead).not.toHaveBeenCalled();
+    expect(screen.getByText("Укажите организацию")).toBeInTheDocument();
+    expect(организация()).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("одни пробелы — то же самое, что пусто", async () => {
+    const user = await формаКарточки();
+    await заполнитьОбязательное(user);
+    await user.clear(организация());
+    await user.type(организация(), "   ");
+
+    await запросить(user);
+
+    expect(mocks.submitLead).not.toHaveBeenCalled();
+    expect(screen.getByText("Укажите организацию")).toBeInTheDocument();
+  });
+
+  // Обратная сторона: заполненное поле обязано доехать. Форма, которая
+  // требует организацию и теряет её по дороге, хуже прежней — человек
+  // вписал название, а менеджер видит заявку без него.
+  it("заполненная организация уезжает с заявкой, без крайних пробелов", async () => {
+    const user = await формаКарточки();
+    await заполнитьОбязательное(user);
+    await user.clear(организация());
+    await user.type(организация(), "  Областной перинатальный центр  ");
+
+    await запросить(user);
+
+    expect(mocks.submitLead.mock.calls[0][0]).toMatchObject({
+      company: "Областной перинатальный центр",
+    });
   });
 });

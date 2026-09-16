@@ -63,7 +63,10 @@ class AdminChatApiTest extends PostgresTestBase {
     @WithMockUser(username = "manager", roles = "PORTAL_ADMIN")
     void queueHoldsOnlyThoseWaitingForAHuman() throws Exception {
         var key = UUID.randomUUID().toString();
-        var question = "Сколько стоит инкубатор?";
+        // Просьба о человеке, а не вопрос про цену: отказ сторожевого правила
+        // очередь не заводит — он говорит, чего Ведалина не называет,
+        // и остаётся в разговоре.
+        var question = "позовите живого человека";
         var accepted = desk.say(key, question, new ChatDesk.Context("ru", null, "/products/"));
 
         // В очередь разговор ставит ответ, а не приём вопроса: пока Ведалина

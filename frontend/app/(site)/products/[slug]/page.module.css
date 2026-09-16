@@ -75,25 +75,10 @@
   gap: 10px;
 }
 
-.badge {
-  display: inline-flex;
-  align-items: center;
-  height: 26px;
-  padding: 0 10px;
-  border-radius: 2px;
-  font-size: 11.5px;
-  font-weight: 600;
-}
-
-.badgeOk {
-  background: var(--ok-bg);
-  color: var(--ok-fg);
-}
-
-.badgeMuted {
-  background: var(--soft);
-  color: var(--muted);
-}
+/* Правила бейджа статуса документации убраны вместе с самим бейджем
+   (см. screen.tsx): мёртвый класс в модуле читается как «плашка где-то
+   ещё рисуется». Своей высоты у `.infoTop` нет — строка рубрики ниже
+   задаёт её сама. */
 
 .cats {
   font-family: var(--font-mono), monospace;

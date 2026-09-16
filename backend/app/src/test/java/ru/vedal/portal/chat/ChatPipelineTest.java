@@ -80,16 +80,16 @@ class ChatPipelineTest extends PostgresTestBase {
                 .isFalse();
     }
 
-    // Вопрос, на который ответа нет, — тот же путь и тот же срок: разговор
-    // встаёт в очередь сам, а не после того, как посетитель ещё раз напишет.
+    // Просьба о человеке — тот же путь и тот же срок: разговор встаёт
+    // в очередь сам, а не после того, как посетитель ещё раз напишет.
     @Test
-    void aQuestionWithoutAnAnswerReachesTheQueueOnItsOwn() throws Exception {
+    void aRequestForAPersonReachesTheQueueOnItsOwn() throws Exception {
         var key = UUID.randomUUID().toString();
 
         mvc.perform(post("/api/assistant/v1/chat")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"visitorKey":"%s","text":"Сколько стоит инкубатор?"}
+                                {"visitorKey":"%s","text":"позовите живого человека"}
                                 """.formatted(key)))
                 .andExpect(status().isOk());
 
@@ -101,6 +101,33 @@ class ChatPipelineTest extends PostgresTestBase {
         mvc.perform(get("/api/assistant/v1/chat/{key}", key))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(Conversation.WAITING));
+    }
+
+    // А отказ сторожевого правила очередь не заводит. До 16 сентября заводил:
+    // «сколько стоит A-2000 и какая скидка» уводило разговор в WAITING, и на
+    // следующий вопрос посетитель не получал ничего — очередь никто не читал,
+    // а ключ вкладки лежит в браузере и переживает перезагрузку страницы.
+    @Test
+    void aPriceQuestionLeavesTheConversationWithTheAssistant() throws Exception {
+        var key = UUID.randomUUID().toString();
+
+        mvc.perform(post("/api/assistant/v1/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"visitorKey":"%s","text":"Сколько стоит инкубатор A-2000 и какая скидка?"}
+                                """.formatted(key)))
+                .andExpect(status().isOk());
+
+        var answered = waitForAnswer(key);
+
+        assertThat(answered.status())
+                .as("Отказ по цене разговор человеку не передаёт")
+                .isEqualTo(Conversation.OPEN);
+        assertThat(answered.messages().getLast().body()).contains("Цены не публикуются");
+
+        mvc.perform(get("/api/assistant/v1/chat/{key}", key))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(Conversation.OPEN));
     }
 
     /** Ждать, пока Ведалина ответит, — как это делает виджет, только опросом. */
