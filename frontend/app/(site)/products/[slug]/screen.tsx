@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { statusLabel } from "@/content/products";
 import LeadForm from "@/components/LeadForm";
 import { ui as strings } from "@/content/ui";
 import { fetchDocuments, fetchProduct, fetchProducts } from "@/lib/api";
@@ -20,9 +19,8 @@ import { JsonLd, breadcrumbStructuredData, productStructuredData } from "@/lib/s
 // Слаг приходит уже разобранным: `params` — это дело маршрута, а не экрана.
 //
 // Почти всё на этой странице — тексты заказчика: описание, назначение,
-// характеристики, статус документации. Они приходят из портала
-// и из `content/products.ts`; экрану принадлежат только подписи
-// разделов и кнопок.
+// характеристики. Они приходят из портала и из `content/products.ts`;
+// экрану принадлежат только подписи разделов и кнопок.
 
 export async function productMetadata(slug: string): Promise<Metadata> {
   const product = await fetchProduct(slug);
@@ -107,14 +105,20 @@ export default async function ProductScreen({ slug }: { slug: string }) {
         </div>
 
         <div className={styles.info}>
+          {/* Бейдж «Документация подтверждена» снят по правке заказчика.
+              В каталоге его сняли раньше, здесь он оставался последним живым
+              местом на публичной части.
+
+              Данные не тронуты: `status` по-прежнему приезжает из портала
+              (doc_status) и подписан в `content/products.ts` (statusLabel) —
+              им пользуется админка, и вернуть показ значит вернуть сюда один
+              span, а не собирать текст заново.
+
+              Строка осталась одна — рубрика изделия. Обёртка `infoTop`
+              сохранена: она держит рубрику в строке и переносит её на узком
+              экране, а её собственный `gap` без второго элемента ничего
+              не отодвигает. */}
           <div className={styles.infoTop}>
-            <span
-              className={`${styles.badge} ${
-                product.status === "confirmed" ? styles.badgeOk : styles.badgeMuted
-              }`}
-            >
-              {statusLabel[product.status]}
-            </span>
             <span className={styles.cats}>
               {product.categories.map((cat) => cat).join(" · ")}
             </span>
@@ -130,6 +134,17 @@ export default async function ProductScreen({ slug }: { slug: string }) {
             {product.detail ?? product.summary}
           </p>
 
+          {/* Адрес завода с карточки снят по правке заказчика. В локальном
+              содержимом строки «Производство» больше нет, но портал её ещё
+              отдаёт — она заведена миграциями V2 и V20 у A-2000, R1 и R2,
+              и в ответе API лежит до сих пор.
+
+              Отбор идёт по подписи, потому что другого признака у строки нет:
+              публичный API отдаёт ровно {label, value, muted} (SpecView
+              в backend/catalog/.../PublicDto.java) — ни ключа, ни типа.
+              Значит фильтр хрупкий: переименуют подпись в админке на
+              «Производственная площадка» — адрес вернётся на страницу.
+              Надёжно это чинится удалением строки у изделия в портале. */}
           {product.keyParams && (
             <ul className={styles.params}>
               {product.keyParams.filter((p) => p.label !== "Производство").map((p) => (
