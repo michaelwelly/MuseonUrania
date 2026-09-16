@@ -71,3 +71,38 @@ describe("адрес запроса к публичному API", () => {
       .toBe("http://portal:8081/api/public/v1/products/%D0%BD%D0%B5%D1%82");
   });
 });
+
+// Раздел документов закрывается выключателем на бэкенде, и тогда обе его двери
+// отвечают 404. Перечень документов читает не только витрина, но и карточка
+// изделия — причём на сборке. Пока fetchDocuments считала 404 сбоем, закрытие
+// раздела роняло `next build` на /products/<slug>, и выкатка не доезжала:
+// портал успевал подняться закрытым, а фронт оставался старым и отдавал 500.
+describe("закрытый раздел документов", () => {
+  const original = process.env.VEDAL_API_INTERNAL_URL;
+
+  beforeEach(() => {
+    process.env.VEDAL_API_INTERNAL_URL = "http://portal:8081";
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    process.env.VEDAL_API_INTERNAL_URL = original;
+    vi.unstubAllGlobals();
+  });
+
+  it("на 404 отдаёт пустой перечень, а не бросает", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("", { status: 404 })));
+    const { fetchDocuments } = await import("./api");
+
+    await expect(fetchDocuments()).resolves.toEqual([]);
+  });
+
+  // 404 разбирается отдельно именно как «раздела нет». Настоящая поломка
+  // портала должна остаться видимой, а не превратиться в тихий пустой список.
+  it("настоящая поломка портала по-прежнему роняет сборку", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("", { status: 500 })));
+    const { fetchDocuments } = await import("./api");
+
+    await expect(fetchDocuments()).rejects.toThrow("500");
+  });
+});
