@@ -99,6 +99,20 @@ describe("карта сайта", () => {
     }
   });
 
+  // Страница фотоархива снята с публикации 16 сентября, а её адрес отвечает
+  // редиректом на `/production/` (next.config.ts). Карта обещает обходчику
+  // страницы: адрес, отвечающий перенаправлением, гоняет его дважды,
+  // а снятый — приводит на «не найдено».
+  it("не называет снятых страниц", async () => {
+    process.env.NEXT_PUBLIC_SITE_URL = "https://vedal-med.ru";
+    const sitemap = (await import("./sitemap")).default;
+
+    const urls = (await sitemap()).map((e) => e.url);
+
+    expect(urls).not.toContain("https://vedal-med.ru/production/archive/");
+    expect(urls).toContain("https://vedal-med.ru/production/");
+  });
+
   // Материал без slug'а приезжает в режиме вёрстки без бэкенда. Адрес
   // `/news//` вёл бы обходчика в никуда.
   it("пропускает записи без адреса", async () => {

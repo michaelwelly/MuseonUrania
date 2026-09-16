@@ -27,7 +27,10 @@ const STATIC: { path: string; priority: number; changeFrequency: "daily" | "week
   { path: "/products/", priority: 0.9, changeFrequency: "weekly" },
   { path: "/about/", priority: 0.7, changeFrequency: "monthly" },
   { path: "/production/", priority: 0.7, changeFrequency: "monthly" },
-  { path: "/production/archive/", priority: 0.4, changeFrequency: "yearly" },
+  // `/production/archive/` здесь стоял до 16 сентября. Страница снята
+  // с публикации, её адрес отвечает редиректом на `/production/`
+  // (см. next.config.ts) — в карте ему места нет: карта обещает
+  // обходчику страницы, а не перенаправления.
   { path: "/service/", priority: 0.7, changeFrequency: "monthly" },
   { path: "/documents/", priority: 0.6, changeFrequency: "weekly" },
   { path: "/news/", priority: 0.6, changeFrequency: "weekly" },
