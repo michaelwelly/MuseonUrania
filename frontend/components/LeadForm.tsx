@@ -99,7 +99,14 @@ export function validate(
   const get = (k: string) => String(data.get(k) ?? "").trim();
 
   if (!get("name")) errors.name = messages.name;
-  if (need.service && !get("company")) errors.company = messages.company;
+  // Организация обязательна на всех трёх формах, где стоит этот компонент:
+  // на карточке изделия, на /contacts/ и на /service/ (просьба заказчика
+  // от 16 сентября). Раньше её требовало только сервисное обращение.
+  //
+  // `get` обрезает пробелы: строка из одних пробелов — то же незаполненное
+  // поле, что и пустая. Так же считает бэкенд — `String.isBlank`
+  // в ServiceLeadNamesTheDeviceValidator.
+  if (!get("company")) errors.company = messages.company;
   if (get("phone").replace(/\D/g, "").length < 10) errors.phone = messages.phone;
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(get("email"))) errors.email = messages.email;
   if (need.service && need.productAsked && !get("product")) {
@@ -382,8 +389,7 @@ export default function LeadForm({
 
         <div className={styles.field}>
           <label className={styles.label} htmlFor="company">
-            {strings.form.company}
-            {asksSerial && <> <span className={styles.required}>*</span></>}
+            {strings.form.company} <span className={styles.required}>*</span>
           </label>
           <input
             id="company"
@@ -391,7 +397,7 @@ export default function LeadForm({
             className={`${styles.input} ${errors.company ? styles.invalid : ""}`}
             autoComplete="organization"
             aria-invalid={!!errors.company}
-            aria-required={asksSerial ? "true" : undefined}
+            aria-required="true"
             aria-describedby={errors.company ? "company-error" : undefined}
           />
           {errors.company && (
