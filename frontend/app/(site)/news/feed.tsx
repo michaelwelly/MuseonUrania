@@ -9,8 +9,11 @@ import type { NewsItem } from "@/lib/api";
 import styles from "./page.module.css";
 import { mediaSrc } from "@/lib/media";
 
-// Чипы рубрик и лента. Публикаций пока нет — фильтр всё равно нужен,
-// иначе при появлении первой записи придётся переписывать разметку.
+// Чипы рубрик и лента. Публикаций по направлениям пока нет — фильтр всё равно
+// нужен, иначе при появлении первой записи придётся переписывать разметку.
+// Виден ли ряд чипов, решает `tagFiltersEnabled` из content/news.ts: там же
+// написано, почему он выключен и как вернуть. Отбор по рубрике ниже работает
+// независимо от флага — прячется только переключатель.
 // Записи приходят сверху: их читает серверный компонент на сборке.
 // Ссылка или неподвижная карточка — решает наличие slug. Обёртка вынесена,
 // чтобы разметка карточки не дублировалась в двух ветках условия: разъехались
@@ -31,33 +34,49 @@ function CardShell({
   );
 }
 
-export default function NewsFeed({ news }: { news: NewsItem[] }) {
+export default function NewsFeed({
+  news,
+  filtersEnabled = tagFiltersEnabled,
+}: {
+  news: NewsItem[];
+  /**
+   * Показывать ли ряд чипов над лентой. По умолчанию — флаг из
+   * content/news.ts; пропом его подменяют тесты, чтобы включённый
+   * переключатель проверялся, а не только выключенный.
+   */
+  filtersEnabled?: boolean;
+}) {
   const [active, setActive] = useState<string | null>(null);
   const shown = active ? news.filter((n) => n.tag === active) : news;
 
+  // Ряд целиком под флагом, вместе с «Все»: одна кнопка, которая ничего
+  // не переключает, — это не фильтр, а недоделанный фильтр. Пока ряда нет,
+  // `active` остаётся null, и лента показывает всё подряд.
   return (
     <>
-      <div className={styles.filters}>
-        <button
-          type="button"
-          className={`${styles.chip} ${active === null ? styles.chipActive : ""}`}
-          onClick={() => setActive(null)}
-          aria-pressed={active === null}
-        >
-          {strings.news.all}
-        </button>
-        {tagFiltersEnabled && tags.map((t) => (
+      {filtersEnabled && (
+        <div className={styles.filters}>
           <button
-            key={t}
             type="button"
-            className={`${styles.chip} ${active === t ? styles.chipActive : ""}`}
-            onClick={() => setActive(t)}
-            aria-pressed={active === t}
+            className={`${styles.chip} ${active === null ? styles.chipActive : ""}`}
+            onClick={() => setActive(null)}
+            aria-pressed={active === null}
           >
-            {t}
+            {strings.news.all}
           </button>
-        ))}
-      </div>
+          {tags.map((t) => (
+            <button
+              key={t}
+              type="button"
+              className={`${styles.chip} ${active === t ? styles.chipActive : ""}`}
+              onClick={() => setActive(t)}
+              aria-pressed={active === t}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      )}
 
       {shown.length === 0 ? (
         <div className={styles.empty} data-reveal="0">
