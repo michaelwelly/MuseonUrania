@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo";
 import Image from "next/image";
 import PageHero from "@/components/PageHero";
-import TreeMark from "@/components/TreeMark";
 import { DarkCta } from "@/components/Blocks";
 import {
   aboutHero,
@@ -60,16 +59,13 @@ export default function AboutScreen() {
           <p className={styles.eyebrow}>
             {cycle.eyebrow}
           </p>
+          {/* Маркировочный знак-дерево убран по правке заказчика
+              16 сентября: на странице оставался заголовок и подпись
+              о знаке на изделиях. Вместе с ним ушла подпись и линия
+              над ней — они существовали только ради знака. */}
           <h2 className={styles.cycleTitle} data-words="30">
             {cycle.title}
           </h2>
-          {/* Знак стоит под заголовком, а не отдельной строкой под всей
-              секцией. Раньше он был третьим элементом сетки и падал
-              в левую колонку следующего ряда: под заголовком оставалась
-              колонка пустого белого в половину экрана, а знак висел внизу
-              сам по себе, ни к чему не примыкая. Владелец портала указал
-              на эту пустоту, глядя на боевую страницу. */}
-          <TreeMark where="about" />
         </div>
         <div data-reveal="1">
           {cycle.paragraphs.map((p) => (

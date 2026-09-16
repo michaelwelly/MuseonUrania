@@ -173,9 +173,9 @@
   list-style: none;
 }
 
-/* Обе ячейки на два ряда: слева плеер (или его постер), справа одна
-   плитка фотоархива. До 15 сентября справа стояли два кадра друг под
-   другом, отсюда сетка рядов 220 + 220. */
+/* Обе ячейки на два ряда: слева плеер (или его постер), справа титульный
+   кадр площадки. До 15 сентября справа стояли два кадра друг под другом,
+   отсюда сетка рядов 220 + 220. */
 .gallery li {
   grid-row: span 2;
 }
@@ -204,11 +204,16 @@
   background: var(--img-bg);
 }
 
-/* Подпись фотоархива лежит на снимке. Градиент снизу нужен для
-   читаемости: титульный кадр светлый, белый текст на нём без подложки
-   пропадает. Сверху градиент уходит в прозрачный — кадр не темнеет
-   целиком. */
-.archiveCaption {
+/* Подпись правой ячейки лежит на кадре. Рисуется только вместе со ссылкой
+   на фотоархив (PRODUCTION_ARCHIVE_HREF в content/production.ts) — пока
+   ссылки нет, ячейка остаётся чистым кадром, и до этих правил дело
+   не доходит. Правила оставлены на месте намеренно: согласуют съёмку —
+   ссылка возвращается одним значением в контенте, а не заодно и вёрсткой.
+
+   Градиент снизу нужен для читаемости: титульный кадр светлый, белый текст
+   на нём без подложки пропадает. Сверху градиент уходит в прозрачный —
+   кадр не темнеет целиком. */
+.coverCaption {
   position: absolute;
   inset: auto 0 0 0;
   display: flex;
@@ -219,7 +224,7 @@
   color: #fff;
 }
 
-.archiveLabel {
+.coverLabel {
   display: inline-flex;
   align-items: baseline;
   gap: 8px;
@@ -229,12 +234,12 @@
   letter-spacing: -0.01em;
 }
 
-.archiveArrow {
+.coverArrow {
   font-size: 18px;
   transition: transform 0.2s ease;
 }
 
-.archiveNote {
+.coverNote {
   font-family: var(--font-mono), monospace;
   font-size: 11.5px;
   letter-spacing: 0.12em;
@@ -242,35 +247,23 @@
   color: rgba(255, 255, 255, 0.82);
 }
 
-/* Ховер только у ссылки: плитка без адреса никуда не ведёт, и отклик
+/* Ховер только у ссылки: кадр без адреса никуда не ведёт, и отклик
    на наведение обещал бы переход, которого нет. */
-.archiveLink img {
+.coverLink img {
   transition: transform 0.4s ease;
 }
 
-.archiveLink:hover img {
+.coverLink:hover img {
   transform: scale(1.03);
 }
 
-.archiveLink:hover .archiveArrow {
+.coverLink:hover .coverArrow {
   transform: translateX(3px);
 }
 
-.archiveLink:focus-visible {
+.coverLink:focus-visible {
   outline: 2px solid var(--green);
   outline-offset: 3px;
-}
-
-/* Подпись «откроется в новой вкладке» — для читалки экрана, глазу не нужна:
-   стрелка ↗ говорит то же самое. */
-.srOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
 }
 
 /* ---------- адрес и карта ---------- */
@@ -402,13 +395,13 @@
     grid-row: auto;
   }
 
-  /* Обе ячейки по ширине экрана. Плитке архива выше, чем плееру:
-     подпись в две строки съедает нижнюю треть кадра. */
+  /* Обе ячейки по ширине экрана. Титульному кадру выше, чем плееру:
+     подпись в две строки — когда она есть — съедает нижнюю треть кадра. */
   .shot {
     height: 220px;
   }
 
-  .archive {
+  .cover {
     height: 260px;
   }
 
