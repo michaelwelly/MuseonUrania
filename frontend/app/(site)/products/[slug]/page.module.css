@@ -160,6 +160,17 @@
   color: #fff;
 }
 
+.btnSecondary {
+  border: 1px solid var(--green-dark);
+  background: #fff;
+  color: var(--green-dark);
+}
+
+.btnSecondary:hover {
+  background: var(--soft);
+  color: var(--green-dark);
+}
+
 .note {
   margin-top: 18px;
   font-size: 13.5px;

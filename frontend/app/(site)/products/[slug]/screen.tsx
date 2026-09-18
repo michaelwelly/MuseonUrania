@@ -46,6 +46,8 @@ function Arrow() {
   );
 }
 
+const A2000_PRODUCT_SHEET = "/api/public/v1/documents/vedal-a-2000-product-sheet/file";
+
 export default async function ProductScreen({ slug }: { slug: string }) {
   // Перечень документов читается тем же запросом, что и страница /documents/,
   // и с тем же сроком обновления: вкладка «Документы» карточки обязана
@@ -179,6 +181,16 @@ export default async function ProductScreen({ slug }: { slug: string }) {
               {strings.actions.requestQuote}
               <Arrow />
             </a>
+            {product.slug === "vedal-a-2000" && (
+              <a
+                className={`${styles.btn} ${styles.btnSecondary}`}
+                href={A2000_PRODUCT_SHEET}
+                data-analytics="product_document_download"
+              >
+                Скачать PDF
+                <Arrow />
+              </a>
+            )}
           </div>
 
           {/* Обещать высылку регистрационного удостоверения нельзя: письмо

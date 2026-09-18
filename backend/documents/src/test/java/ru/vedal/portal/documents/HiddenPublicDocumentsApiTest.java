@@ -33,11 +33,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * с рабочими ссылками, а {@code /documents/vedal-product-catalog/file} —
  * два мегабайта PDF. Выключатель гасил витрину, но не файлы.
  *
- * <p><b>Что стережёт.</b> Что закрыты обе двери, а не одна; что закрытая
- * дверь отвечает 404, а не пустым перечнем и не 403; что она не ходит
- * ни в базу, ни в журнал; что 404 приходит даже с исчерпанным лимитом
- * частоты, иначе 429 сам признался бы, что дверь существует. И обратное:
- * с включённым выключателем обе двери работают как прежде.
+ * <p><b>Что стережёт.</b> Что закрыты перечень и все неразрешённые файлы;
+ * что закрытая дверь отвечает 404, а не пустым перечнем и не 403; что она
+ * не ходит ни в базу, ни в журнал; что 404 приходит даже с исчерпанным
+ * лимитом частоты, иначе 429 сам признался бы, что дверь существует.
+ * Отдельно закреплено точечное исключение для согласованной карточки A-2000.
+ * С включённым выключателем обе общие двери работают как прежде.
  *
  * <p>Базы здесь нет и Spring-контекст не поднимается: проверяется устройство
  * двери, а не хранилище. Отбор опубликованных документов сторожит
@@ -47,6 +48,8 @@ class HiddenPublicDocumentsApiTest {
 
     private static final String LIST = "/api/public/v1/documents";
     private static final String FILE = "/api/public/v1/documents/vedal-product-catalog/file";
+    private static final String A2000_FILE =
+            "/api/public/v1/documents/vedal-a-2000-product-sheet/file";
 
     private final DocumentQuery documents = Mockito.mock(DocumentQuery.class);
 
@@ -77,7 +80,7 @@ class HiddenPublicDocumentsApiTest {
 
     @Test
     void theFileIsGoneEvenForAPublishedDocument() throws Exception {
-        publishedFile();
+        publishedFile("vedal-product-catalog", "vedal-product-catalog.pdf");
 
         portal(PublicDocumentsSection.HIDDEN).perform(get(FILE))
                 .andExpect(status().isNotFound());
@@ -85,6 +88,17 @@ class HiddenPublicDocumentsApiTest {
         // Скачивание пишет обращение в журнал — но только когда дверь есть.
         // Закрытая до документа не доходит вовсе.
         Mockito.verify(documents, Mockito.never()).download(Mockito.anyString());
+    }
+
+    @Test
+    void theCustomerApprovedA2000SheetWorksWhileTheListingStaysHidden() throws Exception {
+        publishedFile("vedal-a-2000-product-sheet", "vedal-a-2000-product-sheet.pdf");
+
+        portal(PublicDocumentsSection.HIDDEN).perform(get(A2000_FILE))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("attachment")))
+                .andExpect(header().string("X-Content-Type-Options", "nosniff"))
+                .andExpect(content().contentTypeCompatibleWith("application/pdf"));
     }
 
     // Тело ответа — такая же подсказка, как код. «Раздел скрыт» в нём означало
@@ -131,7 +145,7 @@ class HiddenPublicDocumentsApiTest {
 
     @Test
     void theFileWorksWhenTheSectionIsOpen() throws Exception {
-        publishedFile();
+        publishedFile("vedal-product-catalog", "vedal-product-catalog.pdf");
 
         portal(PublicDocumentsSection.OPEN).perform(get(FILE))
                 .andExpect(status().isOk())
@@ -141,10 +155,10 @@ class HiddenPublicDocumentsApiTest {
     }
 
     /** Опубликованный документ с файлом — то, что дверь отдала бы при открытом разделе. */
-    private void publishedFile() {
+    private void publishedFile(String slug, String filename) {
         var body = "%PDF-1.7 проба".getBytes(StandardCharsets.UTF_8);
-        Mockito.when(documents.download("vedal-product-catalog")).thenReturn(
-                new DocumentQuery.Download("vedal-product-catalog.pdf",
+        Mockito.when(documents.download(slug)).thenReturn(
+                new DocumentQuery.Download(filename,
                         new FileStorage.Stored(new ByteArrayInputStream(body), body.length,
                                 "application/pdf")));
     }
