@@ -39,6 +39,11 @@ silently.
 No fourth door appeared, either. There are still three; the employee door
 changed shape — JSON instead of server-rendered pages.
 
+The public document routes remain in the contract but may be closed by the
+shared `VEDAL_PUBLIC_DOCUMENTS_ENABLED` switch. In that state, both the listing
+and every file return `404` before rate limiting. This `404` is part of the
+contract, not an absent route in the code.
+
 ## The source of truth is the code, not these files
 
 springdoc assembles the specification from controller annotations and DTO
@@ -51,10 +56,11 @@ repeated. Field constraints (allowed form types, phone format, minimum message
 length) reach the specification from Bean Validation annotations — the same
 checks that run on the trust boundary.
 
-There is no automatic reconciliation: the export can fall behind the code. What
-will not fall behind is the set of doors: `OpenApiDocsTest` compares the
-documented paths against the application's real routes **in both groups**, so a
-new door cannot appear silently.
+`OpenApiDumpTest` parses JSON and YAML and compares both exports with the
+contract assembled by the application. `OpenApiDocsTest` separately compares
+the documented paths with the application's real routes **in both groups**.
+An updated response or a new door should therefore not appear without an
+updated export.
 
 ## How the admin UI identifies itself
 
