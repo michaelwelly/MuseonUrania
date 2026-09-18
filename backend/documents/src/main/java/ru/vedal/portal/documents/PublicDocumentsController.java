@@ -23,6 +23,7 @@ import ru.vedal.portal.common.TooManyRequestsException;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/public/v1")
@@ -36,6 +37,12 @@ public class PublicDocumentsController {
      * читаемая глазами.
      */
     private static final String NOT_FOUND = "Документ не найден";
+
+    // Общая витрина остаётся закрытой по решению заказчика. Новую карточку
+    // A-2000 заказчик разрешил разместить 18 сентября 2026 отдельно, поэтому
+    // наружу выходит только этот точный ключ, без перечня и соседних файлов.
+    private static final Set<String> PRODUCT_FILES_WHILE_SECTION_HIDDEN = Set.of(
+            "vedal-a-2000-product-sheet");
 
     private final DocumentQuery documents;
     private final PublicDocumentsSection section;
@@ -67,6 +74,12 @@ public class PublicDocumentsController {
      */
     private void requireOpenSection() {
         if (section.hidden()) {
+            throw new NotFoundException(NOT_FOUND);
+        }
+    }
+
+    private void requireOpenFile(String slug) {
+        if (section.hidden() && !PRODUCT_FILES_WHILE_SECTION_HIDDEN.contains(slug)) {
             throw new NotFoundException(NOT_FOUND);
         }
     }
@@ -112,8 +125,9 @@ public class PublicDocumentsController {
                     попадает в журнал.
 
                     Пока публичный раздел документов скрыт настройкой портала
-                    (`VEDAL_PUBLIC_DOCUMENTS_ENABLED`), `404` отвечают все адреса —
-                    и опубликованные документы тоже.
+                    (`VEDAL_PUBLIC_DOCUMENTS_ENABLED`), остальные опубликованные
+                    документы отвечают `404`. Карточка A-2000 доступна отдельно
+                    по прямому решению заказчика от 18 сентября 2026.
 
                     Ответ не кэшируется: снятая с публикации редакция не должна остаться
                     в кэшах прокси.
@@ -140,7 +154,7 @@ public class PublicDocumentsController {
                     example = "vedal-r1-product-sheet")
             @PathVariable String slug,
             HttpServletRequest http) {
-        requireOpenSection();
+        requireOpenFile(slug);
         if (!downloadRateLimit.allow(http.getRemoteAddr())) {
             throw new TooManyRequestsException("Слишком много обращений подряд. Попробуйте позже.");
         }
