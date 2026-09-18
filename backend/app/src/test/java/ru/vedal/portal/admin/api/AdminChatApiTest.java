@@ -10,6 +10,7 @@ import ru.vedal.portal.chat.ChatDesk;
 
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -85,32 +86,33 @@ class AdminChatApiTest extends PostgresTestBase {
     @Test
     @WithMockUser(username = "manager", roles = "PORTAL_ADMIN")
     void listTellsWhoseConversationsAreWhose() throws Exception {
+        var owner = "irina-" + UUID.randomUUID();
         var взятый = desk.say(UUID.randomUUID().toString(), "Нужен сервис R1.",
                 new ChatDesk.Context("ru", null, "/service/")).id();
-        desk.say(UUID.randomUUID().toString(), "Сколько стоит инкубатор?",
-                new ChatDesk.Context("ru", null, "/products/"));
+        var свободный = desk.say(UUID.randomUUID().toString(), "Сколько стоит инкубатор?",
+                new ChatDesk.Context("ru", null, "/products/")).id();
 
         // Ответ и есть взятие: отдельной кнопки «взять» в портале нет.
-        desk.reply(взятый, "irina", "Здравствуйте, смотрю вашу заявку.");
+        desk.reply(взятый, owner, "Здравствуйте, смотрю вашу заявку.");
 
-        mvc.perform(get("/api/admin/v1/chats?owner=irina"))
+        mvc.perform(get("/api/admin/v1/chats").param("owner", owner))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(1))
-                .andExpect(jsonPath("$.items[0].owner").value("irina"));
+                .andExpect(jsonPath("$.items[0].owner").value(owner));
 
         // «-» — «никто не взял». У разговоров это не «ожидает уточнения»:
         // данных не не хватает, разговор просто ещё ничей.
         mvc.perform(get("/api/admin/v1/chats?owner=-"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total").value(1))
-                .andExpect(jsonPath("$.items[0].owner").doesNotExist());
+                .andExpect(jsonPath("$.items[*].id", hasItem(свободный.toString())));
 
         // Пустое значение — это «фильтра нет», а не «найти пустоту».
         mvc.perform(get("/api/admin/v1/chats").param("owner", "  "))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total").value(2));
+                .andExpect(jsonPath("$.items[*].id", hasItem(взятый.toString())))
+                .andExpect(jsonPath("$.items[*].id", hasItem(свободный.toString())));
 
-        mvc.perform(get("/api/admin/v1/chats?owner=никто-такой"))
+        mvc.perform(get("/api/admin/v1/chats").param("owner", "никто-" + UUID.randomUUID()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(0));
     }

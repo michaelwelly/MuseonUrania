@@ -56,11 +56,11 @@ repeated. Field constraints (allowed form types, phone format, minimum message
 length) reach the specification from Bean Validation annotations — the same
 checks that run on the trust boundary.
 
-`OpenApiDumpTest` parses JSON and YAML and compares both exports with the
-contract assembled by the application. `OpenApiDocsTest` separately compares
-the documented paths with the application's real routes **in both groups**.
-An updated response or a new door should therefore not appear without an
-updated export.
+`OpenApiDumpTest` automatically compares both exports with the contract built by
+the application. Any mismatch fails the test and lists the changed paths.
+`OpenApiDocsTest` separately compares the documented paths with the
+application's real routes **in both groups**. An updated response or a new door
+should therefore not appear without an updated export.
 
 ## How the admin UI identifies itself
 
@@ -130,6 +130,19 @@ npx newman run docs/api/vedal.postman_collection.json --folder "Формы" --fo
 ```
 
 ## How to refresh the export
+
+The preferred path does not require starting the application manually. Docker is
+required for the test PostgreSQL instance:
+
+```bash
+cd backend
+./mvnw -pl app -am -Dtest=OpenApiDumpTest \
+  -Dsurefire.failIfNoSpecifiedTests=false \
+  -Dvedal.openapi.update=true test
+cd ..
+```
+
+Alternatively, use a running application:
 
 ```bash
 docker compose -f backend/compose.yaml --profile app up -d --build

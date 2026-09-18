@@ -175,7 +175,7 @@ export function Palette({ onClose }: { onClose: () => void }) {
       alive = false;
       clearTimeout(timer);
     };
-  }, [трим]);
+  }, [продажи, трим]);
 
   const строки = useMemo(() => {
     const низ = трим.toLowerCase();

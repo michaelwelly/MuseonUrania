@@ -12,13 +12,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class SeedTest extends PostgresTestBase {
 
-    // Каталог первого релиза: A-2000, R1, R2 и Т-100. Было двенадцать позиций,
+    // Публичный каталог: A-2000, R1 и R2. Было двенадцать позиций,
     // девять из них сняты с публикации миграцией V20 — датащитов на них нет,
-    // а карточка «VEDAL R1, R2» разделена на две отдельных.
+    // карточка «VEDAL R1, R2» разделена на две отдельных, а T-100 временно
+    // скрыт по решению заказчика миграцией V40.
     //
     // Проверяется именно опубликованное: снятые с сайта строки остались в базе
     // ради ссылок из КП и сделок, и findAll вернул бы все двенадцать.
-    private static final int CATALOG_SIZE = 4;
+    private static final int CATALOG_SIZE = 3;
 
     @Autowired
     ProductRepository products;
@@ -51,7 +52,7 @@ class SeedTest extends PostgresTestBase {
     void catalogIsOrderedAsAgreedWithTheCustomer() {
         assertThat(products.findByPublishedTrueOrderBySortOrderAscNameAsc())
                 .extracting(Product::getSlug)
-                .containsExactly("vedal-a-2000", "vedal-r1", "vedal-r2", "vedal-t-100");
+                .containsExactly("vedal-a-2000", "vedal-r1", "vedal-r2");
     }
 
     // Изделия уходят с сайта снятием с публикации, а не удалением: на
@@ -60,10 +61,11 @@ class SeedTest extends PostgresTestBase {
     @Test
     void withdrawnProductIsHiddenButNotDeleted() {
         assertThat(products.findBySlugAndPublishedTrue("vedal-vv11")).isEmpty();
+        assertThat(products.findBySlugAndPublishedTrue("vedal-t-100")).isEmpty();
 
         assertThat(products.findAllByOrderBySortOrderAscNameAsc())
                 .extracting(Product::getSlug)
-                .contains("vedal-vv11", "vedal-n15", "vedal-vp4");
+                .contains("vedal-vv11", "vedal-n15", "vedal-vp4", "vedal-t-100");
     }
 
     // R1 переименован из «vedal-r1-r2», а не создан заново — именно поэтому
