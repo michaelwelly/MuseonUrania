@@ -22,7 +22,13 @@ import java.sql.SQLException;
 //
 // Откат после каждого теста: контейнер общий, а сид из V2 проверяется на точное
 // число позиций. Без откатов тест, добавивший свою запись, ломает SeedTest.
-@SpringBootTest
+@SpringBootTest(properties = {
+        // В suite живёт несколько кэшированных контекстов. Производственный
+        // пул по 16 соединений на каждый исчерпывает max_connections тестовой
+        // PostgreSQL ещё до конца прогона.
+        "spring.datasource.hikari.maximum-pool-size=2",
+        "spring.datasource.hikari.minimum-idle=0"
+})
 @Transactional
 public abstract class PostgresTestBase {
 

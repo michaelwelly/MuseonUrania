@@ -46,6 +46,10 @@
 
 	<properties>
 		<java.version>25</java.version>
+		<!-- Spring Boot 4.1.1 управляет Tomcat 11.0.24. Поднимаем точечно до
+		     исправленного 11.0.25: CVE-2026-65182, CVE-2026-65905 и
+		     CVE-2026-68525 блокируют контейнерный security gate. -->
+		<tomcat.version>11.0.25</tomcat.version>
 		<!-- Spring Boot 4.1 не тянет testcontainers-bom, версию держим сами. -->
 		<testcontainers.version>2.0.5</testcontainers.version>
 		<!-- Ветка 3.x springdoc собрана под Spring Boot 4; 2.x — под Boot 3

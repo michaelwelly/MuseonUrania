@@ -66,16 +66,25 @@ class OpenApiDumpTest extends PostgresTestBase {
     // JSON и YAML снимаются двумя разными запросами и отстать могут порознь —
     // достаточно обновить один файл и забыть второй.
     private void assertDumpMatchesCode(String group, String name) throws Exception {
+        var jsonFromCode = fetch("/v3/api-docs/" + group);
+        var yamlFromCode = fetch("/v3/api-docs.yaml/" + group);
+
+        if (Boolean.getBoolean("vedal.openapi.update")) {
+            Files.writeString(DUMPS.resolve(name + ".json"), jsonFromCode, StandardCharsets.UTF_8);
+            Files.writeString(DUMPS.resolve(name + ".yaml"), yamlFromCode, StandardCharsets.UTF_8);
+            return;
+        }
+
         assertMatchesCode(name + ".json",
                 parseJson(read(name + ".json")),
-                parseJson(fetch("/v3/api-docs/" + group)));
+                parseJson(jsonFromCode));
 
         // Адрес YAML — отдельным сегментом перед группой (/v3/api-docs.yaml/{group}),
         // а не расширением после неё. По /v3/api-docs/{group}.yaml приложение
         // отдаёт не YAML, и выгрузка снимется пустой.
         assertMatchesCode(name + ".yaml",
                 parseYaml(read(name + ".yaml")),
-                parseYaml(fetch("/v3/api-docs.yaml/" + group)));
+                parseYaml(yamlFromCode));
     }
 
     private void assertMatchesCode(String name, Map<String, Object> fromFile, Map<String, Object> fromCode) {
